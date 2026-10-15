@@ -28,6 +28,28 @@ describe('room population', () => {
         expect(plan.placements.every((placement) => !(placement.x <= 2 && placement.y >= 2 && placement.y <= 4))).toBe(true);
     });
 
+    it('keeps the full two-cell directional approach clear for a wide threshold', () => {
+        const grid = Array.from({ length: 11 }, () => Array(11).fill('.'));
+        const room = {
+            id: 'north-threshold-room',
+            role: 'storage',
+            interior: Array.from({ length: 81 }, (_, index) => ({
+                x: 1 + (index % 9), y: 1 + Math.floor(index / 9)
+            })),
+            doors: [{ side: 'n', cells: [{ x: 4, y: 5 }, { x: 5, y: 5 }, { x: 6, y: 5 }] }],
+            navigation: { doorLanes: [{ x: 4, y: 5 }, { x: 5, y: 5 }, { x: 6, y: 5 }] },
+            populationBudget: { signature: 1, large: 2, small: 4 },
+            themeConfig: { signatureProps: ['signature'], largeProps: ['large'], smallProps: ['small'] }
+        };
+        const plan = planRoomPopulation(room, grid, () => 0.5);
+        for (let y = 3; y <= 7; y += 1) {
+            for (let x = 3; x <= 7; x += 1) {
+                expect(plan.reserved).toContain(`${x},${y}`);
+                expect(plan.placements).not.toContainEqual(expect.objectContaining({ x, y }));
+            }
+        }
+    });
+
     it('normalizes legacy numeric budgets', () => {
         expect(normalizePopulationBudget({ large: 1, small: 3, pickup: 1, enemy: 0 })).toEqual({
             signature: 1,
@@ -151,6 +173,39 @@ describe('room population', () => {
         expect(plan.placements).toContainEqual(expect.objectContaining({
             kind: 'ambient', type: 'decal_worker_sleep_roll', blocking: false
         }));
+    });
+
+    it('builds a readable focal wall, separated large anchor, and nearby support clusters', () => {
+        const interior = Array.from({ length: 25 }, (_, index) => ({
+            x: index % 5 + 1,
+            y: Math.floor(index / 5) + 1
+        }));
+        const room = {
+            id: 'zoned-engineering-room',
+            role: 'engineering',
+            interior,
+            navigation: { doorLanes: [{ x: 1, y: 3 }] },
+            populationBudget: { signature: 1, large: 1, small: 2, pickup: 0, enemy: 0 },
+            themeConfig: {
+                signatureProps: ['hero-machine'],
+                largeProps: ['support-machine'],
+                smallProps: ['tool-kit'],
+                ambientProps: ['service-decal']
+            }
+        };
+        const grid = Array.from({ length: 7 }, () => Array(7).fill('#'));
+        for (const cell of interior) grid[cell.y][cell.x] = '.';
+        const plan = planRoomPopulation(room, grid, () => 0.5, { grounding: false });
+        const signature = plan.placements.find(({ kind }) => kind === 'signature');
+        const large = plan.placements.find(({ kind }) => kind === 'large');
+        const support = plan.placements.filter(({ kind }) => ['small', 'ambient'].includes(kind));
+
+        expect(signature).toMatchObject({ layoutZone: 'focal-edge' });
+        expect(Math.abs(signature.x - 1) + Math.abs(signature.y - 3)).toBeGreaterThanOrEqual(5);
+        expect(large).toMatchObject({ layoutZone: 'perimeter-anchor' });
+        expect(Math.hypot(large.x - signature.x, large.y - signature.y)).toBeGreaterThanOrEqual(3);
+        expect(support.every(({ layoutZone }) => layoutZone === 'support-cluster')).toBe(true);
+        expect(support.some((item) => Math.hypot(item.x - signature.x, item.y - signature.y) <= 2)).toBe(true);
     });
 
     it('keeps three medical fixtures and adds bounded non-blocking story dressing', () => {
@@ -390,6 +445,28 @@ describe('room population', () => {
                 wallNormal: { x: 1, z: 0 }
             });
         }
+    });
+
+    it('requires exosuit docking gantries to have a real wall support', () => {
+        const room = {
+            id: 'exosuit-bay',
+            role: 'engineering',
+            interior: [{ x: 1, y: 2 }, { x: 2, y: 2 }, { x: 3, y: 2 }],
+            navigation: { doorLanes: [] },
+            populationBudget: { signature: 1, large: 0, small: 0, pickup: 0, enemy: 0 },
+            themeConfig: { signatureProps: ['prop_exosuit_docking_gantry'] }
+        };
+        const unsupported = Array.from({ length: 5 }, () => Array(5).fill('.'));
+        expect(planRoomPopulation(room, unsupported, () => 0).placements).toEqual([]);
+
+        const supported = unsupported.map((row) => [...row]);
+        supported[2][0] = '#';
+        expect(planRoomPopulation(room, supported, () => 0).placements[0]).toMatchObject({
+            type: 'prop_exosuit_docking_gantry',
+            x: 1,
+            y: 2,
+            wallNormal: { x: 1, z: 0 }
+        });
     });
 
     describe('floor grounding (lived-in world M2)', () => {

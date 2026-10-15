@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import { DRESSING_KITS, DRESSING_PROFILES, ROLE_DRESSING, ROLE_VIGNETTES, VIGNETTES, WALL_MOUNT_HEIGHT, dressingKitFor, dressingFamilyForTheme, dressingProfileFor } from './roomDressingKits.js';
-import { DRESSING_LIMITS, planRoomDressing } from './roomDressing.js';
+import { DRESSING_LIMITS, getPropBoundingDepth, isDestructibleDressingType, planRoomDressing } from './roomDressing.js';
 import { WORLD_3D_MODELS } from './world3dOverlay.js';
 import { DRESSING_TRIANGLES } from './data/dressingTriangles.js';
 import { ROOM_BUILD_CATALOG, stampRoomBuild, buildRoomInstanceFromBuild } from './roomBuilds.js';
@@ -12,6 +12,15 @@ import { planRoomPopulation } from './roomPopulation.js';
 const FLAT_LAYERS = new Set(['wallDecals', 'floorDecals']);
 
 describe('room dressing kits', () => {
+    it('makes faction-prefixed expansion furniture destructible by default', () => {
+        for (const type of ['vass_bio_centrifuge_rack', 'suture_flesh_mending_bath', 'corp_compliance_choker_bench']) {
+            expect(isDestructibleDressingType(type, 'vignette'), type).toBe(true);
+        }
+        expect(isDestructibleDressingType('arch_niche_shrine', 'wallProp')).toBe(false);
+        expect(isDestructibleDressingType('corp_quantum_ledger_terminal', 'vignette')).toBe(false);
+        expect(isDestructibleDressingType('decal_bullet_holes', 'wallDecal')).toBe(false);
+    });
+
     it('uses only shipped assets: sized GLBs for 3D layers, PNGs for decal layers', () => {
         const kits = [...Object.values(DRESSING_KITS), ...Object.values(ROLE_DRESSING)];
         for (const kit of kits) {
@@ -183,6 +192,22 @@ describe('room dressing plan', () => {
             expect(b).toEqual(a);
         } finally {
             Math.random = original;
+        }
+    });
+
+    it('ensures wall props never penetrate wall meshes', () => {
+        const { room, grid, plan } = realRoom(ROOM_BUILD_CATALOG[0], 'bunker');
+        const dressing = planRoomDressing(room, grid, { reserved: plan.reserved, occupied: plan.placements });
+        const wallProps = dressing.items.filter((item) => item.layer === 'wallProp');
+        expect(wallProps.length).toBeGreaterThan(0);
+        for (const prop of wallProps) {
+            const cellX = Math.round(prop.x);
+            const cellY = Math.round(prop.y);
+            const dx = Math.abs(prop.x - cellX);
+            const dy = Math.abs(prop.y - cellY);
+            const offset = Math.max(dx, dy);
+            const depth = getPropBoundingDepth(prop.type);
+            expect(offset + depth / 2).toBeLessThanOrEqual(0.50);
         }
     });
 });

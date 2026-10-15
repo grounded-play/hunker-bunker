@@ -256,7 +256,8 @@
       "commentary_list": "COMENTÁRIOS DOS DESENVOLVEDORES",
       "commentary_read_all": "LER TUDO",
       "content_guide": "GUIA DE CONTEÚDO (TEMAS ADULTOS)",
-      "graphics": "GRÁFICOS"
+      "graphics": "GRÁFICOS",
+      "intro_style": "ESTILO DA INTRO"
     },
     "action": {
       "open": "ABRIR",
@@ -312,7 +313,10 @@
       "shake_normal": "NORMAL (100%)",
       "aim_assist_off": "DESLIGADO",
       "aim_assist_low": "BAIXO (APENAS MAGNETISMO)",
-      "aim_assist_standard": "PADRÃO (TRAVAMENTO + FRICÇÃO)"
+      "aim_assist_standard": "PADRÃO (TRAVAMENTO + FRICÇÃO)",
+      "intro_tactical": "TERMINAL TÁTICO (CINEMATOGRÁFICO)",
+      "intro_timed": "SINCRONIZADO (TERMINAL)",
+      "intro_classic": "MÁQUINA DE ESCREVER CLÁSSICA"
     },
     "aria": {
       "language_select": "Idioma do jogo",
@@ -504,7 +508,9 @@
       "accent_credits": "// CRÉDITOS"
     },
     "hero_detail": {
-      "chassis_spec": "ESPECIFICAÇÃO DO CHASSI"
+      "chassis_spec": "ESPECIFICAÇÃO DO CHASSI",
+      "initializing_3d_operator": "INICIALIZANDO OPERADOR 3D {type}…",
+      "preview_3d_unavailable": "PRÉ-VISUALIZAÇÃO 3D DE {type} INDISPONÍVEL"
     },
     "archive": {
       "bunker_archive": "◈ ARQUIVO DO BUNKER",
@@ -1250,7 +1256,25 @@
       "assembled": "{item} MONTADO.",
       "trade_failed": "A troca falhou: {reason}.",
       "assemble_failed": "A montagem falhou: {reason}.",
-      "reagents_owned": "LINGOTES {ingots} · MATRIZ {matrix} · ÂMBAR CINZENTO {ambergris}"
+      "reagents_owned": "LINGOTES {ingots} · MATRIZ {matrix} · ÂMBAR CINZENTO {ambergris}",
+      "search_placeholder": "BUSCAR NO INVENTÁRIO...",
+      "group_all": "TODOS OS ITENS",
+      "group_cosmetics": "COSMÉTICOS",
+      "group_mods": "MODS",
+      "group_materials": "MATERIAIS",
+      "group_caches": "COFRES E CHAVES",
+      "rarity_all": "TODAS AS RARIDADES",
+      "sort_recent": "RECENTE",
+      "sort_name": "NOME",
+      "sort_rarity": "RARIDADE",
+      "sort_quantity": "QUANTIDADE",
+      "clear_filters": "LIMPAR",
+      "count_summary": "{types} TIPOS · {total} NO TOTAL",
+      "count_filtered": "{visible} DE {total} ITENS ({types} TIPOS)",
+      "no_matching_items": "NENHUM ITEM CORRESPONDE AOS FILTROS",
+      "no_items": "NENHUM ITEM DETECTADO NO COFRE DA STEAM",
+      "skip_reveal": "REVELAR AGORA",
+      "retry_sync": "TENTAR SINCRONIZAR"
     },
     "lobby": {
       "connecting": "CONECTANDO...",
@@ -1345,6 +1369,7 @@
       "online": "ONLINE",
       "ready_deficit": "PRONTO — DÉFICIT DE RECURSOS",
       "ready_permitted": "PRONTO — CONSTRUÇÃO PERMITIDA",
+      "install_required": "RECUPERE E INSTALE {module}",
       "resolved": "RESOLVIDO",
       "choice_required": "ESCOLHA NECESSÁRIA",
       "event_resolved": "Evento do terminal resolvido. Os sistemas da loja continuam disponíveis.",

@@ -6,36 +6,40 @@ import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
 // opening is clear once the model loads, and its posts still block.
 test.describe.configure({ timeout: 300_000 });
 
-test('the opening of a grand archway is walkable, its posts are not', async ({ page }) => {
+for (const type of ['arch_deco_archway_grand_01', 'arch_bulkhead_frame', 'hive_tendril_arch']) test(`the opening of ${type} is walkable, its posts are not`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await bootToOperatorMenu(page);
     await startRunAndSkipIntro(page);
-    const placed = await page.evaluate(async () => {
+    const placed = await page.evaluate(async (archType) => {
         const g = window.game;
         const x = Math.round(g.player.position.x) + 0.5;
         const z = Math.round(g.player.position.z) + 3;
-        const arch = g.createScatterInstance({ type: 'arch_deco_archway_grand_01', x, z, scale: 1, tiltX: 0, elevation: 0, rotation: 0, scatterKey: 'test:arch' });
-        // Placed the way the world places it: inside the chunk it stands in,
-        // where the scatter list (rebuilt from the chunks) will find it.
-        const chunkKey = `${Math.floor(x / g.chunkSize)},${Math.floor(z / g.chunkSize)}`;
-        g.chunkMeshes.get(chunkKey).add(arch);
-        g.scatterSprites.push(arch);
-        await g.setupWorld3dReplacement(arch, 'arch_deco_archway_grand_01');
+        const arch = g.createScatterInstance({ type: archType, x, z, scale: 1, tiltX: 0, elevation: 0, rotation: 0, scatterKey: `test:${archType}` });
+        if (!arch) return { created: false };
+        // Keep the probe independent of which edge chunks happened to finish
+        // mounting during deployment. A live scene parent matches the setup
+        // contract supplied by a mounted chunk in normal play.
+        g.scene.add(arch);
+        await g.setupWorld3dReplacement(arch, archType);
         await new Promise((resolve) => setTimeout(resolve, 500));
-        if (!g.scatterSprites.includes(arch)) g.scatterSprites.push(arch);
-        return { x, z, solid: Boolean(arch.userData.isSolidProp), posts: arch.userData.pillarColliders ?? null };
-    });
+        // Isolate the arch contract from unrelated room walls and props. The
+        // production model still supplies the measured post bounds.
+        g.scatterSprites = [arch];
+        g.getTileType = () => '.';
+        g.getCachedTileType = () => '.';
+        g.isHoleTile = () => false;
+        const posts = arch.userData.pillarColliders ?? null;
+        return {
+            created: true,
+            solid: Boolean(arch.userData.isSolidProp),
+            posts,
+            openingWalkable: g.canOccupyPosition(x, z),
+            postWalkable: posts?.length ? g.canOccupyPosition(posts[0].x, posts[0].z) : null
+        };
+    }, type);
+    expect(placed.created).toBe(true);
     expect(placed.solid).toBe(true);
     expect(placed.posts).toHaveLength(2);
-    const result = await page.evaluate(({ x, z, posts }) => {
-        const g = window.game;
-        // Only the arch matters here: judge it against the open floor around it.
-        const floorClear = (px, pz) => g.isSnailTileWalkable(Math.round(px), Math.round(pz));
-        return {
-            opening: { ok: g.canOccupyPosition(x, z), floor: floorClear(x, z) },
-            post: { ok: g.canOccupyPosition(posts[0].x, posts[0].z) }
-        };
-    }, placed);
-    if (result.opening.floor) expect(result.opening.ok).toBe(true);
-    expect(result.post.ok).toBe(false);
+    expect(placed.openingWalkable).toBe(true);
+    expect(placed.postWalkable).toBe(false);
 });

@@ -181,4 +181,46 @@ describe('statusEffects module (Sprint 47 Lane 3)', () => {
         const contractCall = callSliceContract('grantRunDrop', mockGame, 'last_breath');
         expect(contractCall.available).toBe(true);
     });
+
+    it('applies burning stacks, respects fire immunity, and thaws frozen targets', () => {
+        const target = { userData: {} };
+        // Apply freeze first
+        applyStatus(target, 'freeze', 100);
+        expect(getStatus(target, 'freeze').isFrozen).toBe(true);
+
+        // Apply burning: should thaw target and apply burning stacks
+        const onThaw = vi.fn();
+        applyStatus(target, 'burning', 2, { onThaw, source: 'player_1' });
+        const burning = getStatus(target, 'burning');
+        expect(burning.active).toBe(true);
+        expect(burning.stacks).toBe(2);
+        expect(burning.burnedBy).toBe('player_1');
+        expect(getStatus(target, 'freeze').isFrozen).toBe(false);
+        expect(onThaw).toHaveBeenCalled();
+
+        // Fire immune target should reject burning
+        const immuneTarget = { isFireImmune: true, userData: {} };
+        applyStatus(immuneTarget, 'burning', 3);
+        expect(getStatus(immuneTarget, 'burning').active).toBe(false);
+    });
+
+    it('ticks burning DoT damage and clears on extinguish', () => {
+        const target = { userData: {} };
+        applyStatus(target, 'burning', 3, { source: 'flamethrower_p1' });
+
+        const onDamage = vi.fn();
+        const onBurningTick = vi.fn();
+
+        // Tick 0.6s (interval is 0.5s) -> should trigger 1 tick
+        tickStatusEffects(target, 0.6, { onDamage, onBurningTick });
+        expect(onBurningTick).toHaveBeenCalledTimes(1);
+        expect(onDamage).toHaveBeenCalledWith(target, expect.any(Number), {
+            type: 'burning',
+            source: 'flamethrower_p1'
+        });
+
+        // Clear status clears burning cleanly
+        clearStatus(target, 'burning');
+        expect(getStatus(target, 'burning').active).toBe(false);
+    });
 });

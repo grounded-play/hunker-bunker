@@ -13,6 +13,10 @@ import { buildLegacyDecalMesh, legacyDecalLayerIndex } from './stickerDecals.js'
 import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { assetUrl } from './assetUrl.js';
 import { isDynamicPropExperienceType } from './propExperience.js';
+import {
+    getSurfaceAssetProfile,
+    isSurfaceAssetPlacementAllowed
+} from './surfaceAssetRegistry.js';
 
 const keyedDecalCache = new Map();
 
@@ -122,7 +126,10 @@ export async function buildRoomDressingGroup(items, {
     const group = new THREE.Group();
     group.name = 'room-dressing';
     group.userData.isRoomDressing = true;
-    group.userData.roomDressingItems = items ?? [];
+    const rejectedSurfaceItems = (items ?? []).filter((item) => !isSurfaceAssetPlacementAllowed(item.type, item.layer));
+    const acceptedItems = (items ?? []).filter((item) => isSurfaceAssetPlacementAllowed(item.type, item.layer));
+    group.userData.roomDressingItems = acceptedItems;
+    group.userData.rejectedSurfaceItems = rejectedSurfaceItems;
     const load = async (loader, type) => {
         try { return await loader(type); }
         catch (error) {
@@ -134,7 +141,7 @@ export async function buildRoomDressingGroup(items, {
         }
     };
     const byType = new Map();
-    for (const item of items ?? []) {
+    for (const item of acceptedItems) {
         if (!byType.has(item.type)) byType.set(item.type, []);
         byType.get(item.type).push(item);
     }
@@ -232,12 +239,18 @@ export async function buildRoomDressingGroup(items, {
                 return;
             }
             const size = item.size ?? 1;
+            const surfaceProfile = getSurfaceAssetProfile(item.type);
             if (item.layer === 'wallDecal') {
-                position.set(item.x, item.height ?? 1.4, item.y);
+                const supportOffset = surfaceProfile?.depthOffset ?? 0.012;
+                position.set(
+                    item.x + (item.normal?.x ?? 0) * supportOffset,
+                    item.height ?? 1.4,
+                    item.y + (item.normal?.z ?? 0) * supportOffset
+                );
                 euler.set(0, Math.atan2(item.normal?.x ?? 0, item.normal?.z ?? 1), item.roll ?? 0);
             } else {
                 // Stagger floor decals a hair apart so overlapping ones never z-fight.
-                position.set(item.x, 0.03 + (index % 7) * 0.002, item.y);
+                position.set(item.x, (surfaceProfile?.depthOffset ?? 0.032) + (index % 7) * 0.002, item.y);
                 euler.set(-Math.PI / 2, item.yaw ?? 0, 0);
             }
             quaternion.setFromEuler(euler);
@@ -248,7 +261,7 @@ export async function buildRoomDressingGroup(items, {
         batch.instanceMatrix.needsUpdate = true;
         batch.castShadow = false;
         batch.receiveShadow = true;
-        batch.renderOrder = 6;
+        batch.renderOrder = getSurfaceAssetProfile(type)?.renderOrder ?? 6;
         batch.computeBoundingSphere();
         batch.userData.roomDressingType = type;
         group.add(batch);
@@ -262,6 +275,6 @@ export async function buildRoomDressingGroup(items, {
     }
 
     group.userData.drawCalls = drawCalls;
-    group.userData.itemCount = items?.length ?? 0;
+    group.userData.itemCount = acceptedItems.length;
     return group;
 }

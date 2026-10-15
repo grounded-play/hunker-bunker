@@ -193,7 +193,7 @@ describe('getOrCreateChunk — cache eviction does not thrash non-mounted lookup
         const fakeThis = makeFakeChunkCacheGame();
 
         // Query the chunk we'll re-check first, then 150 other distinct
-        // non-mounted chunks (well beyond the real 9x9=81 resident window),
+            // non-mounted chunks (well beyond the real 5x5=25 resident window),
         // simulating gameplay logic touching many coordinates over a session.
         ThreeGame.prototype.getOrCreateChunk.call(fakeThis, 0, 0);
         for (let i = 1; i <= 150; i += 1) {
@@ -516,5 +516,43 @@ describe('syncVisibleChunks — _wallInstanceIndex cleanup on chunk unmount', ()
 
         expect(fakeThis._wallInstanceIndex.has('50,50')).toBe(false);
         expect(fakeThis._wallInstanceIndex.has('5,5')).toBe(true);
+    });
+
+    it('bounds mounted residency to a 5x5 window around a visible 3x3', () => {
+        const chunks = new Map();
+        for (let y = -3; y <= 3; y += 1) {
+            for (let x = -3; x <= 3; x += 1) {
+                chunks.set(`${x},${y}`, { visible: true, userData: {}, children: [] });
+            }
+        }
+        const fakeThis = {
+            player: { position: { x: 0, z: 0 } },
+            chunkSize: 19,
+            visibleChunkRadius: 1,
+            chunkResidentPadding: 1,
+            chunkPrefetchMargin: 0,
+            chunkMeshes: chunks,
+            chunkGroups: { remove: () => {} },
+            pendingChunkMountKeys: new Set(),
+            pendingChunkMounts: [],
+            wallMeshes: [],
+            pickupMeshes: [],
+            scatterSprites: [],
+            _wallInstanceIndex: new Map(),
+            disposeChunkGroupResources: () => {},
+            processPendingChunkMounts: () => {},
+            getChunkPrefetchCoords: () => [],
+            maxChunkMountsPerFrame: 1,
+            visitedChunks: new Set(chunks.keys()),
+            queueChunkMount: () => {},
+            onNewChunkDiscovered: () => {},
+            updateDepthTierProgress: () => {}
+        };
+
+        ThreeGame.prototype.syncVisibleChunks.call(fakeThis, true);
+
+        expect(fakeThis.chunkMeshes.size).toBe(25);
+        expect([...fakeThis.chunkMeshes.values()].filter((chunk) => chunk.visible)).toHaveLength(9);
+        expect(fakeThis._residentChunkKeys.size).toBe(25);
     });
 });

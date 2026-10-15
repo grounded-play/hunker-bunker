@@ -1,6 +1,106 @@
 import { getRunRating } from './runRating.js';
 import { computeRunScore } from './runScore.js';
 import { getFieldWeaponProfile } from './fieldWeapon.js';
+import { resolveSweptConeHits } from './flameWeapon.js';
+import {
+    applyHeatToBarrier,
+    createIceBarrier,
+    resolveIceBarrierModel,
+    tickIceBarrier
+} from './iceGateSystem.js';
+import {
+    addFieldWeaponDrop,
+    consumeFieldWeaponAmmo,
+    createFieldWeaponDrop,
+    createFieldWeaponRunState,
+    getFieldWeaponDropDefinition,
+    reloadFieldWeapon,
+    resetFieldWeaponRunState,
+    serviceEquippedFieldWeapon,
+    swapFieldWeapon
+} from './fieldWeaponDrops.js';
+import {
+    createFieldWeaponDropVisual,
+    disposeFieldWeaponDropVisual,
+    updateFieldWeaponDropVisual
+} from './fieldWeaponPresentation.js';
+import {
+    addCarryObject,
+    beginCarry,
+    canDashWhileCarrying,
+    canUseWeaponWhileCarrying,
+    companionCarrierCoverPosition,
+    createCarryObject,
+    deliverCarriedObject,
+    dropCarriedObject,
+    getCarryMobilityProfile,
+    installCarriedObject,
+    installWorldObject,
+    createCarryState,
+    recoverStrandedCarryObjects,
+    removeMissionCarryObjects,
+    resetCarryRunState,
+    shouldStaggerDropCargo
+} from './carrySystem.js';
+import {
+    createCarryObjectVisual,
+    disposeCarryObjectVisual,
+    updateCarryObjectVisual
+} from './carryPresentation.js';
+import {
+    advanceRoomAtmosphere,
+    createRoomAtmosphereState,
+    describeRoomAtmosphere,
+    evaluateRoomSealGraph,
+    isPositionSafeForRest
+} from './baseSealGraph.js';
+import {
+    createBaseAtmosphereIndicator,
+    disposeBaseAtmosphereIndicator,
+    updateBaseAtmosphereIndicator
+} from './baseAtmospherePresentation.js';
+import {
+    createBedInstallSocketVisual,
+    disposeBedInstallSocketVisual,
+    updateBedInstallSocketVisual
+} from './installSocketPresentation.js';
+import {
+    createInstalledBaseModuleVisual,
+    disposeInstalledBaseModuleVisual,
+    FIRST_NIGHT_VISIBLE_MODULES,
+    updateInstalledBaseModuleVisual
+} from './installedBasePresentation.js';
+import {
+    availableFirstNightSocket,
+    ensureFirstNightBaseState,
+    getFirstNightCotHandoff,
+    installedCot,
+    planFirstNightBase,
+    releaseFirstNightCotHandoff,
+    stageFirstNightCotAtCamp
+} from './firstNightBase.js';
+import {
+    availableShipRebuildSocket,
+    ensureShipRebuildState,
+    getShipRebuildStageForGoal,
+    isShipModuleInstalledForGoal,
+    planShipRebuild,
+    SHIP_REBUILD_STAGES,
+    shipRebuildProgress
+} from './shipRebuild.js';
+import { loadInstalledBaseModules, saveInstalledBaseModules } from './baseRebuildStore.js';
+import {
+    commitShipModuleActionCooldown,
+    getShipModuleAction,
+    shipModuleActionCooldownRemaining
+} from './shipModuleActions.js';
+import { getBaseModuleDefinition } from './data/baseModules.js';
+import {
+    baseModuleRepairCost,
+    damageBaseModule,
+    getBaseModuleDurability,
+    repairBaseModule
+} from './baseModuleDamage.js';
 import { buildRunResourceTelemetry } from './runTelemetry.js';
 import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
 import { TraumaManager, create3DMuzzleFlash, WEAPON_TRAUMA_TABLE } from './combatJuice.js';
@@ -35,6 +135,7 @@ import {
     interactionSpecKeyFor,
     findNearestInteractableProp,
     interactWithCustomProp,
+    applyPropInteractionState,
     isSearchableType,
     PROP_INTERACTION_SPECS
 } from './propInteractions.js';
@@ -49,6 +150,7 @@ import { handleCriticalServiceDestruction } from './criticalServiceRecovery.js';
 
 import * as THREE from 'three';
 import { fitWallShaderSamplerBudget, INSTANCED_WORLD_POSITION } from './wallShaderCompatibility.js';
+import { fitFloorShaderSamplerBudget } from './floorShaderCompatibility.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import { getKtx2Loader, registerKtx2Renderer } from './gltfLoaderFactory.js';
@@ -155,7 +257,24 @@ import {
     stampLattice
 } from './wfcGenerator.js';
 import { generateArchitecturalMazeChunk } from './architecturalMaze.js';
+import { crashSiteClearCells, stampCrashSiteApproach, stampCrashSiteOrigin } from './crashSiteBuild.js';
+import { CRASH_SITE_BUILD } from './data/crashSiteBuild.js';
 import { applyVerticalBridgeFeature, VERTICAL_TILE } from './verticalWfc.js';
+import {
+    FRAGILE_LEDGE_STATE,
+    advanceFragileLedgeOccupancy,
+    fragileLedgeKey,
+    readFragileLedgeState,
+    restoreFragileLedgeStates,
+    serializeFragileLedgeStates
+} from './fragileLedges.js';
+import {
+    chunkSpaceMetrics,
+    ensureRoomDoorAprons,
+    sealRoomExteriorEdges,
+    stampNaturalCrossing,
+    validateRoomExteriorEnvelope
+} from './chunkLandscape.js';
 import {
     ROOM_FLOOR_MATERIAL_FAMILY,
     ROOM_FLOOR_WETNESS,
@@ -165,6 +284,7 @@ import {
     FLOOR_SPLAT_FRAGMENT_EMISSIVE,
     FLOOR_SPLAT_FRAGMENT_METALNESS,
     FLOOR_SPLAT_FRAGMENT_NORMAL,
+    FLOOR_MIN_ROUGHNESS,
     FLOOR_SPLAT_FRAGMENT_PARS,
     FLOOR_SPLAT_FRAGMENT_ROUGHNESS,
     FLOOR_UTILITY_MAPS,
@@ -197,6 +317,7 @@ import { isWallBackedPropType, planChunkRoomPopulation } from './roomPopulation.
 import { collectReachableCells, planChunkRoomEncounters } from './roomEncounters.js';
 import {
     planProceduralDoors,
+    resolveDoorMotionPose,
     restoreDoorStates,
     serializeDoorStates,
     stampDoorRecords,
@@ -220,7 +341,12 @@ import {
     translateContainmentDoor
 } from './roomContainment.js';
 import { bindRoomContent } from './roomContent.js';
-import { buildMazeChunkStructure, buildHallwayConnectorChunkStructure } from './chunkStructure.js';
+import {
+    buildExposureRoomChunkStructure,
+    buildHallwayConnectorChunkStructure,
+    buildMazeChunkStructure
+} from './chunkStructure.js';
+import { planRingExposureSlots } from './roomExposureBudget.js';
 import { buildGrammarRoomChunk } from './roomGrammarChunk.js';
 import { grammarWallExterior } from './roomGrammarBreach.js';
 import {
@@ -376,6 +502,7 @@ import { applyVoidDepth, setVoidDepthTime } from './voidDepth.js';
 import { chasmLandmarkForm, chasmLandmarkMapEntry, chasmLandmarkYaw, createChasmLandmarkGeometry, createChasmLandmarkMaterial, isChasmLandmarksEnabled, pickChasmLandmarkSites } from './chasmLandmarks.js';
 import { DOOR_LIGHT_POOL, createDoorLightPoolGeometry, createDoorLightPoolMaterial, doorLightPoolMatrices } from './doorLightPools.js';
 import { WALL_LIGHT_SHAPE_FRAGMENT, planWallFootDressing, planWallIcicles, planWallTopDressing, createCornerCutDepthMaterial, createCornerCutPoolGeometry, createCornerCutWallGeometry, isWallAutotileEnabled, patchCornerCutVertexShader, wallCornerCutMask, wallHeightScale } from './wallAutotile.js';
+import { planWallRuns, wallRunFacadeSpec, wallRunMaterialFamily } from './wallRunPlanner.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
 import { corridorKitPlacement, roomGatewayKitPlacement } from './kitGrammar.js';
 import {
@@ -449,12 +576,51 @@ import {
     topologyHasEdge
 } from './mazeExpedition.js';
 import { ExplorationTracker } from './mapSystem.js';
+import {
+    collectDoorApronCells,
+    filterDoorApronPlacements,
+    isOutsideDoorApron
+} from './placementSafety.js';
+
+export { isOutsideDoorApron } from './placementSafety.js';
 
 export const EXTERIOR_CANYON_TILE = 'X';
 export const CLIFF_TILE = 'C';
 // Tiles around the spawn where lethal edges block movement instead of killing.
 export const SPAWN_SAFE_EDGE_RADIUS = 24;
 export const LEDGE_TILE = 'O';
+
+// Build the render mask and repair only impossible portal-edge voids. Canyon
+// and cliff cells remain real holes everywhere else; a doorway/threshold may
+// never open onto an uncovered cell. Keeping this pure makes the collision ↔
+// floor-coverage contract testable without mounting a WebGL chunk.
+export function planInstancedFloorCoverage(grid) {
+    const floorCells = [];
+    const exteriorGroundCells = [];
+    const repairedCells = [];
+    const height = grid?.length ?? 0;
+    const width = grid?.[0]?.length ?? 0;
+    for (let localY = 0; localY < height; localY += 1) {
+        for (let localX = 0; localX < width; localX += 1) {
+            let tileChar = grid[localY][localX];
+            if (tileChar === EXTERIOR_CANYON_TILE || tileChar === CLIFF_TILE) {
+                const touchesPortal = [[-1, 0], [1, 0], [0, -1], [0, 1]].some(([dx, dy]) => {
+                    const neighbor = grid?.[localY + dy]?.[localX + dx];
+                    return neighbor === 'D' || neighbor === 'T';
+                });
+                if (touchesPortal) {
+                    tileChar = '.';
+                    grid[localY][localX] = tileChar;
+                    repairedCells.push({ localX, localY });
+                }
+            }
+            if (tileChar === LEDGE_TILE || tileChar === CLIFF_TILE) exteriorGroundCells.push({ localX, localY });
+            else if (tileChar !== EXTERIOR_CANYON_TILE && tileChar !== CLIFF_TILE) floorCells.push({ localX, localY });
+        }
+    }
+    return { floorCells, exteriorGroundCells, repairedCells };
+}
+
 import {
     rollEnemyLootDrop,
     computeActiveSynergies,
@@ -552,7 +718,9 @@ import { applySpecialVariant } from './specialVariants.js';
 import { bindRoomGrammarSites } from './roomGrammarSiteSelection.js';
 import { trimCampPromptActions } from './campActionMenu.js';
 import { MYSTERY_BOX_KINDS, MYSTERY_OUTCOME_LINE_KEYS, mysteryBoxChance, mysteryOpenSeconds, mysteryRewardDrops, pickMysteryBoxKind, rollMysteryOutcome, seededRandom } from './mysteryBoxes.js';
-import { createTrackField, slimeColorFor, stepBoots, trackSurfaceForType } from './trackField.js';
+import { createTrackField, slimeColorFor, slimeLifeFor, stepBoots, trackSurfaceForType } from './trackField.js';
+import { CasingSystem } from './casingSystem.js';
+import { PointAudioEmitterManager } from './pointAudioEmitter.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
 import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
 import { GATE_CHALLENGES, GATE_CHALLENGE_TUNING, planGateChallenges } from './gateChallenges.js';
@@ -614,6 +782,9 @@ import {
     claimRewardCache,
     REWARD_CACHE_I18N_KEYS
 } from './rewardCache.js';
+
+const CAMP_PROBE_MISSION_ID = 'camp-quest:camp_meridian:lost_probe';
+const HIVE_MEMBRANE_MISSION_ID = 'hive-quest:hive_suture:host_mercy';
 
 /**
  * Boss display names by spawn type. Was an eight-branch if/else assigning
@@ -781,7 +952,6 @@ const RING_ROUTE_STAGE_LABELS = Object.freeze({
 // The operator's cot, offset from the bunker spawn so it sits inside the hab
 // rather than on the airlock threshold. Reachable from a little further than a
 // normal prop: a bed the player has to hunt for is a bed they will not use.
-const BUNKER_COT_OFFSET = Object.freeze({ x: -2.4, z: 1.9 });
 const BUNKER_COT_REACH = 2.6;
 const MENU_SHOWROOM_FLOOR_SIZE = 160;
 // World units per major grid cell. The floor snaps to this when it follows the
@@ -794,8 +964,8 @@ const MENU_SHOWROOM_FLOOR_OFFSET_Z = 0;
 // origin chunk. Its ship placements, blast door, safe floor, and spawn must
 // share this fixed anchor; deriving any of them from CHUNK_SIZE strands the
 // player in the surrounding lethal canyon when chunk dimensions change.
-const CRASH_SITE_CENTER = 9;
-const CRASH_SITE_EDGE_OFFSET = (CRASH_SITE_CENTER - 1) / 2;
+const CRASH_SITE_CENTER = CRASH_SITE_BUILD.center.x;
+const CRASH_SITE_EDGE_OFFSET = CRASH_SITE_BUILD.edgeOffset;
 const PICKUP_DISTRIBUTION = {
     clustered: 0.7,
     transitional: 0.2,
@@ -1474,6 +1644,19 @@ const LOOT_RARITIES = [
     { key: 'rare', weight: 0.13, color: 0x58bbff },
     { key: 'legendary', weight: 0.05, color: 0xffb347 }
 ];
+// Pickup rarity reads as a tint plus a soft floor ring. At the old 0.95
+// emissive / 0.66-0.9 ring the bodies cleared the bloom threshold and every
+// pickup drew as a blown-out white dome (2026-10-14 playtest).
+export const PICKUP_RARITY_EMISSIVE = 0.35;
+export function pickupIdleGlowOpacity(time, bobOffset = 0) {
+    return 0.3 + Math.sin(time * 3.1 + bobOffset) * 0.06;
+}
+// Gameplay bloom. The composer renders into a half-float (HDR) target and
+// tone-maps afterwards, so ordinary lit surfaces already exceed 1.0 there: at
+// the old 0.92 threshold bloom lifted whole frames 15-25% and haloed lit
+// props. 2.0 keeps it to genuine emissives (screens, light strips, pickups'
+// rings at spawn), with a small, tight halo (2026-10-14 playtest).
+export const GAMEPLAY_BLOOM = Object.freeze({ strength: 0.4, radius: 0.35, threshold: 2.0 });
 const JUNK_SCATTER_VARIANTS = [
     { type: 'bunker_junk', weight: 0.55, glowColor: 0xffcc74, smokeColor: 0x95a1ab },
     { type: 'bunker_junk_uncommon', weight: 0.27, glowColor: 0x66ff9a, smokeColor: 0x7ebd98 },
@@ -1844,6 +2027,25 @@ function isInteractiveDressingType(type) {
     return Boolean(PROP_INTERACTION_SPECS[type] || isSearchableType(type) || getPropFxProfile(type));
 }
 
+// A chunk may only afford a small number of per-instance roots. Reserve those
+// roots for props with bespoke E actions before ambient-only decoration so an
+// interactive light or machine never silently falls back to a static batch.
+function assignDynamicPropExperiences(items, limit = 12) {
+    for (const item of items) item.dynamicExperience = false;
+    let assigned = 0;
+    const candidates = [
+        ...items.filter((item) => Boolean(PROP_INTERACTION_SPECS[item.type])),
+        ...items.filter((item) => !PROP_INTERACTION_SPECS[item.type])
+    ];
+    for (const item of candidates) {
+        if (assigned >= limit) break;
+        if (!isDynamicPropExperienceType(item.type) && !getPropFxProfile(item.type)) continue;
+        item.dynamicExperience = true;
+        assigned += 1;
+    }
+    return assigned;
+}
+
 export class ThreeGame {
     constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null, cameraMode = 'isometric', gameplayTiltShiftBlurEnabled = false } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
@@ -2205,9 +2407,17 @@ export class ThreeGame {
         // inside the current chunk. This enlarges the loading scan without
         // making the always-visible set jump from 3x3 to an expensive 5x5.
         this.chunkPrefetchMargin = 20;
-        this.chunkResidentPadding = 3;
+        // Keep one hidden ring around the visible 3x3 plus the directional
+        // prefetch row. The previous three-ring hysteresis retained up to an
+        // entire 9x9 neighborhood and real Deck walks climbed to 38 mounted
+        // chunks / ~1.85 GiB. A 5x5 resident window still prevents boundary
+        // churn while placing a hard, inspectable ceiling on live geometry.
+        this.chunkResidentPadding = 1;
         this.destroyedWallKeys = new Set();
         this.destroyedExteriorWallKeys = new Set();
+        this.fragileLedgeStates = new Map();
+        this._activeFragileLedgeKey = null;
+        this._fragileLedgeVisuals = new Map();
         this.wallMeshes = [];
         // Identity record for instanced wall tiles (standard/damaged variants —
         // see mountChunk). Keyed by wallKey, same key space as
@@ -2363,6 +2573,24 @@ export class ThreeGame {
         this.runShardCount = 0;
         this.activeSynergies = [];
         this.inRunLootDrops = [];
+        this.fieldWeaponRunState = createFieldWeaponRunState();
+        this.fieldWeaponDropVisuals = new Map();
+        this._fieldWeaponDropSequence = 0;
+        this.iceBarrierStates = new Map();
+        this.iceBarrierAnchors = new Set();
+        this.spawnedFireGateSources = new Set();
+        this.carryState = createCarryState();
+        this.carryState.installed = loadInstalledBaseModules();
+        this.carryObjectVisuals = new Map();
+        this.carriedObjectVisual = null;
+        this._carryVisualLoadTokens = new Map();
+        this._missionCargoAuditTimer = 0;
+        this._carryLandmarkIds = new Set();
+        this.baseAtmosphereState = createRoomAtmosphereState();
+        this.baseAtmosphereSeal = null;
+        this.baseAtmosphereIndicator = null;
+        this.installedBaseModuleVisuals = new Map();
+        this._installedBaseVisualLoadTokens = new Map();
         this.snailsKilledThisRun = 0;
         this.runStartTime = Date.now();
         this._threatAudioTimer = 0;
@@ -2441,6 +2669,10 @@ export class ThreeGame {
         // Footprints and trails (src/trackField.js): one pooled field for the run.
         this.trackField = createTrackField();
         this.scene.add(this.trackField.group);
+        // Synchronized physical shell casings & landing Foley pool (src/casingSystem.js)
+        this.casingSystem = new CasingSystem(this.scene);
+        // Hyper-localized point-source ambient audio (src/pointAudioEmitter.js)
+        this.pointAudioEmitters = new PointAudioEmitterManager();
         this.scene.background = new THREE.Color(0x0b0d0f);
         this.scene.fog = new THREE.Fog(0x0b0d0f, 18, 40);
         // Create all eight renderer-visible slots before the loading-screen
@@ -2573,7 +2805,11 @@ export class ThreeGame {
         // (docs/log1-perf-and-telemetry-followups-2026-08-18.md #1). This
         // cost was invisible to every earlier reproduction attempt because
         // repeated testing in the same tab reused already-compiled programs.
-        this.renderer.debug.checkShaderErrors = false;
+        // Opt-in diagnostics keep retail compilation asynchronous while still
+        // allowing automated/browser playtests to report the actual shader
+        // compiler failure instead of only repeating `program not valid`.
+        this.renderer.debug.checkShaderErrors = typeof location !== 'undefined'
+            && new URLSearchParams(location.search).has('shaderDebug');
 
         // PHASE A1 (docs/planning/visual-overhaul-reflective-hdr-2026-09-13.md).
         //
@@ -2622,9 +2858,9 @@ export class ThreeGame {
         //
         // The concept art is built around glowing vascular circuitry and
         // emissive towers; without bloom those read as painted-on decals rather
-        // than light. Threshold is deliberately high -- below ~0.9 every lit
-        // wall blooms and the set turns to soup, which is the usual way this
-        // effect makes a game look worse rather than better.
+        // than light. Threshold is deliberately high: the composer target is
+        // half-float HDR, so lit walls and floors pass 1.0 before tone mapping
+        // and a threshold near 1 blooms the whole set (see GAMEPLAY_BLOOM).
         //
         // Half-resolution: the Deck is the target and bloom is the cheapest
         // thing here to run at reduced scale without anyone noticing.
@@ -2633,9 +2869,9 @@ export class ThreeGame {
                 Math.max(1, Math.floor(window.innerWidth * 0.5)),
                 Math.max(1, Math.floor(window.innerHeight * 0.5))
             ),
-            0.72,   // strength -- restrained; this sits under AgX, not over it
-            0.48,   // radius
-            0.92    // threshold: genuine emissives only
+            GAMEPLAY_BLOOM.strength,
+            GAMEPLAY_BLOOM.radius,
+            GAMEPLAY_BLOOM.threshold
         );
         this.composer.addPass(this.bloomPass);
 
@@ -2722,6 +2958,26 @@ export class ThreeGame {
             metalness: 0.78,
             roughness: 0.38
         });
+        // Door state stays universal, but each architectural family needs a
+        // distinct PBR read. These share the same texture allocation and add
+        // only four reusable materials rather than cloning one per doorway.
+        this.doorFamilyMaterials = {
+            'blast-slab': this.doorMaterial,
+            'split-bulkhead': this.doorMaterial.clone(),
+            'arch-guillotine': this.doorMaterial.clone(),
+            'camp-barricade': this.doorMaterial.clone()
+        };
+        this.doorFamilyMaterials['split-bulkhead'].color.setHex(0xb8d2da);
+        this.doorFamilyMaterials['split-bulkhead'].metalness = 0.9;
+        this.doorFamilyMaterials['split-bulkhead'].roughness = 0.28;
+        this.doorFamilyMaterials['arch-guillotine'].color.setHex(0x73926c);
+        this.doorFamilyMaterials['arch-guillotine'].emissive.setHex(0x10240d);
+        this.doorFamilyMaterials['arch-guillotine'].emissiveIntensity = 0.3;
+        this.doorFamilyMaterials['arch-guillotine'].metalness = 0.22;
+        this.doorFamilyMaterials['arch-guillotine'].roughness = 0.62;
+        this.doorFamilyMaterials['camp-barricade'].color.setHex(0xa97851);
+        this.doorFamilyMaterials['camp-barricade'].metalness = 0.48;
+        this.doorFamilyMaterials['camp-barricade'].roughness = 0.7;
         const activeTerrainTextures = this.biomeTerrainTextures[BIOME_KEYS.ACTIVE];
         const cryoTerrainTextures = this.biomeTerrainTextures[BIOME_KEYS.CRYO];
         const bioTerrainTextures = this.biomeTerrainTextures[BIOME_KEYS.BIO];
@@ -2731,23 +2987,6 @@ export class ThreeGame {
         this.terrainFloorPlateTexture = baseMetalTex;
         const grungeRustTex = activeTerrainTextures.floorGrunge;
         const techScratchesTex = activeTerrainTextures.floorDetail;
-        this.crashSiteFloorTexture = this.loadKeyedSpriteTexture('/crash_site_broken_floor_v1.png', 14);
-        this.crashSiteFloorTexture.anisotropy = maxAnisotropy;
-        this.crashSiteFloorMaterial = new THREE.MeshStandardMaterial({
-            map: this.crashSiteFloorTexture,
-            emissiveMap: this.crashSiteFloorTexture,
-            transparent: true,
-            alphaTest: 0.02,
-            depthWrite: true,
-            color: 0x321913,
-            emissive: 0x7a1d08,
-            emissiveIntensity: 0.46,
-            roughness: 0.98,
-            metalness: 0.08,
-            polygonOffset: true,
-            polygonOffsetFactor: -4,
-            polygonOffsetUnits: -4
-        });
         const crashHeatCanvas = document.createElement('canvas');
         crashHeatCanvas.width = 256;
         crashHeatCanvas.height = 256;
@@ -2768,6 +3007,24 @@ export class ThreeGame {
             blending: THREE.AdditiveBlending,
             depthWrite: false,
             side: THREE.DoubleSide
+        });
+        this.fragileLedgeCrackTexture = this.loadTerrainTexture(
+            '/hex_decal_cracks.png',
+            textureLoader,
+            maxAnisotropy
+        );
+        this.fragileLedgeCrackMaterial = new THREE.MeshBasicMaterial({
+            map: this.fragileLedgeCrackTexture,
+            color: 0xe0c2a0,
+            transparent: true,
+            opacity: 0.82,
+            alphaTest: 0.08,
+            depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: -2,
+            polygonOffsetUnits: -2,
+            side: THREE.DoubleSide,
+            vertexColors: true
         });
         this.playerTextures = Object.fromEntries(
             Object.entries(PLAYER_SPRITE_LAYOUTS).map(([type, layout]) => [
@@ -2956,7 +3213,9 @@ export class ThreeGame {
                     float floorLum = dot(floorColor, vec3(0.299, 0.587, 0.114));
                     float dFloorX = dFdx(floorLum);
                     float dFloorY = dFdy(floorLum);
-                    hbFloorNormalPerturb = vec3(-dFloorX * 1.5, 0.0, -dFloorY * 1.5);
+                    // Screen-space relief: noisier the more floor a pixel
+                    // covers, so it fades with the same footprint as normal maps.
+                    hbFloorNormalPerturb = vec3(-dFloorX * 1.5, 0.0, -dFloorY * 1.5) * hbFloorDetailFade;
                 #endif
                 `
             );
@@ -2966,7 +3225,7 @@ export class ThreeGame {
                 `
                 #include <roughnessmap_fragment>
                 #ifdef USE_MAP
-                    roughnessFactor = clamp(hbFloorRoughness, 0.04, 1.0);
+                    roughnessFactor = clamp(hbFloorRoughness, ${FLOOR_MIN_ROUGHNESS.toFixed(2)}, 1.0);
                     ${FLOOR_SPLAT_FRAGMENT_ROUGHNESS}
                 #endif
                 `
@@ -2977,6 +3236,26 @@ export class ThreeGame {
                 #include <metalnessmap_fragment>
                 #ifdef USE_MAP
                     ${FLOOR_SPLAT_FRAGMENT_METALNESS}
+                #endif
+                `
+            );
+            // Specular anti-aliasing (normal-variance roughness widening, as in
+            // Filament): where the shading normal changes quickly between
+            // neighbouring pixels a highlight can only sparkle, so roughness
+            // widens to cover it. Runs once the final floor normal exists.
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <lights_physical_fragment>',
+                `
+                #include <lights_physical_fragment>
+                #ifdef USE_MAP
+                {
+                    vec3 hbNormalDx = dFdx(normal);
+                    vec3 hbNormalDy = dFdy(normal);
+                    float hbNormalVariance = 0.15 * (dot(hbNormalDx, hbNormalDx) + dot(hbNormalDy, hbNormalDy));
+                    float hbAlpha = material.roughness * material.roughness;
+                    float hbFilteredAlpha = clamp(hbAlpha * hbAlpha + min(2.0 * hbNormalVariance, 0.2), 0.0, 1.0);
+                    material.roughness = clamp(sqrt(sqrt(hbFilteredAlpha)), material.roughness, 1.0);
+                }
                 #endif
                 `
             );
@@ -3018,6 +3297,13 @@ export class ThreeGame {
                 `
             );
         };
+        const compileFloorShader = this.floorMaterial.onBeforeCompile;
+        const floorMaxTextures = this.renderer?.capabilities?.maxTextures ?? 16;
+        this.floorMaterial.onBeforeCompile = function onCompatibleFloorBeforeCompile(shader) {
+            compileFloorShader.call(this, shader);
+            fitFloorShaderSamplerBudget(shader, floorMaxTextures);
+        };
+        this.floorMaterial.customProgramCacheKey = () => `floor-samplers:${floorMaxTextures}`;
 
         const wallMetalTex = activeTerrainTextures.wallSide;
         const wallGrungeTex = activeTerrainTextures.wallGrunge;
@@ -3120,11 +3406,11 @@ export class ThreeGame {
                     blendWeights /= ( blendWeights.x + blendWeights.y + blendWeights.z );
 
                     vec2 uvY = vWorldPos.xz * 0.12; 
-                    vec2 uvX = vec2( vWorldPos.z * 0.45, vWorldPos.y * 0.35 );
-                    vec2 uvZ = vec2( vWorldPos.x * 0.45, vWorldPos.y * 0.35 );
+                    vec2 uvX = vec2( vWorldPos.z * (1.0 / 2.8), vWorldPos.y * (1.0 / 2.8) );
+                    vec2 uvZ = vec2( vWorldPos.x * (1.0 / 2.8), vWorldPos.y * (1.0 / 2.8) );
                     vec2 uvGrungeY = vWorldPos.xz * 0.053;
-                    vec2 uvGrungeX = vec2( vWorldPos.z * 0.25, vWorldPos.y * 0.2 );
-                    vec2 uvGrungeZ = vec2( vWorldPos.x * 0.25, vWorldPos.y * 0.2 );
+                    vec2 uvGrungeX = vec2( vWorldPos.z * 0.2, vWorldPos.y * 0.2 );
+                    vec2 uvGrungeZ = vec2( vWorldPos.x * 0.2, vWorldPos.y * 0.2 );
 
                     vec4 bunkerY = texture2D( tWallTop, uvY );
                     vec4 bunkerX = texture2D( tWallSide, uvX );
@@ -4765,9 +5051,12 @@ export class ThreeGame {
         this.chunkGroups.visible = this.performanceProfile === 'gameplay';
         this.scene.add(this.chunkGroups);
         this.setupCrashedShips();
+        this.bootstrapFirstNightBaseRecovery();
         this.setupBunkerBlastDoor();
         this.setupBaseDefenseTurret();
         this.setupBunkerCot();
+        this.setupBaseAtmosphereIndicator();
+        this.setupBedInstallSocketVisual();
     }
 
     /**
@@ -4789,7 +5078,7 @@ export class ThreeGame {
         // never shows a bed bigger than the operator (playthrough 2026-10-07).
         sprite.scale.set(BUNKER_COT_SPRITE_WIDTH, BUNKER_COT_SPRITE_HEIGHT, 1);
         sprite.position.set(point.x, BUNKER_COT_SPRITE_HEIGHT / 2, point.z);
-        sprite.visible = this.performanceProfile === 'gameplay';
+        sprite.visible = this.performanceProfile === 'gameplay' && Boolean(installedCot(this.carryState));
         sprite.userData = { isBunkerCot: true };
         this.bunkerCotSprite = sprite;
         this.scene.add(sprite);
@@ -4800,12 +5089,12 @@ export class ThreeGame {
         void this.attachBunkerCot3d?.();
     }
 
-    // The cot as the same 3D camp cot the camps use; the sprite stays the
+    // The installed cot uses the dedicated ship-berth model; the sprite stays the
     // position/visibility owner and the fallback if the model cannot load.
     async attachBunkerCot3d() {
-        if (!hasWorld3dModel('prop_camp_cot')) return;
+        if (!hasWorld3dModel('base_cot_installed')) return;
         try {
-            const root = await (this.createWorld3dModel?.('prop_camp_cot') ?? createWorld3dModel('prop_camp_cot'));
+            const root = await (this.createWorld3dModel?.('base_cot_installed') ?? createWorld3dModel('base_cot_installed'));
             if (!root || !this.bunkerCotSprite || !this.scene) return;
             await this.prewarmLateModel?.(root);
             root.rotation.y = WORLD_3D_FACING_YAW;
@@ -4826,15 +5115,84 @@ export class ThreeGame {
     syncBunkerCot() {
         const sprite = this.bunkerCotSprite;
         if (!sprite) return;
+        const installed = installedCot(this.carryState);
+        const shouldShow = this.performanceProfile === 'gameplay' && Boolean(installed);
         if (this.performanceProfile === 'gameplay') {
             const point = this.getBunkerRestPoint();
             if (sprite.position.x !== point.x || sprite.position.z !== point.z) sprite.position.set(point.x, BUNKER_COT_SPRITE_HEIGHT / 2, point.z);
         }
+        sprite.visible = shouldShow;
         const root = this.bunkerCot3d;
         if (root) {
             root.position.set(sprite.position.x, 0, sprite.position.z);
-            root.visible = sprite.visible;
+            root.rotation.y = (installed?.transform?.yaw ?? installed?.yaw ?? 0) + WORLD_3D_FACING_YAW;
+            root.visible = shouldShow;
         }
+        this.syncBedInstallSocketVisual?.();
+    }
+
+    setupBedInstallSocketVisual() {
+        if (!this.scene || this.bedInstallSocketVisual) return;
+        const root = createBedInstallSocketVisual();
+        const socket = this.getFirstNightBasePlan?.()?.installSocket?.transform;
+        if (socket) {
+            root.position.set(socket.x, (this.getTerrainHeightAt?.(socket.x, socket.z) ?? 0), socket.z);
+            root.rotation.y = socket.yaw ?? 0;
+        }
+        root.visible = this.performanceProfile === 'gameplay' && !installedCot(this.carryState);
+        this.scene.add(root);
+        this.bedInstallSocketVisual = root;
+    }
+
+    syncBedInstallSocketVisual() {
+        if (!this.bedInstallSocketVisual) {
+            this.setupBedInstallSocketVisual?.();
+            return;
+        }
+        const socket = this.getFirstNightBasePlan?.()?.installSocket?.transform;
+        if (socket) {
+            this.bedInstallSocketVisual.position.set(socket.x, (this.getTerrainHeightAt?.(socket.x, socket.z) ?? 0), socket.z);
+            this.bedInstallSocketVisual.rotation.y = socket.yaw ?? 0;
+        }
+        const installed = Boolean(installedCot(this.carryState));
+        this.bedInstallSocketVisual.visible = this.performanceProfile === 'gameplay' && !installed;
+    }
+
+    setupBaseAtmosphereIndicator() {
+        if (!this.scene || this.baseAtmosphereIndicator) return;
+        const root = createBaseAtmosphereIndicator();
+        const socket = this.getFirstNightBasePlan().installSocket.transform;
+        root.position.set(socket.x + 0.72, 0, socket.z - 0.42);
+        root.rotation.y = socket.yaw ?? 0;
+        root.visible = this.performanceProfile === 'gameplay';
+        this.scene.add(root);
+        this.baseAtmosphereIndicator = root;
+        this.updateBaseAtmosphere?.(0, performance.now());
+    }
+
+    getBaseAtmosphereStatus() {
+        const seal = this.baseAtmosphereSeal ?? evaluateRoomSealGraph({
+            modules: this.carryState?.installed ?? [],
+            defaultSafeBubble: null
+        });
+        return describeRoomAtmosphere(seal, this.baseAtmosphereState);
+    }
+
+    updateBaseAtmosphere(delta, now = performance.now()) {
+        const seal = evaluateRoomSealGraph({
+            modules: this.carryState?.installed ?? [],
+            defaultSafeBubble: null
+        });
+        this.baseAtmosphereSeal = seal;
+        this.baseAtmosphereState = advanceRoomAtmosphere(this.baseAtmosphereState, seal, delta);
+        const status = describeRoomAtmosphere(seal, this.baseAtmosphereState);
+        updateBaseAtmosphereIndicator(
+            this.baseAtmosphereIndicator,
+            status,
+            now * 0.001,
+            this.performanceProfile === 'gameplay'
+        );
+        return status;
     }
 
     setupCrashedShips() {
@@ -5178,13 +5536,17 @@ export class ThreeGame {
 
     setupBunkerBlastDoor() {
         this.bunkerBlastDoorState = {
-            open: false,
+            // The crash room has exactly one authored exit. It must never
+            // begin as a sealed combat gate: players can walk out immediately,
+            // then deliberately close or destroy the slab via interaction.
+            open: true,
             destroyed: false,
             hp: 25,
             maxHp: 25,
-            y: 1.4,
-            targetY: 1.4,
+            y: -2.4,
+            targetY: -2.4,
             speed: 5.5,
+            autoClose: false,
             doorWidth: 3,
             doorZ: 3,
             startTileX: 8,
@@ -5193,7 +5555,7 @@ export class ThreeGame {
 
         // Three-tile blast door across the crash room's only north hallway.
         const doorGroup = new THREE.Group();
-        doorGroup.position.set(9, 1.4, 3);
+        doorGroup.position.set(9, this.bunkerBlastDoorState.y, 3);
 
         const doorGeo = new THREE.BoxGeometry(3, 2.8, 0.72);
         const doorMat = this.doorMaterial;
@@ -5210,6 +5572,7 @@ export class ThreeGame {
             maxWallHp: 25
         };
         doorGroup.add(doorSlab);
+        this.bunkerBlastDoorCollisionMesh = doorSlab;
 
         // Heavy steel reinforcement ribs across the door face
         for (let i = -1; i <= 1; i += 1) {
@@ -5292,6 +5655,69 @@ export class ThreeGame {
             interior: { x: 7.1, z: 4.2 },
             exterior: { x: 7.1, z: 1.8 }
         };
+        this.upgradeBunkerBlastDoorToModel?.();
+    }
+
+    async upgradeBunkerBlastDoorToModel() {
+        if (!this.bunkerBlastDoorGroup || !this.scene?.add) return false;
+        try {
+            const framePromise = (this.createWorld3dModel?.('door_arch_guillotine_frame') ?? createWorld3dModel('door_arch_guillotine_frame'))
+                .catch(() => null);
+            const slabPromise = (this.createWorld3dModel?.('door_arch_guillotine_slab') ?? createWorld3dModel('door_arch_guillotine_slab'))
+                .catch(() => null);
+            const [frameModel, slabModel] = await Promise.all([framePromise, slabPromise]);
+
+            const frameRoot = frameModel?.root ?? frameModel;
+            const slabRoot = slabModel?.root ?? slabModel;
+            if (!frameRoot || !slabRoot || this._destroyed || !this.bunkerBlastDoorGroup || !this.scene?.add) {
+                frameRoot?.userData?.dispose?.();
+                slabRoot?.userData?.dispose?.();
+                return false;
+            }
+
+            // Frame stays static at the portal doorway opening (9, 0, 3)
+            const frameGroup = new THREE.Group();
+            frameGroup.position.set(9, 0, 3);
+            frameGroup.add(frameRoot);
+            this.scene.add(frameGroup);
+            this.bunkerBlastDoorFrameGroup = frameGroup;
+            this.registerWorld3dPropFx?.(frameRoot);
+
+            // The moving group is positioned at the procedural slab's center;
+            // normalized GLBs are grounded, so offset by half the 2.8 m slab.
+            slabRoot.position.y = -1.4;
+            slabRoot.traverse?.((object) => {
+                if (!object.isMesh) return;
+                object.userData = {
+                    ...object.userData,
+                    isWall: true,
+                    isBunkerBlastDoor: true,
+                    worldX: 9,
+                    worldZ: 3,
+                    wallKey: '9,3'
+                };
+            });
+            this.bunkerBlastDoorGroup.add(slabRoot);
+            this.bunkerBlastDoorSlabModel = slabRoot;
+            this.registerWorld3dPropFx?.(slabRoot);
+
+            // Preserve an invisible-but-raycastable proxy. `visible=false`
+            // would also make Three.Raycaster skip the mesh.
+            for (const child of this.bunkerBlastDoorGroup.children) {
+                if (child === slabRoot || !child.isMesh) continue;
+                if (child.userData?.isBunkerBlastDoor) {
+                    child.material.colorWrite = false;
+                    child.material.depthWrite = false;
+                } else if (child.material !== this._bunkerDoorBarMat) child.visible = false;
+            }
+            // The authored frame now owns the visible red practical. Detach
+            // the provisional light so the fixed pool does not rank both.
+            this._bunkerDoorStatusLight?.removeFromParent?.();
+            return true;
+        } catch (err) {
+            console.warn('[bunker-blast-door] 3d model upgrade failed, keeping procedural meshes', err);
+            return false;
+        }
     }
 
     setupBaseDefenseTurret() {
@@ -6604,9 +7030,9 @@ export class ThreeGame {
                 fromRemote: true
             }
         });
-        // Remote player's shot: this one genuinely needs placing -- it is the
-        // only weapon fire that does not originate at the listener.
-        window.AudioManager?.play?.('weapon_fire_sidearm', (this.audioAt?.(originX, originZ, { volume: 0.28, varyPitch: true }) ?? { volume: 0.28, varyPitch: true }));
+        const remoteFireSound = this.resolveWeaponFireSound?.(data?.weaponType) ?? 'weapon_fire_sidearm';
+        window.AudioManager?.play?.(remoteFireSound, (this.audioAt?.(originX, originZ, { volume: 0.28, varyPitch: true }) ?? { volume: 0.28, varyPitch: true }));
+        this.casingSystem?.spawnCasing(originX, 0.9, originZ, data?.dirX || 0, data?.dirZ || 1, data?.weaponType || 'kinetic');
     }
 
     handleRemotePlayerDamaged(data) {
@@ -7029,6 +7455,8 @@ export class ThreeGame {
             // Irreversible co-op transitions carry their own keys.
         } else if (event === 'wall-destroyed') {
             dedupeKey = `${event}:${detail.wallKey ?? `${detail.worldX},${detail.worldZ}`}`;
+        } else if (event === 'fragile-ledge-state') {
+            dedupeKey = `${event}:${detail.key}:${detail.state}`;
         } else if (event === 'bunker-door-toggled' || event === 'procedural-door-toggled' || event === 'bunker-line' || event === 'enemy-projectile-spawned' || event === 'squad-progress' || event === 'mystery-boxes-sync') {
             // Door toggles are stateful transitions guarded by their respective states below;
             // bunker-line and enemy-projectile-spawned stream continuously without static dedupe blocking.
@@ -7098,6 +7526,20 @@ export class ThreeGame {
                 } else {
                     this.markWallTileDestroyed?.(worldX, worldZ);
                 }
+            }
+        } else if (event === 'fragile-ledge-state') {
+            if (typeof detail.key === 'string' && Object.values(FRAGILE_LEDGE_STATE).includes(detail.state)) {
+                const previous = readFragileLedgeState(this.fragileLedgeStates, detail.key).state;
+                this.fragileLedgeStates.set(detail.key, {
+                    state: detail.state,
+                    warningDeadline: null
+                });
+                this.applyFragileLedgeTransition({
+                    key: detail.key,
+                    previous,
+                    state: detail.state,
+                    warningDeadline: null
+                }, { fromRemote: true });
             }
         } else if (event === 'enemy-projectile-spawned') {
             this.spawnProjectile({
@@ -7747,12 +8189,27 @@ export class ThreeGame {
         const behavior = getPropBehavior(source?.userData?.type);
         if (behavior.collision !== PROP_COLLISION.PILLARS || !root) return null;
         root.updateMatrixWorld?.(true);
-        const box = new THREE.Box3().setFromObject(root);
-        if (box.isEmpty()) return null;
-        const size = box.getSize(new THREE.Vector3());
-        const center = box.getCenter(new THREE.Vector3());
+        const inverseRoot = new THREE.Matrix4().copy(root.matrixWorld).invert();
+        const localBox = new THREE.Box3().makeEmpty();
+        const objectToRoot = new THREE.Matrix4();
+        root.traverse((object) => {
+            if (!object.isMesh || !object.geometry) return;
+            object.geometry.computeBoundingBox?.();
+            if (!object.geometry.boundingBox) return;
+            objectToRoot.multiplyMatrices(inverseRoot, object.matrixWorld);
+            localBox.union(object.geometry.boundingBox.clone().applyMatrix4(objectToRoot));
+        });
+        if (localBox.isEmpty()) return null;
+        const size = localBox.getSize(new THREE.Vector3());
+        const center = localBox.getCenter(new THREE.Vector3());
+        const localPosts = archPillarColliders({ x: center.x, z: center.z, width: size.x, depth: size.z });
+        const worldScale = root.getWorldScale(new THREE.Vector3());
+        const radiusScale = Math.max(Math.abs(worldScale.x), Math.abs(worldScale.z));
         source.userData.propBehavior = behavior;
-        source.userData.pillarColliders = archPillarColliders({ x: center.x, z: center.z, width: size.x, depth: size.z });
+        source.userData.pillarColliders = localPosts.map((post) => {
+            const world = root.localToWorld(new THREE.Vector3(post.x, 0, post.z));
+            return { x: world.x, z: world.z, radius: post.radius * radiusScale };
+        });
         return source.userData.pillarColliders;
     }
 
@@ -8313,6 +8770,10 @@ export class ThreeGame {
             }
             if (event.code === 'KeyG') {
                 event.preventDefault();
+                if (this.carryState?.carried) {
+                    this.dropCurrentCarryObject();
+                    return;
+                }
                 if (typeof window !== 'undefined') {
                     if (window.quickCommandRadial?.isOpen?.()) {
                         window.quickCommandRadial.close();
@@ -8803,6 +9264,98 @@ export class ThreeGame {
                 });
             }
         }
+        const carriedObject = this.carryState?.carried;
+        if (carriedObject) {
+            const delivery = this.getMissionCargoDelivery?.(carriedObject);
+            const deliveryDistance = delivery
+                ? Math.hypot(px - delivery.x, pz - delivery.z)
+                : Infinity;
+            if (delivery && deliveryDistance <= delivery.radius) {
+                candidates.push({
+                    id: `deliver-cargo:${carriedObject.instanceId}`,
+                    label: delivery.label,
+                    distance: deliveryDistance,
+                    interact: () => this.deliverCurrentMissionCargo()
+                });
+            }
+            const socket = availableFirstNightSocket(
+                this.carryState, this.getFirstNightBasePlan?.(), carriedObject
+            ) ?? availableShipRebuildSocket(
+                this.carryState, this.getShipRebuildPlan?.(), carriedObject
+            );
+            const socketDistance = socket
+                ? Math.hypot(px - socket.transform.x, pz - socket.transform.z)
+                : Infinity;
+            if (!delivery && socketDistance <= 2.5) {
+                const label = getBaseModuleDefinition(carriedObject.definitionId)?.label ?? 'RECOVERED MODULE';
+                candidates.push({
+                    id: `install-cargo:${carriedObject.instanceId}`,
+                    label: `INSTALL ${label} AT SHIP BERTH`,
+                    distance: socketDistance,
+                    interact: () => this.installCurrentCarryObject()
+                });
+            }
+            candidates.push({
+                id: `drop-cargo:${carriedObject.instanceId}`,
+                label: 'SET CARGO DOWN',
+                distance: 2.15,
+                secondary: true,
+                interact: () => this.dropCurrentCarryObject()
+            });
+        } else {
+            const carryObject = this.getNearestCarryObject?.();
+            if (carryObject) {
+                const label = getBaseModuleDefinition(carryObject.object.definitionId)?.label ?? 'RECOVERED CARGO';
+                candidates.push({
+                    id: `carry-object:${carryObject.object.instanceId}`,
+                    label: `LIFT ${label} · BOTH HANDS`,
+                    distance: carryObject.distance,
+                    interact: () => this.beginCarryObject(carryObject.object.instanceId)
+                });
+            }
+        }
+        const damagedModule = this.getNearestDamagedBaseModule?.();
+        if (damagedModule) {
+            const label = getBaseModuleDefinition(damagedModule.module.definitionId)?.label ?? 'BASE MODULE';
+            candidates.push({
+                id: `repair-base:${damagedModule.module.instanceId}`,
+                label: `REPAIR ${label} · ${damagedModule.cost} SHELLS`,
+                distance: damagedModule.distance,
+                interact: () => this.repairInstalledBaseModule(damagedModule.module.instanceId)
+            });
+        }
+        const baseDoor = this.getNearestInstalledBaseDoor?.();
+        if (baseDoor) {
+            candidates.push({
+                id: `cycle-base-door:${baseDoor.module.instanceId}`,
+                label: baseDoor.module.isOpen ? 'SEAL BERTH PRESSURE DOOR' : 'OPEN BERTH PRESSURE DOOR',
+                distance: baseDoor.distance,
+                interact: () => this.toggleInstalledBaseDoor(baseDoor.module.instanceId)
+            });
+        }
+        const shipModule = this.getNearestInstalledShipModule?.();
+        if (shipModule) {
+            const action = getShipModuleAction(shipModule.module.definitionId);
+            const remaining = this.getShipModuleActionCooldown?.(shipModule.module.instanceId) ?? 0;
+            candidates.push({
+                id: `use-ship-module:${shipModule.module.instanceId}`,
+                label: remaining > 0
+                    ? `${action?.label ?? 'SHIP SYSTEM'} · RECHARGING ${Math.ceil(remaining)}s`
+                    : action?.label ?? 'USE SHIP SYSTEM',
+                distance: shipModule.distance,
+                interact: () => this.interactWithInstalledShipModule(shipModule.module.instanceId)
+            });
+        }
+        const fieldWeapon = this.getNearestFieldWeaponDrop?.();
+        if (fieldWeapon) {
+            const profile = getFieldWeaponProfile(fieldWeapon.drop.profileId, true);
+            candidates.push({
+                id: `field-weapon:${fieldWeapon.drop.instanceId}`,
+                label: `SWAP TO ${profile?.label ?? fieldWeapon.drop.profileId} · ${fieldWeapon.drop.ammoInWeapon}/${fieldWeapon.drop.reserveAmmo}`,
+                distance: fieldWeapon.distance,
+                interact: () => this.interactWithFieldWeaponDrop(fieldWeapon.drop.instanceId)
+            });
+        }
         if (this.playerType === 'ENGINEER' && (this.currentDepthTier ?? 0) === 0) {
             const dirLen = Math.hypot(this.aimDirX, this.aimDirZ) || 1;
             const hx = Math.round(px + (this.aimDirX / dirLen) * 1.5);
@@ -9102,6 +9655,11 @@ export class ThreeGame {
 
     triggerGameplayDash() {
         if (!this.isGameplayInputActive()) return false;
+        if (!canDashWhileCarrying(this.carryState)) {
+            this.showBunkerLine?.('HANDS FULL — SET CARGO DOWN BEFORE DODGING.');
+            window.AudioManager?.play?.('ui_error', { volume: 0.32 });
+            return false;
+        }
         if (this.dashCooldownTimer > 0 || this.isDashing) return false;
 
         const keyAxisX = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
@@ -9187,18 +9745,1375 @@ export class ThreeGame {
     }
 
     resetRunDrops() {
+        const preserveCoopMissionCargo = Boolean(this.shouldCarryCoopRun?.());
+        if (preserveCoopMissionCargo && this.carryState?.carried) {
+            this.emergencyDropCarriedObject?.('coop-retry');
+        }
+        const retainedCarryState = preserveCoopMissionCargo ? this.carryState : null;
         this._carapaceArmorCredit = 0;
         this._seenEliteContacts = new Set();
         this._eliteContactCooldown = 0;
         this._eliteContactScan = 0;
         for (const pickup of this.inRunLootDrops ?? []) disposeExpeditionEffect(pickup);
         this.inRunLootDrops = [];
+        this.clearFieldWeaponDropVisuals?.();
+        this.fieldWeaponRunState = resetFieldWeaponRunState(`run:${Date.now()}`);
+        this._fieldWeaponDropSequence = 0;
+        this.spawnedFireGateSources?.clear?.();
+        this.iceBarrierStates?.clear?.();
+        for (const anchor of this.iceBarrierAnchors ?? []) {
+            if (!anchor?.parent) continue;
+            const barrier = createIceBarrier({
+                id: anchor.userData?.iceBarrierId,
+                worldPosition: anchor.position
+            });
+            anchor.userData.iceBarrier = barrier;
+            anchor.userData.isSolidProp = true;
+            if (barrier) this.iceBarrierStates.set(barrier.id, barrier);
+            this.syncIceBarrierVisual?.(anchor);
+        }
+        this.applyWeaponUpgrades?.();
+        this.clearCarryObjectVisuals?.();
+        this.carryState = retainedCarryState ?? resetCarryRunState(`run:${Date.now()}`, this.carryState?.installed ?? []);
+        this.bootstrapFirstNightBaseRecovery?.();
         this.runOverclocks = [];
         this.runRelics = [];
         this.runShardCount = 0;
         this._deepAnchorSpawnedCrossings = new Set();
         this.activeSynergies = [];
         window.dispatchEvent(new CustomEvent('in-run-drops-reset', { detail: { timestamp: Date.now() } }));
+    }
+
+    syncEquippedFieldWeapon({ announce = true } = {}) {
+        const equipped = this.fieldWeaponRunState?.equipped ?? null;
+        if (!equipped) {
+            this.applyWeaponUpgrades();
+            this.emitWeaponClipState?.();
+            return null;
+        }
+        const definition = getFieldWeaponDropDefinition(equipped.profileId);
+        this.fieldWeapon = getFieldWeaponProfile(equipped.profileId, true);
+        this.weaponClipSize = definition?.clipCapacity ?? Math.max(1, equipped.ammoInWeapon);
+        this.weaponClipAmmo = equipped.ammoInWeapon;
+        this.weaponReloading = false;
+        this.weaponReloadTimer = 0;
+        this.weaponAmmoRefillTimer = 0;
+        this.emitWeaponClipState?.();
+        if (announce) {
+            window.dispatchEvent(new CustomEvent('field-weapon-equipped', {
+                detail: { ...equipped, clipCapacity: this.weaponClipSize }
+            }));
+        }
+        return equipped;
+    }
+
+    spawnFieldWeaponDrop(profileId, x, z, {
+        ammoInWeapon,
+        reserveAmmo,
+        sourceEncounterId = null,
+        instanceId = null
+    } = {}) {
+        if (!this.scene || !Number.isFinite(x) || !Number.isFinite(z)) return null;
+        const runId = this.fieldWeaponRunState?.runId;
+        this._fieldWeaponDropSequence = (this._fieldWeaponDropSequence ?? 0) + 1;
+        const id = instanceId ?? `field-gun:${runId ?? 'run'}:${this._fieldWeaponDropSequence}`;
+        const drop = createFieldWeaponDrop({
+            instanceId: id,
+            profileId,
+            ammoInWeapon,
+            reserveAmmo,
+            worldPosition: { x, z },
+            sourceEncounterId,
+            runId
+        });
+        const result = addFieldWeaponDrop(this.fieldWeaponRunState, drop);
+        if (!result.ok) return null;
+        this.fieldWeaponRunState = result.state;
+        this.ensureFieldWeaponDropVisual(drop);
+        return drop;
+    }
+
+    async ensureFieldWeaponDropVisual(drop) {
+        if (!drop || this.fieldWeaponDropVisuals?.has(drop.instanceId)) return null;
+        const visual = await createFieldWeaponDropVisual(drop.profileId).catch((error) => {
+            console.warn(`[field-weapon] ${drop.profileId} model unavailable`, error);
+            return null;
+        });
+        if (!visual) return null;
+        const stillInWorld = this.fieldWeaponRunState?.worldDrops?.some(({ instanceId }) => instanceId === drop.instanceId);
+        if (!stillInWorld || !this.scene) {
+            disposeFieldWeaponDropVisual(visual);
+            return null;
+        }
+        visual.position.set(
+            drop.worldPosition.x,
+            (this.getTerrainHeightAt?.(drop.worldPosition.x, drop.worldPosition.z) ?? 0) + 0.05,
+            drop.worldPosition.z
+        );
+        visual.rotation.y = ((this._fieldWeaponDropSequence * 1.618) % 2) * Math.PI;
+        visual.userData.instanceId = drop.instanceId;
+        this.scene.add(visual);
+        this.fieldWeaponDropVisuals.set(drop.instanceId, visual);
+        return visual;
+    }
+
+    reconcileFieldWeaponDropVisuals() {
+        const worldDrops = this.fieldWeaponRunState?.worldDrops ?? [];
+        const wanted = new Set(worldDrops.map(({ instanceId }) => instanceId));
+        for (const [instanceId, visual] of this.fieldWeaponDropVisuals ?? []) {
+            if (wanted.has(instanceId)) continue;
+            disposeFieldWeaponDropVisual(visual);
+            this.fieldWeaponDropVisuals.delete(instanceId);
+        }
+        for (const drop of worldDrops) this.ensureFieldWeaponDropVisual(drop);
+    }
+
+    clearFieldWeaponDropVisuals() {
+        for (const visual of this.fieldWeaponDropVisuals?.values?.() ?? []) {
+            disposeFieldWeaponDropVisual(visual);
+        }
+        this.fieldWeaponDropVisuals?.clear?.();
+    }
+
+    updateFieldWeaponDrops(_delta, now = performance.now()) {
+        for (const visual of this.fieldWeaponDropVisuals?.values?.() ?? []) {
+            updateFieldWeaponDropVisual(visual, now * 0.001);
+        }
+    }
+
+    ensureFireGateWeaponSource(placement) {
+        const sourceId = placement?.fireGateSourceId;
+        if (!sourceId || this.spawnedFireGateSources?.has(sourceId)) return null;
+        const alreadyExists = this.fieldWeaponRunState?.worldDrops?.some((drop) => drop.sourceEncounterId === sourceId)
+            || this.fieldWeaponRunState?.equipped?.sourceEncounterId === sourceId;
+        if (alreadyExists) {
+            this.spawnedFireGateSources.add(sourceId);
+            return null;
+        }
+        const drop = this.spawnFieldWeaponDrop('flamethrower', placement.x, placement.z, {
+            reserveAmmo: 120,
+            sourceEncounterId: sourceId,
+            instanceId: `${this.fieldWeaponRunState?.runId ?? 'run'}:${sourceId}:m70`
+        });
+        if (drop) this.spawnedFireGateSources.add(sourceId);
+        return drop;
+    }
+
+    registerIceBarrierAnchor(anchor, placement) {
+        if (!anchor || !placement?.iceBarrierId) return null;
+        const barrier = this.iceBarrierStates.get(placement.iceBarrierId) ?? createIceBarrier({
+            id: placement.iceBarrierId,
+            worldPosition: { x: placement.x, z: placement.z },
+            returnRoute: { hasReturnRoute: true, type: 'same-threshold' }
+        });
+        if (!barrier) return null;
+        this.iceBarrierStates.set(barrier.id, barrier);
+        this.iceBarrierAnchors.add(anchor);
+        anchor.userData.isIceBarrier = true;
+        anchor.userData.iceBarrierId = barrier.id;
+        anchor.userData.iceBarrier = barrier;
+        anchor.userData.isSolidProp = barrier.collisionActive;
+        anchor.userData.collisionRadius = 1.05;
+        anchor.userData.iceBarrierVisualType = resolveIceBarrierModel(barrier);
+        return barrier;
+    }
+
+    async syncIceBarrierVisual(anchor) {
+        if (!anchor?.userData?.isIceBarrier || !anchor.parent) return null;
+        const desired = resolveIceBarrierModel(anchor.userData.iceBarrier);
+        anchor.userData.iceBarrierVisualType = desired;
+        const current = anchor.userData.world3dRoot;
+        if (current?.userData?.modelType === desired) return current;
+        if (current) {
+            this.world3dMixers?.delete?.(current.userData?.mixer);
+            current.userData?.dispose?.();
+            current.removeFromParent?.();
+            anchor.userData.world3dRoot = null;
+            anchor.userData.replacedBy3d = false;
+        }
+        if (!desired) {
+            anchor.userData.world3dModelType = null;
+            anchor.visible = false;
+            return null;
+        }
+        anchor.visible = true;
+        anchor.userData.world3dModelType = desired;
+        const loaded = await this.setupWorld3dReplacement(anchor, desired);
+        if (anchor.userData.iceBarrierVisualType !== desired && loaded) {
+            loaded.userData?.dispose?.();
+            loaded.removeFromParent?.();
+            if (anchor.userData.world3dRoot === loaded) anchor.userData.world3dRoot = null;
+            return this.syncIceBarrierVisual(anchor);
+        }
+        return loaded;
+    }
+
+    updateIceBarriers(delta) {
+        for (const anchor of [...(this.iceBarrierAnchors ?? [])]) {
+            if (!anchor?.parent) {
+                this.iceBarrierAnchors.delete(anchor);
+                continue;
+            }
+            const barrier = anchor.userData?.iceBarrier;
+            if (!barrier) continue;
+            const before = resolveIceBarrierModel(barrier);
+            tickIceBarrier(barrier, delta);
+            anchor.userData.isSolidProp = barrier.collisionActive;
+            if (resolveIceBarrierModel(barrier) !== before) void this.syncIceBarrierVisual(anchor);
+        }
+    }
+
+    getFirstNightBasePlan() {
+        const ship = this.getActiveShip?.();
+        return planFirstNightBase({
+            shipX: Number(ship?.tileX) || 0,
+            shipZ: Number(ship?.tileZ) || 0
+        });
+    }
+
+    getShipRebuildSourcePositions() {
+        const plan = this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
+        const positions = {};
+        for (const [index, stage] of SHIP_REBUILD_STAGES.entries()) {
+            const reservationId = `goal:${stage.goalKey}:objective`;
+            const reservation = plan?.reservations?.find((entry) => entry.id === reservationId);
+            if (!reservation) continue;
+            const resolved = resolveObjectiveTarget({
+                reservationId,
+                interactionAnchorId: reservation.objectiveAnchorId,
+                exactRevealed: true
+            }, {
+                worldPlan: plan,
+                chunkStructures: this.wfcMetadataCache,
+                worldOffset: { x: 0, z: 0 }
+            });
+            const target = resolved?.exact && Number.isFinite(resolved.x)
+                ? { x: resolved.x, z: resolved.z }
+                : Number.isInteger(reservation.chunkX)
+                    ? {
+                        x: (reservation.chunkX + 0.5) * this.chunkSize,
+                        z: (reservation.chunkY + 0.5) * this.chunkSize
+                    }
+                    : null;
+            if (!target) continue;
+            const offsets = index % 2 === 0
+                ? [[1.35, 0], [0, 1.35], [-1.35, 0], [0, -1.35], [0, 0]]
+                : [[-1.35, 0], [0, -1.35], [1.35, 0], [0, 1.35], [0, 0]];
+            const doors = this.getActiveDoors?.() ?? [];
+            const staging = offsets.map(([dx, dz]) => ({ x: target.x + dx, z: target.z + dz }))
+                .find(({ x, z }) => {
+                    const tile = this.getTileType?.(Math.round(x), Math.round(z));
+                    if (tile === '#' || tile === 'W' || tile === 'X') return false;
+                    return !doors.some((door) => {
+                        const bounds = door?.bounds;
+                        return bounds && x >= bounds.minX - 1 && x <= bounds.maxX + 1
+                            && z >= bounds.minZ - 1 && z <= bounds.maxZ + 1;
+                    });
+                }) ?? target;
+            positions[stage.goalKey] = staging;
+        }
+        return positions;
+    }
+
+    getShipRebuildPlan() {
+        const ship = this.getActiveShip?.();
+        return planShipRebuild({
+            shipX: Number(ship?.tileX) || 0,
+            shipZ: Number(ship?.tileZ) || 0,
+            sourcePositions: this.getShipRebuildSourcePositions?.() ?? {}
+        });
+    }
+
+    getAvailableCarryInstallSocket(object = this.carryState?.carried) {
+        return availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan?.(), object)
+            ?? availableShipRebuildSocket(this.carryState, this.getShipRebuildPlan?.(), object);
+    }
+
+    getShipGoalAssemblyStatus(goalKey) {
+        const stage = getShipRebuildStageForGoal(goalKey);
+        const bankState = this.bank?.getState?.() ?? {};
+        const grandfathered = goalKey === 'o2Bubble'
+            ? (bankState.o2GeneratorLevel ?? 0) >= 1
+            : Boolean(bankState.unlocks?.[goalKey]);
+        const installed = isShipModuleInstalledForGoal(this.carryState, goalKey);
+        const definition = getBaseModuleDefinition(stage?.definitionId);
+        return {
+            stage,
+            installed,
+            grandfathered,
+            ready: installed || grandfathered,
+            label: definition?.label ?? 'RECOVERED SHIP MODULE'
+        };
+    }
+
+    updateShipRebuildRecovery(delta = 0) {
+        this._shipRebuildAuditTimer = (this._shipRebuildAuditTimer ?? 0) + Math.max(0, Number(delta) || 0);
+        if (this._shipRebuildAuditTimer < 1 || !this.carryState || !this.getActiveShip?.()) return null;
+        this._shipRebuildAuditTimer %= 1;
+        const sourcePositions = this.getShipRebuildSourcePositions?.() ?? {};
+        if (!Object.keys(sourcePositions).length) return null;
+        const ship = this.getActiveShip();
+        const result = ensureShipRebuildState(this.carryState, {
+            shipX: ship.tileX,
+            shipZ: ship.tileZ,
+            sourcePositions,
+            builtGoalKeys: this.getBuiltGoalKeys?.() ?? []
+        });
+        this.carryState = result.state;
+        if (result.addedCargo.length) {
+            this.reconcileCarryObjectVisuals?.();
+            this.syncMissionCargoMapLandmarks?.();
+            window.dispatchEvent(new CustomEvent('ship-rebuild-cargo-staged', {
+                detail: { cargo: result.addedCargo }
+            }));
+        }
+        return result;
+    }
+
+    bootstrapFirstNightBaseRecovery() {
+        const ship = this.getActiveShip?.();
+        if (!ship || !this.carryState) return null;
+        const result = ensureFirstNightBaseState(this.carryState, {
+            shipX: ship.tileX,
+            shipZ: ship.tileZ
+        });
+        this.carryState = result.state;
+        this.stageFirstNightCotCampHandoff?.();
+        saveInstalledBaseModules(this.carryState.installed);
+        this.reconcileCarryObjectVisuals?.();
+        this.reconcileInstalledBaseModuleVisuals?.();
+        this.syncBunkerCot?.();
+        return { ...result, state: this.carryState };
+    }
+
+    stageFirstNightCotCampHandoff() {
+        if (!this.carryState || !(this.camps?.length)) return null;
+        const ship = this.getActiveShip?.();
+        const shipPosition = {
+            x: Number(ship?.tileX) || 0,
+            z: Number(ship?.tileZ) || 0
+        };
+        const candidates = this.camps.filter((camp) => {
+            const status = this.getCampRecord?.(camp.id)?.status ?? camp.status ?? 'alive';
+            return status === 'alive' && Number.isFinite(camp?.pos?.x) && Number.isFinite(camp?.pos?.z);
+        }).sort((left, right) => {
+            const leftDistance = Math.hypot(left.pos.x - shipPosition.x, left.pos.z - shipPosition.z);
+            const rightDistance = Math.hypot(right.pos.x - shipPosition.x, right.pos.z - shipPosition.z);
+            return leftDistance - rightDistance || left.id.localeCompare(right.id);
+        });
+        if (!candidates.length) {
+            const reserved = this.carryState.worldObjects?.find((object) => object.handoff?.type === 'camp-cot'
+                && object.handoff?.status === 'reserved');
+            if (!reserved) return null;
+            const released = releaseFirstNightCotHandoff(this.carryState, reserved.handoff.campId);
+            if (!released.ok) return null;
+            this.carryState = released.state;
+            this.reconcileCarryObjectVisuals?.();
+            return released.object;
+        }
+        const result = stageFirstNightCotAtCamp(this.carryState, candidates[0]);
+        if (!result.staged) return null;
+        this.carryState = result.state;
+        this.reconcileCarryObjectVisuals?.();
+        this.syncMissionCargoMapLandmarks?.();
+        window.dispatchEvent(new CustomEvent('first-night-cot-staged', {
+            detail: { campId: candidates[0].id, object: result.staged }
+        }));
+        return result.staged;
+    }
+
+    claimFirstNightCotHandoff(camp) {
+        if (!camp) return false;
+        const result = releaseFirstNightCotHandoff(this.carryState, camp.id);
+        if (!result.ok) return false;
+        this.carryState = result.state;
+        this.reconcileCarryObjectVisuals?.();
+        this.syncMissionCargoMapLandmarks?.();
+        this.spawnPhysicalBurst?.(result.object.worldPosition.x, result.object.worldPosition.z, {
+            color: 0xf3d18a,
+            count: 12,
+            upward: 0.16
+        });
+        this.showBunkerLine?.(`${camp.label?.toUpperCase() ?? 'SURVIVOR CAMP'} RELEASED A FOLDED COT — CARRY IT TO THE SHIP SLEEP BERTH. YOUR COMPANION WILL COVER YOU.`);
+        window.AudioManager?.play?.('ui_confirm', { volume: 0.62, playbackRate: 0.92 });
+        window.dispatchEvent(new CustomEvent('first-night-cot-released', {
+            detail: { campId: camp.id, instanceId: result.object.instanceId }
+        }));
+        return true;
+    }
+
+    spawnMissionCarryCargo({ definitionId, missionId, worldPosition, instanceId = null } = {}) {
+        if (!this.carryState || !definitionId || !missionId || !worldPosition) return null;
+        const existing = [
+            ...(this.carryState.worldObjects ?? []),
+            ...(this.carryState.carried ? [this.carryState.carried] : [])
+        ].find((object) => object.missionId === missionId);
+        if (existing) return existing;
+        const definition = getBaseModuleDefinition(definitionId);
+        if (!definition) return null;
+        const object = createCarryObject({
+            instanceId: instanceId ?? `${definitionId}:${this.carryState.runId ?? 'run'}`,
+            definitionId,
+            missionId,
+            massClass: definition.massClass ?? 'medium',
+            worldPosition,
+            carrySocket: 'both-hands',
+            buildTags: definition.buildTags ?? [],
+            runId: this.carryState.runId
+        });
+        const result = addCarryObject(this.carryState, object);
+        if (!result.ok) return null;
+        this.carryState = result.state;
+        this.reconcileCarryObjectVisuals?.();
+        return object;
+    }
+
+    spawnHiveCargoMission(hive) {
+        if (!hive) return null;
+        let position = { x: hive.pos.x + 1.8, z: hive.pos.z + 0.8 };
+        if (this.findCampQuestSpawnSpot) position = this.findCampQuestSpawnSpot(hive, 0, 1);
+        return this.spawnMissionCarryCargo?.({
+            definitionId: 'hive_air_membrane',
+            missionId: HIVE_MEMBRANE_MISSION_ID,
+            worldPosition: position
+        }) ?? null;
+    }
+
+    restoreActiveHiveCargoMission() {
+        const record = this.getHiveRecord?.('hive_suture');
+        if (record?.questFlags?.host_mercy !== 'active') return null;
+        return this.spawnHiveCargoMission?.(this.getHiveById?.('hive_suture')) ?? null;
+    }
+
+    async ensureCarryObjectVisual(object) {
+        if (!object?.instanceId || !object.modelType || !this.scene) return null;
+        if (this.carryObjectVisuals?.has(object.instanceId)
+            || this.carriedObjectVisual?.userData?.instanceId === object.instanceId) {
+            return this.carryObjectVisuals.get(object.instanceId) ?? this.carriedObjectVisual;
+        }
+        if (this._carryVisualLoadTokens?.has(object.instanceId)) return null;
+        const token = {};
+        this._carryVisualLoadTokens.set(object.instanceId, token);
+        const root = await createCarryObjectVisual(object).catch((error) => {
+            console.warn(`[carry] ${object.modelType} unavailable`, error);
+            return null;
+        });
+        if (this._carryVisualLoadTokens.get(object.instanceId) !== token) {
+            disposeCarryObjectVisual(root);
+            return null;
+        }
+        this._carryVisualLoadTokens.delete(object.instanceId);
+        if (!root || !this.scene) return null;
+        const worldObject = this.carryState?.worldObjects?.find(({ instanceId }) => instanceId === object.instanceId);
+        const isCarried = this.carryState?.carried?.instanceId === object.instanceId;
+        if (!worldObject && !isCarried) {
+            disposeCarryObjectVisual(root);
+            return null;
+        }
+        this.scene.add(root);
+        const propFx = this.registerWorld3dPropFx?.(root);
+        const cargoSourceLight = root.userData?.cargoSourceLight;
+        if (cargoSourceLight && (propFx?.lightSources?.length ?? 0) > 0) {
+            // The GLB profile is the authoritative practical. Keep the small
+            // presentation fallback from consuming a second pooled/direct light.
+            cargoSourceLight.visible = false;
+            cargoSourceLight.userData.envLightEnabled = false;
+        } else if (cargoSourceLight) {
+            this.registerEnvLight?.(cargoSourceLight);
+        }
+        this.registerWorld3dPropExperience?.(root);
+        if (isCarried) {
+            root.visible = this.performanceProfile === 'gameplay';
+            this.carriedObjectVisual = root;
+        } else {
+            updateCarryObjectVisual(root, {
+                mode: 'world',
+                x: worldObject.worldPosition.x,
+                y: this.getTerrainHeightAt?.(worldObject.worldPosition.x, worldObject.worldPosition.z) ?? 0,
+                z: worldObject.worldPosition.z,
+                visible: this.performanceProfile === 'gameplay'
+            });
+            this.carryObjectVisuals.set(object.instanceId, root);
+        }
+        return root;
+    }
+
+    reconcileCarryObjectVisuals() {
+        const wanted = new Set((this.carryState?.worldObjects ?? []).map(({ instanceId }) => instanceId));
+        for (const [instanceId, root] of this.carryObjectVisuals ?? []) {
+            if (wanted.has(instanceId)) continue;
+            if (this.carryState?.carried?.instanceId === instanceId) {
+                this.carryObjectVisuals.delete(instanceId);
+                this.carriedObjectVisual = root;
+                continue;
+            }
+            this.disposeWorld3dPropFx?.(root);
+            this.disposeWorld3dPropExperience?.(root);
+            disposeCarryObjectVisual(root);
+            this.carryObjectVisuals.delete(instanceId);
+        }
+        const carriedId = this.carryState?.carried?.instanceId ?? null;
+        if (this.carriedObjectVisual && this.carriedObjectVisual.userData?.instanceId !== carriedId) {
+            this.disposeWorld3dPropFx?.(this.carriedObjectVisual);
+            this.disposeWorld3dPropExperience?.(this.carriedObjectVisual);
+            disposeCarryObjectVisual(this.carriedObjectVisual);
+            this.carriedObjectVisual = null;
+        }
+        for (const object of this.carryState?.worldObjects ?? []) void this.ensureCarryObjectVisual(object);
+        if (this.carryState?.carried) void this.ensureCarryObjectVisual(this.carryState.carried);
+    }
+
+    clearCarryObjectVisuals() {
+        for (const root of this.carryObjectVisuals?.values?.() ?? []) {
+            this.disposeWorld3dPropFx?.(root);
+            this.disposeWorld3dPropExperience?.(root);
+            disposeCarryObjectVisual(root);
+        }
+        this.carryObjectVisuals?.clear?.();
+        this.disposeWorld3dPropFx?.(this.carriedObjectVisual);
+        this.disposeWorld3dPropExperience?.(this.carriedObjectVisual);
+        disposeCarryObjectVisual(this.carriedObjectVisual);
+        this.carriedObjectVisual = null;
+        this._carryVisualLoadTokens?.clear?.();
+    }
+
+    async ensureInstalledBaseModuleVisual(module) {
+        if (!module?.instanceId || !FIRST_NIGHT_VISIBLE_MODULES.has(module.definitionId) || !this.scene) return null;
+        if (this.installedBaseModuleVisuals.has(module.instanceId)) return this.installedBaseModuleVisuals.get(module.instanceId);
+        if (this._installedBaseVisualLoadTokens.has(module.instanceId)) return null;
+        const token = {};
+        this._installedBaseVisualLoadTokens.set(module.instanceId, token);
+        const root = await createInstalledBaseModuleVisual(module).catch((error) => {
+            console.warn(`[base-rebuild] ${module.definitionId} visual unavailable`, error);
+            return null;
+        });
+        if (this._installedBaseVisualLoadTokens.get(module.instanceId) !== token) {
+            disposeInstalledBaseModuleVisual(root);
+            return null;
+        }
+        this._installedBaseVisualLoadTokens.delete(module.instanceId);
+        const current = this.carryState?.installed?.find(({ instanceId }) => instanceId === module.instanceId);
+        if (!root || !current || !this.scene) {
+            disposeInstalledBaseModuleVisual(root);
+            return null;
+        }
+        updateInstalledBaseModuleVisual(
+            root,
+            current,
+            this.getTerrainHeightAt?.(current.x, current.z) ?? 0,
+            this.performanceProfile === 'gameplay'
+        );
+        this.scene.add(root);
+        this.registerWorld3dPropFx?.(root);
+        this.registerWorld3dPropExperience?.(root);
+        this.installedBaseModuleVisuals.set(module.instanceId, root);
+        return root;
+    }
+
+    reconcileInstalledBaseModuleVisuals() {
+        const modules = (this.carryState?.installed ?? []).filter(({ definitionId }) => FIRST_NIGHT_VISIBLE_MODULES.has(definitionId));
+        const wanted = new Set(modules.map(({ instanceId }) => instanceId));
+        for (const [instanceId, root] of this.installedBaseModuleVisuals ?? []) {
+            if (wanted.has(instanceId)) continue;
+            this.disposeWorld3dPropFx?.(root);
+            this.disposeWorld3dPropExperience?.(root);
+            disposeInstalledBaseModuleVisual(root);
+            this.installedBaseModuleVisuals.delete(instanceId);
+        }
+        for (const module of modules) {
+            let root = this.installedBaseModuleVisuals.get(module.instanceId);
+            const damageState = module.isDestroyed ? 'breached' : (module.damageState ?? 'intact');
+            if (root && root.userData?.damageState !== damageState) {
+                this.disposeWorld3dPropFx?.(root);
+                this.disposeWorld3dPropExperience?.(root);
+                disposeInstalledBaseModuleVisual(root);
+                this.installedBaseModuleVisuals.delete(module.instanceId);
+                root = null;
+            }
+            if (root) {
+                updateInstalledBaseModuleVisual(
+                    root,
+                    module,
+                    this.getTerrainHeightAt?.(module.x, module.z) ?? 0,
+                    this.performanceProfile === 'gameplay'
+                );
+            } else {
+                void this.ensureInstalledBaseModuleVisual(module);
+            }
+        }
+    }
+
+    updateInstalledBaseModuleVisuals(delta) {
+        for (const module of this.carryState?.installed ?? []) {
+            const root = this.installedBaseModuleVisuals?.get?.(module.instanceId);
+            if (!root) continue;
+            updateInstalledBaseModuleVisual(
+                root,
+                module,
+                this.getTerrainHeightAt?.(module.x, module.z) ?? 0,
+                this.performanceProfile === 'gameplay',
+                delta
+            );
+        }
+    }
+
+    clearInstalledBaseModuleVisuals() {
+        for (const root of this.installedBaseModuleVisuals?.values?.() ?? []) {
+            this.disposeWorld3dPropFx?.(root);
+            this.disposeWorld3dPropExperience?.(root);
+            disposeInstalledBaseModuleVisual(root);
+        }
+        this.installedBaseModuleVisuals?.clear?.();
+        this._installedBaseVisualLoadTokens?.clear?.();
+    }
+
+    updateCarryObjectVisuals(_delta, now = performance.now()) {
+        const visible = this.performanceProfile === 'gameplay';
+        for (const object of this.carryState?.worldObjects ?? []) {
+            const root = this.carryObjectVisuals.get(object.instanceId);
+            if (!root) continue;
+            updateCarryObjectVisual(root, {
+                mode: 'world',
+                x: object.worldPosition.x,
+                y: this.getTerrainHeightAt?.(object.worldPosition.x, object.worldPosition.z) ?? 0,
+                z: object.worldPosition.z,
+                yaw: 0,
+                elapsedSeconds: now * 0.001,
+                visible
+            });
+        }
+        const carried = this.carryState?.carried;
+        if (carried && this.carriedObjectVisual && this.player) {
+            const length = Math.hypot(this.aimDirX ?? 0, this.aimDirZ ?? 0) || 1;
+            const dx = (this.aimDirX ?? 0) / length;
+            const dz = (this.aimDirZ ?? 1) / length;
+            updateCarryObjectVisual(this.carriedObjectVisual, {
+                mode: 'held',
+                x: this.player.position.x + dx * 0.58,
+                y: (this.player.position.y ?? 0) + 0.74 + Math.sin(now * 0.006) * 0.025,
+                z: this.player.position.z + dz * 0.58,
+                yaw: Math.atan2(dx, dz) + WORLD_3D_FACING_YAW,
+                visible
+            });
+        }
+        if (this.bedInstallSocketVisual) {
+            const installed = installedCot(this.carryState);
+            if (installed || this.performanceProfile !== 'gameplay') {
+                this.bedInstallSocketVisual.visible = false;
+            } else {
+                const socket = this.getFirstNightBasePlan?.()?.installSocket?.transform;
+                const isCarryingCot = this.carryState?.carried?.definitionId === 'cot_bed';
+                const isNear = Boolean(socket && this.player && Math.hypot(this.player.position.x - socket.x, this.player.position.z - socket.z) <= 2.6);
+                this.bedInstallSocketVisual.visible = true;
+                updateBedInstallSocketVisual(this.bedInstallSocketVisual, {
+                    isNear,
+                    isCarryingTarget: isCarryingCot,
+                    elapsedSeconds: now * 0.001,
+                    visible: true
+                });
+            }
+        }
+        this.checkLooseCarryObjectSnapToSockets?.();
+        this.updateCarryInteractionPrompt?.();
+    }
+
+    checkLooseCarryObjectSnapToSockets() {
+        if (!this.carryState?.worldObjects?.length) return;
+        const plan = this.getFirstNightBasePlan?.();
+        for (const object of [...this.carryState.worldObjects]) {
+            if (object.handoff?.status === 'reserved') continue;
+            const socket = availableFirstNightSocket(this.carryState, plan, object)
+                ?? this.getAvailableCarryInstallSocket?.(object);
+            if (!socket?.transform) continue;
+            const dist = Math.hypot(object.worldPosition.x - socket.transform.x, object.worldPosition.z - socket.transform.z);
+            if (dist <= 2.2) {
+                const installResult = installWorldObject(this.carryState, object.instanceId, socket);
+                if (installResult.ok) {
+                    this.carryState = installResult.state;
+                    saveInstalledBaseModules(this.carryState.installed);
+                    const visual = this.carryObjectVisuals.get(object.instanceId);
+                    if (visual) {
+                        this.disposeWorld3dPropFx?.(visual);
+                        this.disposeWorld3dPropExperience?.(visual);
+                        disposeCarryObjectVisual(visual);
+                        this.carryObjectVisuals.delete(object.instanceId);
+                    }
+                    this.reconcileInstalledBaseModuleVisuals?.();
+                    this.syncBunkerCot?.();
+                    this.syncBedInstallSocketVisual?.();
+                    const label = getBaseModuleDefinition(object.definitionId)?.label ?? 'MODULE';
+                    this.showBunkerLine?.(`${label} INSTALLED IN ZONE — YOU ARE SET!`);
+                    this.spawnPhysicalBurst?.(socket.transform.x, socket.transform.z, { color: 0x66e6ff, count: 14, upward: 0.2 });
+                    this.triggerCameraShake?.(0.08, 0.18);
+                    window.AudioManager?.play?.('ui_confirm', { volume: 0.72, playbackRate: 0.86 });
+                    window.dispatchEvent(new CustomEvent('base-module-installed', { detail: { installed: installResult.installed } }));
+                }
+            }
+        }
+    }
+
+    updateCarryInteractionPrompt() {
+        if (!this.isGameplayInputActive?.() || !this.player || this.isPlayerDead) {
+            if (this._carryPromptLabel) {
+                this._carryPromptLabel = null;
+                if (!this._campPromptLabel && !this._hivePromptLabel) {
+                    window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+                }
+            }
+            return;
+        }
+
+        let label = null;
+        const carried = this.carryState?.carried;
+        if (carried) {
+            const socket = this.getAvailableCarryInstallSocket?.(carried)
+                ?? availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan?.(), carried);
+            const defLabel = getBaseModuleDefinition(carried.definitionId)?.label ?? 'CARGO';
+            if (socket && Math.hypot(this.player.position.x - socket.transform.x, this.player.position.z - socket.transform.z) <= 2.6) {
+                label = `[E] PLACE ${defLabel.toUpperCase()} (INSTALL)`;
+            } else {
+                label = `[E] SET ${defLabel.toUpperCase()} DOWN`;
+            }
+        } else {
+            const nearest = this.getNearestCarryObject?.();
+            if (nearest) {
+                const defLabel = getBaseModuleDefinition(nearest.object.definitionId)?.label ?? 'CARGO';
+                label = `[E] LIFT ${defLabel.toUpperCase()} · BOTH HANDS`;
+            }
+        }
+
+        if (label === this._carryPromptLabel) return;
+        this._carryPromptLabel = label;
+        if (label) {
+            window.dispatchEvent(new CustomEvent('camp-prompt-nearby', { detail: { label } }));
+        } else if (!this._campPromptLabel && !this._hivePromptLabel && !this._packagePromptLabel) {
+            window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+        }
+    }
+
+    getMissionCargoDelivery(carried = this.carryState?.carried) {
+        if (!carried?.missionId) return null;
+        if (carried.missionId === CAMP_PROBE_MISSION_ID) {
+            const quest = this._activeCampQuest;
+            const camp = quest?.campId === 'camp_meridian' && quest.quest?.id === 'lost_probe'
+                ? this.getCampById?.(quest.campId)
+                : null;
+            if (!camp) return null;
+            return {
+                type: 'camp-quest', campId: quest.campId, questId: quest.quest.id,
+                x: camp.pos.x, z: camp.pos.z, radius: 3.5,
+                label: 'RETURN HORIZON METRIC PROBE TO MERIDIAN'
+            };
+        }
+        if (carried.missionId === HIVE_MEMBRANE_MISSION_ID) {
+            const plan = this.getFirstNightBasePlan?.();
+            const berth = plan?.installSocket?.transform;
+            if (!berth) return null;
+            return {
+                type: 'hive-quest', hiveId: 'hive_suture', questId: 'host_mercy',
+                x: berth.x, z: berth.z, radius: 3.5,
+                label: 'DELIVER LIVING AIR MEMBRANE TO THE SHIP BERTH'
+            };
+        }
+        return null;
+    }
+
+    getMissionCargoGuidance() {
+        const carried = this.carryState?.carried;
+        if (carried?.missionId) {
+            const delivery = this.getMissionCargoDelivery?.(carried);
+            if (delivery) {
+                return {
+                    id: carried.instanceId,
+                    x: delivery.x,
+                    z: delivery.z,
+                    label: delivery.label,
+                    mode: 'cargo-delivery'
+                };
+            }
+            const socket = this.getAvailableCarryInstallSocket?.(carried)
+                ?? availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan?.(), carried);
+            if (!socket) return null;
+            const definition = getBaseModuleDefinition(carried.definitionId);
+            return {
+                id: carried.instanceId,
+                x: socket.transform.x,
+                z: socket.transform.z,
+                label: `INSTALL ${definition?.label ?? 'MISSION CARGO'}`,
+                mode: 'cargo-install'
+            };
+        }
+        if (!this.player) return null;
+        let nearest = null;
+        let nearestDistance = Infinity;
+        for (const object of this.carryState?.worldObjects ?? []) {
+            if (!object.missionId) continue;
+            const distance = Math.hypot(
+                object.worldPosition.x - this.player.position.x,
+                object.worldPosition.z - this.player.position.z
+            );
+            if (distance >= nearestDistance) continue;
+            const definition = getBaseModuleDefinition(object.definitionId);
+            nearestDistance = distance;
+            nearest = {
+                id: object.instanceId,
+                x: object.worldPosition.x,
+                z: object.worldPosition.z,
+                label: `RECOVER ${definition?.label ?? 'MISSION CARGO'}`,
+                mode: 'mission-cargo'
+            };
+        }
+        return nearest;
+    }
+
+    updateMissionCargoRecovery(delta) {
+        this._missionCargoAuditTimer = (this._missionCargoAuditTimer ?? 0) + Math.max(0, Number(delta) || 0);
+        if (this._missionCargoAuditTimer < 1) return [];
+        this._missionCargoAuditTimer %= 1;
+        const audit = recoverStrandedCarryObjects(this.carryState, {
+            requiredFailedChecks: 3,
+            isNavigable: (position) => {
+                if (!Number.isFinite(position?.x) || !Number.isFinite(position?.z)) return false;
+                const x = Math.round(position.x);
+                const z = Math.round(position.z);
+                if (this.isSnailTileWalkable && !this.isSnailTileWalkable(x, z)) return false;
+                return this.canOccupyPosition?.(position.x, position.z) ?? true;
+            }
+        });
+        this.carryState = audit.state;
+        if (!audit.recovered.length) return [];
+        this.reconcileCarryObjectVisuals?.();
+        for (const object of audit.recovered) {
+            const definition = getBaseModuleDefinition(object.definitionId);
+            this.spawnPhysicalBurst?.(object.worldPosition.x, object.worldPosition.z, {
+                color: 0xf6c453, count: 10, upward: 0.16
+            });
+            window.dispatchEvent(new CustomEvent('mission-cargo-recovered', {
+                detail: { instanceId: object.instanceId, recoveryCount: object.recoveryCount, position: object.worldPosition }
+            }));
+            this.showBunkerLine?.(`${definition?.label ?? 'MISSION CARGO'} REACQUIRED AT LAST SAFE STAGING POINT.`);
+        }
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.46, playbackRate: 0.78 });
+        return audit.recovered;
+    }
+
+    emergencyDropCarriedObject(reason = 'carrier-unavailable') {
+        if (!this.carryState?.carried) return null;
+        const carried = this.carryState.carried;
+        const position = this.findSafeCarryDropPosition?.()
+            ?? carried.lastSafePosition
+            ?? carried.sourcePosition;
+        const result = dropCarriedObject(this.carryState, position, {
+            carrierPlayerId: this.multiplayerLocalPlayerId ?? 'local'
+        });
+        if (!result.ok) return null;
+        this.carryState = result.state;
+        const root = this.carriedObjectVisual;
+        this.carriedObjectVisual = null;
+        if (root) this.carryObjectVisuals.set(result.dropped.instanceId, root);
+        this.reconcileCarryObjectVisuals?.();
+        window.dispatchEvent(new CustomEvent('carry-object-emergency-dropped', {
+            detail: { reason, dropped: result.dropped }
+        }));
+        return result.dropped;
+    }
+
+    syncMissionCargoMapLandmarks() {
+        if (!this.explorationTracker) return [];
+        const activeIds = new Set();
+        for (const object of this.carryState?.worldObjects ?? []) {
+            if (!object.missionId) continue;
+            const id = `mission-cargo:${object.instanceId}`;
+            activeIds.add(id);
+            const definition = getBaseModuleDefinition(object.definitionId);
+            this.explorationTracker.registerLandmark(id, {
+                x: object.worldPosition.x,
+                z: object.worldPosition.z,
+                label: definition?.label ?? 'MISSION CARGO',
+                type: 'objective',
+                icon: 'objective',
+                priority: 850,
+                revealOnMap: true
+            });
+        }
+        for (const id of this._carryLandmarkIds ?? []) {
+            if (!activeIds.has(id)) this.explorationTracker.removeLandmark(id);
+        }
+        this._carryLandmarkIds = activeIds;
+        return [...activeIds];
+    }
+
+    getInstalledBaseModuleWorldPosition(module) {
+        const transform = module?.transform ?? module;
+        const offset = {
+            north: { x: 0, z: -0.5 }, south: { x: 0, z: 0.5 },
+            east: { x: 0.5, z: 0 }, west: { x: -0.5, z: 0 }
+        }[module?.side] ?? { x: 0, z: 0 };
+        return {
+            x: (Number(transform?.x) || 0) + offset.x,
+            z: (Number(transform?.z) || 0) + offset.z
+        };
+    }
+
+    blocksInstalledBaseModulePosition(x, z, playerRadius = this.playerRadius) {
+        const radius = Number(playerRadius) || 0.28;
+        for (const module of this.carryState?.installed ?? []) {
+            if (!['hull_patch_panel', 'door_seal_kit'].includes(module.definitionId)
+                || module.isDestroyed || (module.definitionId === 'door_seal_kit' && module.isOpen)) continue;
+            const position = this.getInstalledBaseModuleWorldPosition(module);
+            const vertical = module.side === 'east' || module.side === 'west';
+            const normalDistance = vertical ? Math.abs(x - position.x) : Math.abs(z - position.z);
+            const alongDistance = vertical ? Math.abs(z - position.z) : Math.abs(x - position.x);
+            if (normalDistance < radius + 0.14 && alongDistance < 0.52 + radius) return true;
+        }
+        return false;
+    }
+
+    checkProjectileInstalledBaseModuleHit(projectile, from = null) {
+        if (!projectile?.mesh?.position || projectile.isEnemy) return null;
+        const start = from ?? projectile.mesh.position;
+        const end = projectile.mesh.position;
+        const vx = end.x - start.x;
+        const vz = end.z - start.z;
+        const lengthSq = vx * vx + vz * vz;
+        let nearest = null;
+        let nearestT = Infinity;
+        for (const module of this.carryState?.installed ?? []) {
+            if (!getBaseModuleDurability(module.definitionId) || module.isDestroyed) continue;
+            const point = this.getInstalledBaseModuleWorldPosition(module);
+            const t = lengthSq > 1e-8
+                ? Math.max(0, Math.min(1, ((point.x - start.x) * vx + (point.z - start.z) * vz) / lengthSq))
+                : 1;
+            const hitX = start.x + vx * t;
+            const hitZ = start.z + vz * t;
+            const radius = module.definitionId === 'door_seal_kit' ? 0.72 : 0.85;
+            if (Math.hypot(point.x - hitX, point.z - hitZ) > radius || t >= nearestT) continue;
+            nearest = module;
+            nearestT = t;
+        }
+        return nearest;
+    }
+
+    damageInstalledBaseModule(instanceId, amount, { source = 'player-projectile' } = {}) {
+        const result = damageBaseModule(this.carryState?.installed ?? [], instanceId, amount);
+        if (!result.ok) return false;
+        this.carryState = { ...this.carryState, installed: result.modules };
+        saveInstalledBaseModules(this.carryState.installed);
+        this.baseAtmosphereSeal = null;
+        this.reconcileInstalledBaseModuleVisuals?.();
+        const position = this.getInstalledBaseModuleWorldPosition(result.module);
+        this.spawnDamagePip?.(position.x, position.z, Math.max(1, Math.round(amount)));
+        this.spawnPhysicalBurst?.(position.x, position.z, {
+            color: result.destroyed ? 0xff3b30 : 0xffb347,
+            count: result.destroyed ? 18 : 6,
+            upward: result.destroyed ? 0.28 : 0.12
+        });
+        if (result.destroyed) {
+            this.triggerCameraShake?.(0.18, 0.28);
+            this.showBunkerLine?.('BASE HULL BREACH — CABIN LOSING PRESSURE. REPAIR REQUIRED.');
+            window.AudioManager?.playMetalStress?.({ volume: 0.72, playbackRate: 0.68, force: true });
+        } else {
+            window.AudioManager?.play?.('enemy_hit_soft', { volume: 0.32, playbackRate: 0.72 });
+        }
+        window.dispatchEvent(new CustomEvent('base-module-damaged', {
+            detail: { module: result.module, source, destroyed: result.destroyed }
+        }));
+        return result.destroyed;
+    }
+
+    getNearestDamagedBaseModule(maxDistance = 2.4) {
+        if (!this.player || this.carryState?.carried) return null;
+        let nearest = null;
+        let nearestDistance = maxDistance;
+        for (const module of this.carryState?.installed ?? []) {
+            if (baseModuleRepairCost(module) <= 0) continue;
+            const position = this.getInstalledBaseModuleWorldPosition(module);
+            const distance = Math.hypot(position.x - this.player.position.x, position.z - this.player.position.z);
+            if (distance >= nearestDistance) continue;
+            nearest = module;
+            nearestDistance = distance;
+        }
+        return nearest ? { module: nearest, distance: nearestDistance, cost: baseModuleRepairCost(nearest) } : null;
+    }
+
+    repairInstalledBaseModule(instanceId) {
+        const preview = repairBaseModule(this.carryState?.installed ?? [], instanceId);
+        if (!preview.ok) return false;
+        if (!this.bank?.spendShells?.(preview.cost)) {
+            this.showBunkerLine?.(`REPAIR REQUIRES ${preview.cost} SHELLS.`);
+            window.AudioManager?.play?.('ui_error', { volume: 0.42 });
+            return false;
+        }
+        this.carryState = { ...this.carryState, installed: preview.modules };
+        saveInstalledBaseModules(this.carryState.installed);
+        this.baseAtmosphereSeal = null;
+        this.reconcileInstalledBaseModuleVisuals?.();
+        const position = this.getInstalledBaseModuleWorldPosition(preview.module);
+        this.spawnPhysicalBurst?.(position.x, position.z, { color: 0x30d158, count: 16, upward: 0.2 });
+        this.triggerCameraShake?.(0.06, 0.12);
+        this.showBunkerLine?.('PRESSURE SEAL RESTORED — CABIN REPRESSURIZING.');
+        window.AudioManager?.play?.('ui_confirm', { volume: 0.64, playbackRate: 0.82 });
+        window.dispatchEvent(new CustomEvent('base-module-repaired', { detail: { module: preview.module, cost: preview.cost } }));
+        return true;
+    }
+
+    getNearestInstalledBaseDoor(maxDistance = 2.4) {
+        if (!this.player || this.carryState?.carried) return null;
+        let nearest = null;
+        let nearestDistance = maxDistance;
+        for (const module of this.carryState?.installed ?? []) {
+            if (module.definitionId !== 'door_seal_kit' || module.isDestroyed) continue;
+            const position = this.getInstalledBaseModuleWorldPosition(module);
+            const distance = Math.hypot(position.x - this.player.position.x, position.z - this.player.position.z);
+            if (distance >= nearestDistance) continue;
+            nearest = module;
+            nearestDistance = distance;
+        }
+        return nearest ? { module: nearest, distance: nearestDistance } : null;
+    }
+
+    getShipModuleActionCooldown(instanceId, nowSeconds = performance.now() * 0.001) {
+        return shipModuleActionCooldownRemaining(
+            this._shipModuleActionCooldowns,
+            instanceId,
+            nowSeconds
+        );
+    }
+
+    getNearestInstalledShipModule(maxDistance = 2.6) {
+        if (!this.player || this.carryState?.carried) return null;
+        let nearest = null;
+        let nearestDistance = maxDistance;
+        for (const module of this.carryState?.installed ?? []) {
+            if (!getShipModuleAction(module.definitionId)) continue;
+            const position = this.getInstalledBaseModuleWorldPosition(module);
+            const distance = Math.hypot(position.x - this.player.position.x, position.z - this.player.position.z);
+            if (distance >= nearestDistance) continue;
+            nearest = module;
+            nearestDistance = distance;
+        }
+        return nearest ? { module: nearest, distance: nearestDistance } : null;
+    }
+
+    interactWithInstalledShipModule(instanceId, nowSeconds = performance.now() * 0.001) {
+        const module = this.carryState?.installed?.find((entry) => entry.instanceId === instanceId);
+        const action = getShipModuleAction(module?.definitionId);
+        if (!module || !action || !this.player || this.carryState?.carried) return false;
+        const position = this.getInstalledBaseModuleWorldPosition(module);
+        if (Math.hypot(position.x - this.player.position.x, position.z - this.player.position.z) > 2.6) return false;
+        this._shipModuleActionCooldowns ??= new Map();
+        const remaining = shipModuleActionCooldownRemaining(this._shipModuleActionCooldowns, instanceId, nowSeconds);
+        if (remaining > 0) {
+            this.showBunkerLine?.(`${action.label} RECHARGING — ${Math.ceil(remaining)}s.`);
+            window.AudioManager?.play?.('ui_error', { volume: 0.3 });
+            return false;
+        }
+
+        let detail = {};
+        if (action.id === 'oxygen-purge') {
+            const before = this.playerVitals?.o2 ?? 0;
+            this.adjustOxygen?.(40);
+            detail = { restored: Math.max(0, (this.playerVitals?.o2 ?? before) - before) };
+            this.showBunkerLine?.(`LIFE-SUPPORT PURGE COMPLETE — O2 +${Math.round(detail.restored)}%.`);
+        } else if (action.id === 'route-lock') {
+            const target = this.getMissionCargoGuidance?.() ?? this.getNextBuildSite?.();
+            if (target && Number.isFinite(target.x) && Number.isFinite(target.z)) {
+                this._meridianCompassLock = {
+                    x: target.x, z: target.z,
+                    label: target.label ?? 'NAVIGATION ROUTE',
+                    mode: 'navigation-route',
+                    expiresAt: performance.now() + 45000
+                };
+                this.spawnTacticalPingMarker?.({
+                    x: target.x, z: target.z, kind: 'item',
+                    label: target.label ?? 'NAVIGATION ROUTE', duration: 8
+                });
+                detail = { target };
+                this.showBunkerLine?.(`NAVIGATION LOCKED — ${target.label ?? 'ROUTE TARGET'} FOR 45s.`);
+            } else {
+                this.showBunkerLine?.('NAVIGATION SWEEP COMPLETE — NO UNRESOLVED ROUTE TARGETS.');
+            }
+        } else if (action.id === 'deep-scan') {
+            this.radarScanCooldownRemaining = 0;
+            this.triggerRadarScan?.();
+            this.showBunkerLine?.('COMMS ARRAY DEEP SCAN TRANSMITTED.');
+        } else if (action.id === 'field-service') {
+            const ammoAmount = this.fieldWeaponRunState?.equipped?.ammoType === 'fuel-tanks' ? 30 : 12;
+            const serviced = serviceEquippedFieldWeapon(this.fieldWeaponRunState, ammoAmount);
+            if (serviced.ok) {
+                this.fieldWeaponRunState = serviced.state;
+                this.syncEquippedFieldWeapon?.({ announce: false });
+            }
+            this.dashCooldownTimer = 0;
+            detail = { ammoAdded: serviced.added ?? 0, dashReady: true };
+            this.showBunkerLine?.(serviced.ok
+                ? `MANIFOLD FIELD SERVICE — ${serviced.added} ${serviced.equipped.ammoType.toUpperCase()} RESTORED.`
+                : 'MANIFOLD VENTED — MOBILITY CAPACITORS READY.');
+        }
+
+        commitShipModuleActionCooldown(this._shipModuleActionCooldowns, module, nowSeconds);
+        const root = this.installedBaseModuleVisuals?.get?.(module.instanceId);
+        root?.userData?.propExperience?.acknowledge?.({ action: 'use' });
+        root?.userData?.propFx?.setMode?.('working');
+        this.spawnPhysicalBurst?.(position.x, position.z, { color: action.color, count: 12, upward: 0.18 });
+        this.triggerCameraShake?.(0.04, 0.1);
+        window.AudioManager?.play?.('ui_confirm', { volume: 0.58, playbackRate: 0.9 });
+        window.dispatchEvent(new CustomEvent('ship-module-activated', {
+            detail: { instanceId, definitionId: module.definitionId, actionId: action.id, ...detail }
+        }));
+        return true;
+    }
+
+    toggleInstalledBaseDoor(instanceId) {
+        const index = (this.carryState?.installed ?? []).findIndex((module) => (
+            module.instanceId === instanceId && module.definitionId === 'door_seal_kit'
+        ));
+        if (index < 0 || this.carryState.installed[index].isDestroyed) return false;
+        const installed = [...this.carryState.installed];
+        const module = { ...installed[index], isOpen: !installed[index].isOpen };
+        installed[index] = module;
+        this.carryState = { ...this.carryState, installed };
+        saveInstalledBaseModules(installed);
+        this.baseAtmosphereSeal = null;
+        this.reconcileInstalledBaseModuleVisuals?.();
+        this.showBunkerLine?.(module.isOpen
+            ? 'BERTH DOOR OPEN — PRESSURE VENTING.'
+            : 'BERTH DOOR SEALED — O2 REPRESSURIZING.');
+        window.AudioManager?.play?.('vault_open', { volume: 0.58, playbackRate: module.isOpen ? 1.08 : 0.82 });
+        window.dispatchEvent(new CustomEvent('base-door-toggled', {
+            detail: { instanceId, isOpen: module.isOpen }
+        }));
+        return true;
+    }
+
+    getNearestCarryObject(maxDistance = 2.2) {
+        if (!this.player || this.carryState?.carried) return null;
+        let nearest = null;
+        let nearestDistance = maxDistance;
+        for (const object of this.carryState?.worldObjects ?? []) {
+            if (object.handoff?.status === 'reserved') continue;
+            const distance = Math.hypot(
+                this.player.position.x - object.worldPosition.x,
+                this.player.position.z - object.worldPosition.z
+            );
+            if (distance > nearestDistance) continue;
+            nearest = object;
+            nearestDistance = distance;
+        }
+        return nearest ? { object: nearest, distance: nearestDistance } : null;
+    }
+
+    beginCarryObject(instanceId = null) {
+        const nearest = instanceId
+            ? { object: this.carryState?.worldObjects?.find((object) => object.instanceId === instanceId) }
+            : this.getNearestCarryObject();
+        if (!nearest?.object) return false;
+        if (nearest.object.handoff?.status === 'reserved') {
+            this.showBunkerLine?.('CAMP CARGO — SPEAK TO THE SURVIVORS BEFORE TAKING IT.');
+            return false;
+        }
+        const carrierPlayerId = this.multiplayerLocalPlayerId ?? 'local';
+        const result = beginCarry(this.carryState, nearest.object.instanceId, carrierPlayerId);
+        if (!result.ok) return false;
+        this.carryState = result.state;
+        this.reconcileCarryObjectVisuals();
+        const delivery = this.getMissionCargoDelivery?.(result.carried);
+        this.showBunkerLine?.(delivery
+            ? `CARGO LIFTED — BOTH HANDS OCCUPIED. ${delivery.label}.`
+            : 'CARGO LIFTED — BOTH HANDS OCCUPIED. RETURN TO THE SHIP BERTH.');
+        this.spawnPhysicalBurst?.(this.player.position.x, this.player.position.z, { color: 0xf3d18a, count: 8, upward: 0.12 });
+        window.AudioManager?.play?.('metal_stress', { volume: 0.42, playbackRate: 1.08 });
+        window.dispatchEvent(new CustomEvent('carry-object-began', { detail: { carried: result.carried } }));
+        return true;
+    }
+
+    findSafeCarryDropPosition() {
+        if (!this.player) return null;
+        const length = Math.hypot(this.aimDirX ?? 0, this.aimDirZ ?? 0) || 1;
+        const forward = { x: (this.aimDirX ?? 0) / length, z: (this.aimDirZ ?? 1) / length };
+        const right = { x: forward.z, z: -forward.x };
+        const offsets = [
+            [forward.x * 1.35, forward.z * 1.35],
+            [right.x * 1.2, right.z * 1.2],
+            [-right.x * 1.2, -right.z * 1.2],
+            [-forward.x, -forward.z]
+        ];
+        for (const [dx, dz] of offsets) {
+            const x = this.player.position.x + dx;
+            const z = this.player.position.z + dz;
+            const tile = this.getTileType?.(Math.round(x), Math.round(z));
+            if (tile === '#' || tile === 'W' || tile === 'X') continue;
+            const blocked = (this.scatterSprites ?? []).some((prop) => prop?.parent && prop.userData?.isSolidProp
+                && Math.hypot(prop.position.x - x, prop.position.z - z) < (prop.userData.collisionRadius ?? 0.5) + 0.45);
+            if (!blocked) return { x, z };
+        }
+        return null;
+    }
+
+    dropCurrentCarryObject() {
+        if (!this.carryState?.carried) return false;
+        const carried = this.carryState.carried;
+        const socket = this.getAvailableCarryInstallSocket?.(carried)
+            ?? availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan?.(), carried);
+        if (socket && this.player) {
+            const socketDistance = Math.hypot(this.player.position.x - socket.transform.x, this.player.position.z - socket.transform.z);
+            if (socketDistance <= 2.6) {
+                return this.installCurrentCarryObject();
+            }
+        }
+        const position = this.findSafeCarryDropPosition();
+        if (!position) {
+            this.showBunkerLine?.('NO CLEAR SPACE TO SET CARGO DOWN.');
+            return false;
+        }
+        if (socket) {
+            const dropDistance = Math.hypot(position.x - socket.transform.x, position.z - socket.transform.z);
+            if (dropDistance <= 2.0) {
+                return this.installCurrentCarryObject();
+            }
+        }
+        const result = dropCarriedObject(this.carryState, position, {
+            carrierPlayerId: this.multiplayerLocalPlayerId ?? 'local'
+        });
+        if (!result.ok) return false;
+        this.carryState = result.state;
+        const root = this.carriedObjectVisual;
+        this.carriedObjectVisual = null;
+        if (root) this.carryObjectVisuals.set(result.dropped.instanceId, root);
+        this.reconcileCarryObjectVisuals();
+        window.AudioManager?.play?.('metal_stress', { volume: 0.34, playbackRate: 0.82 });
+        window.dispatchEvent(new CustomEvent('carry-object-dropped', { detail: { dropped: result.dropped } }));
+        return true;
+    }
+
+    deliverCurrentMissionCargo() {
+        const carried = this.carryState?.carried;
+        if (!carried || !this.player) return false;
+        const delivery = this.getMissionCargoDelivery?.(carried);
+        if (!delivery || Math.hypot(this.player.position.x - delivery.x, this.player.position.z - delivery.z) > delivery.radius) {
+            return false;
+        }
+        const result = deliverCarriedObject(this.carryState, {
+            carrierPlayerId: this.multiplayerLocalPlayerId ?? 'local'
+        });
+        if (!result.ok) return false;
+        this.carryState = result.state;
+        this.disposeWorld3dPropFx?.(this.carriedObjectVisual);
+        this.disposeWorld3dPropExperience?.(this.carriedObjectVisual);
+        disposeCarryObjectVisual(this.carriedObjectVisual);
+        this.carriedObjectVisual = null;
+        this.reconcileCarryObjectVisuals?.();
+
+        if (delivery.type === 'camp-quest') {
+            this.advanceCampQuestProgress?.(1);
+        } else if (delivery.type === 'hive-quest') {
+            this.act2?.completeHiveQuest?.(delivery.hiveId, delivery.questId, 1);
+            const hive = this.getHiveById?.(delivery.hiveId);
+            const record = this.getHiveRecord?.(delivery.hiveId);
+            hive?.syncFromRecord?.(record);
+            this.resolveDayDeadline?.('hive_suture_parley');
+            this.syncWorldTransformations?.();
+        }
+        this.spawnPhysicalBurst?.(delivery.x, delivery.z, {
+            color: delivery.type === 'hive-quest' ? 0xf43f5e : 0x60a5fa,
+            count: 16,
+            upward: 0.22
+        });
+        this.triggerCameraShake?.(0.07, 0.16);
+        this.showBunkerLine?.(delivery.type === 'hive-quest'
+            ? 'LIVING AIR MEMBRANE SECURED — NAHL\'S HOST MERCY RITE IS COMPLETE.'
+            : 'HORIZON METRIC PROBE RETURNED — MERIDIAN HAS ITS SURVEY DATA.');
+        window.AudioManager?.play?.('ui_confirm', { volume: 0.68, playbackRate: 0.9 });
+        window.dispatchEvent(new CustomEvent('mission-cargo-delivered', {
+            detail: { delivered: result.delivered, delivery }
+        }));
+        return true;
+    }
+
+    installCurrentCarryObject() {
+        const carried = this.carryState?.carried;
+        if (!carried || !this.player) return false;
+        const socket = this.getAvailableCarryInstallSocket?.(carried)
+            ?? availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan(), carried);
+        if (!socket) return false;
+        if (Math.hypot(this.player.position.x - socket.transform.x, this.player.position.z - socket.transform.z) > 2.5) return false;
+        const result = installCarriedObject(this.carryState, socket, {
+            carrierPlayerId: this.multiplayerLocalPlayerId ?? 'local'
+        });
+        if (!result.ok) return false;
+        this.carryState = result.state;
+        saveInstalledBaseModules(this.carryState.installed);
+        this.disposeWorld3dPropFx?.(this.carriedObjectVisual);
+        this.disposeWorld3dPropExperience?.(this.carriedObjectVisual);
+        disposeCarryObjectVisual(this.carriedObjectVisual);
+        this.carriedObjectVisual = null;
+        this.reconcileInstalledBaseModuleVisuals?.();
+        this.syncBunkerCot?.();
+        const label = getBaseModuleDefinition(result.installed.definitionId)?.label ?? 'RECOVERED MODULE';
+        const isShipPart = SHIP_REBUILD_STAGES.some(({ definitionId }) => definitionId === result.installed.definitionId);
+        if (isShipPart) {
+            const progress = shipRebuildProgress(this.carryState);
+            this.showBunkerLine?.(progress.complete
+                ? `${label} INSTALLED — ALL PRIMARY SHIP SYSTEMS PHYSICALLY ONLINE.`
+                : `${label} INSTALLED — SHIP REBUILD ${progress.installed}/${progress.total}.`);
+            window.dispatchEvent(new CustomEvent('ship-rebuild-progress', { detail: progress }));
+        } else {
+            const remaining = this.getFirstNightBasePlan().recoveryCargo.filter(({ definitionId }) => (
+                !this.carryState.installed.some((module) => module.definitionId === definitionId)
+            ));
+            this.showBunkerLine?.(remaining.length
+                ? `${label} INSTALLED — ${remaining.length} BERTH MODULE${remaining.length === 1 ? '' : 'S'} STILL MISSING.`
+                : `${label} INSTALLED — BERTH SEALED. O2 PRESSURIZATION STARTING.`);
+        }
+        this.spawnPhysicalBurst?.(socket.transform.x, socket.transform.z, { color: 0x66e6ff, count: 14, upward: 0.2 });
+        this.triggerCameraShake?.(0.08, 0.18);
+        window.AudioManager?.play?.('ui_confirm', { volume: 0.72, playbackRate: 0.86 });
+        window.dispatchEvent(new CustomEvent('base-module-installed', { detail: { installed: result.installed } }));
+        return true;
+    }
+
+    getNearestFieldWeaponDrop(maxDistance = 2.2) {
+        if (!this.player) return null;
+        let nearest = null;
+        let nearestDistance = maxDistance;
+        for (const drop of this.fieldWeaponRunState?.worldDrops ?? []) {
+            const distance = Math.hypot(
+                this.player.position.x - drop.worldPosition.x,
+                this.player.position.z - drop.worldPosition.z
+            );
+            if (distance > nearestDistance) continue;
+            nearest = drop;
+            nearestDistance = distance;
+        }
+        return nearest ? { drop: nearest, distance: nearestDistance } : null;
+    }
+
+    interactWithFieldWeaponDrop(instanceId = null) {
+        if (!canUseWeaponWhileCarrying(this.carryState)) {
+            this.showBunkerLine?.('HANDS FULL — DROP CARGO TO SWAP WEAPONS.');
+            return false;
+        }
+        const nearest = instanceId
+            ? { drop: this.fieldWeaponRunState?.worldDrops?.find((drop) => drop.instanceId === instanceId) }
+            : this.getNearestFieldWeaponDrop();
+        if (!nearest?.drop) return false;
+        const result = swapFieldWeapon(this.fieldWeaponRunState, nearest.drop.instanceId);
+        if (!result.ok) return false;
+        this.fieldWeaponRunState = result.state;
+        this.reconcileFieldWeaponDropVisuals();
+        this.syncEquippedFieldWeapon();
+        const profile = getFieldWeaponProfile(result.equipped.profileId, true);
+        this.showBunkerLine?.(`${profile?.label ?? result.equipped.profileId} EQUIPPED — ${result.equipped.ammoInWeapon}/${result.equipped.reserveAmmo}`);
+        window.AudioManager?.play?.('ui_confirm', { volume: 0.6, playbackRate: 1.08 });
+        window.dispatchEvent(new CustomEvent('field-weapon-swapped', {
+            detail: {
+                runId: this.fieldWeaponRunState.runId,
+                selectedInstanceId: nearest.drop.instanceId,
+                equipped: result.equipped,
+                dropped: result.dropped
+            }
+        }));
+        return true;
     }
 
     spawnPhysicalLootDrop(x, z, item) {
@@ -9296,6 +11211,16 @@ export class ThreeGame {
 
         presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.FIRE_INPUT, { source, aimX: this.aimDirX, aimZ: this.aimDirZ });
 
+        if (!canUseWeaponWhileCarrying(this.carryState)) {
+            presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, {
+                reason: 'carrying',
+                carriedObjectId: this.carryState.carried?.instanceId ?? null
+            }, { level: 'warn' });
+            this.playThrottledUiError('_lastCarryBlockedCueAt', { volume: 0.42, playbackRate: 0.78 });
+            this.showBunkerLine?.('HANDS FULL — DROP CARGO TO FIRE.');
+            return false;
+        }
+
         if (this.isInsideNoFireZone()) {
             presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, { reason: 'no_fire_zone', clip: this.weaponClipAmmo, reserve: this.getAvailableAmmo() }, { level: 'warn' });
             this.playThrottledUiError('_lastNoFireCueAt', { volume: 0.42 }, 'combat-no-fire-zone');
@@ -9331,6 +11256,11 @@ export class ThreeGame {
 
         if (this.unlimitedAmmo) {
             this.weaponClipAmmo = this.weaponClipSize;
+        } else if (this.fieldWeaponRunState?.equipped) {
+            const result = consumeFieldWeaponAmmo(this.fieldWeaponRunState);
+            if (!result.ok) return false;
+            this.fieldWeaponRunState = result.state;
+            this.weaponClipAmmo = result.equipped.ammoInWeapon;
         } else {
             this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
         }
@@ -9340,6 +11270,12 @@ export class ThreeGame {
         this.emitWeaponClipState();
 
         this.spawnPlayerShot(normX, normZ);
+        if (this.casingSystem && this.player) {
+            const ox = this.player.position.x;
+            const oy = (this.player.position.y || 0) + 0.9;
+            const oz = this.player.position.z;
+            this.casingSystem.spawnCasing(ox, oy, oz, normX, normZ, this.currentWeaponType || 'kinetic');
+        }
 
         presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_ACCEPTED, {
             weaponType: this.currentWeaponType || 'plasma_carbine',
@@ -9363,12 +11299,50 @@ export class ThreeGame {
             });
         }
 
-        window.AudioManager?.play('weapon_fire_sidearm', (this.audioAt?.(this.player?.position?.x, this.player?.position?.z, { volume: 0.34 }) ?? { volume: 0.34 }));
+        const localFireSound = this.resolveWeaponFireSound?.(this.currentWeaponType, this.fieldWeapon) ?? 'weapon_fire_sidearm';
+        window.AudioManager?.play(localFireSound, (this.audioAt?.(this.player?.position?.x, this.player?.position?.z, { volume: 0.36, varyPitch: true }) ?? { volume: 0.36, varyPitch: true }));
 
         if (this.weaponClipAmmo <= 0 && !this.unlimitedAmmo) {
             this.requestReload();
         }
         return true;
+    }
+
+    resolveWeaponFireSound(weaponType, fieldWeapon = null) {
+        const weaponId = String(fieldWeapon?.id || weaponType || '').toLowerCase();
+        if (weaponId.includes('shotgun') || weaponId.includes('scatter') || weaponId.includes('siege')) {
+            return 'weapon_fire_shotgun';
+        }
+        if (weaponId.includes('smg') || weaponId.includes('talon') || weaponId.includes('neon')) {
+            return 'weapon_fire_smg';
+        }
+        if (weaponId.includes('rail') || weaponId.includes('marksman')) {
+            return 'weapon_fire_railgun';
+        }
+        if (weaponId.includes('cryo') || weaponId.includes('frost') || weaponId.includes('lance')) {
+            return 'weapon_fire_cryo';
+        }
+        if (weaponId.includes('tesla') || weaponId.includes('arc') || weaponId.includes('plasma')) {
+            return 'weapon_fire_tesla';
+        }
+        if (weaponId.includes('carbine') || weaponId.includes('rifle')) {
+            return 'weapon_fire_carbine';
+        }
+        return 'weapon_fire_sidearm';
+    }
+
+    resolveTracerFlybySound(tracerFx) {
+        const fx = String(tracerFx || '').toLowerCase();
+        if (fx.includes('frost') || fx.includes('ice') || fx.includes('cyan') || fx.includes('4205')) {
+            return 'tracer_flyby_frost';
+        }
+        if (fx.includes('heavy') || fx.includes('rust') || fx.includes('orange') || fx.includes('4212')) {
+            return 'tracer_flyby_heavy';
+        }
+        if (fx.includes('chitin') || fx.includes('acid') || fx.includes('green') || fx.includes('spore') || fx.includes('4219')) {
+            return 'tracer_flyby_chitin';
+        }
+        return 'tracer_flyby_ballistic';
     }
 
     triggerControllerFire({ source = 'controller' } = {}) {
@@ -9393,6 +11367,7 @@ export class ThreeGame {
 
     triggerGameplayMelee({ source = 'manual' } = {}) {
         if (!this.isGameplayInputActive() || !this.player || this.isPlayerDead) return false;
+        if (!canUseWeaponWhileCarrying(this.carryState)) return false;
         if ((this.meleeCooldownTimer ?? 0) > 0) return false;
         if (this.isInsideNoFireZone()) return false;
 
@@ -10037,9 +12012,9 @@ export class ThreeGame {
         const activeShip = this.crashedShips.find((ship) => (
             String(ship.type ?? '').trim().toUpperCase() === activeType
         ));
-        if (activeShip && this.crashSiteFloorMesh) {
-            this.crashSiteFloorMesh.position.x = activeShip.tileX;
-            this.crashSiteFloorMesh.position.z = activeShip.tileZ;
+        if (activeShip && this.crashSiteHeatMesh) {
+            this.crashSiteHeatMesh.position.x = activeShip.tileX;
+            this.crashSiteHeatMesh.position.z = activeShip.tileZ;
         }
     }
 
@@ -10340,6 +12315,16 @@ export class ThreeGame {
             metadata: this.wfcMetadataCache?.get(`${chunkX},${chunkY}`),
             maze: landform === LANDFORMS.MAZE,
             crashRoom: chunkX === 0 && chunkY === 0,
+            crashImpact: chunkX === 0 && chunkY === 0
+                ? (() => {
+                    const activeShip = this.crashedShips?.find((ship) => ship.type === this.playerType);
+                    return {
+                        x: activeShip?.tileX ?? CRASH_SITE_CENTER,
+                        y: activeShip?.tileZ ?? CRASH_SITE_CENTER,
+                        radius: 3.75
+                    };
+                })()
+                : null,
             ledgeGround,
             landform,
             variantKey: `${chunkX},${chunkY}`
@@ -10363,6 +12348,7 @@ export class ThreeGame {
         const safeFallbackPath = this.resolveRelativeAssetPath(fallbackPath);
         const texture = textureLoader.load(safePath, (loadedTexture) => {
             this.configureTerrainTexture(loadedTexture, maxAnisotropy);
+            loadedTexture.userData.isProceduralFallback = false;
         }, undefined, (error) => {
             if (!safeFallbackPath || safeFallbackPath === safePath) {
                 console.warn(`[ThreeGame] Failed to load terrain texture from ${safePath}`, error);
@@ -10378,6 +12364,31 @@ export class ThreeGame {
                 console.warn(`[ThreeGame] Failed to load terrain fallback texture from ${safeFallbackPath}`, fallbackError);
             });
         });
+
+        // TextureLoader returns before network/decode completes. Give floors
+        // and walls a dark, opaque industrial pattern immediately so a slow or
+        // failed decode can never expose the scene's pale clear color as a
+        // seemingly missing surface.
+        if (typeof document !== 'undefined') {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const context = canvas.getContext('2d');
+            if (context) {
+                const isFloor = /floor|base|grunge|scratch|growth|frost|rock/i.test(String(path));
+                context.fillStyle = isFloor ? '#18232a' : '#111a20';
+                context.fillRect(0, 0, 32, 32);
+                context.fillStyle = isFloor ? '#263740' : '#202c33';
+                context.fillRect(0, 0, 15, 15);
+                context.fillRect(16, 16, 16, 16);
+                context.strokeStyle = '#50616a';
+                context.globalAlpha = 0.35;
+                context.strokeRect(0.5, 0.5, 31, 31);
+                texture.image = canvas;
+                texture.needsUpdate = true;
+                texture.userData.isProceduralFallback = true;
+            }
+        }
 
         this.configureTerrainTexture(texture, maxAnisotropy);
         return texture;
@@ -10900,9 +12911,9 @@ export class ThreeGame {
             this.menuShowroomReticle.visible = nextProfile === 'menu';
         }
         if (this.bunkerCotSprite) {
-            this.bunkerCotSprite.visible = nextProfile === 'gameplay';
             this.syncBunkerCot?.();
         }
+        this.reconcileInstalledBaseModuleVisuals?.();
         if (nextProfile === 'menu' && this.darknessOverlay) {
             this.darknessOverlay.style.opacity = '0';
         }
@@ -11305,6 +13316,11 @@ export class ThreeGame {
 
     getPerformanceDiagnosticsSnapshot() {
         const info = this.renderer?.info;
+        const mountedChunks = this.chunkMeshes?.size ?? null;
+        const retainedChunks = this._residentChunkKeys?.size ?? mountedChunks;
+        const visibleChunks = this.chunkMeshes
+            ? [...this.chunkMeshes.values()].filter((group) => group?.visible !== false).length
+            : null;
         const gpuFrame = this.gpuFrameTimer?.snapshot?.() ?? null;
         const gpuMemory = this.gpuMemoryTracker?.snapshot?.({
             scene: this.scene,
@@ -11323,7 +13339,12 @@ export class ThreeGame {
             wallMeshes: this.wallMeshes?.length ?? null,
             destroyedWallCount: this.destroyedWallKeys?.size ?? null,
             pendingChunkMounts: this.pendingChunkMounts?.length ?? null,
-            activeChunks: this.chunkMeshes?.size ?? null,
+            // Keep activeChunks for older log readers; the explicit counters
+            // distinguish allocation residency from actual submission.
+            activeChunks: mountedChunks,
+            mountedChunks,
+            retainedChunks,
+            visibleChunks,
             geometries: info?.memory?.geometries ?? null,
             textures: info?.memory?.textures ?? null,
             programs: info?.programs?.length ?? null,
@@ -11366,9 +13387,10 @@ export class ThreeGame {
         const span = beginPerfPhase(label, { profile: this.performanceProfile });
         // Flat double-sided effects added at runtime draw in one pass, not two
         // (src/singlePassFlatMaterials.js); chunks and GLBs are done on mount.
+        const fp = this.frameProfiler ?? (this.frameProfiler = createFrameProfiler());
         this._flatMaterialSweep ??= createFlatMaterialSweeper();
-        this._flatMaterialSweep(this.scene);
-        updateKitMaterials(performance.now() / 1000);
+        fp.measure('render:scene-material-sweep', () => this._flatMaterialSweep(this.scene));
+        fp.measure('render:wall-floor-decal-materials', () => updateKitMaterials(performance.now() / 1000));
         const gpuQueryStarted = this.gpuFrameTimer?.beginFrame?.() ?? false;
         // three.js resets renderer.info at the start of every render() call,
         // and the composer makes one call per pass, so draw-call/triangle
@@ -11383,14 +13405,16 @@ export class ThreeGame {
         // Settings > Graphics > Shadows: Reduced redraws the shadow maps every
         // other frame (autoUpdate is off; the map keeps the last frame).
         if (this._shadowUpdateEveryOtherFrame && this.renderer?.shadowMap) {
-            this._shadowFrameParity = !this._shadowFrameParity;
-            this.renderer.shadowMap.needsUpdate = this._shadowFrameParity;
+            fp.measure('render:shadow-schedule', () => {
+                this._shadowFrameParity = !this._shadowFrameParity;
+                this.renderer.shadowMap.needsUpdate = this._shadowFrameParity;
+            });
         }
         try {
             if (this.composer && usesGameplayFocusEffects(this)) {
-                this.composer.render();
+                fp.measure('render:effect-composer-submit', () => this.composer.render());
             }
-            else this.renderer.render(this.scene, this.camera);
+            else fp.measure('render:renderer-submit', () => this.renderer.render(this.scene, this.camera));
         } finally {
             if (info) info.autoReset = autoReset;
             if (gpuQueryStarted) this.gpuFrameTimer?.endFrame?.();
@@ -11555,9 +13579,6 @@ export class ThreeGame {
         };
         const now = performance.now();
         const crashHeatPulse = Math.sin(now * 0.0026);
-        if (this.crashSiteFloorMaterial) {
-            this.crashSiteFloorMaterial.emissiveIntensity = 0.46 + crashHeatPulse * 0.07;
-        }
         if (this.crashSiteHeatMaterial) {
             this.crashSiteHeatMaterial.opacity = 0.40 + crashHeatPulse * 0.06;
         }
@@ -11679,6 +13700,7 @@ export class ThreeGame {
         fp.measure('updateEnvLightBudget', () => this.updateEnvLightBudget?.(delta));
         fp.measure('updateTransientEffects', () => this.updateTransientEffects(delta, now));
         fp.measure('updateTrackField', () => this.trackField?.update(now / 1000));
+        fp.measure('updateCasingSystem', () => this.casingSystem?.update(delta, this));
         this.killstreakFeedback?.update(delta);
         fp.measure('updateHiddenPlayerMarker', () => this.updateHiddenPlayerMarker(now));
         fp.measure('updateVitals', () => this.updateVitals(delta));
@@ -11712,6 +13734,13 @@ export class ThreeGame {
             fp.measure('updateSky', () => this.updateSky(delta));
             fp.measure('updateTerminalClockTick', () => this.updateTerminalClockTick(now));
             fp.measure('updatePickups', () => this.updatePickups(delta, now));
+            fp.measure('updateFieldWeaponDrops', () => this.updateFieldWeaponDrops?.(delta, now));
+            fp.measure('updateShipRebuildRecovery', () => this.updateShipRebuildRecovery?.(delta));
+            fp.measure('updateCarryObjectVisuals', () => this.updateCarryObjectVisuals?.(delta, now));
+            fp.measure('updateInstalledBaseModuleVisuals', () => this.updateInstalledBaseModuleVisuals?.(delta));
+            fp.measure('updateMissionCargoRecovery', () => this.updateMissionCargoRecovery?.(delta));
+            fp.measure('updateBaseAtmosphere', () => this.updateBaseAtmosphere?.(delta, now));
+            fp.measure('updateIceBarriers', () => this.updateIceBarriers?.(delta));
             fp.measure('updateScatter', () => this.updateScatter(delta, now));
             fp.measure('updateUnderfootCrush', () => this.updateUnderfootCrush());
             fp.measure('updateMysteryBoxes', () => this.updateMysteryBoxes(delta));
@@ -12004,6 +14033,10 @@ export class ThreeGame {
     // The optional objective that rides alongside the primary one. Additive:
     // consumers that only read `label` are unaffected.
     getLoopSecondary() {
+        const cargo = this.getMissionCargoGuidance?.();
+        if (cargo) {
+            return { key: 'mission-cargo', id: cargo.id, label: cargo.label };
+        }
         if (this._blackBoxMarkerActive && this._blackBoxState) {
             return { key: 'blackbox', label: 'OPTIONAL · RECOVER BLACK BOX' };
         }
@@ -12017,7 +14050,7 @@ export class ThreeGame {
         // The dedupe key has to include the secondary, or picking up the black
         // box would leave its line on screen until the primary happened to
         // change.
-        const dedupe = `${key}|${secondary?.key ?? ''}`;
+        const dedupe = `${key}|${secondary?.key ?? ''}|${secondary?.id ?? ''}`;
         if (!force && dedupe === this._lastLoopStepKey) return;
         this._lastLoopStepKey = dedupe;
         window.dispatchEvent(new CustomEvent('loop-step-changed', {
@@ -12723,7 +14756,7 @@ export class ThreeGame {
             }
 
             if (!state.open && distance <= PROCEDURAL_DOOR_OPEN_RADIUS) this.toggleBunkerBlastDoor();
-            else if (state.open && distance >= PROCEDURAL_DOOR_CLOSE_RADIUS) this.toggleBunkerBlastDoor();
+            else if (state.open && state.autoClose !== false && distance >= PROCEDURAL_DOOR_CLOSE_RADIUS) this.toggleBunkerBlastDoor();
         }
         state.y = THREE.MathUtils.lerp(state.y, state.targetY, Math.min(1.0, state.speed * delta));
         this.bunkerBlastDoorGroup.position.y = state.y;
@@ -12808,11 +14841,11 @@ export class ThreeGame {
         this._lastBunkerBlastDoorToggleAt = 0;
         const state = this.bunkerBlastDoorState;
         if (!state) return;
-        state.open = false;
+        state.open = true;
         state.destroyed = false;
         state.hp = state.maxHp;
-        state.y = 1.4;
-        state.targetY = 1.4;
+        state.y = -2.4;
+        state.targetY = -2.4;
         if (this.bunkerBlastDoorGroup) {
             this.bunkerBlastDoorGroup.position.y = state.y;
             this.bunkerBlastDoorGroup.visible = true;
@@ -13000,10 +15033,27 @@ export class ThreeGame {
             }
             const door = this.proceduralDoorStates.get(id);
             if (!door) continue;
-            const targetY = door.state === 'open' || door.state === 'destroyed'
-                ? (mesh.userData.openY ?? -this.wallHeight)
-                : (mesh.userData.closedY ?? this.wallHeight / 2);
-            mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, targetY, Math.min(1, delta * 7));
+            const targetOpenAmount = door.state === 'open' || door.state === 'destroyed' ? 1 : 0;
+            const openness = THREE.MathUtils.lerp(
+                Number(mesh.userData.doorOpenAmount) || 0,
+                targetOpenAmount,
+                Math.min(1, delta * 7)
+            );
+            mesh.userData.doorOpenAmount = openness;
+            const orientation = door.orientation ?? mesh.userData.doorOrientation;
+            const pose = resolveDoorMotionPose({ ...door, orientation }, openness, {
+                closedY: mesh.userData.closedY ?? this.wallHeight / 2,
+                openY: mesh.userData.openY ?? -this.wallHeight
+            });
+            const closedPosition = mesh.userData.closedPosition ?? { x: mesh.position.x, z: mesh.position.z };
+            const closedScale = mesh.userData.closedScale ?? { x: mesh.scale.x, y: mesh.scale.y, z: mesh.scale.z };
+            mesh.position.set(closedPosition.x + pose.offsetX, pose.y, closedPosition.z + pose.offsetZ);
+            mesh.rotation.y = pose.yaw;
+            mesh.scale.set(
+                closedScale.x * (orientation === 'horizontal' ? pose.spanScale : 1),
+                closedScale.y,
+                closedScale.z * (orientation === 'vertical' ? pose.spanScale : 1)
+            );
             mesh.visible = door.state !== 'destroyed';
             const targetState = door.state === 'locked' ? 'locked' : door.state === 'open' ? 'open' : 'closed';
             const nextStatusMaterial = this.doorStatusMaterials?.[targetState];
@@ -14495,6 +16545,16 @@ export class ThreeGame {
             };
         }
 
+        const assembly = this.getShipGoalAssemblyStatus?.('o2Bubble');
+        if (generatorState.level === 0 && assembly && !assembly.ready) {
+            return {
+                stateClass: 'btn-state--locked',
+                label: `INSTALL ${assembly.label}`,
+                hint: `${assembly.label} MUST BE RECOVERED AND INSTALLED AT THE SHIP.`,
+                enabled: false
+            };
+        }
+
         const effectiveCost = this.getEffectiveCost(generatorState.nextUpgrade.cost);
         const affordable = this.bank.canAfford(effectiveCost);
         if (!affordable) {
@@ -14514,7 +16574,7 @@ export class ThreeGame {
         };
     }
 
-    getGoalCardButtonState({ unlocked, prereqMet, affordable }) {
+    getGoalCardButtonState({ unlocked, prereqMet, affordable, moduleInstalled = true, moduleLabel = 'SHIP MODULE' }) {
         if (unlocked) {
             return {
                 stateClass: 'btn-state--online',
@@ -14527,6 +16587,14 @@ export class ThreeGame {
             return {
                 stateClass: 'btn-state--locked',
                 label: 'LOCKED',
+                enabled: false
+            };
+        }
+
+        if (!moduleInstalled) {
+            return {
+                stateClass: 'btn-state--locked',
+                label: `INSTALL ${moduleLabel}`,
                 enabled: false
             };
         }
@@ -14561,6 +16629,7 @@ export class ThreeGame {
             ? Boolean(bankState?.unlocks?.[cardConfig.prereqKey])
             : true;
         const affordable = this.bank.canAfford(cost);
+        const assembly = this.getShipGoalAssemblyStatus?.(cardConfig.goalKey);
         const isDiscounted = this.playerType === 'ENGINEER';
 
         const statusEl = document.getElementById(cardConfig.statusId);
@@ -14569,6 +16638,8 @@ export class ThreeGame {
                 statusEl.textContent = t('ui.console.online');
             } else if (!prereqMet) {
                 statusEl.textContent = cardConfig.lockedStatusText;
+            } else if (assembly && !assembly.ready) {
+                statusEl.textContent = t('ui.console.install_required', { module: assembly.label });
             } else if (!affordable) {
                 statusEl.textContent = t('ui.console.ready_deficit');
             } else {
@@ -14589,7 +16660,9 @@ export class ThreeGame {
         const buttonState = this.getGoalCardButtonState({
             unlocked,
             prereqMet,
-            affordable
+            affordable,
+            moduleInstalled: assembly?.ready ?? true,
+            moduleLabel: assembly?.label
         });
 
         button.textContent = buttonState.label;
@@ -15076,6 +17149,10 @@ export class ThreeGame {
 
             const breakdown = this.getResourceCostBreakdown(activeGoal.cost, bankState);
             const canAfford = this.bank.canAfford(activeGoal.cost);
+            const assembly = activeGoal.type === 'o2' || activeGoal.type === 'goal'
+                ? this.getShipGoalAssemblyStatus?.(activeGoal.key)
+                : null;
+            const canBuild = canAfford && (assembly?.ready ?? true);
 
             costOutlineEl.innerHTML = '';
             for (const entry of breakdown) {
@@ -15085,14 +17162,18 @@ export class ThreeGame {
                 costOutlineEl.appendChild(chip);
             }
 
-            buyBtn.disabled = !canAfford;
-            buyBtn.textContent = activeGoal.key === 'o2Bubble'
-                ? 'REPAIR GENERATOR'
+            buyBtn.disabled = !canBuild;
+            buyBtn.textContent = assembly && !assembly.ready
+                ? `INSTALL ${assembly.label}`
+                : activeGoal.key === 'o2Bubble'
+                    ? 'REPAIR GENERATOR'
                 : activeGoal.type === 'goal-upgrade'
                     ? 'INITIATE UPGRADE'
                     : 'INITIATE BUILD';
-            buyBtn.classList.remove('btn-state--available', 'btn-state--insufficient');
-            buyBtn.classList.add(canAfford ? 'btn-state--available' : 'btn-state--insufficient');
+            buyBtn.classList.remove('btn-state--available', 'btn-state--insufficient', 'btn-state--locked');
+            buyBtn.classList.add(canBuild
+                ? 'btn-state--available'
+                : assembly && !assembly.ready ? 'btn-state--locked' : 'btn-state--insufficient');
 
             buyBtn.onclick = () => {
                 this.closeConsoleModal();
@@ -15105,7 +17186,9 @@ export class ThreeGame {
                 }
             };
 
-            setText('terminal-current-objective-status', canAfford ? t('ui.console.ready') : t('ui.console.insufficient'));
+            setText('terminal-current-objective-status', assembly && !assembly.ready
+                ? t('ui.console.install_required', { module: assembly.label })
+                : canAfford ? t('ui.console.ready') : t('ui.console.insufficient'));
         } else {
             if (purchaseZone) {
                 purchaseZone.classList.add('hidden');
@@ -15392,6 +17475,13 @@ export class ThreeGame {
     }
 
     attemptGoalUnlock(ship, cardConfig) {
+        const assembly = this.getShipGoalAssemblyStatus?.(cardConfig.goalKey);
+        if (assembly && !assembly.ready) {
+            this.showBunkerLine?.(`${assembly.label} REQUIRED — RECOVER IT IN THE EXPEDITION AND INSTALL IT AT THE SHIP.`);
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            this.renderConsoleBanking(ship);
+            return false;
+        }
         const rawCost = this.getGoalBuildCost(cardConfig.goalKey);
         if (!rawCost) {
             window.AudioManager?.play('ui_error', { volume: 0.58 });
@@ -15450,6 +17540,13 @@ export class ThreeGame {
 
     attemptO2GeneratorUpgrade(ship) {
         const generatorState = this.getO2GeneratorState();
+        const assembly = this.getShipGoalAssemblyStatus?.('o2Bubble');
+        if (generatorState.level === 0 && assembly && !assembly.ready) {
+            this.showBunkerLine?.(`${assembly.label} REQUIRED — RECOVER IT IN THE EXPEDITION AND INSTALL IT AT THE SHIP.`);
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            this.renderConsoleBanking(ship);
+            return false;
+        }
         const nextUpgrade = generatorState.nextUpgrade;
         let upgrade;
         if (nextUpgrade && this.playerType === 'ENGINEER') {
@@ -16345,7 +18442,10 @@ export class ThreeGame {
     // spawnPlayerShot() and the reload/clip logic. Called whenever upgrades change.
     applyWeaponUpgrades() {
         const craftedId = typeof window !== 'undefined' ? window.loadout?.getEquippedId?.(this.playerType) : null;
-        this.fieldWeapon = getFieldWeaponProfile(craftedId, typeof window !== 'undefined' && window.fabricator?.isFabricated?.(craftedId));
+        const runWeapon = this.fieldWeaponRunState?.equipped ?? null;
+        this.fieldWeapon = runWeapon
+            ? getFieldWeaponProfile(runWeapon.profileId, true)
+            : getFieldWeaponProfile(craftedId, typeof window !== 'undefined' && window.fabricator?.isFabricated?.(craftedId));
         const levels = this.bank?.getWeaponUpgrades?.() ?? {};
         const ammoCapacity = Math.max(0, Math.floor(levels.ammoCapacity ?? 0));
         const shotSpeed = Math.max(0, Math.floor(levels.shotSpeed ?? 0));
@@ -16356,7 +18456,9 @@ export class ThreeGame {
         if (this.playerType === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_ammo_1')) {
             baseClipSize += 3;
         }
-        this.weaponClipSize = Math.max(1, baseClipSize + (Number(this.loadoutMods?.clipSizeBonus) || 0));
+        this.weaponClipSize = runWeapon
+            ? (getFieldWeaponDropDefinition(runWeapon.profileId)?.clipCapacity ?? Math.max(1, runWeapon.ammoInWeapon))
+            : Math.max(1, baseClipSize + (Number(this.loadoutMods?.clipSizeBonus) || 0));
 
         let extraDamage = shotDamage;
         if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_damage_1')) {
@@ -16372,7 +18474,9 @@ export class ThreeGame {
             shotAmount
         };
         // Never leave more rounds chambered than the (possibly shrunk) clip allows.
-        this.weaponClipAmmo = Math.min(this.weaponClipAmmo, this.weaponClipSize);
+        this.weaponClipAmmo = runWeapon
+            ? runWeapon.ammoInWeapon
+            : Math.min(this.weaponClipAmmo, this.weaponClipSize);
     }
 
     hasUpgrade(goalKey) {
@@ -17536,12 +19640,13 @@ export class ThreeGame {
         return experience;
     }
 
-    acknowledgePropExperience(target) {
+    acknowledgePropExperience(target, options) {
         const root = target?.userData?.world3dRoot
             ?? target?.userData?.dynamicRoot
+            ?? target?.userData?.dressingItem?.dynamicRoot
             ?? target?.dynamicRoot
             ?? (target?.userData?.propExperience ? target : null);
-        return root?.userData?.propExperience?.acknowledge?.() ?? false;
+        return root?.userData?.propExperience?.acknowledge?.(options) ?? false;
     }
 
     disposeWorld3dPropFx(root) {
@@ -17621,6 +19726,7 @@ export class ThreeGame {
     updateCamps(delta) {
         if (this.performanceProfile === 'menu' || !this.act2) return;
         this.ensureAct2Camps();
+        this.stageFirstNightCotCampHandoff?.();
         const phase = this.act2.getPhase();
         for (const camp of this.camps) {
             camp.update(delta);
@@ -18123,6 +20229,7 @@ export class ThreeGame {
             return hive;
         });
         this._hiveSitesReady = true;
+        this.restoreActiveHiveCargoMission?.();
     }
 
     getHiveRecord(id) {
@@ -18347,6 +20454,7 @@ export class ThreeGame {
         const quest = questByHive[record.id];
         if (quest) {
             const done = record.questFlags?.[quest.id] === 'done';
+            const active = record.questFlags?.[quest.id] === 'active';
             const locked = record.bond < 2;
             const deadlineExpired = parleyExpired;
             options.push({
@@ -18354,12 +20462,14 @@ export class ThreeGame {
                 hiveId: record.id,
                 questId: quest.id,
                 label: done ? `${quest.label} — COMPLETE`
+                    : active ? `${quest.label} — CARGO IN TRANSIT`
                     : deadlineExpired ? `${quest.label} — MISSED`
                         : locked ? `${quest.label} — LOCKED` : quest.label,
                 desc: deadlineExpired && !done
                     ? 'The parley window closed while you slept.'
+                    : active ? 'Carry the living air membrane to the ship berth. Both hands are required.'
                     : locked && !done ? `Requires bond 2. Current bond ${record.bond}.` : `${quest.desc} Gain 1 bond. ${bondBenefit}`,
-                disabled: done || locked || deadlineExpired
+                disabled: done || active || locked || deadlineExpired
             });
         }
 
@@ -18447,7 +20557,13 @@ export class ThreeGame {
             this.act2.adjustHiveBond(hive.id, 1);
             this.act2.healHiveExtraction(hive.id, 1);
         } else if (action === 'hive-quest') {
-            this.act2.completeHiveQuest(hive.id, payload.questId, 1);
+            if (hive.id === 'hive_suture' && payload.questId === 'host_mercy') {
+                const cargo = this.spawnHiveCargoMission?.(hive);
+                if (!cargo) return deny('cargo-unavailable');
+                this.act2.setHiveQuestActive(hive.id, payload.questId);
+            } else {
+                this.act2.completeHiveQuest(hive.id, payload.questId, 1);
+            }
         } else if (action === 'hive-network') {
             this.act2.setHiveNetworked(hive.id, true);
         } else if (action === 'hive-rescue') {
@@ -18570,6 +20686,7 @@ export class ThreeGame {
             }
         }
         this._act2CampsReady = true;
+        this.stageFirstNightCotCampHandoff?.();
         this.restoreActiveCampQuestFromState?.();
     }
 
@@ -18832,6 +20949,18 @@ export class ThreeGame {
     }
 
     clearActiveCampQuestEntities() {
+        const cargoMissionId = this._activeCampQuest?.kind === 'carry'
+            ? `camp-quest:${this._activeCampQuest.campId}:${this._activeCampQuest.quest?.id}`
+            : null;
+        if (cargoMissionId && this.carryState) {
+            const removed = removeMissionCarryObjects(this.carryState, cargoMissionId);
+            this.carryState = removed.state;
+            if (removed.removed.length) {
+                disposeCarryObjectVisual(this.carriedObjectVisual);
+                this.carriedObjectVisual = null;
+                this.reconcileCarryObjectVisuals?.();
+            }
+        }
         const questEntities = new Set([
             ...(this._activeCampQuest?.props ?? []),
             ...(this._activeCampQuest?.landmarks ?? []),
@@ -19145,7 +21274,7 @@ export class ThreeGame {
             this._activeCampQuest.kind = 'pickup';
             this.spawnHiveArchiveObject(camp, quest);
         } else if (quest.id === 'lost_probe') {
-            this._activeCampQuest.kind = 'pickup';
+            this._activeCampQuest.kind = 'carry';
             this.spawnLostProbeObject(camp);
         } else if (quest.id === 'spore_cleansing') {
             this._activeCampQuest.kind = 'shoot';
@@ -19173,8 +21302,13 @@ export class ThreeGame {
             this._activeCampQuest = null;
             return;
         }
-        if (this._activeCampQuest.props.length === 0
-            || (this._activeCampQuest.kind !== 'wave' && this._activeCampQuest.props.length < target)) {
+        if (this._activeCampQuest.kind !== 'carry' && (this._activeCampQuest.props.length === 0
+            || (this._activeCampQuest.kind !== 'wave' && this._activeCampQuest.props.length < target))) {
+            this.clearActiveCampQuestEntities?.();
+            this._activeCampQuest = null;
+            return;
+        }
+        if (this._activeCampQuest.kind === 'carry' && !this._activeCampQuest.cargoInstanceId) {
             this.clearActiveCampQuestEntities?.();
             this._activeCampQuest = null;
             return;
@@ -19281,7 +21415,7 @@ export class ThreeGame {
         }
     }
 
-    // The Lost Probe (Meridian): single pickup, placed out in the CRYO biome
+    // The Lost Probe (Meridian): two-handed recovery cargo placed in the CRYO biome
     // band away from camp — falls back to a near-camp spot if the band
     // search can't find a walkable tile (never leave the quest uncompletable).
     spawnLostProbeObject(camp) {
@@ -19296,14 +21430,22 @@ export class ThreeGame {
             const tileX = Math.round(anchor.x + Math.cos(angle) * dist);
             const tileZ = Math.round(anchor.z + Math.sin(angle) * dist);
             if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
-                const sprite = this.spawnCampQuestMarkerProp(camp, { type: 'quest_prop', x: tileX, z: tileZ, index: 0, scale: 1.0 });
-                if (sprite) this._activeCampQuest.props.push(sprite);
+                const cargo = this.spawnMissionCarryCargo?.({
+                    definitionId: 'camp_salvage_probe',
+                    missionId: CAMP_PROBE_MISSION_ID,
+                    worldPosition: { x: tileX, z: tileZ }
+                });
+                if (cargo) this._activeCampQuest.cargoInstanceId = cargo.instanceId;
                 return;
             }
         }
         const { x, z } = this.findCampQuestSpawnSpot(camp, 0, 1);
-        const sprite = this.spawnCampQuestMarkerProp(camp, { type: 'quest_prop', x, z, index: 0 });
-        if (sprite) this._activeCampQuest.props.push(sprite);
+        const cargo = this.spawnMissionCarryCargo?.({
+            definitionId: 'camp_salvage_probe',
+            missionId: CAMP_PROBE_MISSION_ID,
+            worldPosition: { x, z }
+        });
+        if (cargo) this._activeCampQuest.cargoInstanceId = cargo.instanceId;
     }
 
     spawnHiveArchiveObject(camp, _quest) {
@@ -19822,6 +21964,11 @@ export class ThreeGame {
     getActiveCampQuestTargetPos() {
         const aq = this._activeCampQuest;
         if (!aq) return null;
+        if (aq.kind === 'carry') {
+            const cargo = (this.carryState?.worldObjects ?? [])
+                .find((object) => object.instanceId === aq.cargoInstanceId);
+            if (cargo) return { x: cargo.worldPosition.x, z: cargo.worldPosition.z };
+        }
         const alive = (aq.props ?? []).find((sprite) =>
             sprite?.parent && !sprite.userData?.burstTriggered && !sprite.userData?.questClaimed);
         if (alive) return { x: alive.position.x, z: alive.position.z };
@@ -20418,7 +22565,14 @@ export class ThreeGame {
             ? this.getRestRefusalAt?.(this.player.position.x, this.player.position.z)
             : null;
         if (refusal && actionText) {
-            actionText.textContent = refusal === 'active_quest' ? t('ui.prompt.rest_blocked_quest') : t('ui.prompt.rest_blocked_unsafe');
+            const atmosphere = this.getBaseAtmosphereStatus?.();
+            actionText.textContent = refusal === 'active_quest'
+                ? t('ui.prompt.rest_blocked_quest')
+                : refusal === 'cabin-pressurizing'
+                    ? `CABIN PRESSURIZING · ${Math.round((atmosphere?.pressure ?? 0) * 100)}%`
+                    : refusal.startsWith?.('unsealed:')
+                        ? `SLEEP LOCKED · ${atmosphere?.label ?? 'CABIN BREACH'}`
+                        : t('ui.prompt.rest_blocked_unsafe');
             actionText.dataset.restPrompt = '1';
             promptEl.classList.add('visible');
             promptEl.classList.remove('hidden');
@@ -20456,21 +22610,23 @@ export class ThreeGame {
      */
     getRestRefusalAt(x, z) {
         if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
+        if (!installedCot(this.carryState)) return null;
         const cot = this.getBunkerRestPoint();
         if (Math.hypot(cot.x - x, cot.z - z) > BUNKER_COT_REACH) return null;
         const check = this.canRestAt(cot, { status: 'alive', safeSpace: true });
         if (check.allowed) return null;
-        return ['active_quest', 'camp-unsafe', 'hostiles_nearby'].includes(check.reason) ? check.reason : null;
+        return check.reason ?? null;
     }
 
     /** Where the bunker cot stands, in world coordinates. */
     getBunkerRestPoint() {
-        const spawn = this.getSpawnTile?.() ?? null;
+        const installed = installedCot(this.carryState);
+        const transform = installed?.transform ?? installed ?? this.getFirstNightBasePlan?.().installSocket?.transform;
         return {
             id: 'bunker_cot',
             label: 'BUNKER COT',
-            x: (spawn?.x ?? 0) + BUNKER_COT_OFFSET.x,
-            z: (spawn?.y ?? 0) + BUNKER_COT_OFFSET.z
+            x: Number(transform?.x) || 0,
+            z: Number(transform?.z) || 0
         };
     }
 
@@ -20481,6 +22637,7 @@ export class ThreeGame {
      */
     getRestPointAt(x, z) {
         if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
+        if (!installedCot(this.carryState)) return null;
         const cot = this.getBunkerRestPoint();
         if (Math.hypot(cot.x - x, cot.z - z) > BUNKER_COT_REACH) return null;
         const check = this.canRestAt(cot, { status: 'alive', safeSpace: true });
@@ -20497,6 +22654,24 @@ export class ThreeGame {
         // A breached camp is not a safe bed, whatever else the day allows.
         if (site?.id && !getCampConditionEffects(this.getCampCondition?.(site.id)).rest) {
             return { allowed: false, reason: 'camp-unsafe' };
+        }
+        if (site?.id === 'bunker_cot') {
+            const seal = this.baseAtmosphereSeal ?? evaluateRoomSealGraph({
+                modules: this.carryState?.installed ?? [],
+                defaultSafeBubble: null
+            });
+            const restSafety = isPositionSafeForRest({
+                ...seal,
+                pressure: this.baseAtmosphereState?.pressure
+            }, site);
+            if (!restSafety.safe) {
+                return {
+                    allowed: false,
+                    reason: restSafety.reason,
+                    leakDetails: restSafety.leakDetails ?? null
+                };
+            }
+            safeSpace = true;
         }
         return canRestNow(this.dayState, {
             safeSpace,
@@ -20778,6 +22953,16 @@ export class ThreeGame {
             if (!camp.isWithinInteractRange(x, z)) continue;
             const record = this.getCampRecord(camp.id);
             const status = record?.status ?? camp.status ?? 'alive';
+
+            const cotHandoff = status === 'alive' ? getFirstNightCotHandoff(this.carryState, camp.id) : null;
+            if (cotHandoff && !skip?.has('cot-handoff')) {
+                return {
+                    camp,
+                    action: 'cot-handoff',
+                    object: cotHandoff,
+                    label: 'CLAIM FOLDED COT — FIRST-NIGHT SHELTER'
+                };
+            }
 
             const hasCompanion = (this.companions ?? []).some((c) => c.isWanderer || c.wanderer);
             if (hasCompanion && ['alive', 'robbed'].includes(status)) {
@@ -21700,6 +23885,7 @@ export class ThreeGame {
         }
 
         if (action === 'talk-resident') return this.talkToCampResident(camp, actionable.workerIndex);
+        if (action === 'cot-handoff') return this.claimFirstNightCotHandoff(camp);
         if (action === 'field-workbench') return this.openFieldWorkbench(camp);
         if (action === 'settle-companion') return this.settleCompanionAtCamp(camp);
         if (action === 'treat-scar') return this.treatScarAtCamp(camp, actionable.scarId);
@@ -22666,7 +24852,9 @@ export class ThreeGame {
                 reloading: this.weaponReloading,
                 reloadProgress,
                 autoRefillProgress,
-                unlimitedAmmo: Boolean(this.unlimitedAmmo)
+                unlimitedAmmo: Boolean(this.unlimitedAmmo),
+                fieldWeaponId: this.fieldWeaponRunState?.equipped?.profileId ?? null,
+                ammoType: this.fieldWeaponRunState?.equipped?.ammoType ?? 'shared-cache'
             }
         }));
     }
@@ -22689,7 +24877,7 @@ export class ThreeGame {
             projectile?.mesh?.material?.dispose?.();
             projectile?.mesh?.geometry?.dispose?.();
         }
-        this.weaponClipAmmo = this.weaponClipSize;
+        this.weaponClipAmmo = this.fieldWeaponRunState?.equipped?.ammoInWeapon ?? this.weaponClipSize;
         this.weaponReloading = false;
         this.weaponReloadTimer = 0;
         this.weaponAmmoRefillTimer = 0;
@@ -22849,6 +25037,20 @@ export class ThreeGame {
         }
 
         this.syncActiveCampQuestObjectiveTarget?.();
+
+        const cargo = this.getMissionCargoGuidance?.();
+        if (cargo) {
+            const dx = cargo.x - this.player.position.x;
+            const dz = cargo.z - this.player.position.z;
+            const distance = Math.hypot(dx, dz);
+            return {
+                active: true,
+                mode: cargo.mode,
+                label: cargo.label,
+                angle: this.planarAngleTo(dx, dz, distance),
+                distance
+            };
+        }
 
         if (this._blackBoxMarkerActive && this._blackBoxState?.active) {
             const dx = this._blackBoxState.x - this.player.position.x;
@@ -23065,6 +25267,7 @@ export class ThreeGame {
         // gameplay update that happened to run first.
         this.ensureAct2Camps?.();
         this.ensureHiveSites?.();
+        this.syncMissionCargoMapLandmarks?.();
 
         if (this.explorationTracker) {
             this.explorationTracker.registerLandmark('home_base', {
@@ -24481,6 +26684,25 @@ export class ThreeGame {
             }
         }));
 
+        const appliedDamage = previousHp - this.playerVitals.hp;
+        if (shouldStaggerDropCargo(this.carryState, {
+            damage: appliedDamage,
+            hasDirectionalSource: Number.isFinite(sourceX) && Number.isFinite(sourceZ)
+        })) {
+            const dropped = this.emergencyDropCarriedObject?.('damage-stagger');
+            if (dropped) {
+                this.sprinting = false;
+                this._sprintMoveSpeedMult = 1;
+                this.showBunkerLine?.('IMPACT STAGGER — HEAVY CARGO DROPPED AT YOUR FEET.');
+                this.spawnPhysicalBurst?.(dropped.worldPosition.x, dropped.worldPosition.z, {
+                    color: 0xf6c453, count: 9, upward: 0.12
+                });
+                window.dispatchEvent(new CustomEvent('carry-object-stagger-dropped', {
+                    detail: { dropped, reason, damage: appliedDamage }
+                }));
+            }
+        }
+
         if (this.playerVitals.hp === 1) {
             this.hadNearDeath = true;
         }
@@ -24571,6 +26793,10 @@ export class ThreeGame {
     handleDeath(reason = 'hazard') {
         if (this.isPlayerDead) return;
         if (this.performanceProfile && this.performanceProfile !== 'gameplay') return;
+        // Mission-critical cargo survives the carrier. Resolve its world
+        // position before latching death/input state so a retry, squadmate,
+        // or map marker can still recover the exact same instance.
+        this.emergencyDropCarriedObject?.(`death:${reason}`);
         this.isPlayerDead = true;
         // The results screen names the cause (src/deathReport.js).
         this._lastDeathReason = reason;
@@ -24701,6 +26927,9 @@ export class ThreeGame {
         this.brokenPropScatterKeys = new Set();
         this.spentPropScatterKeys = new Set();
         this.destroyedExteriorWallKeys?.clear();
+        this.fragileLedgeStates?.clear();
+        this._activeFragileLedgeKey = null;
+        this._fragileLedgeVisuals?.clear();
         this._dressingManifest = new Map();
         this._dressingHp = new Map();
         this._wallInstanceIndex?.clear();
@@ -24724,9 +26953,13 @@ export class ThreeGame {
             // Wall-top dressing and door pools share their geometry; their instance buffers go.
             if (child.userData?.isWallTopDressing || child.userData?.isDoorLightPool || child.userData?.isChasmLandmark) child.dispose?.();
             // A wall or cap pool owns its corner-cut geometry and its instance buffers.
-            if (child.userData?.isInstancedWallPool || child.userData?.isRoomCutawayCapPool
+            if (child.userData?.isInstancedWallPool || child.userData?.isWallRunFacadePool || child.userData?.isRoomCutawayCapPool
                 || (child.userData?.isCliff && child.geometry?.userData?.ownedByWallPool)) {
                 if (child.geometry?.userData?.ownedByWallPool) child.geometry.dispose();
+                child.dispose?.();
+            }
+            if (child.userData?.isFragileLedgeCrackPool) {
+                for (const key of child.userData.ledgeKeys ?? []) this._fragileLedgeVisuals?.delete?.(key);
                 child.dispose?.();
             }
             // Shared sheet geometry and material stay; the instance buffer goes.
@@ -26073,12 +28306,16 @@ export class ThreeGame {
     }
 
     updateSprintState(_delta) {
-        const active = Boolean(this.sprinting) && this.isGameplayInputActive() && (this.playerVitals?.o2 ?? 0) > 0;
+        const mobility = getCarryMobilityProfile(this.carryState);
+        const active = Boolean(this.sprinting) && mobility.canSprint
+            && this.isGameplayInputActive() && (this.playerVitals?.o2 ?? 0) > 0;
         // Fatigue prices sprint, it never revokes it: `active` above is
         // untouched. A tired operator still sprints -- it just costs more air
         // and carries a little less of the bonus.
         const pricing = sprintPricing(this.fatigueState);
-        this._sprintMoveSpeedMult = active ? 1 + (0.6 * pricing.speedBonusScale) : 1.0;
+        this._sprintMoveSpeedMult = active
+            ? 1 + (0.6 * pricing.speedBonusScale * mobility.sprintMultiplier)
+            : 1.0;
         this._sprintO2DrainMult = active ? 2.5 * pricing.o2DrainMultiplier : 1.0;
         if (active && !this._wasSprinting) {
             if (typeof window !== 'undefined') window.AudioManager?.play('fx_scout_sprint', { volume: 0.45, bus: 'sfx' });
@@ -26280,6 +28517,7 @@ export class ThreeGame {
         // in-browser verification pass: this spuriously fired near the
         // climb point, which sits close to the pocket's edge by design).
         if (this.player && this.performanceProfile === 'gameplay' && !this.isInPocket && !this.noclip) {
+            this.updateFragileLedgeOccupancy(performance.now());
             if (this.isPlayerOverAnyHole(this.player.position.x, this.player.position.z)) {
                 this.isPlayerFalling = true;
                 this._fallHoleX = Math.round(this.player.position.x);
@@ -26288,6 +28526,16 @@ export class ThreeGame {
                 this.setInputEnabled(false);
                 window.AudioManager?.playMetalStress?.({ volume: 0.8, playbackRate: 0.6, force: true });
                 this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0x111111, count: 12, upward: 0.2 });
+                if (typeof CustomEvent !== 'undefined') {
+                    window.dispatchEvent?.(new CustomEvent('pit-fall-started', {
+                        detail: {
+                            x: this._fallHoleX,
+                            z: this._fallHoleZ,
+                            tile: this.getTileType(this._fallHoleX, this._fallHoleZ),
+                            ledgeState: this.getFragileLedgeState(this._fallHoleX, this._fallHoleZ).state
+                        }
+                    }));
+                }
                 return;
             }
 
@@ -26316,6 +28564,15 @@ export class ThreeGame {
             rightX: this.cameraPlanarRight?.x ?? 1,
             rightZ: this.cameraPlanarRight?.y ?? 0
         });
+
+        // Update dynamic acoustic environment (outdoor wind vs indoor hum/reverb, room tone crossfades)
+        this.updateRoomToneAcoustics?.(delta);
+
+        // Update hyper-localized point-source ambient audio (camps, forges, generators, hive sacs)
+        if (this.pointAudioEmitters && this.player?.position) {
+            this.pointAudioEmitters.syncCampsAndHives(this.camps, this.hives ?? this.hiveSites);
+            this.pointAudioEmitters.update(this.player.position, window.AudioManager, this);
+        }
 
         // Update kinetic control timers
         this.dashCooldownTimer = Math.max(0, (this.dashCooldownTimer ?? 0) - delta);
@@ -26436,7 +28693,8 @@ export class ThreeGame {
             const prevX = this.player.position.x;
             const prevZ = this.player.position.z;
 
-            let speed = this.moveSpeed * (this._sprintMoveSpeedMult ?? 1.0);
+            const carryMobility = getCarryMobilityProfile(this.carryState);
+            let speed = this.moveSpeed * carryMobility.moveMultiplier * (this._sprintMoveSpeedMult ?? 1.0);
             if ((this._scoutSlipstreamTimer ?? 0) > 0) {
                 speed *= 1.35;
             }
@@ -26914,6 +29172,212 @@ export class ThreeGame {
         return BIOME_LABELS[biomeKey] ?? BIOME_LABELS[BIOME_KEYS.ACTIVE];
     }
 
+    /**
+     * Determine if the player is exposed to exterior elements (blizzard, polar winds)
+     * vs sheltered inside structures (safe ship, bunker starting room, camp structures).
+     */
+    isOutdoors() {
+        if (!this.player?.position) return false;
+        // Inside the safe ship interior / no fire sanctuary
+        if (this.isInsideNoFireZone?.()) return false;
+
+        const px = this.player.position.x;
+        const pz = this.player.position.z;
+
+        // Inside the starting bunker crash room: south of blast door (Z > doorZ, X inside room walls)
+        const doorZ = this.bunkerBlastDoorState?.doorZ ?? 3;
+        if (pz > doorZ && px >= -4 && px <= 22) {
+            return false;
+        }
+
+        // Inside sheltered camp radius (Tallow hearth, Vesper bunkhouse, Meridian crypt)
+        if (Array.isArray(this.camps)) {
+            for (const camp of this.camps) {
+                const cx = camp?.pos?.x ?? camp?.tileX;
+                const cz = camp?.pos?.z ?? camp?.tileZ;
+                if (Number.isFinite(cx) && Number.isFinite(cz)) {
+                    if (Math.hypot(px - cx, pz - cz) <= 6.5) return false;
+                }
+            }
+        }
+
+        // Otherwise, open exterior surface expedition / labyrinth
+        return true;
+    }
+
+    /**
+     * Resolve the active acoustic bed and environment filter for the player's current location.
+     */
+    getAcousticEnvironment() {
+        const outdoors = this.isOutdoors();
+        const px = this.player?.position?.x ?? 0;
+        const pz = this.player?.position?.z ?? 0;
+        const biome = (this.currentBiomeKey || BIOME_KEYS.ACTIVE || 'active').toLowerCase();
+
+        // 1. Outdoors: exposed howling polar wind and blizzard drafts
+        if (outdoors) {
+            return {
+                roomTone: 'room_tone_exterior_wind',
+                outdoors: true,
+                filterCutoff: 22000 // crisp open air highs
+            };
+        }
+
+        // 2. Safe starship sanctuary
+        if (this.isInsideNoFireZone?.()) {
+            return {
+                roomTone: 'room_tone_safe_ship',
+                outdoors: false,
+                filterCutoff: 18000
+            };
+        }
+
+        // 3. Camps
+        if (Array.isArray(this.camps)) {
+            for (const camp of this.camps) {
+                const cx = camp?.pos?.x ?? camp?.tileX;
+                const cz = camp?.pos?.z ?? camp?.tileZ;
+                if (Number.isFinite(cx) && Number.isFinite(cz) && Math.hypot(px - cx, pz - cz) <= 7.0) {
+                    if (camp.id === 'camp_meridian') {
+                        return { roomTone: 'room_tone_cathedral_crypt', outdoors: false, filterCutoff: 14000 };
+                    }
+                    if (camp.id === 'camp_tallow') {
+                        return { roomTone: 'room_tone_interior_bunker', outdoors: false, filterCutoff: 16000 };
+                    }
+                    if (camp.id === 'camp_vesper') {
+                        return { roomTone: 'room_tone_interior_bunker', outdoors: false, filterCutoff: 16000 };
+                    }
+                }
+            }
+        }
+
+        // 4. Biome-specific indoor acoustic beds
+        if (biome === 'cryo') {
+            return { roomTone: 'room_tone_cryo_subzero', outdoors: false, filterCutoff: 15000 };
+        }
+        if (biome === 'bio') {
+            return { roomTone: 'room_tone_bio_hive', outdoors: false, filterCutoff: 12000 };
+        }
+
+        // 5. Default subterranean bunker
+        return { roomTone: 'room_tone_interior_bunker', outdoors: false, filterCutoff: 16000 };
+    }
+
+    /**
+     * Dynamic acoustic loop: crossfades room tones as player moves between
+     * outside and inside, or between biomes / large rooms.
+     */
+    updateRoomToneAcoustics(delta) {
+        if (!this.player || !window.AudioManager?.setRoomTone) return;
+
+        this._roomToneCheckTimer = (this._roomToneCheckTimer ?? 0) - delta;
+        if (this._roomToneCheckTimer > 0) return;
+        this._roomToneCheckTimer = 0.35; // evaluate 3 times per second
+
+        const env = this.getAcousticEnvironment();
+        if (env.roomTone !== this._currentRoomToneKey) {
+            this._currentRoomToneKey = env.roomTone;
+            window.AudioManager.setRoomTone(env.roomTone, { fadeSeconds: 2.8, volume: 0.38 });
+            window.AudioManager.setLowPassMuffle?.(!env.outdoors, env.filterCutoff);
+        }
+
+        // Check for active boss encounter or combat threat
+        let activeBossContext = null;
+        let anyAggressiveHostile = false;
+        const inShip = Boolean(this.isInsideNoFireZone?.());
+
+        if (!inShip && Array.isArray(this.scatterSprites)) {
+            const px = this.player.position.x;
+            const pz = this.player.position.z;
+            for (const s of this.scatterSprites) {
+                if (!s.visible || !s.userData || s.userData.dead) continue;
+                const dist = Math.hypot(s.position.x - px, s.position.z - pz);
+                if (s.userData.isBoss || s.userData.type?.startsWith('boss_')) {
+                    if (dist <= 30) {
+                        const bType = s.userData.type;
+                        if (bType === 'boss_cybersnail') activeBossContext = 'boss_cybersnail';
+                        else if (bType === 'boss_cryosnail') activeBossContext = 'boss_cryosnail';
+                        else if (bType === 'boss_sporesnail') activeBossContext = 'boss_sporesnail';
+                        else if (s.userData.corruptedOperator) {
+                            const opClass = s.userData.operatorClass;
+                            activeBossContext = opClass === 'tank' ? 'boss_tank' : opClass === 'engineer' ? 'boss_engineer' : 'boss_scout';
+                        } else if (s.userData.queenFight) {
+                            activeBossContext = 'boss_queen';
+                        } else {
+                            activeBossContext = 'boss_cybersnail';
+                        }
+                        break;
+                    }
+                } else if (dist <= 12 && (s.userData.enraged || s.userData.aggroTarget)) {
+                    anyAggressiveHostile = true;
+                }
+            }
+        }
+
+        const currentCombatState = activeBossContext ? activeBossContext : (anyAggressiveHostile ? 'combat' : null);
+        if (currentCombatState !== this._lastCombatState) {
+            this._lastCombatState = currentCombatState;
+            if (activeBossContext) {
+                window.AudioManager?.setMusicTension?.('boss');
+                window.AudioManager?.setMusicContext?.(activeBossContext);
+            } else if (anyAggressiveHostile) {
+                window.AudioManager?.setMusicTension?.('threatened');
+                window.AudioManager?.setMusicContext?.('combat');
+            } else {
+                window.AudioManager?.setMusicTension?.(inShip ? 'safe' : 'exploring');
+                if (inShip) {
+                    window.AudioManager?.setMusicContext?.('safe_ship');
+                } else if (this._nearCampMusicId) {
+                    window.AudioManager?.setMusicContext?.(this._nearCampMusicId);
+                } else {
+                    const biome = (this.currentBiomeKey || BIOME_KEYS.ACTIVE || 'active').toLowerCase();
+                    const ctx = biome === 'cryo' ? 'cryo_explore' : biome === 'bio' ? 'bio_explore' : 'active_explore';
+                    window.AudioManager?.setMusicContext?.(ctx);
+                }
+            }
+        }
+
+        // Proximity to camp or safe ship when not in active combat
+        if (!currentCombatState) {
+            if (inShip !== this._wasInShip) {
+                this._wasInShip = inShip;
+                if (inShip) {
+                    window.AudioManager?.setMusicTension?.('safe');
+                    window.AudioManager?.setMusicContext?.('safe_ship');
+                } else {
+                    window.AudioManager?.setMusicTension?.('exploring');
+                    const biome = (this.currentBiomeKey || BIOME_KEYS.ACTIVE || 'active').toLowerCase();
+                    const ctx = biome === 'cryo' ? 'cryo_explore' : biome === 'bio' ? 'bio_explore' : 'active_explore';
+                    window.AudioManager?.setMusicContext?.(ctx);
+                }
+            }
+
+            if (!inShip && Array.isArray(this.camps)) {
+                const px = this.player.position.x;
+                const pz = this.player.position.z;
+                let nearCampId = null;
+                for (const camp of this.camps) {
+                    const cx = camp?.pos?.x ?? camp?.tileX;
+                    const cz = camp?.pos?.z ?? camp?.tileZ;
+                    if (Number.isFinite(cx) && Number.isFinite(cz) && Math.hypot(px - cx, pz - cz) <= 6.5) {
+                        nearCampId = camp.id;
+                        break;
+                    }
+                }
+                if (nearCampId !== this._nearCampMusicId) {
+                    this._nearCampMusicId = nearCampId;
+                    if (nearCampId) {
+                        window.AudioManager?.setMusicContext?.(nearCampId);
+                    } else if (!inShip) {
+                        const biome = (this.currentBiomeKey || BIOME_KEYS.ACTIVE || 'active').toLowerCase();
+                        const ctx = biome === 'cryo' ? 'cryo_explore' : biome === 'bio' ? 'bio_explore' : 'active_explore';
+                        window.AudioManager?.setMusicContext?.(ctx);
+                    }
+                }
+            }
+        }
+    }
+
     emitBiomeChanged(biomeKey, distanceFromAnchor = 0) {
         const key = BIOME_ORDER.includes(biomeKey) ? biomeKey : BIOME_KEYS.ACTIVE;
         if (key === this._lastEmittedBiomeKey) return;
@@ -26937,6 +29401,16 @@ export class ThreeGame {
                 message: BIOME_NOTIFICATION_MESSAGES[key] ?? ''
             }
         }));
+
+        // Dynamic exploration music context trigger on biome shifts
+        if (window.AudioManager?.setMusicContext && !this._nearCampMusicId && !this._wasInShip) {
+            const musicContext = key === BIOME_KEYS.CRYO
+                ? 'cryo_explore'
+                : key === BIOME_KEYS.BIO
+                    ? 'bio_explore'
+                    : 'active_explore';
+            window.AudioManager.setMusicContext(musicContext);
+        }
     }
 
     blendBiomeColor(activeHex, cryoHex, bioHex, cryoMix, bioMix, lowColor, highColor) {
@@ -28014,7 +30488,7 @@ export class ThreeGame {
         const tile = typeof this.getCachedTileType === 'function'
             ? this.getCachedTileType(tileX, tileZ)
             : (typeof this.getTileType === 'function' ? this.getTileType(tileX, tileZ) : '.');
-        if (tile === EXTERIOR_CANYON_TILE || tile === CLIFF_TILE) {
+        if (tile === EXTERIOR_CANYON_TILE) {
             return { type: 'abyss', height: -15.0 };
         }
         if (tile === '#') {
@@ -28385,7 +30859,7 @@ export class ThreeGame {
                     // 2.6-speed TANK and a 4.8-speed SCOUT and at least one of them
                     // slides. Sprint cadence is applied inside the overlay, so this
                     // is the pre-sprint ground speed.
-                    groundSpeed: this.moveSpeed,
+                    groundSpeed: this.moveSpeed * getCarryMobilityProfile(this.carryState).moveMultiplier,
                     isInjured: this.isPlayerInjured(),
                     hasAim: this.hasActiveAim,
                     moveX: visualMoveX,
@@ -28426,13 +30900,47 @@ export class ThreeGame {
                         // Real sampled footsteps now that the soundset registry
                         // has them; the procedural blip remains the fallback for
                         // when the buffers have not decoded yet. Surface picks
-                        // the set -- snow outside the bunker, concrete within.
-                        const surface = this.currentBiome === 'cryo' || this.isOutdoors?.()
-                            ? 'footstep_snow'
-                            : 'footstep_concrete';
+                        // the set across all 10 dynamic material layers.
+                        const px = this.player?.position?.x ?? 0;
+                        const pz = this.player?.position?.z ?? 0;
+                        const underfoot = this.getTrackSurfaceAt?.(px, pz);
+                        const biome = (this.currentBiomeKey || this.currentBiome || '').toLowerCase();
+                        let surface = 'footstep_concrete';
+                        if (underfoot === 'water' || underfoot === 'oil') {
+                            surface = 'footstep_wet_puddle';
+                        } else if (underfoot === 'slime' || underfoot === 'blood' || biome === 'bio') {
+                            surface = 'footstep_hive_slime';
+                        } else if (underfoot === 'snow' || this.isOutdoors?.()) {
+                            surface = 'footstep_deep_snow';
+                        } else if (biome === 'cryo') {
+                            surface = 'footstep_ice_crunch';
+                        } else if (biome === 'camp') {
+                            surface = 'footstep_wood_plank';
+                        } else {
+                            const chunkX = Math.floor(px / 16);
+                            const chunkY = Math.floor(pz / 16);
+                            const roomMeta = this.wfcMetadataCache?.get?.(`${chunkX},${chunkY}`);
+                            const localX = Math.floor(px - chunkX * 16);
+                            const localY = Math.floor(pz - chunkY * 16);
+                            const room = roomMeta?.roomInstances?.find?.(r => r.floorCells?.some?.(c => c.x === localX && c.y === localY));
+                            const style = (room?.themeConfig?.floorSurface || room?.themeConfig?.wallStyle || room?.type || '').toLowerCase();
+                            if (style.includes('bone') || style.includes('cathedral')) {
+                                surface = 'footstep_bone_terrazzo';
+                            } else if (style.includes('casing') || style.includes('armory') || style.includes('security')) {
+                                surface = 'footstep_shell_casings';
+                            } else if (style.includes('grate') || style.includes('trench') || style.includes('workshop') || style.includes('storage')) {
+                                surface = 'footstep_metal_grate';
+                            } else if (style.includes('plank') || style.includes('camp')) {
+                                surface = 'footstep_wood_plank';
+                            } else if (style.includes('permafrost') || style.includes('cryo')) {
+                                surface = 'footstep_ice_crunch';
+                            } else if (style.includes('resin') || style.includes('slime') || style.includes('bio')) {
+                                surface = 'footstep_hive_slime';
+                            }
+                        }
                         const played = window.AudioManager?.play?.(
                             surface,
-                            this.audioAt?.(this.player?.position?.x, this.player?.position?.z, { volume: 0.5 })
+                            this.audioAt?.(px, pz, { volume: 0.5 })
                                 ?? { volume: 0.5 }
                         );
                         if (!played) window.AudioManager?.playProceduralFootstep?.(this.playerType);
@@ -28532,6 +31040,10 @@ export class ThreeGame {
 
     updateWeaponAmmoRefill(delta) {
         if (!Number.isFinite(delta) || delta <= 0) return;
+        if (this.fieldWeaponRunState?.equipped) {
+            this.weaponAmmoRefillTimer = 0;
+            return;
+        }
         if (this.weaponReloading || this.weaponClipAmmo >= this.weaponClipSize) {
             this.weaponAmmoRefillTimer = 0;
             return;
@@ -28579,6 +31091,13 @@ export class ThreeGame {
         if (this.weaponReloadTimer > 0) return;
 
         this.weaponReloading = false;
+        if (this.fieldWeaponRunState?.equipped) {
+            const result = reloadFieldWeapon(this.fieldWeaponRunState);
+            if (result.ok) this.fieldWeaponRunState = result.state;
+            this.syncEquippedFieldWeapon({ announce: false });
+            window.AudioManager?.play('ui_click', { volume: 0.28, playbackRate: 1.18 });
+            return;
+        }
         const availableAmmo = this.getAvailableAmmo();
         const missingAmmo = Math.max(0, this.weaponClipSize - this.weaponClipAmmo);
         const ammoLoaded = Math.min(missingAmmo, availableAmmo);
@@ -28592,6 +31111,9 @@ export class ThreeGame {
 
     getAvailableAmmo() {
         if (this.unlimitedAmmo) return 9999;
+        if (this.fieldWeaponRunState?.equipped) {
+            return Math.max(0, Math.floor(this.fieldWeaponRunState.equipped.reserveAmmo ?? 0));
+        }
         return Number.isFinite(window.pickupCounterState?.ammo)
             ? Math.max(0, Math.floor(window.pickupCounterState.ammo))
             : 0;
@@ -28660,6 +31182,7 @@ export class ThreeGame {
 
     requestReload({ manual = false } = {}) {
         if (!this.isGameplayInputActive()) return false;
+        if (!canUseWeaponWhileCarrying(this.carryState)) return false;
         if (this.weaponReloading) return false;
 
         const availableAmmo = this.getAvailableAmmo();
@@ -28702,6 +31225,84 @@ export class ThreeGame {
         }
 
         return this.fireWeaponAtCurrentAim({ source: this._canvasPointerType || 'pointer' });
+    }
+
+    isFlameHitOccluded(originX, originZ, hit) {
+        if (!this.wallMeshes?.length || !(hit?.distance > 0.15)) return false;
+        const dx = hit.x - originX;
+        const dz = hit.z - originZ;
+        const length = Math.hypot(dx, dz);
+        if (!(length > 0)) return false;
+        this._projRaycaster.set(
+            new THREE.Vector3(originX, 0.55, originZ),
+            new THREE.Vector3(dx / length, 0, dz / length)
+        );
+        this._projRaycaster.far = Math.max(0.05, hit.distance - 0.2);
+        return intersectWallMeshes(this._projRaycaster, this.wallMeshes).length > 0;
+    }
+
+    spawnSweptFlame(normX, normZ, damage) {
+        const profile = this.fieldWeapon;
+        const originX = this.player?.position?.x ?? 0;
+        const originZ = this.player?.position?.z ?? 0;
+        const range = profile?.coneRange ?? 6.5;
+        const halfAngle = profile?.coneHalfAngle ?? 0.38;
+        const candidates = (this.scatterSprites ?? []).filter((target) => (
+            target?.parent
+            && !target.userData?.burstTriggered
+            && (this.isEnemyType?.(target.userData?.type) || target.userData?.isDestructibleProp)
+        ));
+        for (const barrier of this.iceBarrierAnchors ?? []) {
+            if (barrier?.parent && barrier.userData?.iceBarrier?.state !== 'melted') candidates.push(barrier);
+        }
+        const hits = resolveSweptConeHits({
+            origin: { x: originX, z: originZ },
+            direction: { x: normX, z: normZ },
+            range,
+            halfAngle,
+            targets: candidates
+        });
+        let blockedAfter = Infinity;
+        for (const hit of hits) {
+            if (hit.distance > blockedAfter || this.isFlameHitOccluded(originX, originZ, hit)) continue;
+            const target = hit.target;
+            if (target.userData?.isIceBarrier) {
+                const barrier = target.userData.iceBarrier;
+                const before = resolveIceBarrierModel(barrier);
+                applyHeatToBarrier(barrier, profile?.heatPerShot ?? 18, {
+                    onMelted: () => {
+                        this.showBunkerLine?.('THERMAL BARRIER BREACHED. CACHE ACCESS OPEN.');
+                        window.dispatchEvent(new CustomEvent('ice-barrier-melted', { detail: { id: barrier.id } }));
+                    }
+                });
+                target.userData.isSolidProp = barrier.collisionActive;
+                if (resolveIceBarrierModel(barrier) !== before) void this.syncIceBarrierVisual(target);
+                this.spawnPhysicalBurst(hit.x, hit.z, { color: 0x7dd3fc, count: 7, upward: 0.2 });
+                if (barrier.collisionActive) blockedAfter = hit.distance;
+                continue;
+            }
+            this.applyPlayerDamageToEnemy(target, damage, { element: 'fire' });
+            if (this.isEnemyType?.(target.userData?.type) && !target.userData?.burstTriggered) {
+                applyStatus(target, 'burning', profile?.burnStacks ?? 1, {
+                    source: 'flamethrower',
+                    duration: 3.5,
+                    tickDamage: 1,
+                    tickInterval: 0.7
+                });
+                target.material?.color?.setHex?.(0xff7a28);
+            }
+        }
+        this.spawnMuzzleFlash?.(originX + normX * 0.65, originZ + normZ * 0.65);
+        for (const distance of [1.4, 2.8, 4.4, 5.8]) {
+            this.spawnPhysicalBurst(
+                originX + normX * distance,
+                originZ + normZ * distance,
+                { color: distance > 4 ? 0xff5a1f : 0xffb12b, count: 3, upward: 0.18 }
+            );
+        }
+        window.dispatchEvent(new CustomEvent('flamethrower-swept', {
+            detail: { x: originX, z: originZ, dirX: normX, dirZ: normZ, range }
+        }));
     }
 
     spawnPlayerShot(normX, normZ) {
@@ -28753,6 +31354,11 @@ export class ThreeGame {
         this.recoilBloom = Math.min(0.8, (this.recoilBloom ?? 0) + 0.15);
         this.triggerCameraShake?.(0.04, 0.08);
 
+        if (this.fieldWeapon?.isSweptCone) {
+            this.spawnSweptFlame(normX, normZ, damage);
+            return;
+        }
+
         const shotAmount = (FEATURE_MULTISHOT ? (bonuses?.shotAmount ?? 0) : 0) + extraBullets;
         const spreads = this.fieldWeapon?.spreads ?? (extraBullets > 0
             ? [-spreadAngle, 0, spreadAngle]
@@ -28776,9 +31382,7 @@ export class ThreeGame {
                 const hits = intersectWallMeshes(this._projRaycaster, this.wallMeshes);
                 if (hits.length > 0) {
                     const hit = hits[0];
-                    const wall = (hit.object?.userData?.isInstancedWallPool && Number.isInteger(hit.instanceId))
-                        ? this.findWallByPoolInstance(hit.object, hit.instanceId)
-                        : hit.object;
+                    const wall = this.resolveDestructibleWallHit(hit);
                     if (wall) {
                         const hx = hit.point?.x ?? spawnX;
                         const hz = hit.point?.z ?? spawnZ;
@@ -28974,6 +31578,11 @@ export class ThreeGame {
         group.position.set(x, 0.42, z);
         this.scene.add(group);
 
+        if (Math.random() < 0.35) {
+            const tracerSound = this.resolveTracerFlybySound?.(tracerFxId || options.tracerFx) ?? 'tracer_flyby_ballistic';
+            window.AudioManager?.play?.(tracerSound, (this.audioAt?.(x, z, { volume: 0.24, varyPitch: true }) ?? { volume: 0.24, varyPitch: true }));
+        }
+
         // FIFO-evict the oldest active projectile once at the cap, same
         // cleanup path expiry already uses, instead of letting the pool grow
         // without bound.
@@ -29008,6 +31617,35 @@ export class ThreeGame {
         return null;
     }
 
+    // The seamless wall-run facade is what the ray hits, but the tile record
+    // beneath it owns health, persistence, collision and room topology.
+    resolveDestructibleWallHit(hit) {
+        if (!hit?.object) return null;
+        const object = hit.object;
+        if (object.userData?.isInstancedWallPool && Number.isInteger(hit.instanceId)) {
+            return this.findWallByPoolInstance(object, hit.instanceId);
+        }
+        if (object.userData?.isWallRunFacadePool && Number.isInteger(hit.instanceId)) {
+            const facade = object.userData.facadeStates?.[hit.instanceId];
+            if (!facade || facade.hidden) return null;
+            let nearest = null;
+            let nearestDistance = Infinity;
+            for (const wallKey of facade.memberKeys ?? []) {
+                const record = this._wallInstanceIndex?.get(wallKey);
+                if (!record || record.destroyed) continue;
+                const dx = (hit.point?.x ?? record.worldX) - record.worldX;
+                const dz = (hit.point?.z ?? record.worldZ) - record.worldZ;
+                const distance = dx * dx + dz * dz;
+                if (distance < nearestDistance) {
+                    nearest = record;
+                    nearestDistance = distance;
+                }
+            }
+            return nearest;
+        }
+        return object.userData?.isWall ? object : null;
+    }
+
     checkProjectileWallHit(projectile, fromPos = null) {
         const speed = Math.hypot(projectile.vx, projectile.vz);
         if (speed <= 0.0001) return null;
@@ -29035,9 +31673,7 @@ export class ThreeGame {
                 nz = worldNormal.z;
             }
         }
-        const wall = (hit.object?.userData?.isInstancedWallPool && Number.isInteger(hit.instanceId))
-            ? this.findWallByPoolInstance(hit.object, hit.instanceId)
-            : hit.object;
+        const wall = this.resolveDestructibleWallHit(hit);
         // Never pass an unresolved pool into destroyWall: hiding/removing that
         // object would erase every wall in its room-style bucket.
         if (!wall) return null;
@@ -29262,11 +31898,14 @@ export class ThreeGame {
         this.traumaManager?.addTrauma(WEAPON_TRAUMA_TABLE.rifle || 0.12);
     }
 
-    spawnProjectileImpactEffect(x, z) {
+    spawnProjectileImpactEffect(x, z, surface = 'metal') {
         const effect = createImpactBurst();
         effect.position.set(x, (this.getTerrainHeightAt?.(x, z) ?? 0), z);
         this.scene.add(effect);
         registerTransientEffect(this, effect);
+
+        const impactSound = this.resolveBulletImpactSound?.(surface) ?? 'prop_impact_metal';
+        window.AudioManager?.play?.(impactSound, (this.audioAt?.(x, z, { volume: 0.32, varyPitch: true }) ?? { volume: 0.32, varyPitch: true }));
     }
 
     spawnTextureBurstEffect(x, z, {
@@ -29625,7 +32264,7 @@ export class ThreeGame {
             if (wallHit) {
                 const hx = wallHit.point?.x ?? projectile.mesh.position.x;
                 const hz = wallHit.point?.z ?? projectile.mesh.position.z;
-                this.spawnProjectileImpactEffect(hx, hz);
+                this.spawnProjectileImpactEffect(hx, hz, 'wall');
                 const sparkColor = projectile.isEnemy ? 0xff6a4a : 0xffd27a;
                 this.spawnPhysicalBurst(hx, hz, { color: sparkColor, count: 5, upward: 0.16 });
                 const destroyedWall = this.damageWall(wallHit.wall, projectile.damage, {
@@ -29661,7 +32300,7 @@ export class ThreeGame {
                     } else {
                         this.takeDamage(projectile.damage, 'enemy-projectile', projectile.mesh.position.x, projectile.mesh.position.z);
                     }
-                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z, 'flesh');
                     toRemove.add(projectile);
                     continue;
                 }
@@ -29675,7 +32314,7 @@ export class ThreeGame {
                 const rival = this.checkProjectileRivalHit(projectile);
                 if (rival) {
                     this.reportProjectileRivalHit(rival, projectile);
-                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z, 'flesh');
                     toRemove.add(projectile);
                     continue;
                 }
@@ -29688,7 +32327,7 @@ export class ThreeGame {
                     });
                     if (projectile.pierceRemaining && projectile.pierceRemaining > 0) {
                         projectile.pierceRemaining -= 1;
-                        this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                        this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z, 'flesh');
                     } else {
                         toRemove.add(projectile);
                     }
@@ -29702,20 +32341,27 @@ export class ThreeGame {
                 const squadmate = this.checkProjectileSquadmateHit?.(projectile);
                 if (squadmate) {
                     this.nudgeSquadmate(squadmate, projectile);
-                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z, 'flesh');
                     toRemove.add(projectile);
                     continue;
                 }
 
                 if (this.checkProjectileMayorTinaHit(projectile)) {
-                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z, 'flesh');
+                    toRemove.add(projectile);
+                    continue;
+                }
+                const installedModule = this.checkProjectileInstalledBaseModuleHit?.(projectile, { x: oldX, z: oldZ });
+                if (installedModule) {
+                    this.damageInstalledBaseModule?.(installedModule.instanceId, projectile.damage, { source: 'player-projectile' });
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z, 'prop');
                     toRemove.add(projectile);
                     continue;
                 }
                 const destructibleProp = this.checkProjectileDestructiblePropHit(projectile);
                 if (destructibleProp) {
                     this.damageScatterProp(destructibleProp, projectile.damage);
-                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z, 'prop');
                     toRemove.add(projectile);
                     continue;
                 }
@@ -29872,6 +32518,7 @@ export class ThreeGame {
         // edge turn: right stick turns the view right (2026-09-25 Deck QA:
         // it turned left).
         const stickOrbit = -(this.cameraRotationInput ?? 0);
+        const carryTurnMultiplier = getCarryMobilityProfile(this.carryState).turnMultiplier;
         if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
             const turnSensitivity = THREE.MathUtils.clamp(
                 Number(globalThis.window?.state?.settings?.aimSensitivity) || 1,
@@ -29879,7 +32526,8 @@ export class ThreeGame {
                 2
             );
             const edgeTurn = this._mouseEdgeTurnInput ?? 0;
-            const desiredVelocity = ((stickOrbit * 2.35) + (edgeTurn * 1.85)) * turnSensitivity;
+            const desiredVelocity = ((stickOrbit * 2.35) + (edgeTurn * 1.85))
+                * turnSensitivity * carryTurnMultiplier;
             const velocityBlend = 1 - Math.exp(-delta * Math.max(7, this.cameraFollowRate * 0.55));
             this._cameraTurnVelocity += (desiredVelocity - this._cameraTurnVelocity) * velocityBlend;
             if (Math.abs(desiredVelocity) < 0.0001 && Math.abs(this._cameraTurnVelocity) < 0.005) {
@@ -29903,7 +32551,9 @@ export class ThreeGame {
             // axes around the operator.
             if (this.cameraMode !== 'third-person') {
                 this.cameraAzimuth = wrapAngle(
-                    this.cameraAzimuth + (stickOrbit * delta * 2.8) + (pointerOrbitDelta * 0.008)
+                    this.cameraAzimuth
+                    + (stickOrbit * delta * 2.8 * carryTurnMultiplier)
+                    + (pointerOrbitDelta * 0.008 * carryTurnMultiplier)
                 );
             }
         }
@@ -30818,12 +33468,14 @@ export class ThreeGame {
         const originX = chunkX * this.chunkSize;
         const originZ = chunkY * this.chunkSize;
         const rotation = new THREE.Quaternion();
+        const yawRotation = new THREE.Quaternion();
         const localOffset = new THREE.Vector3();
         const worldPosition = new THREE.Vector3();
 
-        const matrixFor = (plan, offsetX, y, offsetZ, scaleX, scaleY, scaleZ) => {
-            rotation.setFromEuler(new THREE.Euler(0, plan.rotationY, 0));
-            localOffset.set(offsetX, 0, offsetZ).applyQuaternion(rotation);
+        const matrixFor = (plan, offsetX, y, offsetZ, scaleX, scaleY, scaleZ, tiltZ = 0) => {
+            yawRotation.setFromEuler(new THREE.Euler(0, plan.rotationY, 0));
+            rotation.setFromEuler(new THREE.Euler(0, plan.rotationY, tiltZ));
+            localOffset.set(offsetX, 0, offsetZ).applyQuaternion(yawRotation);
             worldPosition.set(originX + plan.x + localOffset.x, y, originZ + plan.z + localOffset.z);
             return new THREE.Matrix4().compose(
                 worldPosition.clone(),
@@ -30832,18 +33484,65 @@ export class ThreeGame {
             );
         };
 
+        const addSquareFrame = (plan, span, edge, offsetZ = 0) => {
+            structures.push(matrixFor(plan, 0, this.wallHeight - 0.22, offsetZ, span, 0.1, 0.12));
+            structures.push(matrixFor(plan, -edge, 1.16, offsetZ, 0.1, 2.25, 0.12));
+            structures.push(matrixFor(plan, edge, 1.16, offsetZ, 0.1, 2.25, 0.12));
+        };
+
+        // Five-piece open arch: its shoulders rise away from the centre, so
+        // the route retains full player clearance while reading as a vault.
+        const addOpenArch = (plan, span, edge, {
+            crownY = this.wallHeight - 0.13,
+            shoulderY = this.wallHeight - 0.48,
+            postHeight = 1.72,
+            shoulderTilt = 0.42,
+            depth = 0.14
+        } = {}) => {
+            structures.push(matrixFor(plan, -edge, postHeight * 0.5, 0, 0.12, postHeight, depth));
+            structures.push(matrixFor(plan, edge, postHeight * 0.5, 0, 0.12, postHeight, depth));
+            structures.push(matrixFor(plan, -edge * 0.58, shoulderY, 0, span * 0.31, 0.11, depth, shoulderTilt));
+            structures.push(matrixFor(plan, edge * 0.58, shoulderY, 0, span * 0.31, 0.11, depth, -shoulderTilt));
+            structures.push(matrixFor(plan, 0, crownY, 0, span * 0.38, 0.12, depth));
+        };
+
         for (const plan of plans) {
             const span = Math.max(1.6, plan.width + 0.34);
             const edge = span * 0.5;
-            if (plan.structure === 'rail') {
+            const structure = plan.landmark && plan.structure !== 'rail'
+                ? 'monumental-arch'
+                : plan.structure;
+            if (structure === 'rail') {
                 structures.push(matrixFor(plan, -edge, 0.72, 0, 0.1, 1.35, 0.1));
                 structures.push(matrixFor(plan, edge, 0.72, 0, 0.1, 1.35, 0.1));
                 structures.push(matrixFor(plan, -edge, 1.18, 0, 0.08, 0.08, 2.7));
                 structures.push(matrixFor(plan, edge, 1.18, 0, 0.08, 0.08, 2.7));
+            } else if (structure === 'double-frame') {
+                addSquareFrame(plan, span, edge, -0.22);
+                addSquareFrame(plan, span, edge, 0.22);
+            } else if (structure === 'service-rib') {
+                addOpenArch(plan, span, edge, { shoulderTilt: 0.34, depth: 0.11 });
+            } else if (structure === 'braced-frame') {
+                addSquareFrame(plan, span, edge);
+                structures.push(matrixFor(plan, -edge * 0.62, 1.45, 0, span * 0.36, 0.1, 0.13, -0.62));
+                structures.push(matrixFor(plan, edge * 0.62, 1.45, 0, span * 0.36, 0.1, 0.13, 0.62));
+            } else if (structure === 'low-rib') {
+                addOpenArch(plan, span, edge, { crownY: this.wallHeight - 0.34, shoulderY: this.wallHeight - 0.62, postHeight: 1.58, shoulderTilt: 0.34, depth: 0.1 });
+            } else if (structure === 'camp-arch') {
+                addOpenArch(plan, span, edge, { shoulderTilt: 0.28, depth: 0.1 });
+                structures.push(matrixFor(plan, edge * 0.72, 1.72, 0.04, 0.08, 0.72, 0.08));
+            } else if (structure === 'transition-arch') {
+                addOpenArch(plan, span, edge, { shoulderTilt: 0.5, depth: 0.16 });
+                addSquareFrame(plan, span * 0.94, edge * 0.94, 0.28);
+            } else if (structure === 'organic-arch') {
+                addOpenArch(plan, span, edge, { crownY: this.wallHeight - 0.2, shoulderTilt: 0.68, depth: 0.18 });
+                structures.push(matrixFor(plan, 0, this.wallHeight - 0.52, 0.08, 0.1, 0.58, 0.1, plan.cadence % 2 ? 0.18 : -0.18));
+            } else if (structure === 'monumental-arch') {
+                addOpenArch(plan, span, edge, { crownY: this.wallHeight - 0.05, shoulderY: this.wallHeight - 0.42, postHeight: 1.86, shoulderTilt: 0.48, depth: 0.2 });
+                structures.push(matrixFor(plan, -edge, 2.18, 0, 0.22, 0.34, 0.22));
+                structures.push(matrixFor(plan, edge, 2.18, 0, 0.22, 0.34, 0.22));
             } else {
-                structures.push(matrixFor(plan, 0, this.wallHeight - 0.22, 0, span, 0.1, 0.12));
-                structures.push(matrixFor(plan, -edge, 1.16, 0, 0.1, 2.25, 0.12));
-                structures.push(matrixFor(plan, edge, 1.16, 0, 0.1, 2.25, 0.12));
+                addSquareFrame(plan, span, edge);
             }
             for (let index = 0; index < plan.cableCount; index += 1) {
                 const side = index % 2 === 0 ? -1 : 1;
@@ -30863,6 +33562,15 @@ export class ThreeGame {
                         0.07,
                         0.035
                     )
+                });
+            }
+            const guideSpacing = 0.28;
+            const guideStart = -((plan.floorGuideCount - 1) * guideSpacing) / 2;
+            for (let index = 0; index < plan.floorGuideCount; index += 1) {
+                signals.push({
+                    color: plan.signalColor,
+                    floorGuide: true,
+                    matrix: matrixFor(plan, guideStart + index * guideSpacing, 0.025, 0, 0.045, 0.025, plan.landmark ? 3.4 : 2.4)
                 });
             }
         }
@@ -30891,6 +33599,7 @@ export class ThreeGame {
         const signalPool = addPool(signals, this.hallwaySignalMaterial, {
             isHallwayRouteSignalPool: true,
             signalCount: signals.length,
+            floorGuideCount: signals.filter((signal) => signal.floorGuide).length,
             lightingRhythms: [...new Set(plans.map((plan) => plan.lightingRhythm))]
         });
         signals.forEach((signal, index) => signalPool?.setColorAt(index, new THREE.Color(signal.color)));
@@ -30990,11 +33699,7 @@ export class ThreeGame {
         }));
         // Stateful props (moving parts, terminals) leave the instanced batch,
         // under the same per-chunk cap room dressing uses.
-        let dynamicCount = 0;
-        for (const item of worldItems) {
-            item.dynamicExperience = isDynamicPropExperienceType(item.type) && dynamicCount < 12;
-            if (item.dynamicExperience) dynamicCount += 1;
-        }
+        assignDynamicPropExperiences(worldItems);
         for (const item of worldItems) {
             const interactive = isInteractiveDressingType(item.type);
             if (!item.blocking && !interactive) continue;
@@ -31014,6 +33719,7 @@ export class ThreeGame {
                     dressingItem: item
                 };
                 item.collider = target;
+                applyPropInteractionState(target, this.propInteractionStates?.get(item.id));
                 group.add(target);
                 this.scatterSprites.push(target);
                 continue;
@@ -31034,6 +33740,8 @@ export class ThreeGame {
                     dressingItem: item
                 };
                 item.collider ??= collider;
+                applyPropInteractionState(collider, this.propInteractionStates?.get(collider.userData.scatterKey)
+                    ?? this.propInteractionStates?.get(item.id));
                 group.add(collider);
                 this.scatterSprites.push(collider);
             }
@@ -31065,6 +33773,8 @@ export class ThreeGame {
                     if (!item.dynamicRoot) continue;
                     this.registerWorld3dPropFx?.(item.dynamicRoot);
                     this.registerWorld3dPropExperience?.(item.dynamicRoot);
+                    applyPropInteractionState(item.collider, this.propInteractionStates?.get(item.collider?.userData?.scatterKey)
+                        ?? this.propInteractionStates?.get(item.id));
                 }
             }).catch((error) => console.warn('[ThreeGame] Lived-in dressing failed to build', error));
         }
@@ -31143,13 +33853,7 @@ export class ThreeGame {
         // single console can acknowledge E without changing every shared copy.
         // The hard cap preserves the chunk draw/update budget; excess copies
         // remain static but visually identical.
-        let dynamicExperienceCount = 0;
-        for (const item of items) {
-            const eligible = isDynamicPropExperienceType(item.type)
-                || Boolean(getPropFxProfile(item.type));
-            item.dynamicExperience = eligible && dynamicExperienceCount < 12;
-            if (item.dynamicExperience) dynamicExperienceCount += 1;
-        }
+        assignDynamicPropExperiences(items);
 
         for (const item of items) {
             if (item.isDestroyed) continue;
@@ -31173,6 +33877,8 @@ export class ThreeGame {
                 dressingItem: item
             };
             item.collider = collider;
+            applyPropInteractionState(collider, this.propInteractionStates?.get(item.id)
+                ?? this.propInteractionStates?.get(item.stableId));
             group.add(collider);
             this.scatterSprites.push(collider);
             if (item.practicalLight) {
@@ -31206,6 +33912,8 @@ export class ThreeGame {
                 if (!item.dynamicRoot) continue;
                 this.registerWorld3dPropFx?.(item.dynamicRoot);
                 this.registerWorld3dPropExperience?.(item.dynamicRoot);
+                applyPropInteractionState(item.collider, this.propInteractionStates?.get(item.id)
+                    ?? this.propInteractionStates?.get(item.stableId));
                 if (item.dynamicRoot.userData?.mixer) {
                     this.world3dMixers ??= new Set();
                     this.world3dMixers.add(item.dynamicRoot.userData.mixer);
@@ -31831,6 +34539,12 @@ export class ThreeGame {
         }
         const wallMesh = this.findWallMeshAt?.(coord.tileX, coord.tileZ);
         if (wallMesh?.isInstancedWall) {
+            const facade = wallMesh.wallRunFacade;
+            if (facade && !facade.hidden) {
+                facade.pool?.setMatrixAt(facade.instanceIndex, new THREE.Matrix4().makeScale(0, 0, 0));
+                if (facade.pool) facade.pool.instanceMatrix.needsUpdate = true;
+                facade.hidden = true;
+            }
             wallMesh.instancedMesh?.setMatrixAt(
                 wallMesh.instanceIndex,
                 new THREE.Matrix4().makeScale(0, 0, 0)
@@ -31970,12 +34684,21 @@ export class ThreeGame {
         const hp = Math.max(0, wall.userData.wallHp ?? maxHp);
         const damageRatio = Math.min(1, Math.max(0, 1 - hp / maxHp));
         if (damageRatio <= 0) return;
+        wall.userData.damageStage = damageRatio >= 0.67
+            ? 'failing'
+            : damageRatio >= 0.34
+                ? 'cracked'
+                : 'chipped';
 
         if (wall.isInstancedWall) {
             const color = new THREE.Color(0xffffff)
                 .lerp(new THREE.Color(0xff3300), damageRatio * 0.75);
             wall.instancedMesh?.setColorAt(wall.instanceIndex, color);
             if (wall.instancedMesh?.instanceColor) wall.instancedMesh.instanceColor.needsUpdate = true;
+            if (wall.wallRunFacade && !wall.wallRunFacade.hidden) {
+                wall.wallRunFacade.pool?.setColorAt(wall.wallRunFacade.instanceIndex, color);
+                if (wall.wallRunFacade.pool?.instanceColor) wall.wallRunFacade.pool.instanceColor.needsUpdate = true;
+            }
             return;
         }
 
@@ -32004,6 +34727,40 @@ export class ThreeGame {
         return material;
     }
 
+    recordWallImpact(wall, {
+        source = 'player',
+        amount = 0,
+        hpBefore = null,
+        hpAfter = null,
+        destroyed = false,
+        refusalReason = null
+    } = {}) {
+        if (typeof window === 'undefined' || typeof CustomEvent === 'undefined') return;
+        const wallKey = wall?.userData?.wallKey ?? null;
+        const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        this._wallImpactTelemetryAt ??= new Map();
+        const last = this._wallImpactTelemetryAt.get(wallKey) ?? -Infinity;
+        if (!destroyed && !refusalReason && now - last < 250) return;
+        this._wallImpactTelemetryAt.set(wallKey, now);
+        window.dispatchEvent?.(new CustomEvent('wall-impact', {
+            detail: {
+                source,
+                wallKey,
+                x: wall?.userData?.worldX ?? null,
+                z: wall?.userData?.worldZ ?? null,
+                variant: wall?.userData?.wallVariant ?? null,
+                renderedKind: wall?.wallRunFacade ? 'wall-run-facade' : (wall?.isInstancedWall ? 'instanced-wall' : 'wall-mesh'),
+                instanceId: Number.isInteger(wall?.instanceIndex) ? wall.instanceIndex : null,
+                amount,
+                hpBefore,
+                hpAfter,
+                damageStage: wall?.userData?.damageStage ?? 'intact',
+                destroyed,
+                refusalReason
+            }
+        }));
+    }
+
     damageWall(wall, amount = 1, { source = 'player' } = {}) {
         const span = beginPerfPhase('wall:damage', {
             source,
@@ -32019,11 +34776,32 @@ export class ThreeGame {
             span.end(result);
             return result;
         }
+        if (wall.userData.indestructible) {
+            this.recordWallImpact?.(wall, { source, amount, refusalReason: 'protected' });
+            span.end();
+            return false;
+        }
+        if (wall.userData.isProceduralDoor && wall.userData.proceduralDoorId) {
+            const door = this.proceduralDoorStates?.get?.(wall.userData.proceduralDoorId);
+            this.refreshMazeAccessState?.();
+            if (door?.lock && !isGateRequirementMet(door.lock, this.mazeAccessState)) {
+                this.recordWallImpact?.(wall, { source, amount, refusalReason: 'locked-door' });
+                span.end();
+                return false;
+            }
+        }
         const maxHp = Math.max(1, wall.userData.maxWallHp ?? WALL_HP_STANDARD);
         const damage = Math.max(0, Math.round(Number(amount) || 0));
-        wall.userData.wallHp = Math.max(0, (wall.userData.wallHp ?? maxHp) - damage);
+        const hpBefore = wall.userData.wallHp ?? maxHp;
+        wall.userData.wallHp = Math.max(0, hpBefore - damage);
         if (wall.userData.wallHp > 0) {
             this.updateWallDamageColor(wall);
+            this.recordWallImpact?.(wall, {
+                source,
+                amount: damage,
+                hpBefore,
+                hpAfter: wall.userData.wallHp
+            });
             if (typeof window !== 'undefined') {
                 window.dispatchEvent?.(new CustomEvent('wall-damaged', {
                     detail: {
@@ -32039,6 +34817,13 @@ export class ThreeGame {
             return false;
         }
         const result = this.destroyWall(wall, { source });
+        this.recordWallImpact?.(wall, {
+            source,
+            amount: damage,
+            hpBefore,
+            hpAfter: wall.userData.wallHp,
+            destroyed: result
+        });
         span.end(result);
         return result;
     }
@@ -32670,20 +35455,15 @@ export class ThreeGame {
         // One blended floor material per chunk replaces the room, hallway,
         // threshold and crash-room overlays (src/floorSplat.js).
         const instancedFloor = landform === LANDFORMS.MAZE || hasExteriorCanyon;
+        // Repair the geometry contract before generating splat data so both
+        // systems see the same tile classification for portal-edge cells.
+        const floorCoverage = instancedFloor ? planInstancedFloorCoverage(grid) : null;
         const floorSplatMaterial = this.createChunkFloorSplatMaterial(chunkX, chunkY, grid, {
             landform,
             ledgeGround: instancedFloor
         });
         if (instancedFloor) {
-            const floorCells = [];
-            const exteriorGroundCells = [];
-            for (let localY = 0; localY < this.chunkSize; localY += 1) {
-                for (let localX = 0; localX < this.chunkSize; localX += 1) {
-                    const tileChar = grid[localY][localX];
-                    if (tileChar === LEDGE_TILE) exteriorGroundCells.push({ localX, localY });
-                    else if (tileChar !== EXTERIOR_CANYON_TILE && tileChar !== CLIFF_TILE) floorCells.push({ localX, localY });
-                }
-            }
+            const { floorCells, exteriorGroundCells } = floorCoverage;
             const floors = new THREE.InstancedMesh(this.floorGeometry, floorSplatMaterial ?? this.floorMaterial, floorCells.length);
             const matrix = new THREE.Matrix4();
             const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
@@ -32737,44 +35517,79 @@ export class ThreeGame {
             chunkFloor.receiveShadow = true;
             group.add(chunkFloor);
         }
-        if (chunkX === 0 && chunkY === 0 && this.crashSiteFloorMaterial) {
-            // A separate damaged deck lies over the safe structural floor, only
-            // beneath the ship impact zone. Keeping it inset prevents it from
-            // visually bridging the canyon or covering the door hallway.
-            const crashDeck = new THREE.Mesh(
-                new THREE.PlaneGeometry(7.5, 7.5),
-                this.crashSiteFloorMaterial
+        const fragileLedgeCells = [];
+        for (let localY = 0; localY < grid.length; localY += 1) {
+            for (let localX = 0; localX < grid[localY].length; localX += 1) {
+                if (grid[localY][localX] === CLIFF_TILE) fragileLedgeCells.push({ localX, localY });
+            }
+        }
+        if (fragileLedgeCells.length > 0 && this.fragileLedgeCrackMaterial) {
+            const crackPool = new THREE.InstancedMesh(
+                this.floorGeometry,
+                this.fragileLedgeCrackMaterial,
+                fragileLedgeCells.length
             );
-            crashDeck.rotation.x = -Math.PI / 2;
+            const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+            const hidden = new THREE.Matrix4().makeScale(0, 0, 0);
+            const ledgeKeys = [];
+            const baseMatrices = [];
+            fragileLedgeCells.forEach((cell, instanceIndex) => {
+                const worldX = chunkX * this.chunkSize + cell.localX;
+                const worldZ = chunkY * this.chunkSize + cell.localY;
+                const key = fragileLedgeKey(worldX, worldZ);
+                const baseMatrix = new THREE.Matrix4().compose(
+                    new THREE.Vector3(worldX, 0.042, worldZ),
+                    rotation,
+                    new THREE.Vector3(0.94, 0.94, 0.94)
+                );
+                const state = this.getFragileLedgeState(worldX, worldZ).state;
+                const visible = state === FRAGILE_LEDGE_STATE.CRACKED || state === FRAGILE_LEDGE_STATE.WARNING;
+                crackPool.setMatrixAt(instanceIndex, visible ? baseMatrix : hidden);
+                crackPool.setColorAt(
+                    instanceIndex,
+                    new THREE.Color(state === FRAGILE_LEDGE_STATE.WARNING ? 0xff7a35 : 0xd7c0a4)
+                );
+                ledgeKeys.push(key);
+                baseMatrices.push(baseMatrix);
+                this._fragileLedgeVisuals.set(key, { pool: crackPool, instanceIndex, baseMatrix });
+            });
+            crackPool.instanceMatrix.needsUpdate = true;
+            if (crackPool.instanceColor) crackPool.instanceColor.needsUpdate = true;
+            crackPool.renderOrder = 6;
+            crackPool.userData = {
+                isFragileLedgeCrackPool: true,
+                ledgeKeys,
+                baseMatrices
+            };
+            group.add(crackPool);
+        }
+        if (chunkX === 0 && chunkY === 0 && this.crashSiteHeatMaterial) {
+            // Damage albedo/roughness lives in the floor splat. Keep only a
+            // soft, non-depth-writing emissive pulse above it so there is no
+            // second opaque floor texture to fight the blended deck.
+            const heatBed = new THREE.Mesh(
+                new THREE.PlaneGeometry(6.2, 6.2),
+                this.crashSiteHeatMaterial
+            );
+            heatBed.rotation.x = -Math.PI / 2;
             const activeShip = this.crashedShips?.find((ship) => ship.type === this.playerType);
-            crashDeck.position.set(
+            heatBed.position.set(
                 activeShip?.tileX ?? CRASH_SITE_CENTER,
-                0.035,
+                0.028,
                 activeShip?.tileZ ?? CRASH_SITE_CENTER
             );
-            crashDeck.receiveShadow = true;
-            crashDeck.renderOrder = 4;
-            crashDeck.userData = { isCrashSiteFloor: true };
-            if (this.crashSiteHeatMaterial) {
-                const heatBed = new THREE.Mesh(
-                    new THREE.PlaneGeometry(6.8, 6.8),
-                    this.crashSiteHeatMaterial
-                );
-                heatBed.position.z = 0.012;
-                heatBed.renderOrder = 5;
-                heatBed.userData = { isCrashSiteHeat: true };
-                crashDeck.add(heatBed);
+            heatBed.renderOrder = 5;
+            heatBed.userData = { isCrashSiteHeat: true };
 
-                const impactLight = new THREE.PointLight(0xff3b0a, 1.45, 6.5, 2);
-                // The deck is rotated onto the X/Z floor, so local Z is world height.
-                impactLight.position.z = 0.85;
-                impactLight.userData = { isCrashSiteHeatLight: true };
-                crashDeck.add(impactLight);
-                this.registerEnvLight?.(impactLight);
-                this.crashSiteHeatLight = impactLight;
-            }
-            this.crashSiteFloorMesh = crashDeck;
-            group.add(crashDeck);
+            const impactLight = new THREE.PointLight(0xff3b0a, 1.45, 6.5, 2);
+            // Plane is rotated onto X/Z, so local Z becomes world height.
+            impactLight.position.z = 0.85;
+            impactLight.userData = { isCrashSiteHeatLight: true };
+            heatBed.add(impactLight);
+            this.registerEnvLight?.(impactLight);
+            this.crashSiteHeatLight = impactLight;
+            this.crashSiteHeatMesh = heatBed;
+            group.add(heatBed);
         }
         if (!floorSplatMaterial) {
             this.addRoomSurfaceOverlays(
@@ -33145,7 +35960,14 @@ export class ThreeGame {
                     const horizontal = doorRecord
                         ? doorRecord.orientation === 'horizontal'
                         : grid[localY]?.[localX - 1] === '#' || grid[localY]?.[localX + 1] === '#';
-                    const doorMesh = new THREE.Mesh(this.wallGeometry, this.doorMaterial);
+                    const persistedDoor = doorRecord
+                        ? (this.proceduralDoorStates.get(doorRecord.id) ?? doorRecord)
+                        : null;
+                    const doorFamily = persistedDoor?.family ?? 'blast-slab';
+                    const doorMesh = new THREE.Mesh(
+                        this.wallGeometry,
+                        this.doorFamilyMaterials?.[doorFamily] ?? this.doorMaterial
+                    );
                     const blastDoorHeightScale = 1.72;
                     doorMesh.position.set(worldX, (this.wallHeight * blastDoorHeightScale) / 2, worldZ);
                     doorMesh.scale.set(
@@ -33158,14 +35980,21 @@ export class ThreeGame {
                     this.configureWallMesh(doorMesh, {
                         chunkX, chunkY, localX, localY, worldX, worldZ, landform, variant: 'door', isDoor: true
                     });
-                    const persistedDoor = doorRecord
-                        ? (this.proceduralDoorStates.get(doorRecord.id) ?? doorRecord)
-                        : null;
                     doorMesh.userData.isProceduralDoor = true;
                     doorMesh.userData.proceduralDoorId = persistedDoor?.id ?? null;
                     doorMesh.userData.doorStyle = persistedDoor?.style ?? 'bunker';
+                    doorMesh.userData.doorFamily = doorFamily;
+                    doorMesh.userData.doorMotion = persistedDoor?.motion ?? 'sink-floor';
+                    doorMesh.userData.doorOrientation = persistedDoor?.orientation ?? (horizontal ? 'horizontal' : 'vertical');
                     doorMesh.userData.closedY = (this.wallHeight * blastDoorHeightScale) / 2;
                     doorMesh.userData.openY = -(this.wallHeight * blastDoorHeightScale);
+                    doorMesh.userData.closedPosition = { x: worldX, z: worldZ };
+                    doorMesh.userData.closedScale = {
+                        x: doorMesh.scale.x,
+                        y: doorMesh.scale.y,
+                        z: doorMesh.scale.z
+                    };
+                    doorMesh.userData.doorOpenAmount = persistedDoor?.state === 'open' ? 1 : 0;
                     doorMesh.userData.indestructible = Boolean(
                         persistedDoor?.lock
                         && !isGateRequirementMet(persistedDoor.lock, this.mazeAccessState)
@@ -33240,9 +36069,17 @@ export class ThreeGame {
                         group.add(button);
                     }
                     if (persistedDoor?.id) {
-                        doorMesh.position.y = persistedDoor.state === 'open' || persistedDoor.state === 'destroyed'
-                            ? doorMesh.userData.openY
-                            : doorMesh.userData.closedY;
+                        const pose = resolveDoorMotionPose(persistedDoor, doorMesh.userData.doorOpenAmount, {
+                            closedY: doorMesh.userData.closedY,
+                            openY: doorMesh.userData.openY
+                        });
+                        doorMesh.position.set(worldX + pose.offsetX, pose.y, worldZ + pose.offsetZ);
+                        doorMesh.rotation.y = pose.yaw;
+                        doorMesh.scale.set(
+                            doorMesh.userData.closedScale.x * (doorMesh.userData.doorOrientation === 'horizontal' ? pose.spanScale : 1),
+                            doorMesh.userData.closedScale.y,
+                            doorMesh.userData.closedScale.z * (doorMesh.userData.doorOrientation === 'vertical' ? pose.spanScale : 1)
+                        );
                         this.proceduralDoorMeshes.set(persistedDoor.id, doorMesh);
                     }
                     group.add(doorMesh);
@@ -33749,6 +36586,103 @@ export class ThreeGame {
             group.add(pool);
         }
 
+        // Semantic macro facades span 2–4 adjacent wall cells without
+        // replacing their tile-authoritative collision/destruction records.
+        // One facade instance hides the per-cell seams; breaking any member
+        // hides only that facade and reveals the surviving cell walls below.
+        const macroMetaByCell = new Map();
+        for (const [roomStyleId, metaList] of wallMetaByRoomStyle.entries()) {
+            for (const meta of metaList) {
+                if (meta.variant !== 'standard' || meta.roomBoundary || (meta.cornerCut ?? 0) !== 0) continue;
+                macroMetaByCell.set(`${meta.localX},${meta.localY}`, { ...meta, roomStyleId });
+            }
+        }
+        const wallRunPlan = planWallRuns(grid, {
+            eligibleCells: new Set(macroMetaByCell.keys()),
+            groupForCell: (x, y) => macroMetaByCell.get(`${x},${y}`)?.roomStyleId ?? 0
+        });
+        const facadeEntriesByStyle = new Map();
+        for (const run of wallRunPlan.runs) {
+            const memberMeta = run.cells.map(({ key }) => macroMetaByCell.get(key)).filter(Boolean);
+            if (memberMeta.length !== run.length) continue;
+            const minHeightScale = Math.min(...memberMeta.map(({ heightScale }) => heightScale ?? 1));
+            const facade = wallRunFacadeSpec(run, { wallHeight: this.wallHeight, heightScale: minHeightScale });
+            if (!facade) continue;
+            const matrix = new THREE.Matrix4().compose(
+                new THREE.Vector3(
+                    chunkX * this.chunkSize + facade.position.x,
+                    facade.position.y,
+                    chunkY * this.chunkSize + facade.position.z
+                ),
+                new THREE.Quaternion(),
+                new THREE.Vector3(facade.scale.x, facade.scale.y, facade.scale.z)
+            );
+            const roomStyleId = memberMeta[0].roomStyleId ?? 0;
+            if (!facadeEntriesByStyle.has(roomStyleId)) facadeEntriesByStyle.set(roomStyleId, []);
+            facadeEntriesByStyle.get(roomStyleId).push({ run, matrix, memberMeta });
+        }
+        const wallRunFamilies = new Set();
+        for (const [roomStyleId, entries] of facadeEntriesByStyle) {
+            if (entries.length === 0) continue;
+            const pool = new THREE.InstancedMesh(this.wallGeometry, this.wallMaterial, entries.length);
+            const undamagedColor = new THREE.Color(0xffffff);
+            entries.forEach(({ matrix }, index) => {
+                pool.setMatrixAt(index, matrix);
+                pool.setColorAt(index, undamagedColor);
+            });
+            pool.instanceMatrix.needsUpdate = true;
+            if (pool.instanceColor) pool.instanceColor.needsUpdate = true;
+            pool.castShadow = true;
+            pool.receiveShadow = true;
+            const centerX = chunkX * this.chunkSize + this.chunkSize * 0.5;
+            const centerZ = chunkY * this.chunkSize + this.chunkSize * 0.5;
+            const biome = this.getBiomeKeyForWorldPosition?.(centerX, centerZ) ?? BIOME_KEYS.ACTIVE;
+            const materialFamilies = entries.map(({ memberMeta }) => wallRunMaterialFamily({
+                biome,
+                roomStyle: memberMeta[0]?.roomWallStyle ?? null
+            }));
+            for (const family of materialFamilies) wallRunFamilies.add(family);
+            const facadeStates = [];
+            pool.userData = {
+                isWall: true,
+                isWallRunFacadePool: true,
+                runCount: entries.length,
+                roomStyleId,
+                materialFamilies,
+                silhouettes: entries.map(({ run }) => run.silhouette),
+                facadeStates
+            };
+            pool.onBeforeRender = () => {
+                if (this.wallShaderUniforms) {
+                    this.wallShaderUniforms.uLandformId.value = landformShaderId;
+                    this.wallShaderUniforms.uRoomStyleId.value = roomStyleId;
+                }
+            };
+            entries.forEach(({ run }, instanceIndex) => {
+                const facadeState = {
+                    pool,
+                    instanceIndex,
+                    runId: run.id,
+                    memberKeys: run.cells.map(({ x, y }) => this.getWallKey(
+                        chunkX * this.chunkSize + x,
+                        chunkY * this.chunkSize + y
+                    )),
+                    hidden: false
+                };
+                facadeStates[instanceIndex] = facadeState;
+                for (const wallKey of facadeState.memberKeys) {
+                    const record = this._wallInstanceIndex.get(wallKey);
+                    if (record) record.wallRunFacade = facadeState;
+                }
+            });
+            group.add(pool);
+        }
+        group.userData.wallRunPresentation = {
+            ...wallRunPlan.coverage,
+            runCount: wallRunPlan.runs.length,
+            materialFamilies: [...wallRunFamilies]
+        };
+
         let cutawayCapPool = null;
         if (cutawayCapMatrices.length > 0) {
             const caps = new THREE.InstancedMesh(
@@ -34046,10 +36980,15 @@ export class ThreeGame {
         // Spawn room set pieces & walkable biomechanical archway pillars
         const setPiecePlacements = this.createChunkSetPiecePlacements(chunkX, chunkY, grid);
         for (const placement of setPiecePlacements) {
+            if (placement.fireGateSourceId) {
+                this.ensureFireGateWeaponSource(placement);
+                continue;
+            }
             const propSprite = this.createScatterInstance(placement);
             if (propSprite) {
                 group.add(propSprite);
                 this.scatterSprites.push(propSprite);
+                if (placement.iceBarrierId) this.registerIceBarrierAnchor(propSprite, placement);
                 // A sibling, not a child: a prop hides itself once its GLB
                 // loads, and the env-light pool skips lights under hidden
                 // parents. breakScatterProp retires it with the prop.
@@ -34229,8 +37168,10 @@ export class ThreeGame {
         const depthLootConfig = getDepthLootConfig(depthTier);
         const spawn = this.getSpawnTile();
         const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
+        const metadata = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
+        const doorApronCells = collectDoorApronCells(metadata);
         const candidates = [];
-        const plannedRoomPickups = (this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)?.roomInstances ?? [])
+        const plannedRoomPickups = (metadata?.roomInstances ?? [])
             .flatMap((room) => (room.populationPlan?.placements ?? [])
                 .filter((placement) => placement.kind === 'pickup')
                 .map((placement) => ({
@@ -34251,7 +37192,7 @@ export class ThreeGame {
                 placement.worldZ - spawn.y
             ) > 9);
         const authoredRoomCells = new Set(
-            (this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)?.roomInstances ?? [])
+            (metadata?.roomInstances ?? [])
                 .flatMap((room) => (room.interior ?? []).map(({ x, y }) => `${x},${y}`))
         );
 
@@ -34267,6 +37208,7 @@ export class ThreeGame {
 
                 if (distToSpawn <= 9.0) continue;
                 if (authoredRoomCells.has(`${localX},${localY}`)) continue;
+                if (!isOutsideDoorApron(localX, localY, doorApronCells)) continue;
 
                 const roomType = roomTypes?.[localY]?.[localX] ?? ROOM_TYPES.CORRIDOR;
                 candidates.push({
@@ -34281,9 +37223,9 @@ export class ThreeGame {
         }
 
         if (candidates.length < 10) {
-            return plannedRoomPickups.map((candidate) => (
+            return filterDoorApronPlacements(plannedRoomPickups.map((candidate) => (
                 this.buildPickupPlacement(candidate, random, depthLootConfig.legendaryBoost)
-            ));
+            )), doorApronCells, { chunkX, chunkY, chunkSize: this.chunkSize });
         }
 
         const occupied = new Set();
@@ -34383,14 +37325,32 @@ export class ThreeGame {
             }
         }
 
-        return placements;
+        return filterDoorApronPlacements(placements, doorApronCells, {
+            chunkX,
+            chunkY,
+            chunkSize: this.chunkSize
+        });
     }
 
     createChunkSetPiecePlacements(chunkX, chunkY, grid) {
         const placements = [];
         const rng = this.createSeededRandom(((this.hashTile(chunkX * 811 + 17, chunkY * 919 + 23) + 404) ^ this.runEntropy) >>> 0);
         const wfcMeta = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
+        const doorApronCells = collectDoorApronCells(wfcMeta);
         const reservedCells = new Set();
+        for (let localY = 0; localY < this.chunkSize; localY += 1) {
+            for (let localX = 0; localX < this.chunkSize; localX += 1) {
+                if (!isOutsideDoorApron(localX, localY, doorApronCells)) {
+                    reservedCells.add(`${localX},${localY}`);
+                }
+            }
+        }
+        // The crash exit hall, door row and maneuver lane stay walkable: a
+        // random solid prop once landed in the middle of the three-cell hall
+        // behind the blast door (2026-10-14 playtest).
+        if (chunkX === CRASH_SITE_BUILD.originChunk.x && chunkY === CRASH_SITE_BUILD.originChunk.y) {
+            for (const cell of crashSiteClearCells()) reservedCells.add(`${cell.x},${cell.y}`);
+        }
         const hasAuthoredRoomPopulation = Boolean(
             wfcMeta?.roomInstances?.some((room) => room.populationPlan?.placements?.length)
             || wfcMeta?.anchors?.length
@@ -34398,7 +37358,11 @@ export class ThreeGame {
 
         // HallwayConnector records its carved route as sparse wayfinding
         // markers. Dress those markers with the matching reskinned modular
-        // kit; topology chooses rotation so sockets stay aligned.
+        // kit; topology chooses rotation so sockets stay aligned. The crash
+        // approach is not skinned: kit modules are collision-free and cannot
+        // be destroyed, and that route is lined by the grid's own
+        // destructible walls (2026-10-14 playtest: its end cap read as a
+        // wall across the crash exit that the player walked through).
         if (wfcMeta?.generatorId === 'hallway-connector') {
             for (const marker of wfcMeta.wayfindingMarkers ?? []) {
                 const worldX = chunkX * this.chunkSize + marker.x;
@@ -34430,22 +37394,22 @@ export class ThreeGame {
 
         if (wfcMeta?.roomInstances?.length) {
             for (const room of wfcMeta.roomInstances) {
-                // Hallway-connector chunks were absent from the Thursday
-                // census, so their kit path was practically invisible. Give
-                // every authored room one open, non-colliding socket-safe
-                // gateway frame. Procedural doors and grid collision remain
-                // authoritative; this is presentation only.
-                const roomDoor = (room.doors ?? []).find((door) => (
-                    isRoomGatewayFrameEligible(room, door, wfcMeta)
-                ));
-                const doorCell = roomDoor?.cells?.[Math.floor(roomDoor.cells.length / 2)];
-                const doorWorldX = Number.isFinite(doorCell?.x) ? chunkX * this.chunkSize + doorCell.x : null;
-                const doorWorldZ = Number.isFinite(doorCell?.y) ? chunkY * this.chunkSize + doorCell.y : null;
-                const doorBiome = Number.isFinite(doorWorldX) && Number.isFinite(doorWorldZ)
-                    ? (this.getBiomeKeyForWorldPosition?.(doorWorldX, doorWorldZ) ?? BIOME_KEYS.ACTIVE)
-                    : BIOME_KEYS.ACTIVE;
-                const gateway = roomGatewayKitPlacement(roomDoor, doorBiome);
-                if (gateway) {
+                // Frame the primary entry and, for multi-route rooms, one
+                // secondary exit. These kit gates are open arches: collision
+                // remains with the grid/door slab, so the player walks cleanly
+                // beneath them while the room reads from either approach.
+                const gatewayDoors = (room.doors ?? [])
+                    .filter((door) => isRoomGatewayFrameEligible(room, door, wfcMeta))
+                    .slice(0, 2);
+                for (const roomDoor of gatewayDoors) {
+                    const doorCell = roomDoor.cells[Math.floor(roomDoor.cells.length / 2)];
+                    const doorWorldX = Number.isFinite(doorCell?.x) ? chunkX * this.chunkSize + doorCell.x : null;
+                    const doorWorldZ = Number.isFinite(doorCell?.y) ? chunkY * this.chunkSize + doorCell.y : null;
+                    const doorBiome = Number.isFinite(doorWorldX) && Number.isFinite(doorWorldZ)
+                        ? (this.getBiomeKeyForWorldPosition?.(doorWorldX, doorWorldZ) ?? BIOME_KEYS.ACTIVE)
+                        : BIOME_KEYS.ACTIVE;
+                    const gateway = roomGatewayKitPlacement(roomDoor, doorBiome);
+                    if (!gateway) continue;
                     placements.push({
                         x: chunkX * this.chunkSize + gateway.x,
                         z: chunkY * this.chunkSize + gateway.y,
@@ -34491,7 +37455,16 @@ export class ThreeGame {
                         worldDressing: planned.kind === 'ambient',
                         practicalLight: practical?.placementId === planned.id ? practical.light : null,
                         isSolidProp: planned.blocking !== false,
-                        isWallBacked
+                        isWallBacked,
+                        roomId: room.id,
+                        roomBuildId: room.buildId ?? null,
+                        anchorId: planned.anchorId ?? null,
+                        fireGateSourceId: planned.anchorId === 'fire_weapon_source'
+                            ? `${room.id}:fire-weapon-source`
+                            : null,
+                        iceBarrierId: planned.anchorId === 'fire_gate'
+                            ? `${room.id}:fire-gate`
+                            : null
                     });
                     reservedCells.add(`${planned.x},${planned.y}`);
                 }
@@ -34639,10 +37612,10 @@ export class ThreeGame {
             }
         }
         const spawn = this.getSpawnTile();
-        return placements.filter((placement) => Math.hypot(
+        return filterDoorApronPlacements(placements.filter((placement) => Math.hypot(
             placement.x - spawn.x,
             placement.z - spawn.y
-        ) > 9);
+        ) > 9), doorApronCells, { chunkX, chunkY, chunkSize: this.chunkSize });
     }
 
     selectClusterCenter(candidates, clusters, random) {
@@ -34769,6 +37742,7 @@ export class ThreeGame {
         const random = this.createSeededRandom(((this.hashTile(chunkX * 523 + 43, chunkY * 859 + 71) ^ (this.runEntropy ?? 0)) >>> 0));
         const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
         const wfcMeta = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
+        const doorApronCells = collectDoorApronCells(wfcMeta);
         const authoredRoomCells = new Set(
             (wfcMeta?.roomInstances ?? []).flatMap((room) => (
                 room.interior.map(({ x, y }) => `${x},${y}`)
@@ -34799,6 +37773,7 @@ export class ThreeGame {
 
                 // Keep the entire ship/start room clear of general scatter deterministically for all clients
                 if (isNearSpawnClearing(worldX, worldZ)) continue;
+                if (!isOutsideDoorApron(localX, localY, doorApronCells)) continue;
 
                 candidates.push({
                     localX,
@@ -34845,6 +37820,7 @@ export class ThreeGame {
             const localX = Math.round(x - chunkX * this.chunkSize);
             const localY = Math.round(z - chunkY * this.chunkSize);
             if (localX < 0 || localX >= this.chunkSize || localY < 0 || localY >= this.chunkSize) return false;
+            if (!isOutsideDoorApron(localX, localY, doorApronCells)) return false;
             // Only structural room/hall floor is valid. The old "not wall"
             // test also accepted canyon, cliff, ledge, and door glyphs, which
             // left snails and props visibly floating over void bands.
@@ -35283,7 +38259,11 @@ export class ThreeGame {
             }
         }
 
-        return finalPlacements;
+        return filterDoorApronPlacements(finalPlacements, doorApronCells, {
+            chunkX,
+            chunkY,
+            chunkSize: this.chunkSize
+        });
     }
 
     createJunkBurstPickupPlacement(originX, originZ, targetX, targetZ, random, junkType = 'bunker_junk') {
@@ -35385,13 +38365,16 @@ export class ThreeGame {
                     { dx: -1, dz: 0, nx: 1, nz: 0 },  // West wall -> faces East (+X)
                     { dx: 1, dz: 0,  nx: -1, nz: 0 }  // East wall -> faces West (-X)
                 ];
-                const foundNeighbor = neighbors.find((n) => this.getTileType?.(tileX + n.dx, tileZ + n.dz) === '#');
+                const foundNeighbor = neighbors.find((n) => {
+                    const tile = this.getTileType?.(tileX + n.dx, tileZ + n.dz);
+                    return tile === '#' || tile === 'W' || Boolean(this.isWallTile?.(tileX + n.dx, tileZ + n.dz));
+                });
                 if (foundNeighbor) {
                     nx = foundNeighbor.nx;
                     nz = foundNeighbor.nz;
                 } else {
-                    nx = 0;
-                    nz = 1;
+                    wallDecalGeo.dispose();
+                    return null;
                 }
             }
 
@@ -35484,6 +38467,7 @@ export class ThreeGame {
         if (isWorld3dOnlyPlacementType(placement.type)) {
             const anchor = new THREE.Object3D();
             const isDestructibleProp = placement.type.startsWith('prop_');
+            const propBehavior = getPropBehavior(placement.type);
             anchor.position.set(placement.x, anchoredY, placement.z);
             anchor.rotation.y = placement.rotation ?? 0;
             anchor.scale.set(scaleX, scaleY, 1);
@@ -35500,7 +38484,9 @@ export class ThreeGame {
                 maxPropHp: isDestructibleProp ? (placement.hp ?? 3) : undefined,
                 burstTriggered: false,
                 burstTimer: 0,
-                isSolidProp: placement.isSolidProp ?? placement.type.startsWith('arch_'),
+                isSolidProp: placement.isSolidProp
+                    ?? (propBehavior.collision === PROP_COLLISION.PILLARS || placement.type.startsWith('arch_')),
+                propBehavior,
                 collisionRadius: placement.collisionRadius ?? Math.max(0.3, scaleX * 0.35),
                 type: placement.type,
                 scatterKey: placement.scatterKey,
@@ -35515,9 +38501,7 @@ export class ThreeGame {
                 // fits the carve, so both go to the model exactly.
                 socketRotation: placement.socketed ? (placement.rotation ?? 0) : null,
                 modelScale: placement.socketed ? (placement.modelScale ?? 1) : null,
-                isWallBackedProp: placement.type === 'prop_fungal_tendril_altar'
-                    || placement.type === 'prop_flesh_steel_cradle'
-                    || placement.type === 'prop_shrine_plinth_broken'
+                isWallBackedProp: isWallBackedPropType(placement.type)
             };
             this.deferWorld3dReplacement(anchor, placement.type);
             return anchor;
@@ -35553,9 +38537,7 @@ export class ThreeGame {
                 phase: placement.phase ?? 0,
                 baseOpacity: placement.opacity ?? 1,
                 wallNormal: placement.wallNormal ?? null,
-                isWallBackedProp: placement.type === 'prop_fungal_tendril_altar'
-                    || placement.type === 'prop_flesh_steel_cradle'
-                    || placement.type === 'prop_shrine_plinth_broken'
+                isWallBackedProp: isWallBackedPropType(placement.type)
             };
             // `prop_bunker_supplies` is a common room-dressing family, not a
             // literal locker at every placement. Promote only a stable subset
@@ -36241,7 +39223,7 @@ export class ThreeGame {
             new THREE.MeshBasicMaterial({
                 color: root.userData.rarity.color,
                 transparent: true,
-                opacity: 0.7,
+                opacity: pickupIdleGlowOpacity(0, placement.bobOffset ?? 0),
                 side: THREE.DoubleSide,
                 depthWrite: false
             })
@@ -36286,10 +39268,9 @@ export class ThreeGame {
                 material.color?.lerp?.(accent, 0.58);
                 if (material.emissive) {
                     material.emissive.lerp(accent, 0.72);
-                    material.emissiveIntensity = Math.max(
-                        material.emissiveIntensity ?? 0,
-                        pickup.userData.rarity.emissiveIntensity ?? 0.95
-                    );
+                    // Set, not raise: the body meshes carry their own
+                    // 0.72-0.85 emissive, which read as blown-out domes.
+                    material.emissiveIntensity = pickup.userData.rarity.emissiveIntensity ?? PICKUP_RARITY_EMISSIVE;
                 }
                 material.userData.pickupRarityColor = rarityColor;
             }
@@ -36606,8 +39587,7 @@ export class ThreeGame {
                 shadow.scale.setScalar(pickup.userData.scale * 1.1);
             }
             if (pickup.userData.glow) {
-                const rarityPulse = 0.78 + Math.sin(time * 3.1 + pickup.userData.bobOffset) * 0.12;
-                pickup.userData.glow.material.opacity = rarityPulse;
+                pickup.userData.glow.material.opacity = pickupIdleGlowOpacity(time, pickup.userData.bobOffset);
                 pickup.userData.glow.scale.setScalar(1 + Math.sin(time * 2.3 + pickup.userData.bobOffset) * 0.08);
             }
 
@@ -36700,6 +39680,15 @@ export class ThreeGame {
             const pickup = this.createPickupInstance(placement);
             parent.add(pickup);
             this.pickupMeshes.push(pickup);
+        }
+
+        if (isBoss) {
+            const rareProfiles = ['rail_marksman', 'cryo_lance', 'neon_smg'];
+            const profileId = rareProfiles[(this.snailsKilledThisRun ?? 0) % rareProfiles.length];
+            this.spawnFieldWeaponDrop?.(profileId, x + 1.15, z, {
+                sourceEncounterId: sprite.uuid,
+                reserveAmmo: getFieldWeaponDropDefinition(profileId)?.clipCapacity ?? 0
+            });
         }
     }
 
@@ -37547,11 +40536,47 @@ export class ThreeGame {
         canvas.width = 64;
         canvas.height = 64;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#ff9f1c'; // amber color!
-        ctx.font = 'bold 36px "Outfit", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(label, 32, 32);
+        if (ctx) {
+            // Circular badge with a radial gradient fading out to transparent
+            // at the edges, eliminating the hard square frame.
+            if (typeof ctx.createRadialGradient === 'function') {
+                const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 30);
+                gradient.addColorStop(0, 'rgba(28, 14, 6, 0.85)');
+                gradient.addColorStop(0.45, 'rgba(255, 120, 20, 0.45)');
+                gradient.addColorStop(0.8, 'rgba(255, 159, 28, 0.18)');
+                gradient.addColorStop(1, 'rgba(255, 159, 28, 0)');
+                ctx.fillStyle = gradient;
+                ctx.beginPath?.();
+                ctx.arc?.(32, 32, 30, 0, Math.PI * 2);
+                ctx.fill?.();
+            }
+            ctx.font = 'bold 36px "Outfit", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Sharp, subtle outline and drop shadow for maximum legibility and depth
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 1.5;
+
+            if (typeof ctx.strokeText === 'function') {
+                ctx.lineWidth = 3;
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = '#050302';
+                ctx.strokeText(label, 32, 32);
+            }
+
+            // High-contrast internal fill (pure bright white) to strongly contrast with the amber/dark background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(label, 32, 32);
+
+            // Reset shadow to avoid bleed onto any other canvas operations
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+        }
         const texture = new THREE.CanvasTexture(canvas);
         if (this._damagePipTextures.size >= DAMAGE_PIP_TEXTURE_CACHE_MAX) return { texture, owned: true };
         texture.userData.shared = true;
@@ -37564,7 +40589,7 @@ export class ThreeGame {
         // pip) — only round when it's actually a damage number.
         const displayAmount = Number.isFinite(amount) ? Math.round(amount) : amount;
         const { texture, owned } = this.getDamagePipTexture(`-${displayAmount}`);
-        const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+        const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
         const sprite = new THREE.Sprite(material);
         sprite.position.set(x + (Math.random() - 0.5) * 0.4, 0.8, z + (Math.random() - 0.5) * 0.4);
         sprite.scale.set(0.7, 0.7, 1);
@@ -39007,12 +42032,16 @@ export class ThreeGame {
         const facing = facingLen > 0.0001
             ? { dirX: this.aimDirX, dirZ: this.aimDirZ }
             : { dirX: 0, dirZ: 1 };
+        const coveringCarrier = Boolean(this.carryState?.carried);
 
-        for (const companion of this.companions) {
+        for (const [companionIndex, companion] of this.companions.entries()) {
+            companion.tacticalStance = coveringCarrier ? 'cover-carrier' : 'normal';
             if (companion.isWanderer && companion.instance3d?.root) {
                 companion.isFiring = false;
                 const root = companion.instance3d.root;
-                const trail = computeTrailPosition(this.player.position, facing, 2.0);
+                const trail = coveringCarrier
+                    ? companionCarrierCoverPosition(this.player.position, facing, companionIndex)
+                    : computeTrailPosition(this.player.position, facing, 2.0);
                 this.stepCompanionAlongPath?.(companion, root, trail, delta);
                 root.position.y = this.getTerrainHeightAt?.(root.position.x, root.position.z) ?? root.position.y ?? 0;
                 companion.instance3d.update(delta);
@@ -39027,7 +42056,7 @@ export class ThreeGame {
                 if (companion.assistCooldown <= 0) {
                     companion.assistCooldown = 0.25;
                     let nearestHostile = null;
-                    let nearestDist = 8.0;
+                    let nearestDist = coveringCarrier ? 10.0 : 8.0;
                     for (const other of this.scatterSprites || []) {
                         if (!this.isEnemyType(other?.userData?.type) || other.userData.isCompanion
                             || other.userData.dead || other.userData.burstTriggered || other.userData.isDisplayModel) continue;
@@ -39051,7 +42080,9 @@ export class ThreeGame {
             const sprite = companion.sprite;
             if (!sprite?.userData) continue;
 
-            const trail = computeTrailPosition(this.player.position, facing, TRAIL_DISTANCE);
+            const trail = coveringCarrier
+                ? companionCarrierCoverPosition(this.player.position, facing, companionIndex)
+                : computeTrailPosition(this.player.position, facing, TRAIL_DISTANCE);
             const toTrailX = trail.x - sprite.position.x;
             const toTrailZ = trail.z - sprite.position.z;
             const dist = Math.hypot(toTrailX, toTrailZ);
@@ -39071,7 +42102,7 @@ export class ThreeGame {
             companion.assistCooldown = Math.max(0, (companion.assistCooldown ?? 0) - delta);
             if (companion.assistCooldown <= 0) {
                 let nearestHostile = null;
-                let nearestDist = ASSIST_RADIUS;
+                let nearestDist = coveringCarrier ? 3.6 : ASSIST_RADIUS;
                 for (const other of this.scatterSprites) {
                     if (other === sprite || other.userData?.isCompanion) continue;
                     if (!['cybersnail', 'cryosnail', 'sporesnail'].includes(other.userData?.type)) continue;
@@ -39379,6 +42410,13 @@ export class ThreeGame {
             onCorrosionTick: (target, dmg) => {
                 this.damageSnail(target, dmg);
                 this.spawnPhysicalBurst(target.position.x, target.position.z, { color: 0x66ff66, count: 4, upward: 0.1 });
+            },
+            onBurningTick: (target, dmg) => {
+                this.damageSnail(target, dmg);
+                this.spawnPhysicalBurst(target.position.x, target.position.z, { color: 0xff6a21, count: 5, upward: 0.18 });
+            },
+            onBurningExpired: () => {
+                sprite.material?.color?.setHex?.(data.biomeTint ?? 0x88ff88);
             },
             onThaw: () => {
                 sprite.material?.color?.setHex?.(data.biomeTint ?? 0x88ff88);
@@ -39984,7 +43022,7 @@ export class ThreeGame {
             size: isBoss ? 1.5 : 0.8,
             color: slimeColorFor(type),
             alpha: isBoss ? 0.32 : 0.36,
-            life: isBoss ? 10 : 6,
+            life: slimeLifeFor(type, isBoss),
             now
         });
     }
@@ -40947,6 +43985,8 @@ export class ThreeGame {
             }
         }
 
+        if (!this.isInPocket && this.blocksInstalledBaseModulePosition?.(x, z)) return false;
+
         if (!this.isInPocket && this.scatterSprites) {
             // Most scatter entries are decoration or enemies. Cache the much
             // smaller collider subset until the backing array changes or grows,
@@ -41191,6 +44231,98 @@ export class ThreeGame {
         return false;
     }
 
+    getFragileLedgeState(worldX, worldZ) {
+        return readFragileLedgeState(
+            this.fragileLedgeStates,
+            fragileLedgeKey(worldX, worldZ)
+        );
+    }
+
+    setFragileLedgeVisualState(key, state) {
+        const visual = this._fragileLedgeVisuals?.get?.(key);
+        if (!visual?.pool) return false;
+        const visible = state === FRAGILE_LEDGE_STATE.CRACKED
+            || state === FRAGILE_LEDGE_STATE.WARNING;
+        visual.pool.setMatrixAt(
+            visual.instanceIndex,
+            visible ? visual.baseMatrix : new THREE.Matrix4().makeScale(0, 0, 0)
+        );
+        visual.pool.setColorAt(
+            visual.instanceIndex,
+            new THREE.Color(state === FRAGILE_LEDGE_STATE.WARNING ? 0xff7a35 : 0xd7c0a4)
+        );
+        visual.pool.instanceMatrix.needsUpdate = true;
+        if (visual.pool.instanceColor) visual.pool.instanceColor.needsUpdate = true;
+        return true;
+    }
+
+    remountChunkForWorldTile(worldX, worldZ) {
+        const coord = this.getChunkLocalFromWorld(worldX, worldZ);
+        const group = this.chunkMeshes?.get?.(coord.key);
+        if (!group) return false;
+        this.disposeChunkGroupResources(group);
+        this.chunkGroups?.remove?.(group);
+        this.chunkMeshes.delete(coord.key);
+        this.mountChunk(coord.chunkX, coord.chunkY);
+        return true;
+    }
+
+    applyFragileLedgeTransition(transition, { fromRemote = false } = {}) {
+        if (!transition?.key) return false;
+        const [worldX, worldZ] = transition.key.split(',').map(Number);
+        if (!Number.isFinite(worldX) || !Number.isFinite(worldZ)) return false;
+        this.setFragileLedgeVisualState(transition.key, transition.state);
+        if (transition.state === FRAGILE_LEDGE_STATE.CRACKED) {
+            this.spawnPhysicalBurst?.(worldX, worldZ, { color: 0x9b8068, count: 4, upward: 0.08, spread: 0.7 });
+            if (typeof window !== 'undefined') window.AudioManager?.playMetalStress?.({ volume: 0.22, playbackRate: 0.62, force: true });
+        } else if (transition.state === FRAGILE_LEDGE_STATE.WARNING) {
+            this.spawnPhysicalBurst?.(worldX, worldZ, { color: 0xc19a78, count: 7, upward: 0.12, spread: 0.9 });
+            this.triggerCameraShake?.(0.035, 0.16);
+            if (typeof window !== 'undefined') window.AudioManager?.playMetalStress?.({ volume: 0.38, playbackRate: 0.48, force: true });
+        } else if (transition.state === FRAGILE_LEDGE_STATE.COLLAPSED) {
+            const coord = this.getChunkLocalFromWorld(worldX, worldZ);
+            const grid = this.chunkCache?.get?.(coord.key);
+            if (grid?.[coord.localY]?.[coord.localX] === CLIFF_TILE) {
+                grid[coord.localY][coord.localX] = EXTERIOR_CANYON_TILE;
+            }
+            this.spawnPhysicalBurst?.(worldX, worldZ, { color: 0x70584a, count: 14, upward: 0.18, spread: 1.2 });
+            this.triggerCameraShake?.(0.09, 0.24);
+            if (typeof window !== 'undefined') window.AudioManager?.playMetalStress?.({ volume: 0.62, playbackRate: 0.38, force: true });
+            this.remountChunkForWorldTile(worldX, worldZ);
+        }
+        if (typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
+            window.dispatchEvent?.(new CustomEvent('ledge-state-changed', {
+                detail: { key: transition.key, x: worldX, z: worldZ, state: transition.state, fromRemote }
+            }));
+        }
+        if (!fromRemote) {
+            this.broadcastSharedWorldEvent?.('fragile-ledge-state', {
+                key: transition.key,
+                state: transition.state,
+                warningDeadline: transition.warningDeadline ?? null
+            });
+            this.persistCampaignWorld?.();
+        }
+        return true;
+    }
+
+    updateFragileLedgeOccupancy(now = performance.now()) {
+        if (!this.player || this.isInPocket || this.noclip) return [];
+        const tileX = Math.round(this.player.position.x);
+        const tileZ = Math.round(this.player.position.z);
+        const currentKey = this.getTileType(tileX, tileZ) === CLIFF_TILE
+            ? fragileLedgeKey(tileX, tileZ)
+            : null;
+        const result = advanceFragileLedgeOccupancy(this.fragileLedgeStates, {
+            previousKey: this._activeFragileLedgeKey,
+            currentKey,
+            now
+        });
+        this._activeFragileLedgeKey = result.activeKey;
+        for (const transition of result.transitions) this.applyFragileLedgeTransition(transition);
+        return result.transitions;
+    }
+
     getHoleVisualInfo(worldX, worldY, { requireCached = false } = {}) {
         const tileX = Math.round(worldX);
         const tileY = Math.round(worldY);
@@ -41227,6 +44359,11 @@ export class ThreeGame {
         }
         if (tileType === CLIFF_TILE) {
             if (this.isCliffSecretPath(tileX, tileY)) return null;
+            const ledgeState = readFragileLedgeState(
+                this.fragileLedgeStates,
+                fragileLedgeKey(tileX, tileY)
+            );
+            if (ledgeState.state !== FRAGILE_LEDGE_STATE.COLLAPSED) return null;
             return {
                 x: tileX,
                 z: tileY,
@@ -41724,6 +44861,13 @@ export class ThreeGame {
         return {
             generationVersion: metadata.generationVersion,
             chunkKey: key,
+            generatorId: metadata.generatorId ?? null,
+            exposureRole: metadata.exposureRole ?? null,
+            buildId: metadata.structureResult?.diagnostics?.buildId ?? null,
+            hallwayArchetypeId: metadata.structureResult?.diagnostics?.archetypeId ?? null,
+            rotation: metadata.structureResult?.diagnostics?.rotationSteps ?? 0,
+            reservationId: metadata.reservationId ?? null,
+            fallbackReason: metadata.authoredResolution?.reason ?? null,
             seamErrors: metadata.seamErrors ?? [],
             radial: metadata.radial ?? null,
             rooms: (metadata.roomInstances ?? []).map((room) => ({
@@ -41753,7 +44897,7 @@ export class ThreeGame {
     }
 
     addWfcDebugOverlay(group, chunkX, chunkY, metadata, grid) {
-        if (!group || !metadata?.lattice || !grid) return;
+        if (!group || !metadata || !grid) return;
         const overlay = new THREE.Group();
         overlay.name = 'wfc-debug-overlay';
         overlay.visible = typeof document !== 'undefined'
@@ -41818,21 +44962,23 @@ export class ThreeGame {
         }
 
         const stride = TILE_SIZE - 1;
-        const seamMaterial = (metadata.seamErrors?.length ?? 0) > 0
-            ? this.wfcDebugMaterials.seamError
-            : this.wfcDebugMaterials.seam;
-        for (let my = 0; my < 3; my += 1) {
-            for (let mx = 0; mx < 3; mx += 1) {
-                const border = new THREE.LineSegments(
-                    this.wfcDebugBorderGeometry,
-                    seamMaterial
-                );
-                border.position.set(
-                    chunkX * this.chunkSize + mx * stride,
-                    0.09,
-                    chunkY * this.chunkSize + my * stride
-                );
-                overlay.add(border);
+        if (metadata.lattice) {
+            const seamMaterial = (metadata.seamErrors?.length ?? 0) > 0
+                ? this.wfcDebugMaterials.seamError
+                : this.wfcDebugMaterials.seam;
+            for (let my = 0; my < 3; my += 1) {
+                for (let mx = 0; mx < 3; mx += 1) {
+                    const border = new THREE.LineSegments(
+                        this.wfcDebugBorderGeometry,
+                        seamMaterial
+                    );
+                    border.position.set(
+                        chunkX * this.chunkSize + mx * stride,
+                        0.09,
+                        chunkY * this.chunkSize + my * stride
+                    );
+                    overlay.add(border);
+                }
             }
         }
 
@@ -41872,7 +45018,7 @@ export class ThreeGame {
         };
 
         // One readable name plate per 7x7 WFC source tile.
-        for (let index = 0; index < metadata.lattice.length; index += 1) {
+        for (let index = 0; index < (metadata.lattice?.length ?? 0); index += 1) {
             const tile = metadata.lattice[index];
             const mx = index % 3;
             const my = Math.floor(index / 3);
@@ -41884,6 +45030,19 @@ export class ThreeGame {
             );
             overlay.add(label);
         }
+
+        const diagnostics = metadata.structureResult?.diagnostics ?? {};
+        const identity = diagnostics.buildId ?? diagnostics.archetypeId ?? metadata.generatorId ?? 'UNKNOWN';
+        const prefix = metadata.exposureRole
+            ? metadata.exposureRole.replace(/-/g, ' ').toUpperCase()
+            : String(metadata.generatorId ?? 'GENERATOR').replace(/-/g, ' ').toUpperCase();
+        const generatorLabel = makeFloorLabel(`${prefix} · ${identity}`, metadata.exposureRole ? '#facc15' : '#ffffff', 5.8, 0.72);
+        generatorLabel.position.set(
+            chunkX * this.chunkSize + this.chunkSize * 0.5,
+            0.2,
+            chunkY * this.chunkSize + this.chunkSize * 0.5
+        );
+        overlay.add(generatorLabel);
 
         // Door plates sit over the full three-cell threshold and show which
         // socket side generated the connection.
@@ -42974,6 +46133,7 @@ export class ThreeGame {
             worldChanges: {
                 destroyedWalls: [...(this.destroyedWallKeys ?? [])],
                 destroyedExteriorWalls: [...(this.destroyedExteriorWallKeys ?? [])],
+                fragileLedges: serializeFragileLedgeStates(this.fragileLedgeStates),
                 brokenRoomDressing: serializeBrokenRoomDressing(this.brokenPropScatterKeys),
                 discoveredChunks: [...(this.discoveredMapChunkKeys ?? [])],
                 discoveredRooms: [...(this.discoveredMapRoomKeys ?? [])],
@@ -43001,6 +46161,8 @@ export class ThreeGame {
                 ? values.filter((value) => typeof value === 'string') : []);
             this.destroyedWallKeys = strings(raw.worldChanges.destroyedWalls);
             this.destroyedExteriorWallKeys = strings(raw.worldChanges.destroyedExteriorWalls);
+            this.fragileLedgeStates = restoreFragileLedgeStates(raw.worldChanges.fragileLedges);
+            this._activeFragileLedgeKey = null;
             this.discoveredMapChunkKeys = strings(raw.worldChanges.discoveredChunks);
             this.discoveredMapChunkKeys.add('0,0');
             this.discoveredMapRoomKeys = strings(raw.worldChanges.discoveredRooms);
@@ -43051,7 +46213,7 @@ export class ThreeGame {
         if (!this.chunkCache.has(key)) {
             // Evict oldest cache entries if over limit (prevents memory growth in long sessions).
             // Must comfortably exceed the max resident window (visibleChunkRadius +
-            // chunkResidentPadding can reach a 9x9 = 81 chunk neighborhood) plus
+            // chunkResidentPadding is capped at a 5x5 = 25 chunk neighborhood) plus
             // headroom for non-mounted lookups (AI pathing, getTileType/getRoomTypeGrid)
             // that populate this cache without ever mounting — a cap too close to the
             // resident window thrashed those non-mounted entries, forcing repeated
@@ -43154,6 +46316,22 @@ export class ThreeGame {
                 chunk.chunkX === chunkX && chunk.chunkY === chunkY
             ));
             const regionalRoles = regionalChunk?.roles ?? [];
+            const exposureWorldPlan = this.authoredWorldTiles
+                ? this.ensureAuthoredWorldPlan?.() ?? this.worldPlan
+                : null;
+            const protectedExposureChunks = [
+                ...(exposureWorldPlan?.reservations ?? []).map((entry) => entry.chunkKey),
+                ...(exposureWorldPlan?.setpieceClaims ?? []).flatMap((claim) => claim.chunkKeys ?? [])
+            ];
+            const exposureSlots = regionalChunk
+                ? planRingExposureSlots(radialPlan, regionalChunk.ring, {
+                    excludedChunkKeys: protectedExposureChunks
+                })
+                : null;
+            const exposureChunkKey = `${chunkX},${chunkY}`;
+            const forcedExposureRoom = exposureSlots?.authoredRoomChunkKeys.includes(exposureChunkKey) ?? false;
+            const forcedSignatureHall = exposureSlots?.signatureHallwayChunkKey === exposureChunkKey;
+            const forcedBiomeTransition = exposureSlots?.biomeTransitionChunkKey === exposureChunkKey;
             const radialAnchor = this.getBiomeAnchorPosition?.() ?? { x: 0, z: 0 };
             const chunkWorldX = chunkX * this.chunkSize + this.chunkSize * 0.5 - radialAnchor.x;
             const chunkWorldZ = chunkY * this.chunkSize + this.chunkSize * 0.5 - radialAnchor.z;
@@ -43205,6 +46383,7 @@ export class ThreeGame {
                 || role === 'room' || role === 'mission'
             ));
             const tutorialRing = this.isInTutorialRing(chunkX, chunkY);
+            const nearCrashRoute = Math.abs(chunkX) <= 1 && chunkY >= -3 && chunkY <= 0;
             // Keep the two chunks immediately outside the authored crash room
             // readable and collision-light. The old radial-room override made
             // a large chamber appear beside the start almost every run, then
@@ -43221,11 +46400,12 @@ export class ThreeGame {
                 this.wfcMetadataCache?.get(`${chunkX},${chunkY - 1}`)?.roomInstances?.length ||
                 this.wfcMetadataCache?.get(`${chunkX},${chunkY + 1}`)?.roomInstances?.length
                 );
-            const roomMode = !tutorialRing && (isDestination || (!hasAdjacentRoom && (
+            const roomMode = !tutorialRing && (forcedExposureRoom || (!forcedSignatureHall && !forcedBiomeTransition
+                && (isDestination || (!nearCrashRoute && !hasAdjacentRoom && (
                 regionalRoles.includes('ring')
                 || (nearestRadialRoom <= this.chunkSize * 0.9 && (Math.abs(chunkX + chunkY) % 2 === 0))
                 || random() < 0.20
-            )));
+                )))));
             if (!this.authoredWorldTiles) {
                 const architectural = generateArchitecturalMazeChunk(random, {
                     size: this.chunkSize,
@@ -43263,6 +46443,10 @@ export class ThreeGame {
             } else {
                 const authoredPlan = this.getRoomGrammarChunkPlan?.(this.ensureAuthoredWorldPlan?.() ?? this.worldPlan)
                     ?? this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
+                const chunkBiome = String(this.getBiomeKeyForWorldPosition?.(
+                    chunkX * this.chunkSize + this.chunkSize * 0.5,
+                    chunkY * this.chunkSize + this.chunkSize * 0.5
+                ) ?? 'active').toLowerCase();
                 const authoredResolution = authoredPlan
                     ? resolveAuthoredChunkStructure(random, authoredPlan, {
                     chunkX,
@@ -43270,15 +46454,34 @@ export class ThreeGame {
                     activeReservationIds: this.getActiveAuthoredReservationIds?.() ?? [],
                     chunkSize: this.chunkSize,
                     openings: architecturalOpenings,
-                    biome: String(this.getBiomeKeyForWorldPosition?.(
-                        chunkX * this.chunkSize + this.chunkSize * 0.5,
-                        chunkY * this.chunkSize + this.chunkSize * 0.5
-                    ) ?? 'active').toLowerCase(),
+                    biome: chunkBiome,
                     tutorialOnly: this.isInTutorialRing(chunkX, chunkY)
                     })
                     : null;
                 let structure = null;
                 if (authoredResolution?.status === 'accepted') structure = authoredResolution.structure;
+                if (!structure && forcedExposureRoom && !authoredResolution?.reservationId) {
+                    structure = buildExposureRoomChunkStructure(random, {
+                        chunkX,
+                        chunkY,
+                        chunkSize: this.chunkSize,
+                        openings: architecturalOpenings,
+                        tier: regionalChunk?.ring ?? 1,
+                        biome: chunkBiome,
+                        roll: random()
+                    });
+                }
+                if (!structure && (forcedSignatureHall || forcedBiomeTransition)
+                    && !authoredResolution?.reservationId) {
+                    structure = buildHallwayConnectorChunkStructure(random, {
+                        chunkX,
+                        chunkY,
+                        chunkSize: this.chunkSize,
+                        openings: architecturalOpenings,
+                        archetypeId: forcedBiomeTransition ? 'biome_transition_hall' : 'boss_staging_approach'
+                    });
+                    if (structure) structure.diagnostics.exposureBudget = true;
+                }
                 const grammarConfig = roomMode && !isDestination && !authoredResolution?.reservationId
                     && !this.isInTutorialRing(chunkX, chunkY) ? this.getRoomGrammarConfig?.() : null;
                 if (!structure && grammarConfig) {
@@ -43331,6 +46534,11 @@ export class ThreeGame {
                 sockets: structure.sockets,
                 wayfindingMarkers: structure.wayfindingMarkers ?? [],
                 generatorId: structure.generatorId,
+                exposureRole: structure.diagnostics.exposureBudget
+                    ? forcedExposureRoom ? 'authored-room'
+                        : forcedSignatureHall ? 'signature-hallway'
+                            : forcedBiomeTransition ? 'biome-transition' : null
+                    : null,
                 reservationId: structure.reservationId ?? authoredResolution?.reservationId ?? null,
                 ringCrossingId: authoredResolution?.reservation?.crossingId ?? null,
                 authoredResolution: authoredResolution?.diagnostics ?? null,
@@ -43489,12 +46697,19 @@ export class ThreeGame {
             }
         }
 
+        const isCrashApproach = chunkX === CRASH_SITE_BUILD.approachChunk.x
+            && chunkY === CRASH_SITE_BUILD.approachChunk.y;
         if (chunkX === 0 && chunkY === 0) {
             this.buildCrashSiteChunk(grid, chunkX, chunkY);
+        } else if (isCrashApproach) {
+            mazeMetadata = stampCrashSiteApproach(grid, CRASH_SITE_BUILD, {
+                variant: Math.floor(random() * 4)
+            });
+            this.wfcMetadataCache?.set(`${chunkX},${chunkY}`, mazeMetadata);
         } else {
             this.clearSpawnArea(grid, chunkX, chunkY);
         }
-        if (landform !== LANDFORMS.MAZE) {
+        if (landform !== LANDFORMS.MAZE && !isCrashApproach) {
             ThreeGame.prototype.addRoomThresholdDoors.call(this, grid, random, chunkX, chunkY);
             this.clearDoorways?.(grid);
         }
@@ -43687,6 +46902,11 @@ export class ThreeGame {
             }
             stampDoorRecords(grid, gatePlan.doors);
             this.clearDoorways?.(grid);
+            mazeMetadata.doorApronRepairs = ensureRoomDoorAprons(
+                grid,
+                mazeMetadata.roomInstances,
+                { depth: 3 }
+            );
             const blockedDoorCells = new Set(gatePlan.doors
                 .filter((door) => door.state === 'locked')
                 .flatMap((door) => door.cells ?? [])
@@ -43726,6 +46946,30 @@ export class ThreeGame {
                 // tile safe rim and rounded cliff band as stamped chunks.
                 expandExistingCanyon: Boolean(mazeMetadata?.architectural)
             });
+            if (mazeMetadata) {
+                mazeMetadata.roomEdgeRepairs = sealRoomExteriorEdges(grid, mazeMetadata.roomInstances);
+            }
+            const naturalCrossing = stampNaturalCrossing(grid);
+            if (mazeMetadata) {
+                mazeMetadata.naturalCrossings = naturalCrossing ? [naturalCrossing] : [];
+                mazeMetadata.envelopeErrors = validateRoomExteriorEnvelope(
+                    grid,
+                    mazeMetadata.roomInstances,
+                    { apronDepth: 3 }
+                );
+            }
+        }
+        // Reapply persisted collapses after deterministic generation and
+        // before route/render metadata sees the chunk.
+        for (const ledgeKey of this.fragileLedgeStates?.keys?.() ?? []) {
+            if (readFragileLedgeState(this.fragileLedgeStates, ledgeKey).state !== FRAGILE_LEDGE_STATE.COLLAPSED) continue;
+            const [worldX, worldZ] = ledgeKey.split(',').map(Number);
+            const ownerX = Math.floor(worldX / this.chunkSize);
+            const ownerY = Math.floor(worldZ / this.chunkSize);
+            if (ownerX !== chunkX || ownerY !== chunkY) continue;
+            const localX = worldX - ownerX * this.chunkSize;
+            const localY = worldZ - ownerY * this.chunkSize;
+            if (grid[localY]?.[localX] === CLIFF_TILE) grid[localY][localX] = EXTERIOR_CANYON_TILE;
         }
         const chunkRouteRecord = {
             key: `${chunkX},${chunkY}`,
@@ -43739,6 +46983,7 @@ export class ThreeGame {
             counts[tile] = (counts[tile] ?? 0) + 1;
             return counts;
         }, {});
+        const spaceMetrics = chunkSpaceMetrics(grid);
         debugLog.debug('WORLD', 'Chunk generated', {
             chunk: chunkRouteRecord.key,
             landform,
@@ -43746,11 +46991,25 @@ export class ThreeGame {
             portals: Object.entries(chunkRouteRecord.portals)
                 .filter(([, open]) => open)
                 .map(([side]) => side),
+            portalDetails: mazeMetadata?.sharedPortals ?? mazeMetadata?.doors?.map((door) => ({
+                id: door.portalKey ?? door.id,
+                cells: door.cells,
+                clearBothSides: door.clearBothSides ?? null
+            })) ?? [],
             tiles: {
                 floor: tileCounts['.'] ?? 0,
                 ledge: tileCounts[LEDGE_TILE] ?? 0,
                 cliff: tileCounts[CLIFF_TILE] ?? 0,
                 void: tileCounts[EXTERIOR_CANYON_TILE] ?? 0
+            },
+            landscape: {
+                interiorRatio: Number(spaceMetrics.interiorRatio.toFixed(3)),
+                exteriorRatio: Number(spaceMetrics.exteriorRatio.toFixed(3)),
+                bridgeCells: spaceMetrics.bridge,
+                naturalCrossings: mazeMetadata?.naturalCrossings?.length ?? 0,
+                doorApronRepairs: mazeMetadata?.doorApronRepairs?.length ?? 0,
+                roomEdgeRepairs: mazeMetadata?.roomEdgeRepairs?.length ?? 0,
+                envelopeErrors: mazeMetadata?.envelopeErrors?.length ?? 0
             }
         });
         const worldRouteGraph = buildWorldRouteGraph([...this.worldRouteRecords.values()]);
@@ -44081,40 +47340,7 @@ export class ThreeGame {
 
     clearSpawnArea(grid, chunkX, chunkY) {
         if (chunkX !== 0 || chunkY !== 0) return;
-
-        // Authored crash platform. Replacing the incoming landform
-        // completely prevents stray procedural portals or wall erosion from
-        // punching extra doors into the starting room. Deep exterior cells
-        // are lethal canyon, a one-cell wall/foundation band frames the room,
-        // and the north blast-door hall is its only bridge to another chunk.
-        for (let localY = 0; localY < this.chunkSize; localY += 1) {
-            for (let localX = 0; localX < this.chunkSize; localX += 1) {
-                grid[localY][localX] = EXTERIOR_CANYON_TILE;
-            }
-        }
-
-        const room = { left: 2, right: 16, top: 4, bottom: 17 };
-        for (let localY = room.top - 1; localY <= room.bottom + 1; localY += 1) {
-            for (let localX = room.left - 1; localX <= room.right + 1; localX += 1) {
-                const inside = localX >= room.left && localX <= room.right
-                    && localY >= room.top && localY <= room.bottom;
-                grid[localY][localX] = inside ? '.' : '#';
-            }
-        }
-
-        // The only door is always centered on the top wall. A three-wide
-        // pre-hall runs from the circular room to the north chunk edge.
-        const doorCenterX = CRASH_SITE_CENTER;
-        for (let localY = 0; localY <= 3; localY += 1) {
-            for (let localX = doorCenterX - 1; localX <= doorCenterX + 1; localX += 1) {
-                grid[localY][localX] = '.';
-            }
-        }
-        // Hall jambs keep canyon on both sides all the way to the chunk seam.
-        for (let localY = 0; localY <= 2; localY += 1) {
-            grid[localY][doorCenterX - 2] = '#';
-            grid[localY][doorCenterX + 2] = '#';
-        }
+        stampCrashSiteOrigin(grid, CRASH_SITE_BUILD, { exteriorTile: EXTERIOR_CANYON_TILE });
     }
 
     getSpawnTile() {
@@ -44213,6 +47439,7 @@ export class ThreeGame {
     }
 
     destroy() {
+        this._destroyed = true;
         this.propDebrisPrewarm?.dispose();
         this.clearCompanions();
         this.applyMilestoneBossRuntimeEvent?.({ type: MILESTONE_BOSS_EVENT_TYPES.QUIT });
@@ -44245,6 +47472,12 @@ export class ThreeGame {
         });
         this.baseDefenseTurretGroup?.removeFromParent?.();
         this.baseDefenseTurretLight?.removeFromParent?.();
+        this.clearCarryObjectVisuals?.();
+        this.clearInstalledBaseModuleVisuals?.();
+        disposeBaseAtmosphereIndicator(this.baseAtmosphereIndicator);
+        this.baseAtmosphereIndicator = null;
+        disposeBedInstallSocketVisual(this.bedInstallSocketVisual);
+        this.bedInstallSocketVisual = null;
         this.renderer.domElement.removeEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.removeEventListener('contextmenu', this.handleCanvasContextMenu);
         this.renderer.domElement.removeEventListener('pointermove', this.handleCanvasPointerMove);
@@ -44258,6 +47491,10 @@ export class ThreeGame {
         this.ambientVentSystem = null;
         this.floorFogSystem?.dispose();
         this.floorFogSystem = null;
+        this.pointAudioEmitters?.dispose?.();
+        this.pointAudioEmitters = null;
+        this.casingSystem?.dispose?.();
+        this.casingSystem = null;
         this.killstreakFeedback?.dispose?.();
         this.killstreakFeedback = null;
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
@@ -44279,10 +47516,10 @@ export class ThreeGame {
         this.stickerMaterial = null;
         disposeStickerMaterial(this.roomDecalMaterial);
         this.roomDecalMaterial = null;
-        this.crashSiteFloorMaterial?.dispose?.();
-        this.crashSiteFloorTexture?.dispose?.();
         this.crashSiteHeatMaterial?.dispose?.();
         this.crashSiteHeatTexture?.dispose?.();
+        this.fragileLedgeCrackMaterial?.dispose?.();
+        this.fragileLedgeCrackTexture?.dispose?.();
         for (const material of this.roomFloorMaterials?.values?.() ?? []) {
             if (material?.userData?.ownsRoomAtlasTexture) material.map?.dispose?.();
             material?.dispose?.();
@@ -44307,6 +47544,9 @@ export class ThreeGame {
         this.voidMaterial?.dispose?.();
         Object.values(this.exteriorCanyonTextures ?? {}).forEach((texture) => texture?.dispose?.());
         this.wallMaterial?.dispose?.();
+        for (const [family, material] of Object.entries(this.doorFamilyMaterials ?? {})) {
+            if (family !== 'blast-slab') material?.dispose?.();
+        }
         this.doorMaterial?.dispose?.();
         this.doorTexture?.dispose?.();
         this.wallGeometry?.dispose();
@@ -44416,6 +47656,16 @@ export class ThreeGame {
             this.scene.remove(this.o2BubbleObjects.light);
             this.o2BubbleObjects = null;
         }
+        for (const root of [this.bunkerBlastDoorSlabModel, this.bunkerBlastDoorFrameGroup?.children?.[0]]) {
+            if (!root) continue;
+            this.disposeWorld3dPropFx?.(root);
+            this.disposeWorld3dPropExperience?.(root);
+            root.userData?.dispose?.();
+            root.removeFromParent?.();
+        }
+        this.bunkerBlastDoorFrameGroup?.removeFromParent?.();
+        this.bunkerBlastDoorSlabModel = null;
+        this.bunkerBlastDoorFrameGroup = null;
         this.baseLights?.dispose();
         this.removeMenuGyroListeners();
         this.gpuFrameTimer?.dispose?.();

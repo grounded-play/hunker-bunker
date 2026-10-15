@@ -360,7 +360,7 @@
 
         <div class="credits-footer">
           <span data-i18n="ui.about.thank_you_for_deploying" class="credits-footer-thankyou">THANK YOU FOR DEPLOYING</span>
-          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.16-BETA // ACTIVE</span>
+          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.17-BETA // ACTIVE</span>
         </div>
       </div>
     </div>
@@ -449,9 +449,8 @@
             <div class="preview-box">
               <div class="hero-identity-block">
                 <div class="char-preview-stage" aria-hidden="true">
-                  <img loading="lazy" id="char-preview-fallback" class="char-preview-fallback" src="/Tank.full_v2.png" alt="" />
-                  <canvas id="char-preview-sprite" width="256" height="256"></canvas>
                   <canvas id="char-preview-3d" class="hidden" width="480" height="480"></canvas>
+                  <div id="char-preview-loading" class="char-preview-loading" data-state="loading" data-i18n="ui.hero_detail.initializing_3d_operator">INITIALIZING 3D OPERATOR…</div>
                   <div id="char-preview-door" class="char-preview-door">
                     <div class="char-preview-door__panel char-preview-door__panel--top">
                       <div class="char-preview-door__texture"></div>
@@ -780,6 +779,32 @@
               <span data-i18n="ui.steam_vault.steam_inventory_manifest" class="vault-column-title">STEAM INVENTORY MANIFEST</span>
               <span data-i18n="ui.steam_vault.verified" class="vault-column-badge">VERIFIED</span>
             </div>
+            <div class="vault-inventory-toolbar" role="search">
+              <input data-i18n-placeholder="ui.vault.search_placeholder" data-i18n-aria-label="ui.vault.search_placeholder" id="vault-search-input" class="vault-filter-control vault-search-input" type="search" maxlength="64" autocomplete="off" placeholder="SEARCH INVENTORY..." aria-label="Search inventory" />
+              <select data-i18n-aria-label="ui.vault.group_all" id="vault-group-filter" class="vault-filter-control" aria-label="Filter inventory category">
+                <option data-i18n="ui.vault.group_all" value="all">ALL ITEMS</option>
+                <option data-i18n="ui.vault.group_cosmetics" value="cosmetic">COSMETICS</option>
+                <option data-i18n="ui.vault.group_mods" value="mod">MODS</option>
+                <option data-i18n="ui.vault.group_materials" value="material">MATERIALS</option>
+                <option data-i18n="ui.vault.group_caches" value="cache">CACHES &amp; KEYS</option>
+              </select>
+              <select data-i18n-aria-label="ui.vault.rarity_all" id="vault-rarity-filter" class="vault-filter-control" aria-label="Filter inventory rarity">
+                <option data-i18n="ui.vault.rarity_all" value="all">ALL RARITIES</option>
+                <option data-i18n="rarity.common" value="common">COMMON</option>
+                <option data-i18n="rarity.uncommon" value="uncommon">UNCOMMON</option>
+                <option data-i18n="rarity.rare" value="rare">RARE</option>
+                <option data-i18n="rarity.epic" value="epic">EPIC</option>
+                <option data-i18n="rarity.legendary" value="legendary">LEGENDARY</option>
+              </select>
+              <select data-i18n-aria-label="ui.vault.sort_recent" id="vault-sort-select" class="vault-filter-control" aria-label="Sort inventory">
+                <option data-i18n="ui.vault.sort_recent" value="recent">RECENT</option>
+                <option data-i18n="ui.vault.sort_name" value="name">NAME</option>
+                <option data-i18n="ui.vault.sort_rarity" value="rarity">RARITY</option>
+                <option data-i18n="ui.vault.sort_quantity" value="quantity">QUANTITY</option>
+              </select>
+              <button data-i18n="ui.vault.clear_filters" id="vault-filter-clear" class="vault-filter-clear" type="button">CLEAR</button>
+            </div>
+            <div class="vault-inventory-summary" id="vault-inventory-summary" aria-live="polite"></div>
             <div class="vault-inventory-container" id="vault-inventory-container">
               <div class="vault-grid" id="vault-item-grid"></div>
               <div class="vault-empty-state hidden" id="vault-empty-state">NO ITEMS DETECTED IN STEAM VAULT</div>
@@ -848,6 +873,7 @@
                 <div class="vault-store-open-info">
                   <span class="vault-store-open-icon">◈</span>
                   <span class="vault-store-open-status" id="vault-store-open-status">Key & Cache required for decryption.</span>
+                  <button data-i18n="ui.vault.retry_sync" class="vault-store-sync-btn hidden" id="vault-store-sync-btn" type="button">RETRY SYNC</button>
                 </div>
                 <button data-i18n="ui.steam_vault.open_deep_relic_cache" class="start-btn vault-store-open-btn hidden" id="vault-store-open-btn">◈ OPEN DEEP RELIC CACHE</button>
               </div>
@@ -916,7 +942,7 @@
         </div>
 
         <!-- Cache Decryption & Reveal Animation Overlay (Fabricator Reel Architecture) -->
-        <div id="vault-reveal-overlay" class="vault-reveal-overlay hidden" aria-hidden="true" data-state="idle">
+        <div id="vault-reveal-overlay" class="vault-reveal-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="vault-reveal-title" aria-describedby="vault-reveal-status" data-state="idle" tabindex="-1">
           <div class="vault-reveal-container">
             <div class="vault-reveal-header">
               <div data-i18n="ui.vault_reveal.steam_relic_dispensary_appid_4957040" class="vault-reveal-kicker">◈ STEAM RELIC DISPENSARY // APPID 4957040</div>
@@ -929,6 +955,9 @@
               <div class="vault-reveal-marker"></div>
               <div class="vault-reveal-strip" id="vault-reveal-strip"></div>
             </div>
+
+            <!-- Skip / Reveal Now Action -->
+            <button type="button" class="start-btn vault-reveal-skip-btn" id="vault-reveal-skip-btn" data-i18n="ui.vault.skip_reveal">REVEAL NOW</button>
 
             <!-- Final Revealed Item Card -->
             <div class="vault-reveal-card" id="vault-reveal-card">
@@ -1382,6 +1411,18 @@
       <div class="dock-housing dock-housing--map" aria-hidden="true"></div>
       <div class="dock-housing dock-housing--status" aria-hidden="true"></div>
       <div class="dock-housing dock-housing--arms" aria-hidden="true"></div>
+      <!-- Unified lower console. src/hudConsole.js moves the existing live HUD
+           nodes into these slots before the information controller starts, so
+           gameplay systems retain their established IDs and update ownership. -->
+      <section id="hud-console" class="hud-console">
+        <div class="hud-console__glass" aria-hidden="true"></div>
+        <div class="hud-console__map-slot"></div>
+        <div class="hud-console__suit-slot"></div>
+        <div class="hud-console__mission-slot"></div>
+        <div class="hud-console__frame" aria-hidden="true"></div>
+        <div class="hud-console__wear" aria-hidden="true"></div>
+      </section>
+      <div id="hud-console-overlays" class="hud-console-overlays"></div>
       <div class="header-bar hud-header">
         <div class="hud-header__center">
           <div id="weapon-status-panel" class="weapon-status-panel" aria-live="polite">
@@ -2485,18 +2526,18 @@
         </div>
 
         <div data-i18n-aria-label="ui.settings.aria_label_settings_categories" class="settings-tabs" role="tablist" aria-label="Settings categories">
-          <button data-i18n="ui.settings.session" type="button" class="settings-tab active" data-settings-tab="session" role="tab" aria-selected="true">SESSION</button>
-          <button data-i18n="ui.settings.audio" type="button" class="settings-tab" data-settings-tab="audio" role="tab" aria-selected="false">AUDIO</button>
-          <button data-i18n="ui.settings.controls" type="button" class="settings-tab" data-settings-tab="controls" role="tab" aria-selected="false">CONTROLS</button>
-          <button data-i18n="ui.settings.camera_hud" type="button" class="settings-tab" data-settings-tab="camera" role="tab" aria-selected="false">CAMERA &amp; HUD</button>
-          <button data-i18n="ui.settings.graphics" type="button" class="settings-tab" data-settings-tab="graphics" role="tab" aria-selected="false">GRAPHICS</button>
-          <button data-i18n="ui.settings.accessibility" type="button" class="settings-tab" data-settings-tab="accessibility" role="tab" aria-selected="false">ACCESSIBILITY</button>
-          <button data-i18n="ui.settings.profile_saves" type="button" class="settings-tab" data-settings-tab="profile" role="tab" aria-selected="false">PROFILE &amp; SAVES</button>
+          <button id="settings-tab-session" aria-controls="settings-panel-session" data-i18n="ui.settings.session" type="button" class="settings-tab active" data-settings-tab="session" role="tab" aria-selected="true">SESSION</button>
+          <button id="settings-tab-audio" aria-controls="settings-panel-audio" data-i18n="ui.settings.audio" type="button" class="settings-tab" data-settings-tab="audio" role="tab" aria-selected="false">AUDIO</button>
+          <button id="settings-tab-controls" aria-controls="settings-panel-controls" data-i18n="ui.settings.controls" type="button" class="settings-tab" data-settings-tab="controls" role="tab" aria-selected="false">CONTROLS</button>
+          <button id="settings-tab-camera" aria-controls="settings-panel-camera" data-i18n="ui.settings.camera_hud" type="button" class="settings-tab" data-settings-tab="camera" role="tab" aria-selected="false">CAMERA &amp; HUD</button>
+          <button id="settings-tab-graphics" aria-controls="settings-panel-graphics" data-i18n="ui.settings.graphics" type="button" class="settings-tab" data-settings-tab="graphics" role="tab" aria-selected="false">GRAPHICS</button>
+          <button id="settings-tab-accessibility" aria-controls="settings-panel-accessibility" data-i18n="ui.settings.accessibility" type="button" class="settings-tab" data-settings-tab="accessibility" role="tab" aria-selected="false">ACCESSIBILITY</button>
+          <button id="settings-tab-profile" aria-controls="settings-panel-profile" data-i18n="ui.settings.profile_saves" type="button" class="settings-tab" data-settings-tab="profile" role="tab" aria-selected="false">PROFILE &amp; SAVES</button>
         </div>
 
         <div class="settings-modal-content">
           <!-- Section 1: Display & Graphics -->
-        <div class="settings-category-group" data-settings-panel="session">
+        <div id="settings-panel-session" class="settings-category-group" data-settings-panel="session" role="tabpanel" aria-labelledby="settings-tab-session">
           <div data-i18n="ui.settings.session_display" class="settings-category-header">SESSION &amp; DISPLAY</div>
           <div class="setting-item setting-item--action">
             <span data-i18n="ui.chat.title">ROOM CHAT</span>
@@ -2531,7 +2572,7 @@
         </div>
 
         <!-- Section 2: Audio & Voice -->
-        <div class="settings-category-group hidden" data-settings-panel="audio">
+        <div id="settings-panel-audio" class="settings-category-group hidden" data-settings-panel="audio" role="tabpanel" aria-labelledby="settings-tab-audio">
           <div class="settings-category-header" data-i18n="ui.settings.cat_audio">AUDIO & VOICE</div>
           <div class="setting-item setting-item--action">
             <span data-i18n="ui.settings.audio_mixer">AUDIO MIXER</span>
@@ -2548,7 +2589,7 @@
         </div>
 
         <!-- Section 3: Gameplay & Accessibility -->
-        <div class="settings-category-group hidden" data-settings-panel="controls">
+        <div id="settings-panel-controls" class="settings-category-group hidden" data-settings-panel="controls" role="tabpanel" aria-labelledby="settings-tab-controls">
           <div data-i18n="ui.settings.controls" class="settings-category-header">CONTROLS</div>
           <div class="setting-item setting-item--action">
             <div class="setting-label-with-badge">
@@ -2596,6 +2637,14 @@
               <option value="normal" data-i18n="ui.opt.speed_normal">NORMAL</option>
               <option value="fast" data-i18n="ui.opt.speed_fast">FAST</option>
               <option value="instant" data-i18n="ui.opt.speed_instant">INSTANT</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span data-i18n="ui.settings.intro_style">INTRO STYLE</span>
+            <select id="setting-intro-style" class="settings-select">
+              <option value="tactical_terminal" selected data-i18n="ui.opt.intro_tactical">TACTICAL TERMINAL (CINEMATIC)</option>
+              <option value="timed_verbatim" data-i18n="ui.opt.intro_timed">VERBATIM TIMED (TERMINAL)</option>
+              <option value="classic" data-i18n="ui.opt.intro_classic">CLASSIC TYPEWRITER</option>
             </select>
           </div>
           <div class="setting-item">
@@ -2700,11 +2749,11 @@
           </div>
         </div>
 
-        <div class="settings-category-group hidden" data-settings-panel="camera">
+        <div id="settings-panel-camera" class="settings-category-group hidden" data-settings-panel="camera" role="tabpanel" aria-labelledby="settings-tab-camera">
           <div data-i18n="ui.settings.camera_hud" class="settings-category-header">CAMERA &amp; HUD</div>
         </div>
 
-        <div class="settings-category-group hidden" data-settings-panel="graphics">
+        <div id="settings-panel-graphics" class="settings-category-group hidden" data-settings-panel="graphics" role="tabpanel" aria-labelledby="settings-tab-graphics">
           <div data-i18n="ui.settings.graphics" class="settings-category-header">GRAPHICS</div>
           <p data-i18n="ui.graphics.intro" class="graphics-intro">Everything starts at High. If the game stalls, auto-adjust lowers one setting at a time and records why below. Raise anything back whenever you like.</p>
           <div class="setting-item">
@@ -2774,7 +2823,7 @@
           </div>
         </div>
 
-        <div class="settings-category-group hidden" data-settings-panel="accessibility">
+        <div id="settings-panel-accessibility" class="settings-category-group hidden" data-settings-panel="accessibility" role="tabpanel" aria-labelledby="settings-tab-accessibility">
           <div data-i18n="ui.settings.accessibility" class="settings-category-header">ACCESSIBILITY</div>
           <div class="setting-item">
             <span data-i18n="ui.settings.camera_shake">CAMERA SHAKE</span>
@@ -2800,7 +2849,7 @@
         </div>
 
         <!-- Section 4: Operator & System Data -->
-        <div class="settings-category-group hidden" data-settings-panel="profile">
+        <div id="settings-panel-profile" class="settings-category-group hidden" data-settings-panel="profile" role="tabpanel" aria-labelledby="settings-tab-profile">
           <div class="settings-category-header" data-i18n="ui.settings.cat_operator">OPERATOR & SYSTEM DATA</div>
           <div class="setting-item setting-item--operator">
             <span data-i18n="ui.settings.callsign">OPERATOR CALLSIGN</span>
@@ -3017,6 +3066,12 @@
 
     <div id="mothership-dialogue" class="modal hidden" aria-hidden="true">
       <div class="modal-content console-terminal-content mothership-dialogue-panel" id="mothership-dialogue-panel">
+        <div class="mothership-panel-video-wrap" aria-hidden="true">
+          <video id="mothership-dialogue-video-bg" class="mothership-dialogue-video-bg" playsinline muted loop preload="none">
+            <source src="/cutscenes/intro-mothership-briefing.webm" type="video/webm">
+            <source src="/cutscenes/intro-mothership-briefing.mp4" type="video/mp4">
+          </video>
+        </div>
         <button class="close-modal mothership-close-btn" id="close-mothership-dialogue" aria-label="Skip dialogue" data-i18n-aria-label="ui.dlg.skip_aria">×</button>
         <div class="terminal-scanline"></div>
         <div class="terminal-flicker"></div>

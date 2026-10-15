@@ -212,6 +212,7 @@
       "ui_scale": "UI ACCESSIBILITY SCALE",
       "text_floor": "MINIMUM TEXT FLOOR",
       "text_speed": "TEXT SPEED",
+      "intro_style": "INTRO STYLE",
       "camera_mode": "GAMEPLAY CAMERA",
       "camera_distance": "CAMERA DISTANCE",
       "camera_follow": "CAMERA FOLLOW",
@@ -283,6 +284,9 @@
       "speed_normal": "NORMAL",
       "speed_fast": "FAST",
       "speed_instant": "INSTANT",
+      "intro_tactical": "TACTICAL TERMINAL (CINEMATIC)",
+      "intro_timed": "VERBATIM TIMED (TERMINAL)",
+      "intro_classic": "CLASSIC TYPEWRITER",
       "cam_third": "THIRD-PERSON — SHOULDER",
       "cam_iso": "ISOMETRIC — CLASSIC",
       "dist_close": "CLOSE",
@@ -504,7 +508,9 @@
       "accent_credits": "// CREDITS"
     },
     "hero_detail": {
-      "chassis_spec": "CHASSIS SPECIFICATION"
+      "chassis_spec": "CHASSIS SPECIFICATION",
+      "initializing_3d_operator": "INITIALIZING {type} 3D OPERATOR…",
+      "preview_3d_unavailable": "{type} 3D PREVIEW UNAVAILABLE"
     },
     "archive": {
       "bunker_archive": "◈ BUNKER ARCHIVE",
@@ -1250,7 +1256,25 @@
       "assembled": "{item} ASSEMBLED.",
       "trade_failed": "Trade failed: {reason}.",
       "assemble_failed": "Assembly failed: {reason}.",
-      "reagents_owned": "INGOTS {ingots} · MATRIX {matrix} · AMBERGRIS {ambergris}"
+      "reagents_owned": "INGOTS {ingots} · MATRIX {matrix} · AMBERGRIS {ambergris}",
+      "search_placeholder": "SEARCH INVENTORY...",
+      "group_all": "ALL ITEMS",
+      "group_cosmetics": "COSMETICS",
+      "group_mods": "MODS",
+      "group_materials": "MATERIALS",
+      "group_caches": "CACHES & KEYS",
+      "rarity_all": "ALL RARITIES",
+      "sort_recent": "RECENT",
+      "sort_name": "NAME",
+      "sort_rarity": "RARITY",
+      "sort_quantity": "QUANTITY",
+      "clear_filters": "CLEAR",
+      "count_summary": "{types} ITEM TYPES · {total} TOTAL",
+      "count_filtered": "{visible} OF {total} ITEMS ({types} TYPES)",
+      "no_matching_items": "NO ITEMS MATCH THE SELECTED FILTERS",
+      "no_items": "NO ITEMS DETECTED IN STEAM VAULT",
+      "skip_reveal": "REVEAL NOW",
+      "retry_sync": "RETRY SYNC"
     },
     "lobby": {
       "connecting": "CONNECTING...",
@@ -1345,6 +1369,7 @@
       "online": "ONLINE",
       "ready_deficit": "READY — RESOURCE DEFICIT",
       "ready_permitted": "READY — BUILD PERMITTED",
+      "install_required": "RECOVER AND INSTALL {module}",
       "resolved": "RESOLVED",
       "choice_required": "CHOICE REQUIRED",
       "event_resolved": "TERMINAL EVENT RESOLVED. SHOP SYSTEMS REMAIN AVAILABLE.",

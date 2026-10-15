@@ -74,6 +74,223 @@ export const GAME_SOUNDSETS = Object.freeze({
         fallback: 'impactSoft_heavy_000', bus: 'sfx', gain: 0.55,
         pitch: Object.freeze([0.72, 0.95]), noImmediateRepeat: true, retrigger: 'replace-oldest'
     }),
+    // AudioCraft generated surface footsteps
+    footstep_metal_grate: Object.freeze({
+        variants: Object.freeze([
+            'footstep_metal_grate_000', 'footstep_metal_grate_001', 'footstep_metal_grate_002',
+            'footstep_metal_grate_003', 'footstep_metal_grate_004'
+        ]),
+        fallback: 'footstep_metal_grate_000', bus: 'sfx', gain: 0.44,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    footstep_ice_crunch: Object.freeze({
+        variants: Object.freeze([
+            'footstep_ice_crunch_000', 'footstep_ice_crunch_001', 'footstep_ice_crunch_002',
+            'footstep_ice_crunch_003', 'footstep_ice_crunch_004'
+        ]),
+        fallback: 'footstep_ice_crunch_000', bus: 'sfx', gain: 0.42,
+        pitch: Object.freeze([0.93, 1.07]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    footstep_hive_slime: Object.freeze({
+        variants: Object.freeze([
+            'footstep_hive_slime_000', 'footstep_hive_slime_001', 'footstep_hive_slime_002',
+            'footstep_hive_slime_003', 'footstep_hive_slime_004'
+        ]),
+        fallback: 'footstep_hive_slime_000', bus: 'sfx', gain: 0.40,
+        pitch: Object.freeze([0.90, 1.08]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    footstep_wood_plank: Object.freeze({
+        variants: Object.freeze([
+            'footstep_wood_plank_000', 'footstep_wood_plank_001', 'footstep_wood_plank_002',
+            'footstep_wood_plank_003', 'footstep_wood_plank_004'
+        ]),
+        fallback: 'footstep_wood_plank_000', bus: 'sfx', gain: 0.42,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    footstep_deep_snow: Object.freeze({
+        variants: Object.freeze([
+            'footstep_deep_snow_000', 'footstep_deep_snow_001', 'footstep_deep_snow_002',
+            'footstep_deep_snow_003', 'footstep_deep_snow_004'
+        ]),
+        fallback: 'footstep_deep_snow_000', bus: 'sfx', gain: 0.44,
+        pitch: Object.freeze([0.93, 1.07]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    footstep_shell_casings: Object.freeze({
+        variants: Object.freeze([
+            'footstep_shell_casings_000', 'footstep_shell_casings_001', 'footstep_shell_casings_002',
+            'footstep_shell_casings_003', 'footstep_shell_casings_004'
+        ]),
+        fallback: 'footstep_shell_casings_000', bus: 'sfx', gain: 0.40,
+        pitch: Object.freeze([0.92, 1.08]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    footstep_bone_terrazzo: Object.freeze({
+        variants: Object.freeze([
+            'footstep_bone_terrazzo_000', 'footstep_bone_terrazzo_001', 'footstep_bone_terrazzo_002',
+            'footstep_bone_terrazzo_003', 'footstep_bone_terrazzo_004'
+        ]),
+        fallback: 'footstep_bone_terrazzo_000', bus: 'sfx', gain: 0.45,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    footstep_wet_puddle: Object.freeze({
+        variants: Object.freeze([
+            'footstep_wet_puddle_000', 'footstep_wet_puddle_001', 'footstep_wet_puddle_002',
+            'footstep_wet_puddle_003', 'footstep_wet_puddle_004'
+        ]),
+        fallback: 'footstep_wet_puddle_000', bus: 'sfx', gain: 0.42,
+        pitch: Object.freeze([0.93, 1.07]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+
+    // AudioCraft generated interactive props & mechanisms
+    terminal_beep: Object.freeze({
+        variants: Object.freeze(['terminal_beep_000', 'terminal_beep_001', 'terminal_beep_002']),
+        fallback: 'terminal_beep_000', bus: 'world', gain: 0.48,
+        pitch: Object.freeze([0.96, 1.04]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    terminal_deny: Object.freeze({
+        variants: Object.freeze(['terminal_deny_000', 'terminal_deny_001', 'terminal_deny_002']),
+        fallback: 'terminal_deny_000', bus: 'world', gain: 0.52,
+        pitch: Object.freeze([0.95, 1.05]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    vault_open: Object.freeze({
+        variants: Object.freeze(['vault_open_000', 'vault_open_001', 'vault_open_002']),
+        fallback: 'vault_open_000', bus: 'world', gain: 0.52,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    crane_motor: Object.freeze({
+        variants: Object.freeze(['crane_motor_000', 'crane_motor_001', 'crane_motor_002']),
+        fallback: 'crane_motor_000', bus: 'world', gain: 0.50,
+        pitch: Object.freeze([0.95, 1.05]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    power_hum: Object.freeze({
+        variants: Object.freeze(['power_hum_000', 'power_hum_001', 'power_hum_002']),
+        fallback: 'power_hum_000', bus: 'world', gain: 0.46,
+        pitch: Object.freeze([0.96, 1.04]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    steam_burst: Object.freeze({
+        variants: Object.freeze(['steam_burst_000', 'steam_burst_001', 'steam_burst_002']),
+        fallback: 'steam_burst_000', bus: 'world', gain: 0.50,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    chem_siphon: Object.freeze({
+        variants: Object.freeze(['chem_siphon_000', 'chem_siphon_001', 'chem_siphon_002']),
+        fallback: 'chem_siphon_000', bus: 'world', gain: 0.48,
+        pitch: Object.freeze([0.95, 1.05]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    flesh_seal: Object.freeze({
+        variants: Object.freeze(['flesh_seal_000', 'flesh_seal_001', 'flesh_seal_002']),
+        fallback: 'flesh_seal_000', bus: 'world', gain: 0.50,
+        pitch: Object.freeze([0.92, 1.08]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    flesh_squish: Object.freeze({
+        variants: Object.freeze(['flesh_squish_000', 'flesh_squish_001', 'flesh_squish_002']),
+        fallback: 'flesh_squish_000', bus: 'world', gain: 0.50,
+        pitch: Object.freeze([0.92, 1.08]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    neural_tap: Object.freeze({
+        variants: Object.freeze(['neural_tap_000', 'neural_tap_001', 'neural_tap_002']),
+        fallback: 'neural_tap_000', bus: 'world', gain: 0.48,
+        pitch: Object.freeze([0.96, 1.04]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    toolbox_open: Object.freeze({
+        variants: Object.freeze(['toolbox_open_000', 'toolbox_open_001', 'toolbox_open_002']),
+        fallback: 'toolbox_open_000', bus: 'world', gain: 0.48,
+        pitch: Object.freeze([0.95, 1.05]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    water_shower: Object.freeze({
+        variants: Object.freeze(['water_shower_000', 'water_shower_001', 'water_shower_002']),
+        fallback: 'water_shower_000', bus: 'world', gain: 0.52,
+        pitch: Object.freeze([0.96, 1.04]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    water_slosh: Object.freeze({
+        variants: Object.freeze(['water_slosh_000', 'water_slosh_001', 'water_slosh_002']),
+        fallback: 'water_slosh_000', bus: 'world', gain: 0.46,
+        pitch: Object.freeze([0.95, 1.05]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    generator_complete: Object.freeze({
+        variants: Object.freeze(['generator_complete_000', 'generator_complete_001']),
+        fallback: 'generator_complete_000', bus: 'world', gain: 0.54,
+        pitch: Object.freeze([0.96, 1.04]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    fan_wind: Object.freeze({
+        variants: Object.freeze(['fan_wind_000', 'fan_wind_001']),
+        fallback: 'fan_wind_000', bus: 'world', gain: 0.48,
+        pitch: Object.freeze([0.95, 1.05]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    exosuit_charge: Object.freeze({
+        variants: Object.freeze(['exosuit_charge_000', 'exosuit_charge_001', 'exosuit_charge_002']),
+        fallback: 'exosuit_charge_000', bus: 'sfx', gain: 0.50,
+        pitch: Object.freeze([0.96, 1.04]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+
+    // AudioCraft generated creature & loot acoustics
+    enemy_idle_boss: Object.freeze({
+        variants: Object.freeze(['enemy_idle_boss_000', 'enemy_idle_boss_001', 'enemy_idle_boss_002']),
+        fallback: 'enemy_idle_boss_000', bus: 'world', gain: 0.45,
+        pitch: Object.freeze([0.90, 1.10]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    enemy_alert_crawler: Object.freeze({
+        variants: Object.freeze(['enemy_alert_crawler_000', 'enemy_alert_crawler_001', 'enemy_alert_crawler_002']),
+        fallback: 'enemy_alert_crawler_000', bus: 'sfx', gain: 0.42,
+        pitch: Object.freeze([0.95, 1.08]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    enemy_alert_snail: Object.freeze({
+        variants: Object.freeze(['enemy_alert_snail_000', 'enemy_alert_snail_001', 'enemy_alert_snail_002']),
+        fallback: 'enemy_alert_snail_000', bus: 'sfx', gain: 0.45,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    enemy_alert_boss: Object.freeze({
+        variants: Object.freeze(['enemy_alert_boss_000', 'enemy_alert_boss_001']),
+        fallback: 'enemy_alert_boss_000', bus: 'world', gain: 0.55,
+        pitch: Object.freeze([0.92, 1.08]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    enemy_break_wall: Object.freeze({
+        variants: Object.freeze(['enemy_break_wall_000', 'enemy_break_wall_001', 'enemy_break_wall_002']),
+        fallback: 'enemy_break_wall_000', bus: 'world', gain: 0.55,
+        pitch: Object.freeze([0.92, 1.08]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    crystal_shatter: Object.freeze({
+        variants: Object.freeze(['crystal_shatter_000', 'crystal_shatter_001', 'crystal_shatter_002']),
+        fallback: 'crystal_shatter_000', bus: 'sfx', gain: 0.50,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    item_pickup: Object.freeze({
+        variants: Object.freeze(['item_pickup_000', 'item_pickup_001', 'item_pickup_002']),
+        fallback: 'item_pickup_000', bus: 'sfx', gain: 0.45,
+        pitch: Object.freeze([0.95, 1.05]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+
+    // AudioCraft generated lore setpiece landmark props (Pass 2 World Story Props)
+    chen_sealed_confession_console: Object.freeze({
+        variants: Object.freeze(['chen_sealed_confession_console_000', 'chen_sealed_confession_console_001']),
+        fallback: 'chen_sealed_confession_console_000', bus: 'world', gain: 0.52,
+        pitch: Object.freeze([0.96, 1.04]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    evac_manifest_allocation_terminal: Object.freeze({
+        variants: Object.freeze(['evac_manifest_allocation_terminal_000', 'evac_manifest_allocation_terminal_001']),
+        fallback: 'evac_manifest_allocation_terminal_000', bus: 'world', gain: 0.50,
+        pitch: Object.freeze([0.96, 1.04]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    scout_tracking_beacon_core: Object.freeze({
+        variants: Object.freeze(['scout_tracking_beacon_core_000', 'scout_tracking_beacon_core_001']),
+        fallback: 'scout_tracking_beacon_core_000', bus: 'world', gain: 0.48,
+        pitch: Object.freeze([0.96, 1.04]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    relay_false_beacon_spire: Object.freeze({
+        variants: Object.freeze(['relay_false_beacon_spire_000', 'relay_false_beacon_spire_001']),
+        fallback: 'relay_false_beacon_spire_000', bus: 'world', gain: 0.54,
+        pitch: Object.freeze([0.95, 1.05]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    ind_biomass_grinder: Object.freeze({
+        variants: Object.freeze(['ind_biomass_grinder_000', 'ind_biomass_grinder_001']),
+        fallback: 'ind_biomass_grinder_000', bus: 'world', gain: 0.52,
+        pitch: Object.freeze([0.95, 1.05]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    hive_visceral_ovipositor: Object.freeze({
+        variants: Object.freeze(['hive_visceral_ovipositor_000', 'hive_visceral_ovipositor_001']),
+        fallback: 'hive_visceral_ovipositor_000', bus: 'world', gain: 0.50,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+
     // Kenney RPG Audio CC0: shell creak and mandible click variants for creature idle noise triggers
     enemy_idle_snail: Object.freeze({
         variants: Object.freeze(['creak1', 'creak2', 'creak3']),
@@ -84,13 +301,127 @@ export const GAME_SOUNDSETS = Object.freeze({
         variants: Object.freeze(['metalClick']),
         fallback: 'metalClick', bus: 'sfx', gain: 0.25,
         pitch: Object.freeze([1.2, 1.7]), noImmediateRepeat: false, retrigger: 'replace-oldest'
+    }),
+
+    // =========================================================================
+    // EJECTED BRASS SHELL CASINGS (SURFACE IMPACT FOLEY)
+    // =========================================================================
+    shell_drop_metal: Object.freeze({
+        variants: Object.freeze(['shell_drop_metal_000', 'shell_drop_metal_001', 'shell_drop_metal_002']),
+        fallback: 'shell_drop_metal_000', bus: 'world', gain: 0.38,
+        pitch: Object.freeze([0.94, 1.08]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    shell_drop_snow: Object.freeze({
+        variants: Object.freeze(['shell_drop_snow_000', 'shell_drop_snow_001', 'shell_drop_snow_002']),
+        fallback: 'shell_drop_snow_000', bus: 'world', gain: 0.35,
+        pitch: Object.freeze([0.92, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    shell_drop_stone: Object.freeze({
+        variants: Object.freeze(['shell_drop_stone_000', 'shell_drop_stone_001', 'shell_drop_stone_002']),
+        fallback: 'shell_drop_stone_000', bus: 'world', gain: 0.36,
+        pitch: Object.freeze([0.94, 1.08]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    shell_drop_slime: Object.freeze({
+        variants: Object.freeze(['shell_drop_slime_000', 'shell_drop_slime_001', 'shell_drop_slime_002']),
+        fallback: 'shell_drop_slime_000', bus: 'world', gain: 0.36,
+        pitch: Object.freeze([0.92, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    shell_drop_wood: Object.freeze({
+        variants: Object.freeze(['shell_drop_wood_000', 'shell_drop_wood_001', 'shell_drop_wood_002']),
+        fallback: 'shell_drop_wood_000', bus: 'world', gain: 0.36,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+
+    // =========================================================================
+    // WEAPON FIRE SOUNDSETS (DISTINCT KINETIC & ENERGY ARCHETYPES)
+    // =========================================================================
+    weapon_fire_shotgun: Object.freeze({
+        variants: Object.freeze(['weapon_fire_shotgun_000', 'weapon_fire_shotgun_001', 'weapon_fire_shotgun_002']),
+        fallback: 'weapon_fire_shotgun_000', bus: 'sfx', gain: 0.52,
+        pitch: Object.freeze([0.95, 1.05]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    weapon_fire_carbine: Object.freeze({
+        variants: Object.freeze(['weapon_fire_carbine_000', 'weapon_fire_carbine_001', 'weapon_fire_carbine_002']),
+        fallback: 'weapon_fire_carbine_000', bus: 'sfx', gain: 0.44,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    weapon_fire_smg: Object.freeze({
+        variants: Object.freeze(['weapon_fire_smg_000', 'weapon_fire_smg_001', 'weapon_fire_smg_002']),
+        fallback: 'weapon_fire_smg_000', bus: 'sfx', gain: 0.40,
+        pitch: Object.freeze([0.95, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    weapon_fire_railgun: Object.freeze({
+        variants: Object.freeze(['weapon_fire_railgun_000', 'weapon_fire_railgun_001', 'weapon_fire_railgun_002']),
+        fallback: 'weapon_fire_railgun_000', bus: 'sfx', gain: 0.54,
+        pitch: Object.freeze([0.96, 1.04]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    weapon_fire_cryo: Object.freeze({
+        variants: Object.freeze(['weapon_fire_cryo_000', 'weapon_fire_cryo_001', 'weapon_fire_cryo_002']),
+        fallback: 'weapon_fire_cryo_000', bus: 'sfx', gain: 0.46,
+        pitch: Object.freeze([0.95, 1.05]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    weapon_fire_tesla: Object.freeze({
+        variants: Object.freeze(['weapon_fire_tesla_000', 'weapon_fire_tesla_001', 'weapon_fire_tesla_002']),
+        fallback: 'weapon_fire_tesla_000', bus: 'sfx', gain: 0.46,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+
+    // =========================================================================
+    // TRACER FLYBY SNAPS & WHOOSHES
+    // =========================================================================
+    tracer_flyby_ballistic: Object.freeze({
+        variants: Object.freeze(['tracer_flyby_ballistic_000', 'tracer_flyby_ballistic_001', 'tracer_flyby_ballistic_002']),
+        fallback: 'tracer_flyby_ballistic_000', bus: 'sfx', gain: 0.34,
+        pitch: Object.freeze([0.92, 1.08]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    tracer_flyby_frost: Object.freeze({
+        variants: Object.freeze(['tracer_flyby_frost_000', 'tracer_flyby_frost_001']),
+        fallback: 'tracer_flyby_frost_000', bus: 'sfx', gain: 0.32,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    tracer_flyby_heavy: Object.freeze({
+        variants: Object.freeze(['tracer_flyby_heavy_000', 'tracer_flyby_heavy_001']),
+        fallback: 'tracer_flyby_heavy_000', bus: 'sfx', gain: 0.35,
+        pitch: Object.freeze([0.92, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    tracer_flyby_chitin: Object.freeze({
+        variants: Object.freeze(['tracer_flyby_chitin_000', 'tracer_flyby_chitin_001']),
+        fallback: 'tracer_flyby_chitin_000', bus: 'sfx', gain: 0.34,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+
+    // =========================================================================
+    // HYPER-LOCALIZED POINT-SOURCE AMBIENCE (CAMPS & HIVES)
+    // =========================================================================
+    amb_point_tallow_forge: Object.freeze({
+        variants: Object.freeze(['amb_point_tallow_forge']),
+        fallback: 'amb_point_tallow_forge', bus: 'world', gain: 0.45,
+        pitch: Object.freeze([0.98, 1.02]), noImmediateRepeat: false, retrigger: 'replace-oldest'
+    }),
+    amb_point_vesper_generator: Object.freeze({
+        variants: Object.freeze(['amb_point_vesper_generator']),
+        fallback: 'amb_point_vesper_generator', bus: 'world', gain: 0.42,
+        pitch: Object.freeze([0.98, 1.02]), noImmediateRepeat: false, retrigger: 'replace-oldest'
+    }),
+    amb_point_meridian_chimes: Object.freeze({
+        variants: Object.freeze(['amb_point_meridian_chimes']),
+        fallback: 'amb_point_meridian_chimes', bus: 'world', gain: 0.40,
+        pitch: Object.freeze([0.98, 1.02]), noImmediateRepeat: false, retrigger: 'replace-oldest'
+    }),
+    amb_point_hive_sac: Object.freeze({
+        variants: Object.freeze(['amb_point_hive_sac']),
+        fallback: 'amb_point_hive_sac', bus: 'world', gain: 0.44,
+        pitch: Object.freeze([0.98, 1.02]), noImmediateRepeat: false, retrigger: 'replace-oldest'
     })
 });
 
-// These approved soundsets used to exist only in the registry: without
-// manifest entries no variant could decode, so every footfall fell back.
+// Approved gameplay foley & surfaces
 export const GAMEPLAY_FOLEY_MANIFEST = Object.freeze([
-    ...['footstep_concrete', 'footstep_snow'].flatMap((key) => (
+    ...[
+        'footstep_concrete', 'footstep_snow', 'footstep_metal_grate', 'footstep_ice_crunch',
+        'footstep_hive_slime', 'footstep_wood_plank', 'footstep_deep_snow', 'footstep_shell_casings',
+        'footstep_bone_terrazzo', 'footstep_wet_puddle'
+    ].flatMap((key) => (
         GAME_SOUNDSETS[key].variants.map((variant) => Object.freeze({ key: variant, url: `/audio/footsteps/${variant}.ogg` }))
     )),
     ...['prop_impact_metal', 'prop_impact_glass'].flatMap((key) => (

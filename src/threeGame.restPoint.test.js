@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 import { REST_PHASES, createDayState } from './dayCycle.js';
+import { beginCarry, createCarryState, installCarriedObject } from './carrySystem.js';
+import { availableFirstNightSocket, ensureFirstNightBaseState } from './firstNightBase.js';
 
 function stubs() {
     globalThis.CustomEvent = class CustomEvent {
@@ -9,10 +11,21 @@ function stubs() {
     globalThis.window = { dispatchEvent: vi.fn() };
 }
 
+function installedCarryState() {
+    let { state, plan } = ensureFirstNightBaseState(createCarryState('run-test'), { shipX: 100, shipZ: 200 });
+    for (const definitionId of ['cot_bed', 'hull_patch_panel', 'door_seal_kit']) {
+        const object = state.worldObjects.find((entry) => entry.definitionId === definitionId);
+        state = beginCarry(state, object.instanceId, 'local').state;
+        const socket = availableFirstNightSocket(state, plan, state.carried);
+        state = installCarriedObject(state, socket, { carrierPlayerId: 'local' }).state;
+    }
+    return state;
+}
+
 const bunkerGame = (overrides = {}) => ({
     dayState: createDayState(),
     _activeCampQuest: null,
-    getSpawnTile: () => ({ x: 100, y: 200 }),
+    carryState: installedCarryState(),
     canRestAt: ThreeGame.prototype.canRestAt,
     getBunkerRestPoint: ThreeGame.prototype.getBunkerRestPoint,
     getRestPointAt: ThreeGame.prototype.getRestPointAt,
@@ -22,7 +35,7 @@ const bunkerGame = (overrides = {}) => ({
 describe('bunker cot rest point', () => {
     beforeEach(() => stubs());
 
-    it('anchors the cot to the bunker spawn', () => {
+    it('anchors the recovered cot to its installed ship berth transform', () => {
         const point = bunkerGame().getBunkerRestPoint();
         expect(point.id).toBe('bunker_cot');
         expect(Number.isFinite(point.x)).toBe(true);
@@ -59,9 +72,8 @@ describe('bunker cot rest point', () => {
         expect(later.getRestPointAt(cot.x, cot.z).nextDay).toBe(7);
     });
 
-    it('is inert without a player position or a spawn tile', () => {
-        const game = bunkerGame({ getSpawnTile: () => null });
-        expect(() => game.getRestPointAt(0, 0)).not.toThrow();
+    it('is inert for invalid player positions', () => {
+        const game = bunkerGame();
         expect(game.getRestPointAt(Number.NaN, Number.NaN)).toBe(null);
     });
 });
@@ -92,22 +104,24 @@ describe('the bunker cot stands where you can sleep', () => {
         expect(game.getRestPointAt(game.bunkerCotSprite.position.x, game.bunkerCotSprite.position.z)?.id).toBe('bunker_cot');
     });
 
-    it('follows a spawn that changes (a new run, or a co-op crash site)', () => {
-        let spawn = { x: 100, y: 200 };
-        const game = cotGame({ getSpawnTile: () => spawn });
+    it('follows the authoritative installed socket transform', () => {
+        const game = cotGame();
         game.syncBunkerCot();
-        spawn = { x: 400, y: 50 };
+        const cot = game.carryState.installed.find(({ definitionId }) => definitionId === 'cot_bed');
+        cot.transform = { ...cot.transform, x: 400, z: 50 };
         game.syncBunkerCot();
-        expect(game.bunkerCotSprite.position.x).toBe(game.getBunkerRestPoint().x);
+        expect(game.bunkerCotSprite.position.x).toBe(400);
+        expect(game.bunkerCotSprite.position.z).toBe(50);
     });
 
     it('keeps the 3D cot on the sprite, shown only with it', () => {
-        const root = { position: { set(x, y, z) { this.x = x; this.y = y; this.z = z; } }, visible: true };
+        const root = { position: { set(x, y, z) { this.x = x; this.y = y; this.z = z; } }, rotation: { y: 0 }, visible: true };
         const game = cotGame({ bunkerCot3d: root });
         game.bunkerCotSprite.visible = false;
         game.syncBunkerCot();
         expect(root.position.x).toBe(game.bunkerCotSprite.position.x);
-        expect(root.visible).toBe(false);
+        expect(game.bunkerCotSprite.visible).toBe(true);
+        expect(root.visible).toBe(true);
     });
 
     it('says why the cot refuses instead of staying silent', () => {

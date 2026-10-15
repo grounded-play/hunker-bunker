@@ -6,6 +6,7 @@ import { HiveSite } from './hiveSite.js';
 import { CAMP_QUESTS } from './data/campQuests.js';
 import { WEAPON_OVERCLOCKS, SUIT_RELICS } from './runDrops.js';
 import { selectHarvestOverclock } from './worldTransformations.js';
+import { beginCarry, createCarryState } from './carrySystem.js';
 
 function manager() {
     const values = new Map();
@@ -30,6 +31,9 @@ function makeCampGame(campId) {
     };
     const game = {
         act2, scene, camp, chunkSize: 16, chunkMeshes: new Map(), scatterSprites: [],
+        carryState: createCarryState('test-run'),
+        multiplayerLocalPlayerId: 'local',
+        runEntropy: 1,
         player: { position: new THREE.Vector3(10, 0, 20) },
         _activeCampQuest: null,
         getCampRecord: (id) => act2.getState().camps.find((entry) => entry.id === id),
@@ -37,6 +41,11 @@ function makeCampGame(campId) {
         isGameplayInputActive: () => true,
         isSnailTileWalkable: () => true,
         canOccupyPosition: () => true,
+        getBiomeAnchorPosition: () => ({ x: 0, z: 0 }),
+        createSeededRandom: () => () => 0,
+        hashTile: () => 1,
+        reconcileCarryObjectVisuals: vi.fn(),
+        showBunkerLine: vi.fn(),
         spawnGearPoofEffect: vi.fn(),
         createScatterInstance: vi.fn((placement) => {
             const object = new THREE.Object3D();
@@ -48,7 +57,8 @@ function makeCampGame(campId) {
         'acceptCampQuest', 'findCampQuestSpawnSpot', 'spawnCampQuestMarkerProp',
         'spawnBunkerHoldoutWave', 'interactWithCampQuestObject', 'updateCampQuest',
         'advanceCampQuestProgress', 'resolveCampQuestCompletion', 'syncCampVisualFromRecord',
-        'clearActiveCampQuestEntities', 'spawnHiveArchiveObject'
+        'clearActiveCampQuestEntities', 'spawnHiveArchiveObject', 'spawnLostProbeObject',
+        'spawnMissionCarryCargo', 'getMissionCargoDelivery', 'deliverCurrentMissionCargo'
     ]) game[method] = ThreeGame.prototype[method];
     return game;
 }
@@ -104,6 +114,25 @@ describe('playable camp signatures', () => {
         expect(game._activeCampQuest).toBeNull();
         expect(game.getCampRecord(game.camp.id).questFlags).toEqual({});
     });
+
+    it('turns Meridian lost probe into a two-hand return delivery', () => {
+        const game = makeCampGame('camp_meridian');
+        const quest = CAMP_QUESTS.camp_meridian.find((entry) => entry.id === 'lost_probe');
+        game.acceptCampQuest(game.camp, quest);
+        expect(game._activeCampQuest).toMatchObject({ kind: 'carry', target: 1 });
+        expect(game.carryState.worldObjects[0]).toMatchObject({
+            definitionId: 'camp_salvage_probe',
+            missionId: 'camp-quest:camp_meridian:lost_probe'
+        });
+
+        const cargo = game.carryState.worldObjects[0];
+        game.carryState = beginCarry(game.carryState, cargo.instanceId, 'local').state;
+        game.player.position.set(game.camp.pos.x, 0, game.camp.pos.z);
+        expect(game.deliverCurrentMissionCargo()).toBe(true);
+        expect(game.getCampRecord(game.camp.id).questFlags.lost_probe).toBe('done');
+        expect(game._activeCampQuest).toBeNull();
+        expect(game.carryState.carried).toBeNull();
+    });
 });
 
 describe('archive objectives stay with their ring', () => {
@@ -147,9 +176,21 @@ function makeHiveGame(hiveId = 'hive_suture') {
     hive.reveal(10, 20);
     return {
         act2, hive,
+        carryState: createCarryState('test-run'),
+        player: { position: new THREE.Vector3(10, 0, 20) },
+        multiplayerLocalPlayerId: 'local',
         getHiveById: (id) => id === hiveId ? hive : null,
         getHiveRecord: (id) => act2.getState().hives.find((entry) => entry.id === id),
         resolveHiveChoice: ThreeGame.prototype.resolveHiveChoice,
+        spawnMissionCarryCargo: ThreeGame.prototype.spawnMissionCarryCargo,
+        spawnHiveCargoMission: ThreeGame.prototype.spawnHiveCargoMission,
+        restoreActiveHiveCargoMission: ThreeGame.prototype.restoreActiveHiveCargoMission,
+        getMissionCargoDelivery: ThreeGame.prototype.getMissionCargoDelivery,
+        deliverCurrentMissionCargo: ThreeGame.prototype.deliverCurrentMissionCargo,
+        getFirstNightBasePlan: ThreeGame.prototype.getFirstNightBasePlan,
+        getActiveShip: () => ({ tileX: 0, tileZ: 0 }),
+        reconcileCarryObjectVisuals: vi.fn(),
+        showBunkerLine: vi.fn(),
         bank: { canAffordShells: () => true, spendShells: vi.fn(() => true), deposit: vi.fn(), addShells: vi.fn() },
         spawnGearPoofEffect: vi.fn(), spawnHiveHarvestBoss: vi.fn(), triggerCameraShake: vi.fn(),
         resolveDayDeadline: vi.fn()
@@ -218,6 +259,15 @@ describe('hive choices apply once and change the physical site', () => {
         game.resolveHiveChoice('hive-quest', { ...payload, questId: 'false_clearance' });
         expect(game.getHiveRecord(game.hive.id).questFlags).toEqual({});
         game.resolveHiveChoice('hive-quest', payload);
+        expect(game.getHiveRecord(game.hive.id).questFlags).toEqual({ host_mercy: 'active' });
+        expect(game.carryState.worldObjects).toHaveLength(1);
+        expect(game.getHiveRecord(game.hive.id).bond).toBe(2);
+        game.carryState = createCarryState('restored-run');
+        expect(game.restoreActiveHiveCargoMission()).toMatchObject({ definitionId: 'hive_air_membrane' });
+        game.carryState = beginCarry(game.carryState, game.carryState.worldObjects[0].instanceId, 'local').state;
+        const delivery = game.getMissionCargoDelivery();
+        game.player.position.set(delivery.x, 0, delivery.z);
+        expect(game.deliverCurrentMissionCargo()).toBe(true);
         expect(game.getHiveRecord(game.hive.id).bond).toBe(3);
         expect(game.hive.signalMat.color.getHex()).toBe(0x7dff9a);
         expect(game.resolveDayDeadline).toHaveBeenCalledExactlyOnceWith('hive_suture_parley');

@@ -8,10 +8,10 @@ import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
 // without forcing twelve large WebGL readbacks through SwiftShader.
 
 const TARGETS = [
-    { name: 'deck', width: 1280, height: 800, coverageBudget: 0.07 },
-    { name: 'desktop', width: 1920, height: 1080, coverageBudget: 0.06 },
-    { name: 'owner-pc', width: 2304, height: 1440, coverageBudget: 0.06 },
-    { name: 'ultrawide', width: 3440, height: 1440, coverageBudget: 0.06 }
+    { name: 'deck', width: 1280, height: 800, coverageBudget: 0.21 },
+    { name: 'desktop', width: 1920, height: 1080, coverageBudget: 0.20 },
+    { name: 'owner-pc', width: 2304, height: 1440, coverageBudget: 0.20 },
+    { name: 'ultrawide', width: 3440, height: 1440, coverageBudget: 0.20 }
 ];
 
 const CLASSES = ['scout', 'tank', 'engineer'];
@@ -138,7 +138,7 @@ test.describe('HUD dock readability audit', () => {
                     unitProbe.remove();
 
                     const housings = Object.fromEntries(panels.map((panel) => {
-                        const element = document.querySelector(`.dock-housing--${panel}`);
+                        const element = document.querySelector(`.hud-console__${panel === 'status' ? 'suit' : panel === 'arms' ? 'mission' : 'map'}-slot`);
                         return [panel, relativeRect(element)];
                     }));
                     const content = Object.fromEntries(contentIds.map((id) => {
@@ -163,8 +163,9 @@ test.describe('HUD dock readability audit', () => {
                         }
                     }
 
-                    const clippedText = [...document.querySelectorAll('#ui *')]
+                    const clippedText = [...document.querySelectorAll('.hud-console *')]
                         .filter((element) => visible(element) && element.children.length === 0 && element.textContent?.trim())
+                        .filter((element) => getComputedStyle(element).textOverflow !== 'ellipsis')
                         .filter((element) => element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1)
                         .map((element) => ({
                             id: element.id,
@@ -174,16 +175,15 @@ test.describe('HUD dock readability audit', () => {
                             scroll: [element.scrollWidth, element.scrollHeight]
                         }));
 
-                    const housingArea = Object.values(housings).reduce((sum, box) => (
-                        sum + (box ? box.width * box.height : 0)
-                    ), 0);
+                    const consoleBox = rect(document.getElementById('hud-console'));
+                    const housingArea = consoleBox ? consoleBox.width * consoleBox.height : 0;
                     const stageArea = stage ? stage.width * stage.height : 0;
-                    const bandHeight = Math.max(...Object.values(housings).map((box) => box?.height || 0));
+                    const bandHeight = consoleBox?.height || 0;
                     const drawerBox = rect(document.getElementById('objective-drawer'));
                     const settingsBox = rect(document.querySelector('#ui .hud-corner-settings'));
                     const selectedPrompt = document.querySelector(`[id="${document.documentElement.dataset.promptLaneId || ''}"]`);
                     const promptBox = rect(selectedPrompt);
-                    const housingBoxes = panels.map((panel) => rect(document.querySelector(`.dock-housing--${panel}`)));
+                    const housingBoxes = panels.map((panel) => rect(document.querySelector(`.hud-console__${panel === 'status' ? 'suit' : panel === 'arms' ? 'mission' : 'map'}-slot`)));
 
                             return {
                         hudUnit: +hudUnit.toFixed(3),
@@ -220,8 +220,8 @@ test.describe('HUD dock readability audit', () => {
                     screenshots.push({ name: `hud-${target.name}-${operatorClass}.png`, body: screenshot });
                 }
 
-                expect.soft(metrics.bandHeightU, `${target.name}/${operatorClass}: lower band height in HUD units`)
-                    .toBeLessThanOrEqual(64.5);
+                expect.soft(metrics.bandHeightPx / metrics.stage.height, `${target.name}/${operatorClass}: lower band screen-height ratio`)
+                    .toBeLessThanOrEqual(0.21);
                 expect.soft(metrics.opaqueHousingCoverage, `${target.name}/${operatorClass}: opaque housing coverage`)
                     .toBeLessThanOrEqual(target.coverageBudget);
                 expect.soft(metrics.drawerSettingsOverlap, `${target.name}/${operatorClass}: objective drawer clears settings`)

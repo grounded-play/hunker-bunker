@@ -3,7 +3,7 @@ import globals from 'globals';
 
 export default [
   {
-    ignores: ['dist/**', 'coverage/**', 'node_modules/**', '.agents/**', 'chrome/**', 'scratch/**', 'scripts/**', 'dist_soundtrack/**', 'playwright-report/**', 'test-results/**', 'public/basis/**'],
+    ignores: ['dist/**', 'coverage/**', 'node_modules/**', '.agents/**', 'chrome/**', 'scratch/**', 'scripts/**', 'dist_soundtrack/**', 'playwright-report/**', 'test-results/**', 'public/basis/**', 'trailer/**'],
   },
   js.configs.recommended,
   {
@@ -66,7 +66,7 @@ export default [
     // Playwright specs run in Node but their page.evaluate/addInitScript
     // callback bodies execute in the browser — both global sets apply in
     // the same file.
-    files: ['tests/e2e/**/*.js'],
+    files: ['tests/e2e/**/*.{js,mjs}'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',

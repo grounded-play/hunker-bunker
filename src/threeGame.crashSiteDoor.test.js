@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import * as THREE from 'three';
 import { ThreeGame } from './threeGame.js';
 import { CHUNK_SIZE } from './tileCatalog.js';
+import { CRASH_SITE_BUILD } from './data/crashSiteBuild.js';
 
 function makeFakeGame() {
     return {
@@ -13,7 +15,7 @@ function makeFakeGame() {
 }
 
 describe('clearSpawnArea — door/portal alignment', () => {
-    it('turns touching cliff tops into a walkable secret path while isolated cliffs still fall', () => {
+    it('keeps cliff tops walkable until an isolated fragile ledge has collapsed', () => {
         const tiles = new Map([
             ['4,4', 'C'],
             ['5,4', 'C'],
@@ -28,11 +30,14 @@ describe('clearSpawnArea — door/portal alignment', () => {
             getCachedTileType: (x, z) => tiles.get(`${x},${z}`) ?? 'X',
             getWallKey: (x, z) => `${x},${z}`,
             filledHoleKeys: new Set(),
+            fragileLedgeStates: new Map(),
             isCliffSecretPath: ThreeGame.prototype.isCliffSecretPath
         };
 
         expect(ThreeGame.prototype.isCliffSecretPath.call(game, 4, 4)).toBe(true);
         expect(ThreeGame.prototype.getHoleVisualInfo.call(game, 4, 4)).toBeNull();
+        expect(ThreeGame.prototype.getHoleVisualInfo.call(game, 9, 9)).toBeNull();
+        game.fragileLedgeStates.set('9,9', { state: 'collapsed' });
         expect(ThreeGame.prototype.getHoleVisualInfo.call(game, 9, 9)).toMatchObject({ cliff: true, lethal: true });
     });
 
@@ -55,7 +60,7 @@ describe('clearSpawnArea — door/portal alignment', () => {
         expect([4, 5, 6, 7, 8].some((x) => ThreeGame.prototype.isSnailTileWalkable.call(game, x, 0))).toBe(false);
     });
 
-    it('keeps the crash-floor decal centered under the active class ship', () => {
+    it('keeps the crash heat pulse centered under the active class ship', () => {
         const floorPosition = { x: 0, z: 0 };
         const game = {
             playerType: 'TANK',
@@ -64,7 +69,7 @@ describe('clearSpawnArea — door/portal alignment', () => {
                 { type: 'TANK', tileX: 9, tileZ: 9, isVisible: false },
                 { type: 'ENGINEER', tileX: 9, tileZ: 9, isVisible: false }
             ],
-            crashSiteFloorMesh: { position: floorPosition }
+            crashSiteHeatMesh: { position: floorPosition }
         };
 
         ThreeGame.prototype.updateCrashedShipsVisibility.call(game);
@@ -85,42 +90,43 @@ describe('clearSpawnArea — door/portal alignment', () => {
             expect(grid[0][x], `north edge x=${x}`).toBe(expected);
         }
         expect(grid[9][9]).toBe('.');
-        expect(grid[4].slice(2, 17).every((cell) => cell === '.')).toBe(true);
-        expect(grid[17].slice(2, 17).every((cell) => cell === '.')).toBe(true);
+        const room = CRASH_SITE_BUILD.primaryChamber;
+        expect(grid[room.top].slice(room.left, room.right + 1).every((cell) => cell === '.')).toBe(true);
+        expect(grid[room.bottom].slice(room.left, room.right + 1).every((cell) => cell === '.')).toBe(true);
         expect(grid[1][1]).toBe('X');
-        expect(grid[18][9]).toBe('#');
-        expect(grid[18][0]).toBe('X');
-        expect(grid.every((row) => row[0] === 'X')).toBe(true);
-        expect(grid.every((row) => row[CHUNK_SIZE - 1] === 'X')).toBe(true);
+        expect(grid[room.bottom + 1][9]).toBe('#');
+        expect(grid[room.bottom + 1][CHUNK_SIZE - 1]).toBe('X');
+        expect(grid[1][CHUNK_SIZE - 1]).toBe('X');
 
         const spawn = game.getSpawnTile();
         expect(spawn).toEqual({ x: 9, y: 9 });
         expect(grid[spawn.y][spawn.x]).toBe('.');
     });
 
-    it('starts the north blast door closed across that three-wide hallway', () => {
+    it('starts with the north blast door retracted so the only exit is traversable', () => {
         const game = {
             scene: { add: () => {} }
         };
         ThreeGame.prototype.setupBunkerBlastDoor.call(game);
 
         expect(game.bunkerBlastDoorState).toMatchObject({
-            open: false,
+            open: true,
             destroyed: false,
             doorZ: 3,
             startTileX: 8,
             endTileX: 10,
-            targetY: 1.4
+            targetY: -2.4,
+            autoClose: false
         });
         expect(game.bunkerDoorButtons.interior.z).toBeGreaterThan(game.bunkerBlastDoorState.doorZ);
         expect(game.bunkerDoorButtons.exterior.z).toBeLessThan(game.bunkerBlastDoorState.doorZ);
         expect(game.bunkerFogVeilMesh).toBeUndefined();
     });
 
-    it('resets a previously opened or destroyed blast door to its closed run-start state', () => {
+    it('resets a previously destroyed blast door to its open run-start state', () => {
         const game = {
             bunkerBlastDoorState: {
-                open: true,
+                open: false,
                 destroyed: true,
                 hp: 0,
                 maxHp: 25,
@@ -136,14 +142,49 @@ describe('clearSpawnArea — door/portal alignment', () => {
         ThreeGame.prototype.resetBunkerBlastDoor.call(game);
 
         expect(game.bunkerBlastDoorState).toMatchObject({
-            open: false,
+            open: true,
             destroyed: false,
             hp: 25,
-            y: 1.4,
-            targetY: 1.4
+            y: -2.4,
+            targetY: -2.4
         });
-        expect(game.bunkerBlastDoorGroup.position.y).toBe(1.4);
+        expect(game.bunkerBlastDoorGroup.position.y).toBe(-2.4);
         expect(game.bunkerBlastDoorGroup.visible).toBe(true);
+    });
+
+    it('fits authored frame/slab art while retaining an invisible raycast proxy', async () => {
+        const scene = new THREE.Group();
+        const doorGroup = new THREE.Group();
+        doorGroup.position.set(9, 1.4, 3);
+        const proxy = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial());
+        proxy.userData.isBunkerBlastDoor = true;
+        const rib = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial());
+        doorGroup.add(proxy, rib);
+        scene.add(doorGroup);
+        const provisionalLight = new THREE.PointLight(0xff0000, 1, 3);
+        scene.add(provisionalLight);
+        const roots = new Map();
+        const game = {
+            scene,
+            bunkerBlastDoorGroup: doorGroup,
+            _bunkerDoorStatusLight: provisionalLight,
+            createWorld3dModel: async (type) => {
+                const root = new THREE.Group();
+                root.name = type;
+                root.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial()));
+                roots.set(type, root);
+                return root;
+            }
+        };
+
+        expect(await ThreeGame.prototype.upgradeBunkerBlastDoorToModel.call(game)).toBe(true);
+        expect(roots.get('door_arch_guillotine_frame').parent.position.toArray()).toEqual([9, 0, 3]);
+        expect(roots.get('door_arch_guillotine_slab').parent).toBe(doorGroup);
+        expect(roots.get('door_arch_guillotine_slab').position.y).toBe(-1.4);
+        expect(proxy.visible).toBe(true);
+        expect(proxy.material.colorWrite).toBe(false);
+        expect(rib.visible).toBe(false);
+        expect(provisionalLight.parent).toBeNull();
     });
 
     it('forces the shared north edge portal to the authored hallway center', () => {

@@ -12,30 +12,41 @@ test.describe('controller-ready modal focus', () => {
 
         await expect(page.locator('#roster-callsign-input')).toBeVisible();
 
-        // The class rail contains only classes; down exits through the shared
-        // bottom-right advance dock.
-        await page.locator('.char-selection .char-card[data-type="SCOUT"]').focus();
+        // Controller nav remap 2026-10-14: the menu moves the way it looks.
+        // The class cards are a vertical stack on the right, so W / S walk
+        // them and S from the last one reaches ENTER ARMORY; A / D cross
+        // between the columns. (It used to send S from every class straight
+        // to ENTER ARMORY and D down the stack, which the nav map flagged.)
+        const card = (type) => page.locator(`.char-selection .char-card[data-type="${type}"]`);
+        await card('SCOUT').focus();
         await page.keyboard.press('KeyS');
-        await expect(page.locator('.char-selection .char-card[data-type="TANK"]')).toBeFocused();
-
+        await expect(card('TANK')).toBeFocused();
         await page.keyboard.press('KeyS');
-        await expect(page.locator('.char-selection .char-card[data-type="ENGINEER"]')).toBeFocused();
-
-        await page.keyboard.press('KeyS');
-        await expect(page.locator('#start-game')).toBeFocused();
-
-        // Back belongs to the bottom of the first/operations panel.
-        await page.locator('#hero-select-back-btn').focus();
+        await expect(card('ENGINEER')).toBeFocused();
         await page.keyboard.press('KeyS');
         await expect(page.locator('#start-game')).toBeFocused();
+        await page.keyboard.press('KeyW');
+        await expect(card('ENGINEER')).toBeFocused();
 
-        await page.locator('#hero-select-back-btn').focus();
+        // The command grid is two columns; D / A cross it, S / W walk it,
+        // and RETURN sits at the bottom of that column.
+        await page.locator('#steam-vault-btn').focus();
+        await page.keyboard.press('KeyD');
+        await expect(page.locator('#fabrication-btn')).toBeFocused();
+        await page.keyboard.press('KeyA');
+        await expect(page.locator('#steam-vault-btn')).toBeFocused();
+        await page.keyboard.press('KeyS');
+        await expect(page.locator('#archive-btn')).toBeFocused();
+
+        await page.locator('#season-pass-btn').focus();
+        await page.keyboard.press('KeyS');
+        await expect(page.locator('#hero-select-back-btn')).toBeFocused();
         await page.keyboard.press('KeyW');
         await expect(page.locator('#season-pass-btn')).toBeFocused();
 
-        await page.locator('#start-game').focus();
-        await page.keyboard.press('KeyW');
-        await expect(page.locator('#season-pass-btn')).toBeFocused();
+        // Arrows behave exactly like WASD.
+        await page.keyboard.press('ArrowDown');
+        await expect(page.locator('#hero-select-back-btn')).toBeFocused();
     });
 
     test('operator polish picker uses a spatial WASD grid', async ({ page }) => {
@@ -101,7 +112,13 @@ test.describe('controller-ready modal focus', () => {
         await page.keyboard.press('KeyX');
         await expect(callsign).toHaveValue(`${original}x`);
         await page.keyboard.press('Escape');
+        // Spatial (nav remap 2026-10-14): NEW GAME RESET sits straight below
+        // the callsign in the left column; SAVE DATA is across in the right.
         await page.keyboard.press('KeyS');
+        await expect(page.locator('#open-reset-save')).toBeFocused();
+        await page.keyboard.press('KeyW');
+        await expect(callsign).toBeFocused();
+        await page.keyboard.press('KeyD');
         await expect(page.locator('#open-save-data')).toBeFocused();
 
         await expect(page.locator('[data-settings-panel="profile"]')).toBeVisible();
@@ -117,12 +134,15 @@ test.describe('controller-ready modal focus', () => {
         expect(await toggle.isChecked()).toBe(!before);
     });
 
-    test('six settings pages fit and native pointer sweeps never scroll them', async ({ page }) => {
+    test('seven settings pages fit in one bar and native pointer sweeps never scroll them', async ({ page }) => {
         await page.setViewportSize({ width: 1280, height: 800 });
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
-        const names = ['session', 'audio', 'controls', 'camera', 'accessibility', 'profile'];
-        await expect(page.locator('.settings-tab')).toHaveCount(6);
+        const names = ['session', 'audio', 'controls', 'camera', 'graphics', 'accessibility', 'profile'];
+        const tabs = page.locator('.settings-tab');
+        await expect(tabs).toHaveCount(7);
+        const tabTops = await tabs.evaluateAll((elements) => elements.map((element) => Math.round(element.getBoundingClientRect().top)));
+        expect(new Set(tabTops).size, 'settings categories wrapped onto multiple rows').toBe(1);
 
         for (const name of names) {
             await page.locator(`[data-settings-tab="${name}"]`).click();
@@ -135,6 +155,48 @@ test.describe('controller-ready modal focus', () => {
             }
             expect(await page.locator('.settings-modal-content').evaluate((element) => element.scrollTop)).toBe(0);
         }
+
+        const expectSingleRow = async () => {
+            const geometry = await page.locator('.settings-tabs').evaluate((bar) => {
+                const barRect = bar.getBoundingClientRect();
+                const visibleTabs = [...bar.querySelectorAll('.settings-tab')];
+                return {
+                    tops: visibleTabs.map((element) => Math.round(element.getBoundingClientRect().top)),
+                    clientWidth: bar.clientWidth,
+                    scrollWidth: bar.scrollWidth,
+                    barLeft: barRect.left,
+                    barRight: barRect.right
+                };
+            });
+            expect(new Set(geometry.tops).size, 'settings categories wrapped after viewport/scale change').toBe(1);
+            return geometry;
+        };
+
+        for (const viewport of [{ width: 1920, height: 1080 }, { width: 2560, height: 1440 }]) {
+            await page.setViewportSize(viewport);
+            const geometry = await expectSingleRow();
+            expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth + 1);
+        }
+
+        await page.setViewportSize({ width: 1280, height: 800 });
+        await page.locator('#game-viewport').evaluate((element) => {
+            element.style.setProperty('--ui-scale-multiplier', '1.5');
+            element.style.setProperty('--vu-text', '12px');
+        });
+        await expectSingleRow();
+
+        await page.setViewportSize({ width: 760, height: 800 });
+        const narrow = await expectSingleRow();
+        expect(narrow.scrollWidth).toBeGreaterThan(narrow.clientWidth);
+        await page.locator('[data-settings-tab="session"]').focus();
+        await page.keyboard.press('End');
+        await expect(page.locator('[data-settings-tab="profile"]')).toHaveAttribute('aria-selected', 'true');
+        const activeInsideBar = await page.locator('[data-settings-tab="profile"]').evaluate((active) => {
+            const tab = active.getBoundingClientRect();
+            const bar = active.parentElement.getBoundingClientRect();
+            return tab.left >= bar.left - 1 && tab.right <= bar.right + 1;
+        });
+        expect(activeInsideBar, 'active narrow Settings tab was not scrolled into view').toBe(true);
     });
 
     test('controller left and right change focused settings selects', async ({ page }) => {
@@ -282,6 +344,36 @@ test.describe('controller-ready modal focus', () => {
         // The modal closes and the slot reports the new fitting.
         await expect(page.locator('#armory-picker-modal')).toBeHidden();
         await expect(slot.locator('.armory-slot__name')).not.toHaveText(before ?? '');
+    });
+
+    test('Armory terminal Down reaches Embark and Up returns to content', async ({ page }) => {
+        await page.setViewportSize({ width: 1280, height: 800 });
+        await bootToOperatorMenu(page);
+        await page.locator('#start-game').click();
+        await expect(page.locator('#armory-screen')).toBeVisible({ timeout: 30_000 });
+        await page.evaluate(() => document.body.classList.add('controller-mode'));
+
+        const terminalId = await page.evaluate(() => {
+            const root = document.getElementById('armory-screen');
+            const controls = [...root.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+                .filter((element) => element.offsetParent !== null && !element.closest('.armory-footer') && !element.closest('.hidden'));
+            controls.sort((a, b) => {
+                const ar = a.getBoundingClientRect();
+                const br = b.getBoundingClientRect();
+                return (br.top + br.height / 2) - (ar.top + ar.height / 2);
+            });
+            controls[0]?.focus();
+            return controls[0]?.id ?? null;
+        });
+        expect(terminalId).toBeTruthy();
+
+        const nav = (action) => page.evaluate((nextAction) => {
+            window.dispatchEvent(new CustomEvent('gamepad-menu-nav', { detail: { action: nextAction } }));
+        }, action);
+        await nav('menu_down');
+        await expect(page.locator('#armory-btn-embark')).toBeFocused();
+        await nav('menu_up');
+        await expect(page.locator(`#${terminalId}`)).toBeFocused();
     });
 
     // Owner 2026-10-08: choosing skins, the D-pad only moved left and right.
@@ -582,7 +674,13 @@ test.describe('controller-ready modal focus', () => {
         });
 
         await expect(page.locator('#tactical-map-modal')).toBeVisible();
-        await expect(page.locator('#close-tactical-map-modal')).toBeFocused();
+        // Opens on its first real control, not on ✕ (nav remap 2026-10-14):
+        // A on ✕ just closed it again. B still closes.
+        await expect.poll(() => page.evaluate(() => {
+            const active = document.activeElement;
+            return Boolean(document.getElementById('tactical-map-modal')?.contains(active))
+                && active?.id !== 'close-tactical-map-modal';
+        })).toBe(true);
     });
 
     test('base turret submenu owns controller focus when it becomes visible', async ({ page }) => {
@@ -594,7 +692,16 @@ test.describe('controller-ready modal focus', () => {
         });
 
         await expect(page.locator('#base-turret-modal')).toBeVisible();
-        await expect(page.locator('#close-base-turret-modal')).toBeFocused();
+        // Focus is inside the submenu; on ✕ only when nothing else there is
+        // focusable (nav remap 2026-10-14).
+        await expect.poll(() => page.evaluate(() => {
+            const modal = document.getElementById('base-turret-modal');
+            const active = document.activeElement;
+            if (!modal?.contains(active)) return false;
+            const others = [...modal.querySelectorAll('button:not([disabled])')]
+                .filter((button) => button.id !== 'close-base-turret-modal' && button.getClientRects().length);
+            return active.id !== 'close-base-turret-modal' || others.length === 0;
+        })).toBe(true);
     });
 
     test('pointer hover updates active focus and moves highlight across main menu buttons', async ({ page }) => {

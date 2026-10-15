@@ -81,19 +81,39 @@ export function realizeHallwayConnector(archetype, random, { size = CHUNK_SIZE, 
     carveDisk(grid, hub.x, hub.y, width);
 
     const wayfindingMarkers = [];
-    const markerInterval = 6;
+    const markerKeys = new Set();
+    const markerInterval = archetype.sightlineBreakFrequency === 'high'
+        ? 4
+        : archetype.sightlineBreakFrequency === 'low' ? 8 : 6;
+    const addMarker = (x, y, landmark = false) => {
+        const key = `${x},${y}`;
+        const existing = wayfindingMarkers.find((marker) => marker.x === x && marker.y === y);
+        if (existing) {
+            existing.landmark ||= landmark;
+            return;
+        }
+        if (markerKeys.has(key)) return;
+        markerKeys.add(key);
+        wayfindingMarkers.push({
+            x,
+            y,
+            dressingKit: archetype.dressingKit,
+            lightingRhythm: archetype.lightingRhythm,
+            archetypeId: archetype.id,
+            cadence: wayfindingMarkers.length,
+            landmark,
+            width
+        });
+    };
     const carveTrackedLine = (from, to) => {
         carveLine(grid, from, to, width);
         const steps = Math.max(Math.abs(to.x - from.x), Math.abs(to.y - from.y));
         for (let step = markerInterval; step < steps; step += markerInterval) {
             const t = step / steps;
-            wayfindingMarkers.push({
-                x: Math.round(from.x + (to.x - from.x) * t),
-                y: Math.round(from.y + (to.y - from.y) * t),
-                dressingKit: archetype.dressingKit,
-                lightingRhythm: archetype.lightingRhythm,
-                width
-            });
+            addMarker(
+                Math.round(from.x + (to.x - from.x) * t),
+                Math.round(from.y + (to.y - from.y) * t)
+            );
         }
     };
 
@@ -104,6 +124,7 @@ export function realizeHallwayConnector(archetype, random, { size = CHUNK_SIZE, 
         carveTrackedLine(portal, bend);
         carveTrackedLine(bend, hub);
     }
+    if (portals.length >= 2) addMarker(hub.x, hub.y, true);
 
     constrainBorderSockets(grid, openings);
     addWallShell(grid);

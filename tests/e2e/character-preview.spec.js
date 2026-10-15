@@ -1,50 +1,45 @@
 import { test, expect } from '@playwright/test';
 import { bootToOperatorMenu } from './helpers.js';
 
-test('every operator has a rendered sprite or packaged portrait fallback', async ({ page }) => {
+test('every operator preview is 3D-only', async ({ page }) => {
     await bootToOperatorMenu(page);
 
+    await expect(page.locator('#char-preview-fallback')).toHaveCount(0);
+    await expect(page.locator('#char-preview-sprite')).toHaveCount(0);
     for (const type of ['SCOUT', 'TANK', 'ENGINEER']) {
         await page.locator(`.char-card[data-type="${type}"]`).click();
-        await page.waitForTimeout(250);
-        const preview = await page.evaluate(() => {
-            const canvas = document.getElementById('char-preview-sprite');
-            const fallback = document.getElementById('char-preview-fallback');
-            const pixels = canvas?.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height)?.data;
-            let alphaPixels = 0;
-            for (let index = 3; pixels && index < pixels.length; index += 4) {
-                if (pixels[index] > 0) alphaPixels += 1;
-            }
-            return {
-                alphaPixels,
-                fallbackLoaded: Boolean(fallback?.complete && fallback.naturalWidth > 0),
-                fallbackSrc: fallback?.getAttribute('src') ?? ''
-            };
-        });
-
-        expect(
-            preview.alphaPixels > 0 || preview.fallbackLoaded,
-            `${type} should never show a blank/broken character preview`
-        ).toBe(true);
-        expect(preview.fallbackSrc).toMatch(/\.(png|webp)$/);
+        await expect(page.locator('#char-preview-loading')).toBeHidden({ timeout: 20_000 });
+        await expect(page.locator('#char-preview-3d')).toBeVisible();
+        await expect(page.locator('#char-preview-name')).toHaveText(type);
     }
 });
 
-test('rapid class changes never expose a stale or blank center preview', async ({ page }) => {
+test('rapid class changes settle on the latest validated 3D operator', async ({ page }) => {
     await bootToOperatorMenu(page);
     const types = ['SCOUT', 'TANK', 'ENGINEER'];
-    await page.evaluate((sequence) => {
-        for (let index = 0; index < 50; index += 1) {
+    const switchCount = 8;
+    await page.evaluate(({ sequence, count }) => {
+        for (let index = 0; index < count; index += 1) {
             document.querySelector(`.char-card[data-type="${sequence[index % sequence.length]}"]`)?.click();
         }
-    }, types);
-    const expected = types[49 % types.length];
+    }, { sequence: types, count: switchCount });
+    const expected = types[(switchCount - 1) % types.length];
     await expect(page.locator('#char-preview-name')).toHaveText(expected);
     await expect(page.locator(`.char-card[data-type="${expected}"]`)).toHaveClass(/selected/);
-    expect(await page.evaluate(() => {
-        const sprite = document.getElementById('char-preview-sprite');
-        const fallback = document.getElementById('char-preview-fallback');
-        const model = document.getElementById('char-preview-3d');
-        return [sprite, fallback, model].some((element) => element && !element.classList.contains('hidden'));
-    })).toBe(true);
+    await expect(page.locator('#char-preview-loading')).toBeHidden({ timeout: 20_000 });
+    await expect(page.locator('#char-preview-3d')).toBeVisible();
+    await expect(page.locator('#char-preview-fallback, #char-preview-sprite')).toHaveCount(0);
+});
+
+test('a missing operator model shows a 3D diagnostic state, never 2D art', async ({ page }) => {
+    await page.route('**/3d/runtime/tank-rigged.glb', (route) => route.abort('failed'));
+    await bootToOperatorMenu(page);
+    await page.locator('.char-card[data-type="TANK"]').click();
+
+    const status = page.locator('#char-preview-loading');
+    await expect(status).toHaveAttribute('data-state', 'error', { timeout: 20_000 });
+    await expect(status).toBeVisible();
+    await expect(status).toContainText('3D PREVIEW UNAVAILABLE');
+    await expect(page.locator('#char-preview-3d')).toBeHidden();
+    await expect(page.locator('#char-preview-fallback, #char-preview-sprite')).toHaveCount(0);
 });

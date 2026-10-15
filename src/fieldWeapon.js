@@ -4,11 +4,28 @@ const FIELD_WEAPON_PROFILES = Object.freeze({
     scatter_rep: Object.freeze({ label: 'SCATTER REPEATER', spreads: [-0.18, 0, 0.18], damageMultiplier: 0.5, lifetimeMultiplier: 0.55, cooldownMultiplier: 1.5 }),
     rail_marksman: Object.freeze({ label: 'RAIL MARKSMAN', spreads: [0], damageMultiplier: 2.1, lifetimeMultiplier: 1.65, cooldownMultiplier: 2.0 }),
     neon_smg: Object.freeze({ label: 'NEON SMG', spreads: [-0.035, 0.035], damageMultiplier: 0.42, lifetimeMultiplier: 0.75, cooldownMultiplier: 0.48 }),
-    cryo_lance: Object.freeze({ label: 'CRYO LANCE', spreads: [0], damageMultiplier: 1.25, lifetimeMultiplier: 1.45, cooldownMultiplier: 1.35 })
+    cryo_lance: Object.freeze({ label: 'CRYO LANCE', spreads: [0], damageMultiplier: 1.25, lifetimeMultiplier: 1.45, cooldownMultiplier: 1.35 }),
+    flamethrower: Object.freeze({
+        label: 'M-70 FLAMETHROWER',
+        spreads: [0],
+        damageMultiplier: 0.38,
+        lifetimeMultiplier: 0.52,
+        cooldownMultiplier: 0.28,
+        coneRange: 6.5,
+        coneHalfAngle: 0.38,
+        heatPerShot: 18,
+        burnStacks: 1,
+        isSweptCone: true
+    })
 });
 
 // Fabricated guns change actual projectile damage/range/cadence in the current
 // run. Cosmetic finishes never select this profile or change these values.
+// The short name a field weapon goes by on the HUD and drop prompts.
+export function getFieldWeaponLabel(id) {
+    return FIELD_WEAPON_PROFILES[id]?.label ?? null;
+}
+
 export function getFieldWeaponProfile(id, fabricated = false) {
     const profile = FIELD_WEAPON_PROFILES[id];
     return fabricated && profile ? { id, ...profile } : null;

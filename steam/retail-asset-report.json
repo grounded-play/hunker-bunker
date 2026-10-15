@@ -1,21 +1,21 @@
 {
   "version": 1,
   "budgets": {
-    "publicBytes": 4404019200,
+    "publicBytes": 5557452800,
     "appAsarBytes": 996147200,
     "unknownAssets": 160,
     "codecMismatches": 140,
-    "duplicateGroups": 15
+    "duplicateGroups": 140
   },
   "measured": {
-    "publicBytes": 4311991642,
-    "publicFileCount": 5330
+    "publicBytes": 5172345479,
+    "publicFileCount": 6331
   },
   "classifications": {
-    "runtime-required": 5027,
+    "runtime-required": 5923,
     "source-reference": 23,
-    "generated-intermediate": 208,
-    "unknown": 72
+    "generated-intermediate": 269,
+    "unknown": 116
   },
   "missingReferences": [],
   "invalidMedia": [],
@@ -613,10 +613,926 @@
   ],
   "duplicateChecksums": [
     {
+      "sha256": "eb4cca8e9501b5bc41f39845a761cfbba815417285dec85fdc3d1b8147ae1b97",
+      "files": [
+        "3d/runtime/decals/legacy/decal_execution_wall_splatter_a_albedo.ktx2",
+        "3d/runtime/decals/legacy/decal_execution_wall_splatter_albedo.ktx2"
+      ]
+    },
+    {
+      "sha256": "14f8e97b4b503d24ce058dde73ec67a0e44f21ebbd1caa86d75176166e23fd49",
+      "files": [
+        "3d/runtime/decals/legacy/decal_execution_wall_splatter_a_detail.ktx2",
+        "3d/runtime/decals/legacy/decal_execution_wall_splatter_detail.ktx2"
+      ]
+    },
+    {
+      "sha256": "1c2d7202ece5637c071722cb82e5e5d2ea879313c9adbfe7ae7e13f2ef906009",
+      "files": [
+        "3d/runtime/decals/legacy/decal_pod_312_rupture_splatter_a_albedo.ktx2",
+        "3d/runtime/decals/legacy/decal_pod_312_rupture_splatter_albedo.ktx2"
+      ]
+    },
+    {
+      "sha256": "00c62b261ce74c54f29be7f8092d9e0e4ea2efde89241712a2490e368b1dec19",
+      "files": [
+        "3d/runtime/decals/legacy/decal_pod_312_rupture_splatter_a_detail.ktx2",
+        "3d/runtime/decals/legacy/decal_pod_312_rupture_splatter_detail.ktx2"
+      ]
+    },
+    {
+      "sha256": "919bafc10be9245e04dd96b68c1d008a0335dc23b40f6b79693d05b30409e328",
+      "files": [
+        "3d/runtime/decals/legacy/decal_queen_oviposition_pool_a_albedo.ktx2",
+        "3d/runtime/decals/legacy/decal_queen_oviposition_pool_albedo.ktx2"
+      ]
+    },
+    {
+      "sha256": "f1d3827541d181bb29a47481435d96e9a53b123dd3babb55ea070cf0097e065a",
+      "files": [
+        "3d/runtime/decals/legacy/decal_queen_oviposition_pool_a_detail.ktx2",
+        "3d/runtime/decals/legacy/decal_queen_oviposition_pool_detail.ktx2"
+      ]
+    },
+    {
+      "sha256": "fd829466f3ae7f81d7eafcd2c38d531c6e72ddbea817f6d0f7ca984ed43b7110",
+      "files": [
+        "3d/runtime/decals/legacy/decal_strip_acid_trench_a_albedo.ktx2",
+        "3d/runtime/decals/legacy/decal_strip_acid_trench_albedo.ktx2"
+      ]
+    },
+    {
+      "sha256": "b619e12de5fc08e9343811055a639372fbeeb52a39a6be48b9324234ca5dd8b5",
+      "files": [
+        "3d/runtime/decals/legacy/decal_strip_acid_trench_a_detail.ktx2",
+        "3d/runtime/decals/legacy/decal_strip_acid_trench_detail.ktx2"
+      ]
+    },
+    {
+      "sha256": "57e3bd0c5d8645125b3f675aff4d130ff917ffb00da59ea5bf1b41b40b5f9445",
+      "files": [
+        "3d/runtime/decals/legacy/decal_strip_arterial_spray_a_albedo.ktx2",
+        "3d/runtime/decals/legacy/decal_strip_arterial_spray_albedo.ktx2"
+      ]
+    },
+    {
+      "sha256": "b3257aa65915638e7cec96bb44229990c6f356b127dbb0c5bbf0995caafb556c",
+      "files": [
+        "3d/runtime/decals/legacy/decal_strip_arterial_spray_a_detail.ktx2",
+        "3d/runtime/decals/legacy/decal_strip_arterial_spray_detail.ktx2"
+      ]
+    },
+    {
+      "sha256": "475fafd5d87dcb0eda1b653d093a8d727fba6db267532d1332ea8d0dbc3db748",
+      "files": [
+        "3d/runtime/decals/legacy/decal_strip_crawler_acid_a_albedo.ktx2",
+        "3d/runtime/decals/legacy/decal_strip_crawler_acid_albedo.ktx2"
+      ]
+    },
+    {
+      "sha256": "3ea95d319b28cfccd08d90daf9c7166df9647b2f430a876545d2e4e9aa9e38f7",
+      "files": [
+        "3d/runtime/decals/legacy/decal_strip_crawler_acid_a_detail.ktx2",
+        "3d/runtime/decals/legacy/decal_strip_crawler_acid_detail.ktx2"
+      ]
+    },
+    {
+      "sha256": "e75054ea25df841d4ee31f1fba2d8ae3fc67dfbd288b4251fff8d072058f6d23",
+      "files": [
+        "3d/runtime/decals/legacy/decal_strip_exosuit_coolant_a_albedo.ktx2",
+        "3d/runtime/decals/legacy/decal_strip_exosuit_coolant_albedo.ktx2"
+      ]
+    },
+    {
+      "sha256": "86640dc31ce69dd65d133a84f5dc4700ed7f0ddbe0ce73ae9da8ebfdcbd88431",
+      "files": [
+        "3d/runtime/decals/legacy/decal_strip_exosuit_coolant_a_detail.ktx2",
+        "3d/runtime/decals/legacy/decal_strip_exosuit_coolant_detail.ktx2"
+      ]
+    },
+    {
+      "sha256": "e2232e8d478e18503a6c5e6a1f83e62cd4809b09841d95c2c33b8e4011658d6b",
+      "files": [
+        "3d/runtime/decals/legacy/decal_strip_frost_heave_a_albedo.ktx2",
+        "3d/runtime/decals/legacy/decal_strip_frost_heave_albedo.ktx2"
+      ]
+    },
+    {
+      "sha256": "d6fa001cf86ebcdcbafc6a281adfb4f9f9a7b3e3f64303682735031a3673017e",
+      "files": [
+        "3d/runtime/decals/legacy/decal_strip_frost_heave_a_detail.ktx2",
+        "3d/runtime/decals/legacy/decal_strip_frost_heave_detail.ktx2"
+      ]
+    },
+    {
+      "sha256": "37f075503754d36111a92de85f7471f8767908de6941ec901139819311f27cab",
+      "files": [
+        "3d/runtime/decals/legacy/decal_strip_high_voltage_scorch_a_albedo.ktx2",
+        "3d/runtime/decals/legacy/decal_strip_high_voltage_scorch_albedo.ktx2"
+      ]
+    },
+    {
+      "sha256": "cdd61d00e674c385e38169a7d13c2daa34a37591ec7842780ac2dae2d5658fda",
+      "files": [
+        "3d/runtime/decals/legacy/decal_strip_high_voltage_scorch_a_detail.ktx2",
+        "3d/runtime/decals/legacy/decal_strip_high_voltage_scorch_detail.ktx2"
+      ]
+    },
+    {
+      "sha256": "e1b7801f5b64649797fe6ffd0b20a0a56d5c7a355dc6fa1156ab37632520140d",
+      "files": [
+        "3d/runtime/decals/legacy/decal_strip_umbilical_veins_a_albedo.ktx2",
+        "3d/runtime/decals/legacy/decal_strip_umbilical_veins_albedo.ktx2"
+      ]
+    },
+    {
+      "sha256": "e585980f97a472b582a4b7b3e6d4252ae2a610ac1f93bf0a5de7d57411ce0d3e",
+      "files": [
+        "3d/runtime/decals/legacy/decal_strip_umbilical_veins_a_detail.ktx2",
+        "3d/runtime/decals/legacy/decal_strip_umbilical_veins_detail.ktx2"
+      ]
+    },
+    {
+      "sha256": "2f5d63e06787f8f855fc76e091a5539f5013bc30973fc7b9aea6e904f86c887e",
+      "files": [
+        "3d/runtime/decals/legacy/decal_strip_viscera_drag_a_albedo.ktx2",
+        "3d/runtime/decals/legacy/decal_strip_viscera_drag_albedo.ktx2"
+      ]
+    },
+    {
+      "sha256": "e3d02ed5709e5f7d92c8024d2a332f3cd6f4d6a6b299f1ed46588984de3dc7ec",
+      "files": [
+        "3d/runtime/decals/legacy/decal_strip_viscera_drag_a_detail.ktx2",
+        "3d/runtime/decals/legacy/decal_strip_viscera_drag_detail.ktx2"
+      ]
+    },
+    {
+      "sha256": "17bb93c368cac3321255aa685fc3c0100baa87349cccba3984d06a3fd011abba",
+      "files": [
+        "3d/runtime/decals/legacy/decal_vass_acoustic_diagram_a_albedo.ktx2",
+        "3d/runtime/decals/legacy/decal_vass_acoustic_diagram_albedo.ktx2"
+      ]
+    },
+    {
+      "sha256": "57d835179a7423200c711ebd0ec6245f1e8b9deaf1d2b5e46bd063d1870d1a8c",
+      "files": [
+        "3d/runtime/decals/legacy/decal_vass_acoustic_diagram_a_detail.ktx2",
+        "3d/runtime/decals/legacy/decal_vass_acoustic_diagram_detail.ktx2"
+      ]
+    },
+    {
+      "sha256": "48aae2e6ae7efba224c901442025ea05db2d02239c1498daa0f8faa554150522",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_chasm_permafrost_bedrock_baseColor.webp",
+        "3d/runtime/kits/textures/tex_pbr_chasm_permafrost_bedrock_color.webp",
+        "3d/runtime/surfaces/tex_pbr_chasm_permafrost_bedrock_baseColor.webp",
+        "3d/runtime/surfaces/tex_pbr_chasm_permafrost_bedrock_color.webp"
+      ]
+    },
+    {
+      "sha256": "57698a780d91436ecc982bb433b69ef830027835d1dda786eec276a3ac0c7122",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_chasm_permafrost_bedrock_emissive.webp",
+        "3d/runtime/surfaces/tex_pbr_chasm_permafrost_bedrock_emissive.webp"
+      ]
+    },
+    {
+      "sha256": "20e4a1541b50bf88cca747fd25de757c6d8bf31fcd80f6b25f8b4fb957eeedc3",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_chasm_permafrost_bedrock_normal.webp",
+        "3d/runtime/surfaces/tex_pbr_chasm_permafrost_bedrock_normal.webp"
+      ]
+    },
+    {
+      "sha256": "9b7cf2563dc06b6f556bbae845f4729d9eaf9ba73ba9892994e27d5df0527a4b",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_chasm_permafrost_bedrock_orm.webp",
+        "3d/runtime/surfaces/tex_pbr_chasm_permafrost_bedrock_orm.webp"
+      ]
+    },
+    {
+      "sha256": "fd96bf8c8d78366e76d894c4cf432cbb1e49db7b588f521bb6a1f2503fa2cc32",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_chasm_permafrost_bedrock_rough.webp",
+        "3d/runtime/surfaces/tex_pbr_chasm_permafrost_bedrock_rough.webp"
+      ]
+    },
+    {
+      "sha256": "45d3353bbaca0de184f898ef4b0008f99d3fc3a6d3c63b2e0826c332936b263c",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_corp_sublevel_linoleum_baseColor.webp",
+        "3d/runtime/kits/textures/tex_pbr_corp_sublevel_linoleum_color.webp",
+        "3d/runtime/surfaces/tex_pbr_corp_sublevel_linoleum_baseColor.webp",
+        "3d/runtime/surfaces/tex_pbr_corp_sublevel_linoleum_color.webp"
+      ]
+    },
+    {
+      "sha256": "00f14a14ef35889cfeae3bc1763f6e30a34339f46a3a75ef7d966c7620941e0a",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_corp_sublevel_linoleum_emissive.webp",
+        "3d/runtime/kits/textures/tex_pbr_crash_hull_ablative_tile_emissive.webp",
+        "3d/runtime/kits/textures/tex_pbr_evac_gantry_corrugated_deck_emissive.webp",
+        "3d/runtime/kits/textures/tex_pbr_hive_chitin_plates_emissive.webp",
+        "3d/runtime/kits/textures/tex_pbr_vesper_trench_treadplate_emissive.webp",
+        "3d/runtime/surfaces/tex_pbr_corp_sublevel_linoleum_emissive.webp",
+        "3d/runtime/surfaces/tex_pbr_crash_hull_ablative_tile_emissive.webp",
+        "3d/runtime/surfaces/tex_pbr_evac_gantry_corrugated_deck_emissive.webp",
+        "3d/runtime/surfaces/tex_pbr_hive_chitin_plates_emissive.webp",
+        "3d/runtime/surfaces/tex_pbr_vesper_trench_treadplate_emissive.webp"
+      ]
+    },
+    {
+      "sha256": "dae3726d5094de0f7a57827876b61e500709e5e1f58214dab86fb709b4afb136",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_corp_sublevel_linoleum_normal.webp",
+        "3d/runtime/surfaces/tex_pbr_corp_sublevel_linoleum_normal.webp"
+      ]
+    },
+    {
+      "sha256": "17b1574dec6a4bf66ad4bb90ad177872e32c5a505663b3c39c85d4772bf99eb2",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_corp_sublevel_linoleum_orm.webp",
+        "3d/runtime/surfaces/tex_pbr_corp_sublevel_linoleum_orm.webp"
+      ]
+    },
+    {
+      "sha256": "f06e71c0e99f2a20f851b8762c182db940bdc18ebd0e7dde4eb35a43abbc6211",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_corp_sublevel_linoleum_rough.webp",
+        "3d/runtime/surfaces/tex_pbr_corp_sublevel_linoleum_rough.webp"
+      ]
+    },
+    {
+      "sha256": "e81eb5aa52669c16bbaf3ed5967439e2a2b144a41536acb48300276308e67e96",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_crash_hull_ablative_tile_baseColor.webp",
+        "3d/runtime/kits/textures/tex_pbr_crash_hull_ablative_tile_color.webp",
+        "3d/runtime/surfaces/tex_pbr_crash_hull_ablative_tile_baseColor.webp",
+        "3d/runtime/surfaces/tex_pbr_crash_hull_ablative_tile_color.webp"
+      ]
+    },
+    {
+      "sha256": "f62d596b5f7ccc5d6b78cc36b1af13f45aa4aad74a328d2dc46d7ab344423dee",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_crash_hull_ablative_tile_normal.webp",
+        "3d/runtime/surfaces/tex_pbr_crash_hull_ablative_tile_normal.webp"
+      ]
+    },
+    {
+      "sha256": "771791184ac71c851ee7fb4a8491afd13039f1f5713938338a9b6b9474a738b3",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_crash_hull_ablative_tile_orm.webp",
+        "3d/runtime/surfaces/tex_pbr_crash_hull_ablative_tile_orm.webp"
+      ]
+    },
+    {
+      "sha256": "4a4e34b09294cad1a81a296c2efa1655f7463dd559c54e6a397076d100203345",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_crash_hull_ablative_tile_rough.webp",
+        "3d/runtime/surfaces/tex_pbr_crash_hull_ablative_tile_rough.webp"
+      ]
+    },
+    {
+      "sha256": "85bfbf2185ad18bbabbb7c904e05c780a7c86713ecdedded5f89a2e44b845afa",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_evac_gantry_corrugated_deck_baseColor.webp",
+        "3d/runtime/kits/textures/tex_pbr_evac_gantry_corrugated_deck_color.webp",
+        "3d/runtime/surfaces/tex_pbr_evac_gantry_corrugated_deck_baseColor.webp",
+        "3d/runtime/surfaces/tex_pbr_evac_gantry_corrugated_deck_color.webp"
+      ]
+    },
+    {
+      "sha256": "5f1f4b50a6d6861a42b61eb9916b745475a41edc5b64ce84d00af4d784713d29",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_evac_gantry_corrugated_deck_normal.webp",
+        "3d/runtime/surfaces/tex_pbr_evac_gantry_corrugated_deck_normal.webp"
+      ]
+    },
+    {
+      "sha256": "482237b7e93251f2076e0fe85b6d9108b276be2d541922cf28468a6520cee20d",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_evac_gantry_corrugated_deck_orm.webp",
+        "3d/runtime/surfaces/tex_pbr_evac_gantry_corrugated_deck_orm.webp"
+      ]
+    },
+    {
+      "sha256": "2fe31e15e5e91e417f331b7f2d48e3a4808b6dee6f85d306efd9a3aebab8db92",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_evac_gantry_corrugated_deck_rough.webp",
+        "3d/runtime/surfaces/tex_pbr_evac_gantry_corrugated_deck_rough.webp"
+      ]
+    },
+    {
+      "sha256": "c234e2f508ce18d621916da279b70ef0ff638780743bcae224161860008954c2",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_geothermal_trench_grate_baseColor.webp",
+        "3d/runtime/kits/textures/tex_pbr_geothermal_trench_grate_color.webp",
+        "3d/runtime/surfaces/tex_pbr_geothermal_trench_grate_baseColor.webp",
+        "3d/runtime/surfaces/tex_pbr_geothermal_trench_grate_color.webp"
+      ]
+    },
+    {
+      "sha256": "0dea0cc82f9922475284cd04e8a3f45f4e2a82edf5746c27a40a0c6fc500ace5",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_geothermal_trench_grate_emissive.webp",
+        "3d/runtime/surfaces/tex_pbr_geothermal_trench_grate_emissive.webp"
+      ]
+    },
+    {
+      "sha256": "4dc1ad20e6a4c0bcc6c3fa6660e6281bdaae76359d7186dded4c621a9a716b62",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_geothermal_trench_grate_normal.webp",
+        "3d/runtime/surfaces/tex_pbr_geothermal_trench_grate_normal.webp"
+      ]
+    },
+    {
+      "sha256": "7d18ef1c926fa01677c1d1904e3cf9a766c8f729a7bd195dd05c8e129800251b",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_geothermal_trench_grate_orm.webp",
+        "3d/runtime/surfaces/tex_pbr_geothermal_trench_grate_orm.webp"
+      ]
+    },
+    {
+      "sha256": "20c012dae8a435f74710647118a095f41a3ebf00081f607499b6c57e0901684b",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_geothermal_trench_grate_rough.webp",
+        "3d/runtime/surfaces/tex_pbr_geothermal_trench_grate_rough.webp"
+      ]
+    },
+    {
+      "sha256": "6a77a53ab14d5d9af4a978ebcc20cabb5f42ecd3e4b5984473647e1a492babe7",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_hive_chitin_plates_baseColor.webp",
+        "3d/runtime/kits/textures/tex_pbr_hive_chitin_plates_color.webp",
+        "3d/runtime/surfaces/tex_pbr_hive_chitin_plates_baseColor.webp",
+        "3d/runtime/surfaces/tex_pbr_hive_chitin_plates_color.webp"
+      ]
+    },
+    {
+      "sha256": "88453972855166ac1f94c29598cfdc2a5c92486f769af1ce92636dc1cf6d30a3",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_hive_chitin_plates_normal.webp",
+        "3d/runtime/surfaces/tex_pbr_hive_chitin_plates_normal.webp"
+      ]
+    },
+    {
+      "sha256": "1ec1612eb411f61485aa26695389b6408fa4f3858a213586be2963e81e2692a9",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_hive_chitin_plates_orm.webp",
+        "3d/runtime/surfaces/tex_pbr_hive_chitin_plates_orm.webp"
+      ]
+    },
+    {
+      "sha256": "53f61c6a52a41980ed6d2adb9db467cddc23964a61a4d5cba3fc3f8ba3ae378e",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_hive_chitin_plates_rough.webp",
+        "3d/runtime/surfaces/tex_pbr_hive_chitin_plates_rough.webp"
+      ]
+    },
+    {
+      "sha256": "d153276cc590d37aa4c1aaa9f0af4131299ed15214fcd7ffe47171ac3a441c56",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_hive_suture_amniotic_resin_baseColor.webp",
+        "3d/runtime/kits/textures/tex_pbr_hive_suture_amniotic_resin_color.webp",
+        "3d/runtime/surfaces/tex_pbr_hive_suture_amniotic_resin_baseColor.webp",
+        "3d/runtime/surfaces/tex_pbr_hive_suture_amniotic_resin_color.webp"
+      ]
+    },
+    {
+      "sha256": "650b77cd876200088c6464bc106ed85e1ca4f36a2ecdcb45ab06864f588b42ea",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_hive_suture_amniotic_resin_emissive.webp",
+        "3d/runtime/surfaces/tex_pbr_hive_suture_amniotic_resin_emissive.webp"
+      ]
+    },
+    {
+      "sha256": "8aad63d5a8e4b2d26c29dfa2f0b5cbb193ba5b13f0daf4b32e80e8c39363691e",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_hive_suture_amniotic_resin_normal.webp",
+        "3d/runtime/surfaces/tex_pbr_hive_suture_amniotic_resin_normal.webp"
+      ]
+    },
+    {
+      "sha256": "7bdfb91ea9c3f02aa54c4b3520fc2a73a6e92903e74eb1fdd70e2a770c2678d6",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_hive_suture_amniotic_resin_orm.webp",
+        "3d/runtime/surfaces/tex_pbr_hive_suture_amniotic_resin_orm.webp"
+      ]
+    },
+    {
+      "sha256": "967a1a20f2a154f9f4369ef8c6175ea6d5bd9bd3f20ee1a561764885a3dcff9e",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_hive_suture_amniotic_resin_rough.webp",
+        "3d/runtime/surfaces/tex_pbr_hive_suture_amniotic_resin_rough.webp"
+      ]
+    },
+    {
+      "sha256": "de5ec56b2e70c7d98d5056aae29a17daf546712b98b2780a75d913a4716f26d6",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_hydro_fermenter_sludge_baseColor.webp",
+        "3d/runtime/kits/textures/tex_pbr_hydro_fermenter_sludge_color.webp",
+        "3d/runtime/surfaces/tex_pbr_hydro_fermenter_sludge_baseColor.webp",
+        "3d/runtime/surfaces/tex_pbr_hydro_fermenter_sludge_color.webp"
+      ]
+    },
+    {
+      "sha256": "4f53fa5d37e8f01349a16bcd05009d06dd7e6f2c2487ffea37b1341e0fc55621",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_hydro_fermenter_sludge_emissive.webp",
+        "3d/runtime/surfaces/tex_pbr_hydro_fermenter_sludge_emissive.webp"
+      ]
+    },
+    {
+      "sha256": "c4384bce9ecb4c44648bb1bb023a76616b0851b2aa9d61352779e06e7231f1f5",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_hydro_fermenter_sludge_normal.webp",
+        "3d/runtime/surfaces/tex_pbr_hydro_fermenter_sludge_normal.webp"
+      ]
+    },
+    {
+      "sha256": "8e49c147203a31e7680ae403207b1af0c50f2e3bb897bc5b447375ed4484af72",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_hydro_fermenter_sludge_orm.webp",
+        "3d/runtime/surfaces/tex_pbr_hydro_fermenter_sludge_orm.webp"
+      ]
+    },
+    {
+      "sha256": "89efcafbaad5f3f0055930473194003a90717ef4def569726532309dd9262800",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_hydro_fermenter_sludge_rough.webp",
+        "3d/runtime/surfaces/tex_pbr_hydro_fermenter_sludge_rough.webp"
+      ]
+    },
+    {
+      "sha256": "9bbde16191e15181c3b9cca2845a0de3509a3d2a9c0b243e7a101914a7457019",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_meridian_cable_conduit_deck_baseColor.webp",
+        "3d/runtime/kits/textures/tex_pbr_meridian_cable_conduit_deck_color.webp",
+        "3d/runtime/surfaces/tex_pbr_meridian_cable_conduit_deck_baseColor.webp",
+        "3d/runtime/surfaces/tex_pbr_meridian_cable_conduit_deck_color.webp"
+      ]
+    },
+    {
+      "sha256": "55ffdea012bce2fcc03c2b62d2b6e70e9641079f28eb0d6af21edcfa447167bc",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_meridian_cable_conduit_deck_emissive.webp",
+        "3d/runtime/surfaces/tex_pbr_meridian_cable_conduit_deck_emissive.webp"
+      ]
+    },
+    {
+      "sha256": "52a734fa6edb1f011dcaa456103c9fdda6a24060ac7a9ae333ff673bf535199e",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_meridian_cable_conduit_deck_normal.webp",
+        "3d/runtime/surfaces/tex_pbr_meridian_cable_conduit_deck_normal.webp"
+      ]
+    },
+    {
+      "sha256": "e0c5417e9254ea8bc57c3052af4957419bf39a5088d995cce08d36ce398f2994",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_meridian_cable_conduit_deck_orm.webp",
+        "3d/runtime/surfaces/tex_pbr_meridian_cable_conduit_deck_orm.webp"
+      ]
+    },
+    {
+      "sha256": "301d05f3b1a2232166c0e5548aefb8d8984abc35c6449767a0abb71f4c1192a2",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_meridian_cable_conduit_deck_rough.webp",
+        "3d/runtime/surfaces/tex_pbr_meridian_cable_conduit_deck_rough.webp"
+      ]
+    },
+    {
+      "sha256": "fd590aaf98b7de34a4c3bdc1c933c01d0c697d4d01661290ec0ebd8816161e4d",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_obsidian_cathedral_flagstone_baseColor.webp",
+        "3d/runtime/kits/textures/tex_pbr_obsidian_cathedral_flagstone_color.webp",
+        "3d/runtime/surfaces/tex_pbr_obsidian_cathedral_flagstone_baseColor.webp",
+        "3d/runtime/surfaces/tex_pbr_obsidian_cathedral_flagstone_color.webp"
+      ]
+    },
+    {
+      "sha256": "9c446cce4875f37343ebf207ffbd37c94421d449898ed6c6389a7ad68a779279",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_obsidian_cathedral_flagstone_emissive.webp",
+        "3d/runtime/surfaces/tex_pbr_obsidian_cathedral_flagstone_emissive.webp"
+      ]
+    },
+    {
+      "sha256": "037807904c9e70fbeb6c78fc928fa87cac4de28b83ce8d334d330aa875bb957a",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_obsidian_cathedral_flagstone_normal.webp",
+        "3d/runtime/surfaces/tex_pbr_obsidian_cathedral_flagstone_normal.webp"
+      ]
+    },
+    {
+      "sha256": "0c8558aaf8372c31e9f933be4018c9a1433b9383575afd4b2d5a8f1cf48c5081",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_obsidian_cathedral_flagstone_orm.webp",
+        "3d/runtime/surfaces/tex_pbr_obsidian_cathedral_flagstone_orm.webp"
+      ]
+    },
+    {
+      "sha256": "93ffc3b0919145048bcb455ce5eda43fbda4130ad6b53c0a1b18cda068e2cf93",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_obsidian_cathedral_flagstone_rough.webp",
+        "3d/runtime/surfaces/tex_pbr_obsidian_cathedral_flagstone_rough.webp"
+      ]
+    },
+    {
+      "sha256": "eab5845fa777611377f454ef4ca7f20a3e18bdcac0d7883977afe7ff29696fe9",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_vass_cleanroom_poly_baseColor.webp",
+        "3d/runtime/kits/textures/tex_pbr_vass_cleanroom_poly_color.webp",
+        "3d/runtime/surfaces/tex_pbr_vass_cleanroom_poly_baseColor.webp",
+        "3d/runtime/surfaces/tex_pbr_vass_cleanroom_poly_color.webp"
+      ]
+    },
+    {
+      "sha256": "f046c56f24b42eff763192551430ca8f9ab37cee860fff7a4e0c5debfb3dac82",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_vass_cleanroom_poly_emissive.webp",
+        "3d/runtime/surfaces/tex_pbr_vass_cleanroom_poly_emissive.webp"
+      ]
+    },
+    {
+      "sha256": "f6a891c92fbb560f4fb030540f162c85aed27bf695392c7f7160f920f10d7d7c",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_vass_cleanroom_poly_normal.webp",
+        "3d/runtime/surfaces/tex_pbr_vass_cleanroom_poly_normal.webp"
+      ]
+    },
+    {
+      "sha256": "71cefcc2945ffd158748e3ef28d915641cad81512e26288f6e247a40ffa1a6d3",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_vass_cleanroom_poly_orm.webp",
+        "3d/runtime/surfaces/tex_pbr_vass_cleanroom_poly_orm.webp"
+      ]
+    },
+    {
+      "sha256": "279e0fb6571db52e4b66ed2ab7106c5e87ba599e867e911a160ea429986ca091",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_vass_cleanroom_poly_rough.webp",
+        "3d/runtime/surfaces/tex_pbr_vass_cleanroom_poly_rough.webp"
+      ]
+    },
+    {
+      "sha256": "a9825e58471330937c8de727b88390ae9ca607738939a42ed0f8919713ada969",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_vesper_trench_treadplate_baseColor.webp",
+        "3d/runtime/kits/textures/tex_pbr_vesper_trench_treadplate_color.webp",
+        "3d/runtime/surfaces/tex_pbr_vesper_trench_treadplate_baseColor.webp",
+        "3d/runtime/surfaces/tex_pbr_vesper_trench_treadplate_color.webp"
+      ]
+    },
+    {
+      "sha256": "8ddd640b9ebc7d2a4e306b2b22d2dd356de79ed95008f29ef1bc5d9751b7ca3b",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_vesper_trench_treadplate_normal.webp",
+        "3d/runtime/surfaces/tex_pbr_vesper_trench_treadplate_normal.webp"
+      ]
+    },
+    {
+      "sha256": "fd4a22501184ab3a34ecfbfe192a552563d657b89ac621942745419f52c90005",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_vesper_trench_treadplate_orm.webp",
+        "3d/runtime/surfaces/tex_pbr_vesper_trench_treadplate_orm.webp"
+      ]
+    },
+    {
+      "sha256": "a486c6f1a34e496b30e6d272933da404ba0ab8a4e288728862015419617271fc",
+      "files": [
+        "3d/runtime/kits/textures/tex_pbr_vesper_trench_treadplate_rough.webp",
+        "3d/runtime/surfaces/tex_pbr_vesper_trench_treadplate_rough.webp"
+      ]
+    },
+    {
       "sha256": "0ac1270cbb8a1b72a0157d8edb6cca657fa5596d30105e7594ac1a1d21049ff9",
       "files": [
         "3d/runtime/sprites/prop_camp_cot-t14-c0.ktx2",
         "3d/runtime/sprites/prop_camp_cot-t15-c0.ktx2"
+      ]
+    },
+    {
+      "sha256": "264d32c9afe5e3ac5e34c36755bd37fca5c21c573fca384350ecc506512289ba",
+      "files": [
+        "audio/ambient/points/amb_point_hive_sac.ogg",
+        "audio/ambient/points/amb_point_hive_sac_000.ogg"
+      ]
+    },
+    {
+      "sha256": "ed65a0411f97e685228fea5122562c16ac766071600252a8f4478850444fecdb",
+      "files": [
+        "audio/ambient/points/amb_point_hive_sac.wav",
+        "audio/ambient/points/amb_point_hive_sac_000.wav"
+      ]
+    },
+    {
+      "sha256": "3a0bf8b833adc4f4582f9f394aecae768a1ea5ef516c2572b5e5352c8eabc625",
+      "files": [
+        "audio/ambient/points/amb_point_meridian_chimes.ogg",
+        "audio/ambient/points/amb_point_meridian_chimes_000.ogg"
+      ]
+    },
+    {
+      "sha256": "26a43db85e8be4bb8f73682db100b409151f800a3d38e8103e46cd934b726426",
+      "files": [
+        "audio/ambient/points/amb_point_meridian_chimes.wav",
+        "audio/ambient/points/amb_point_meridian_chimes_000.wav"
+      ]
+    },
+    {
+      "sha256": "76e9136daf4beaea75290f405429cd63a61eaf3dbf8ba0741853c08710eb25b5",
+      "files": [
+        "audio/ambient/points/amb_point_tallow_forge.ogg",
+        "audio/ambient/points/amb_point_tallow_forge_000.ogg"
+      ]
+    },
+    {
+      "sha256": "6322e7d2d389b99408017164be89f1b8bf2196fb7d7281e095dde95ff215bb73",
+      "files": [
+        "audio/ambient/points/amb_point_tallow_forge.wav",
+        "audio/ambient/points/amb_point_tallow_forge_000.wav"
+      ]
+    },
+    {
+      "sha256": "979de509dba95ef8a0503fe4cc87947803f8de2a23af55074d6579fe8b3ddad1",
+      "files": [
+        "audio/ambient/points/amb_point_vesper_generator.ogg",
+        "audio/ambient/points/amb_point_vesper_generator_000.ogg"
+      ]
+    },
+    {
+      "sha256": "6740f69bcb575b9c1a7a5fdf84bb295011c756108ff30e781cdeb73ffdf7cb56",
+      "files": [
+        "audio/ambient/points/amb_point_vesper_generator.wav",
+        "audio/ambient/points/amb_point_vesper_generator_000.wav"
+      ]
+    },
+    {
+      "sha256": "ceb396e24b6fab26b0d30e59a4e679c9e2116239ef208ecb6ea67228d8699193",
+      "files": [
+        "decal_execution_wall_splatter.png",
+        "decal_execution_wall_splatter_a.png"
+      ]
+    },
+    {
+      "sha256": "81d2570d0fd3cab8ea2ce51e888a2ca80f8d7e450aa6a475a22f86ba501b0aee",
+      "files": [
+        "decal_pod_312_rupture_splatter.png",
+        "decal_pod_312_rupture_splatter_a.png"
+      ]
+    },
+    {
+      "sha256": "90c2c20b33d2fba385352f939244fa474f190223caa4ba4a05e8b6a88a7a69af",
+      "files": [
+        "decal_queen_oviposition_pool.png",
+        "decal_queen_oviposition_pool_a.png"
+      ]
+    },
+    {
+      "sha256": "f5e7136276e6ea09414a724412a4327ba86dc283e32abb7f98d2260d2f0b4e17",
+      "files": [
+        "decal_strip_acid_trench_b.png",
+        "strip_acid_trench_burn_b.png"
+      ]
+    },
+    {
+      "sha256": "66995d21d6150f69f96ffa188d2fbdef851b6a412c68ffb7ca808db90f3b75b2",
+      "files": [
+        "decal_strip_acid_trench_c.png",
+        "strip_acid_trench_burn_c.png"
+      ]
+    },
+    {
+      "sha256": "0ab78524637b225b28184733a3d8d50a90ce05387e956c27f1691ec524196be2",
+      "files": [
+        "decal_strip_acid_trench_d.png",
+        "strip_acid_trench_burn_d.png"
+      ]
+    },
+    {
+      "sha256": "f237e34f89651db34c18c6c21317b4b4d6968181c0e60e060318d218d3558954",
+      "files": [
+        "decal_strip_acid_trench.png",
+        "decal_strip_acid_trench_a.png",
+        "strip_acid_trench_burn.png",
+        "strip_acid_trench_burn_a.png"
+      ]
+    },
+    {
+      "sha256": "590e1294f5ebdaa3f79e05f68af3f1dd00345a2e24a6b7af0f692e8e230c481f",
+      "files": [
+        "decal_strip_arterial_spray_b.png",
+        "strip_arterial_spray_trail_b.png"
+      ]
+    },
+    {
+      "sha256": "fec7a7f186b347569b3bba783937bbb1b8342ceec2af733bd9c87c076ab5b5e7",
+      "files": [
+        "decal_strip_arterial_spray_c.png",
+        "strip_arterial_spray_trail_c.png"
+      ]
+    },
+    {
+      "sha256": "78969c26f05a9f1cca291016a06c057f9cfc1cc1f0eac897a6423696889e9bb7",
+      "files": [
+        "decal_strip_arterial_spray_d.png",
+        "strip_arterial_spray_trail_d.png"
+      ]
+    },
+    {
+      "sha256": "03f10c5e256403af9dc13cb05de86f0f8d919045f85283e14e52282b3f020226",
+      "files": [
+        "decal_strip_arterial_spray.png",
+        "decal_strip_arterial_spray_a.png",
+        "strip_arterial_spray_trail.png",
+        "strip_arterial_spray_trail_a.png"
+      ]
+    },
+    {
+      "sha256": "7b337e793e52d470271b32b098c4ff584ea49576114b48fbee4f573aeb028712",
+      "files": [
+        "decal_strip_crawler_acid_b.png",
+        "strip_crawler_acid_scuttle_b.png"
+      ]
+    },
+    {
+      "sha256": "e1089b007a1f234e584ba036eb3062cf17656399e563f7fc827108af353cae8c",
+      "files": [
+        "decal_strip_crawler_acid_c.png",
+        "strip_crawler_acid_scuttle_c.png"
+      ]
+    },
+    {
+      "sha256": "c323bd2f8dfffd036a097da8b57f6f55c5fba8c4adffcabc0aeecf6affcbbc0d",
+      "files": [
+        "decal_strip_crawler_acid_d.png",
+        "strip_crawler_acid_scuttle_d.png"
+      ]
+    },
+    {
+      "sha256": "3629a3006ee68666f2ce17ec877a9b2aae7675217d279b0fa2771cc00c0f15f8",
+      "files": [
+        "decal_strip_crawler_acid.png",
+        "decal_strip_crawler_acid_a.png",
+        "strip_crawler_acid_scuttle.png",
+        "strip_crawler_acid_scuttle_a.png"
+      ]
+    },
+    {
+      "sha256": "8bd5875e7f6cf9d854b4bc373d77ba88cf803c9d7419f79e205d2141ca0ad418",
+      "files": [
+        "decal_strip_exosuit_coolant_b.png",
+        "strip_exosuit_fuel_coolant_trail_b.png"
+      ]
+    },
+    {
+      "sha256": "1711c726bb262f4e25f263448925cb215afbc8e8ad4e2f91234b13a7b4dec53d",
+      "files": [
+        "decal_strip_exosuit_coolant_c.png",
+        "strip_exosuit_fuel_coolant_trail_c.png"
+      ]
+    },
+    {
+      "sha256": "1e53164a2d07fa8c17d5a359707f4ba99399190176fdd9ac3bbf6f3293f640d8",
+      "files": [
+        "decal_strip_exosuit_coolant_d.png",
+        "strip_exosuit_fuel_coolant_trail_d.png"
+      ]
+    },
+    {
+      "sha256": "d5fbe57042c7c950ed814519c6bf82f6f0fa0ce61e7bed4ad2f63638d86484d8",
+      "files": [
+        "decal_strip_exosuit_coolant.png",
+        "decal_strip_exosuit_coolant_a.png",
+        "strip_exosuit_fuel_coolant_trail.png",
+        "strip_exosuit_fuel_coolant_trail_a.png"
+      ]
+    },
+    {
+      "sha256": "9d59d8837c606d0836c08e5008b1a00332f6ff3a90bcb9c99d358997f5d1bf67",
+      "files": [
+        "decal_strip_frost_heave_b.png",
+        "strip_frost_heave_split_b.png"
+      ]
+    },
+    {
+      "sha256": "b5347c4b96cb512854ef870a2ed97950cc042c7f1cc966ac8ee84bad87172586",
+      "files": [
+        "decal_strip_frost_heave_c.png",
+        "strip_frost_heave_split_c.png"
+      ]
+    },
+    {
+      "sha256": "6705c726e3770d751a77c8bdc13f8811b18a78895a41dd9fa07779f23e11dac5",
+      "files": [
+        "decal_strip_frost_heave_d.png",
+        "strip_frost_heave_split_d.png"
+      ]
+    },
+    {
+      "sha256": "df1fdab3967a6dba35759e9cdd24bb32c48fd2437cc8806907e025804096465a",
+      "files": [
+        "decal_strip_frost_heave.png",
+        "decal_strip_frost_heave_a.png",
+        "strip_frost_heave_split.png",
+        "strip_frost_heave_split_a.png"
+      ]
+    },
+    {
+      "sha256": "63bb44ddd963fd56e2a4a01c77a18d664927f3508cf4f3e8428bb93c6bebc8a5",
+      "files": [
+        "decal_strip_high_voltage_scorch_b.png",
+        "strip_high_voltage_scorch_b.png"
+      ]
+    },
+    {
+      "sha256": "1218273a2c4364889fb90d1a02de51e5edd1b6b1d667b2b80dff8cc43a57d181",
+      "files": [
+        "decal_strip_high_voltage_scorch_c.png",
+        "strip_high_voltage_scorch_c.png"
+      ]
+    },
+    {
+      "sha256": "bcf3feab118943991e021791c7cb07e535144d8940121c66fcd89527237a2780",
+      "files": [
+        "decal_strip_high_voltage_scorch_d.png",
+        "strip_high_voltage_scorch_d.png"
+      ]
+    },
+    {
+      "sha256": "4c219db8da2a9015cfbc54f924351456e7f37d45bc177d6372414fb8b049f98c",
+      "files": [
+        "decal_strip_high_voltage_scorch.png",
+        "decal_strip_high_voltage_scorch_a.png",
+        "strip_high_voltage_scorch.png",
+        "strip_high_voltage_scorch_a.png"
+      ]
+    },
+    {
+      "sha256": "84ea4e123df9a71c6c847f7fac1a344f1fa19b09f93dc3b2b2ad07eaf6a6606a",
+      "files": [
+        "decal_strip_umbilical_veins_b.png",
+        "strip_umbilical_vein_bundle_b.png"
+      ]
+    },
+    {
+      "sha256": "bfa3b70205d271c02e730dec9ebc587f38fbc7d451d95844511c9cd0b57666f1",
+      "files": [
+        "decal_strip_umbilical_veins_c.png",
+        "strip_umbilical_vein_bundle_c.png"
+      ]
+    },
+    {
+      "sha256": "755e5fe95b6214fcf253be3e8b0e972400c05ddd79d514850d34d1e473e3be71",
+      "files": [
+        "decal_strip_umbilical_veins_d.png",
+        "strip_umbilical_vein_bundle_d.png"
+      ]
+    },
+    {
+      "sha256": "5a6f6a708984d3270d5398340ae2b902f213d258ba35b8564192a9e47f806fa0",
+      "files": [
+        "decal_strip_umbilical_veins.png",
+        "decal_strip_umbilical_veins_a.png",
+        "strip_umbilical_vein_bundle.png",
+        "strip_umbilical_vein_bundle_a.png"
+      ]
+    },
+    {
+      "sha256": "9d3c0a445ea413d561bd9eb8eff0d0aa101280fdb61ebbd4a9bfab504436543f",
+      "files": [
+        "decal_strip_viscera_drag_b.png",
+        "strip_viscera_drag_chute_b.png"
+      ]
+    },
+    {
+      "sha256": "40b498d68fba81cbac6a1c9544c23df42137eb29d8bfa0665e27b71c02f6d6d7",
+      "files": [
+        "decal_strip_viscera_drag_c.png",
+        "strip_viscera_drag_chute_c.png"
+      ]
+    },
+    {
+      "sha256": "f530ee61820362cc697951718873aeccca9a092e390c50e70360f2562f7b7cbd",
+      "files": [
+        "decal_strip_viscera_drag_d.png",
+        "strip_viscera_drag_chute_d.png"
+      ]
+    },
+    {
+      "sha256": "3f29ecd9e278d4e3afe24a79083f8198797428d4818438384f0e54b1b4d2dd43",
+      "files": [
+        "decal_strip_viscera_drag.png",
+        "decal_strip_viscera_drag_a.png",
+        "strip_viscera_drag_chute.png",
+        "strip_viscera_drag_chute_a.png"
+      ]
+    },
+    {
+      "sha256": "9067ca8c02500a9c2d458f142bdcbcad3617b79a16d689cf87ce2f65c6d6fd61",
+      "files": [
+        "decal_vass_acoustic_diagram.png",
+        "decal_vass_acoustic_diagram_a.png"
       ]
     },
     {

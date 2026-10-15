@@ -8,6 +8,8 @@ import {
     createActionRouter,
     hasControllerContinuePress,
     menuKeyboardDirection,
+    MENU_REPEAT_DELAY_MS,
+    MENU_REPEAT_INTERVAL_MS,
     spatialFocusIndex,
     wrapMenuIndex,
     shouldPreferBrowserGamepad
@@ -130,6 +132,36 @@ describe('createActionRouter', () => {
         expect(wrapMenuIndex(3, 1, 4)).toBe(0);
         expect(wrapMenuIndex(-1, 1, 4)).toBe(1);
         expect(wrapMenuIndex(0, 1, 0)).toBe(0);
+    });
+
+    // Controller nav remap 2026-10-14: holding the stick or D-pad in a menu
+    // walks a list like every console does, instead of moving once.
+    it('repeats a held menu direction after a delay, then steadily', () => {
+        let clock = 0;
+        const router = createActionRouter({ now: () => clock });
+        const down = padSnapshot({ menuDown: true });
+        expect(router.deriveActions(down).actions.down).toBe(true);
+        clock = 200;
+        expect(router.deriveActions(down).actions.down).toBe(false);
+        clock = MENU_REPEAT_DELAY_MS + 1;
+        expect(router.deriveActions(down).actions.down).toBe(true);
+        clock += 10;
+        expect(router.deriveActions(down).actions.down).toBe(false);
+        clock += MENU_REPEAT_INTERVAL_MS;
+        expect(router.deriveActions(down).actions.down).toBe(true);
+        // Releasing resets: the next press fires at once.
+        expect(router.deriveActions(padSnapshot({})).actions.down).toBe(false);
+        expect(router.deriveActions(down).actions.down).toBe(true);
+    });
+
+    it('never repeats confirm, back or the bumpers while held', () => {
+        let clock = 0;
+        const router = createActionRouter({ now: () => clock });
+        const held = padSnapshot({ menuConfirm: true, menuBack: true, menuTabRight: true });
+        expect(router.deriveActions(held).actions.confirm).toBe(true);
+        clock = 5_000;
+        const { actions } = router.deriveActions(held);
+        expect(actions.confirm || actions.back || actions.tabRight).toBe(false);
     });
 
     it('starts in the menu set and switches sets explicitly', () => {
@@ -265,13 +297,74 @@ describe('deterministic spatial focus routing', () => {
         expect(spatialFocusIndex(grid, 3, 'up')).toBe(1);
     });
 
-    it('wraps to the opposite visual edge on each axis', () => {
-        expect(spatialFocusIndex(grid, 1, 'right')).toBe(0);
-        expect(spatialFocusIndex(grid, 2, 'down')).toBe(0);
+    it('stops at the edge by default instead of jumping across the screen', () => {
+        expect(spatialFocusIndex(grid, 1, 'right')).toBe(1);
+        expect(spatialFocusIndex(grid, 2, 'down')).toBe(2);
+        expect(spatialFocusIndex(grid, 0, 'up')).toBe(0);
+    });
+
+    it('wraps to the opposite visual edge only when asked', () => {
+        expect(spatialFocusIndex(grid, 1, 'right', { wrap: true })).toBe(0);
+        expect(spatialFocusIndex(grid, 2, 'down', { wrap: true })).toBe(0);
     });
 
     it('prefers a nearby row over a diagonally distant control', () => {
         expect(spatialFocusIndex([rect(0, 0), rect(80, 10), rect(60, 200)], 0, 'right')).toBe(1);
+    });
+
+    // Controller nav map 2026-10-14, F12: anything 0.5 px lower counted as
+    // "below", so Down on the Foundry's STASH tab picked the LOADOUT tab next to it.
+    it('never treats a control on the same row as below or above', () => {
+        const tabs = [rect(0, 0, 100, 40), rect(110, 1, 100, 40), rect(0, 80, 200, 30)];
+        expect(spatialFocusIndex(tabs, 0, 'down')).toBe(2);
+        expect(spatialFocusIndex(tabs, 1, 'up')).toBe(1);
+    });
+
+    // F12: Right from the Foundry search box picked a tab up and to the right
+    // over the filter dropdown right beside it.
+    it('prefers an aligned neighbour over a nearer diagonal one', () => {
+        const search = rect(0, 100, 230, 30);
+        const filter = rect(240, 100, 140, 30);
+        const tab = rect(232, 40, 100, 40);
+        expect(spatialFocusIndex([search, filter, tab], 0, 'right')).toBe(1);
+        const from = rect(0, 0, 100, 30);
+        const diagonal = rect(300, 40, 100, 30);
+        const below = rect(0, 200, 100, 30);
+        expect(spatialFocusIndex([from, diagonal, below], 0, 'down')).toBe(2);
+    });
+
+    // Settings > Profile at 1280x720: Right from the callsign field picked the
+    // CAMERA & HUD tab two rows up (it overlapped horizontally, so its gap
+    // counted as zero) over SAVE DATA's OPEN one row down on the right.
+    it('weighs sideways drift heavily on left / right moves', () => {
+        const callsign = rect(449, 248, 158, 37);
+        const cameraTab = rect(571, 101, 139, 44);
+        const open = rect(1005, 318, 101, 31);
+        expect(spatialFocusIndex([callsign, cameraTab, open], 0, 'right')).toBe(2);
+    });
+
+    // Commentary list: Right from a full-width entry went to ✕, which overlaps
+    // it horizontally rather than lying to its right.
+    it('only takes a diagonal control that lies fully past the current one', () => {
+        const entry = rect(87, 196, 1099, 104);
+        const close = rect(1135, 49, 40, 40);
+        expect(spatialFocusIndex([entry, close], 0, 'right')).toBe(0);
+    });
+
+    it('falls back to the nearest control in that direction when none is aligned', () => {
+        expect(spatialFocusIndex([rect(0, 0), rect(100, 100)], 0, 'down')).toBe(1);
+        // Mostly-sideways (far right, barely lower) loses to the one clearly below.
+        expect(spatialFocusIndex([rect(0, 0), rect(300, 60), rect(80, 200)], 0, 'down')).toBe(2);
+    });
+
+    it('moves along a vertical list and stops at its ends', () => {
+        const list = [rect(0, 0, 200, 30), rect(0, 40, 200, 30), rect(0, 80, 200, 30)];
+        expect(spatialFocusIndex(list, 0, 'down')).toBe(1);
+        expect(spatialFocusIndex(list, 1, 'up')).toBe(0);
+        expect(spatialFocusIndex(list, 2, 'down')).toBe(2);
+        // Left / right on a single-column list go nowhere rather than stepping it.
+        expect(spatialFocusIndex(list, 1, 'right')).toBe(1);
+        expect(spatialFocusIndex(list, 1, 'left')).toBe(1);
     });
 });
 

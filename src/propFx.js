@@ -28,12 +28,13 @@ const atBounds = (kind, bounds, values = {}) => ({ kind, bounds, ...values });
 const thermalProfile = (options = {}) => profile({
     maxDistance: options.maxDistance ?? 20,
     effects: [
-        atBounds('flame', options.flameAt ?? [0.5, 0.72, 0.5], { scale: options.scale ?? 0.5 }),
+        atBounds('flame', options.flameAt ?? [0.5, 0.72, 0.5], { anchor: PROP_FX_ANCHORS.FLAME, scale: options.scale ?? 0.5 }),
         atBounds('glow', options.glowAt ?? [0.5, 0.68, 0.5], {
-            color: options.color ?? 0xff7a24, radius: options.radius ?? 0.18
+            anchor: PROP_FX_ANCHORS.GLOW, color: options.color ?? 0xff7a24, radius: options.radius ?? 0.18
         })
     ],
     light: {
+        anchor: PROP_FX_ANCHORS.LIGHT,
         bounds: options.lightAt ?? options.glowAt ?? [0.5, 0.70, 0.5],
         color: options.color ?? 0xff7a24,
         intensity: options.intensity ?? 0.85,
@@ -47,9 +48,11 @@ const liquidProfile = (options = {}) => profile({
     maxDistance: options.maxDistance ?? 20,
     effects: [
         atBounds('water', options.surfaceAt ?? [0.5, 0.64, 0.5], {
+            anchor: PROP_FX_ANCHORS.WATER,
             color: options.color ?? 0x54cbd4, radius: options.radius ?? 0.24
         }),
         atBounds('bubbles', options.bubblesAt ?? [0.5, 0.18, 0.5], {
+            anchor: PROP_FX_ANCHORS.BUBBLES,
             color: options.bubbleColor ?? 0xb6fff5,
             count: options.count ?? 7,
             height: options.height ?? 0.48,
@@ -57,6 +60,7 @@ const liquidProfile = (options = {}) => profile({
         })
     ],
     light: options.lit === false ? null : {
+        anchor: PROP_FX_ANCHORS.LIGHT,
         bounds: options.lightAt ?? [0.5, 0.62, 0.5],
         color: options.color ?? 0x54cbd4,
         intensity: options.intensity ?? 0.55,
@@ -70,11 +74,13 @@ const poweredProfile = (options = {}) => profile({
     maxDistance: options.maxDistance ?? 18,
     effects: [
         atBounds('glow', options.glowAt ?? [0.5, 0.66, 0.56], {
+            anchor: PROP_FX_ANCHORS.GLOW,
             color: options.color ?? 0x55d9ff,
             radius: options.radius ?? 0.13,
             pulse: options.pulse ?? 0.10
         }),
         ...(options.sparks ? [atBounds('sparks', options.sparkAt ?? [0.5, 0.72, 0.53], {
+            anchor: PROP_FX_ANCHORS.SPARKS,
             color: options.sparkColor ?? 0xffb45b,
             count: options.sparkCount ?? 5,
             height: options.sparkHeight ?? 0.34,
@@ -82,6 +88,7 @@ const poweredProfile = (options = {}) => profile({
         })] : [])
     ],
     light: options.lit === false ? null : {
+        anchor: PROP_FX_ANCHORS.LIGHT,
         bounds: options.lightAt ?? options.glowAt ?? [0.5, 0.66, 0.56],
         color: options.color ?? 0x55d9ff,
         intensity: options.intensity ?? 0.42,
@@ -94,6 +101,7 @@ const poweredProfile = (options = {}) => profile({
 const ventProfile = (options = {}) => profile({
     maxDistance: options.maxDistance ?? 20,
     effects: [atBounds('steam', options.at ?? [0.5, 0.72, 0.5], {
+        anchor: PROP_FX_ANCHORS.STEAM,
         color: options.color ?? 0xc5e0e3,
         count: options.count ?? 7,
         height: options.height ?? 0.6,
@@ -105,17 +113,28 @@ const organicProfile = (options = {}) => profile({
     maxDistance: options.maxDistance ?? 18,
     effects: [
         atBounds('glow', options.glowAt ?? [0.5, 0.48, 0.5], {
+            anchor: PROP_FX_ANCHORS.GLOW,
             color: options.color ?? 0x76d95c,
             radius: options.radius ?? 0.18,
             pulse: options.pulse ?? 0.16
         }),
         ...(options.spores === false ? [] : [atBounds('spores', options.sporeAt ?? [0.5, 0.56, 0.5], {
+            anchor: PROP_FX_ANCHORS.SPORES,
             color: options.sporeColor ?? 0xb8e889,
             count: options.count ?? 5,
             height: options.height ?? 0.42,
             radius: options.sporeRadius ?? 0.2
         })])
     ],
+    light: options.lit ? {
+        anchor: PROP_FX_ANCHORS.LIGHT,
+        bounds: options.lightAt ?? options.glowAt ?? [0.5, 0.48, 0.5],
+        color: options.color ?? 0x76d95c,
+        intensity: options.intensity ?? 0.45,
+        distance: options.distance ?? 2.2,
+        decay: 2,
+        pulse: options.pulse ?? 0.16
+    } : null,
     motion: { kind: 'breathe', amount: options.motion ?? 0.012, speed: options.speed ?? 1.25 }
 });
 
@@ -124,12 +143,13 @@ const smoulderProfile = (options = {}) => profile({
     maxDistance: options.maxDistance ?? 22,
     effects: [
         atBounds('smoke', options.at ?? [0.5, 0.7, 0.5], {
+            anchor: PROP_FX_ANCHORS.SMOKE,
             color: options.color ?? 0x7d756c, count: options.count ?? 6, height: options.height ?? 0.9, radius: options.radius ?? 0.22
         }),
-        atBounds('glow', options.glowAt ?? [0.5, 0.45, 0.5], { color: 0xff6a18, radius: options.glowRadius ?? 0.16, pulse: 0.2 })
+        atBounds('glow', options.glowAt ?? [0.5, 0.45, 0.5], { anchor: PROP_FX_ANCHORS.GLOW, color: 0xff6a18, radius: options.glowRadius ?? 0.16, pulse: 0.2 })
     ],
     light: options.lit === false ? null : {
-        bounds: options.glowAt ?? [0.5, 0.45, 0.5], color: 0xff7a24, intensity: 0.6, distance: 2.6, decay: 2, flicker: 0.18
+        anchor: PROP_FX_ANCHORS.LIGHT, bounds: options.glowAt ?? [0.5, 0.45, 0.5], color: 0xff7a24, intensity: 0.6, distance: 2.6, decay: 2, flicker: 0.18
     }
 });
 
@@ -138,12 +158,13 @@ const coldProfile = (options = {}) => profile({
     maxDistance: options.maxDistance ?? 20,
     effects: [
         atBounds('steam', options.at ?? [0.5, 0.6, 0.5], {
+            anchor: PROP_FX_ANCHORS.STEAM,
             color: 0xd8f4ff, count: options.count ?? 6, height: options.height ?? 0.4, radius: options.radius ?? 0.24
         }),
-        ...(options.glowAt ? [atBounds('glow', options.glowAt, { color: 0x5fe3ff, radius: options.glowRadius ?? 0.12, pulse: 0.1 })] : [])
+        ...(options.glowAt ? [atBounds('glow', options.glowAt, { anchor: PROP_FX_ANCHORS.GLOW, color: 0x5fe3ff, radius: options.glowRadius ?? 0.12, pulse: 0.1 })] : [])
     ],
     light: options.glowAt ? {
-        bounds: options.glowAt, color: 0x5fe3ff, intensity: 0.7, distance: 2.6, decay: 2, pulse: 0.08
+        anchor: PROP_FX_ANCHORS.LIGHT, bounds: options.glowAt, color: 0x5fe3ff, intensity: 0.7, distance: 2.6, decay: 2, pulse: 0.08
     } : null
 });
 
@@ -223,6 +244,212 @@ const HERO_PROFILES = {
 // Ambient recipes use normalized model bounds, so they survive art re-exports
 // without hand-retuning. Hero props above still prefer Blender-authored empties.
 const AMBIENT_PROFILES = {
+    // Recent world-story GLBs, vertical slice 1. Bounds coordinates are the
+    // fallback contract; authored FX_* empties take precedence when present.
+    life_arcade_cabinet: poweredProfile({ glowAt: [0.5, 0.7, 0.58], color: 0x55d9ff, radius: 0.2, pulse: 0.18, intensity: 0.62, distance: 2.5 }),
+    life_surgical_lamp: lampProfile({ glowAt: [0.5, 0.88, 0.52], color: 0xe9fff4, radius: 0.24, pulse: 0.025, intensity: 1.15, distance: 3.6 }),
+    cryo_heater_station: thermalProfile({ flameAt: [0.5, 0.38, 0.58], glowAt: [0.5, 0.42, 0.58], scale: 0.45, intensity: 1.05, distance: 3.2 }),
+    hive_brood_dome: organicProfile({ glowAt: [0.5, 0.48, 0.5], color: 0x92d65c, radius: 0.34, pulse: 0.2, motion: 0.015, lit: true, intensity: 0.62, distance: 2.7 }),
+    chasm_beacon_post: lampProfile({ glowAt: [0.5, 0.94, 0.5], color: 0xff3b2f, radius: 0.16, pulse: 0.48, intensity: 1.2, distance: 4.2 }),
+    corp_executive_sarcophagus: poweredProfile({ glowAt: [0.5, 0.66, 0.56], color: 0xd946ef, radius: 0.18, pulse: 0.12, intensity: 0.72, distance: 2.8 }),
+    corp_suppression_barrier: poweredProfile({ glowAt: [0.5, 0.72, 0.56], color: 0xef4444, radius: 0.2, pulse: 0.28, intensity: 0.82, distance: 3.1 }),
+    meridian_capacitor_bomb: poweredProfile({ glowAt: [0.5, 0.55, 0.5], sparkAt: [0.5, 0.7, 0.5], color: 0xffa648, radius: 0.2, pulse: 0.32, intensity: 0.9, distance: 3, sparks: true, sparkCount: 7 }),
+    tina_covert_nursery_chest: organicProfile({ glowAt: [0.5, 0.38, 0.55], color: 0x76d95c, radius: 0.22, pulse: 0.14, spores: false, motion: 0.009, lit: true, intensity: 0.42, distance: 2 }),
+    hive_sphincter_iris: organicProfile({ glowAt: [0.5, 0.5, 0.54], color: 0xa3e635, radius: 0.3, pulse: 0.22, spores: false, motion: 0.018, lit: true, intensity: 0.58, distance: 2.6 }),
+    ind_biomass_grinder: poweredProfile({ glowAt: [0.5, 0.48, 0.58], sparkAt: [0.56, 0.63, 0.55], color: 0xff8a2b, radius: 0.18, pulse: 0.1, intensity: 0.75, distance: 2.8, sparks: true, sparkCount: 6 }),
+    crash_cockpit_canopy: smoulderProfile({ at: [0.5, 0.72, 0.5], glowAt: [0.52, 0.34, 0.55], count: 5, intensity: 0.55, distance: 2.5 }),
+
+    // Pass 2 world-story mature models (19 models)
+    bay_c_pod_312_rupture: coldProfile({ at: [0.5, 0.75, 0.52], glowAt: [0.5, 0.88, 0.52] }),
+    chen_sealed_confession_console: poweredProfile({ glowAt: [0.5, 0.72, 0.58], color: 0xffa834, radius: 0.22, pulse: 0.12, intensity: 0.75, distance: 2.6 }),
+    decon_exosuit_scrubber_station: profile({ maxDistance: 22, effects: [atBounds('glow', [0.5, 0.92, 0.52], { color: 0xd8f8ff, radius: 0.25, pulse: 0.04 }), atBounds('steam', [0.5, 0.75, 0.52], { color: 0xe0f7fa, count: 10, height: 1.2, radius: 0.35 })], light: { bounds: [0.5, 0.92, 0.52], color: 0xd8f8ff, intensity: 1.25, distance: 3.8, decay: 2 } }),
+    engineer_wave_relay_dynamo: poweredProfile({ glowAt: [0.5, 0.55, 0.5], sparkAt: [0.5, 0.65, 0.5], color: 0x38bdf8, radius: 0.25, pulse: 0.22, intensity: 1.1, distance: 3.5, sparks: true, sparkCount: 8 }),
+    evac_four_seat_cockpit_module: smoulderProfile({ at: [0.5, 0.72, 0.5], glowAt: [0.5, 0.58, 0.55], count: 6, intensity: 0.8, distance: 3.0 }),
+    tank_orbital_siege_cannon: profile({ maxDistance: 24, effects: [atBounds('glow', [0.5, 0.78, 0.65], { color: 0xff4433, radius: 0.24, pulse: 0.15 }), atBounds('steam', [0.5, 0.65, 0.5], { color: 0x94a3b8, count: 7, height: 0.8, radius: 0.3 })], light: { bounds: [0.5, 0.78, 0.65], color: 0xff4433, intensity: 1.35, distance: 4.2, decay: 2 } }),
+
+    queen_royal_brood_throne: organicProfile({ glowAt: [0.5, 0.75, 0.5], sporeAt: [0.5, 0.82, 0.5], color: 0xa855f7, sporeColor: 0xd8b4fe, radius: 0.45, pulse: 0.12, motion: 0.02, lit: true, intensity: 1.4, distance: 4.0 }),
+    carapace_sentry_chrysalis: organicProfile({ glowAt: [0.5, 0.65, 0.5], color: 0xa3e635, radius: 0.28, pulse: 0.18, motion: 0.015, lit: true, intensity: 0.8, distance: 2.8 }),
+    royal_egg_clutch_caul: organicProfile({ glowAt: [0.5, 0.42, 0.5], color: 0xf59e0b, radius: 0.32, pulse: 0.14, spores: false, motion: 0.01, lit: true, intensity: 0.65, distance: 2.2 }),
+    vass_acoustic_resonator_tank: liquidProfile({ surfaceAt: [0.5, 0.75, 0.5], bubblesAt: [0.5, 0.45, 0.5], color: 0x06b6d4, bubbleColor: 0x67e8f9, count: 12, intensity: 1.05, distance: 3.2 }),
+    vass_hybrid_embryo_incubator: liquidProfile({ surfaceAt: [0.5, 0.72, 0.5], bubblesAt: [0.5, 0.4, 0.5], color: 0x84cc16, bubbleColor: 0xbef264, count: 12, intensity: 0.95, distance: 3.0 }),
+    suture_mercy_cocoon_canopy: liquidProfile({ surfaceAt: [0.5, 0.7, 0.5], bubblesAt: [0.5, 0.4, 0.5], color: 0x2dd4bf, bubbleColor: 0x99f6e4, count: 8, intensity: 0.85, distance: 2.8 }),
+    relay_false_beacon_spire: lampProfile({ glowAt: [0.5, 0.96, 0.5], color: 0xfbbf24, radius: 0.3, pulse: 0.4, intensity: 1.5, distance: 5.0 }),
+
+    corp_biometric_collar_chute: poweredProfile({ glowAt: [0.5, 0.78, 0.54], sparkAt: [0.5, 0.82, 0.54], color: 0xef4444, radius: 0.2, pulse: 0.25, intensity: 0.85, distance: 2.6, sparks: true, sparkCount: 5 }),
+    crawler_signal_antenna_rig: lampProfile({ glowAt: [0.5, 0.98, 0.5], color: 0xff3333, radius: 0.22, pulse: 0.5, intensity: 1.3, distance: 4.5 }),
+    evac_manifest_allocation_terminal: poweredProfile({ glowAt: [0.5, 0.74, 0.56], color: 0x4ade80, radius: 0.2, pulse: 0.15, intensity: 0.75, distance: 2.4 }),
+    evac_preflight_fuel_umbilical: profile({ maxDistance: 20, effects: [atBounds('glow', [0.5, 0.65, 0.5], { color: 0xfacc15, radius: 0.18, pulse: 0.12 }), atBounds('steam', [0.5, 0.72, 0.5], { color: 0xfef08a, count: 6, height: 0.5, radius: 0.2 })], light: { bounds: [0.5, 0.65, 0.5], color: 0xfacc15, intensity: 0.9, distance: 2.8, decay: 2 } }),
+    scout_tracking_beacon_core: lampProfile({ glowAt: [0.5, 0.62, 0.5], color: 0x60a5fa, radius: 0.18, pulse: 0.45, intensity: 0.9, distance: 3.0 }),
+    sector_zero_bore_drillhead: profile({ maxDistance: 22, effects: [atBounds('glow', [0.5, 0.72, 0.58], { color: 0xffedd5, radius: 0.25, pulse: 0.05 }), atBounds('smoke', [0.5, 0.85, 0.5], { color: 0x52525b, count: 7, height: 0.7, radius: 0.25 })], light: { bounds: [0.5, 0.72, 0.58], color: 0xffedd5, intensity: 1.3, distance: 3.8, decay: 2 } }),
+
+    // Wave D: Pass 1 Corporate, Meridian, Tallow & Vesper (15 models)
+    corp_interrogation_chair: poweredProfile({ glowAt: [0.5, 0.75, 0.5], sparkAt: [0.5, 0.78, 0.5], color: 0xef4444, radius: 0.18, pulse: 0.25, intensity: 0.75, distance: 2.6, sparks: true, sparkCount: 5 }),
+    corp_debt_severing_kiosk: poweredProfile({ glowAt: [0.5, 0.7, 0.55], color: 0xf59e0b, radius: 0.2, pulse: 0.15, intensity: 0.8, distance: 2.6 }),
+    corp_dissection_gurney: lampProfile({ glowAt: [0.5, 0.82, 0.5], color: 0xe2e8f0, radius: 0.24, pulse: 0.04, intensity: 0.9, distance: 3.2 }),
+    corp_incinerator_hopper: profile({ maxDistance: 22, effects: [atBounds('smoke', [0.5, 0.75, 0.5], { color: 0x475569, count: 6, height: 0.8, radius: 0.25 }), atBounds('glow', [0.5, 0.35, 0.5], { color: 0xf97316, radius: 0.22, pulse: 0.2 })], light: { bounds: [0.5, 0.35, 0.5], color: 0xf97316, intensity: 1.2, distance: 3.4, decay: 2, flicker: 0.2 } }),
+    meridian_cyber_graft_bench: poweredProfile({ glowAt: [0.5, 0.72, 0.5], sparkAt: [0.5, 0.76, 0.5], color: 0x06b6d4, radius: 0.2, pulse: 0.18, intensity: 0.85, distance: 2.8, sparks: true, sparkCount: 6 }),
+    meridian_mainframe_altar: poweredProfile({ glowAt: [0.5, 0.68, 0.5], color: 0x38bdf8, radius: 0.25, pulse: 0.12, intensity: 1.1, distance: 3.5 }),
+    meridian_servitor_dock: poweredProfile({ glowAt: [0.5, 0.65, 0.5], sparkAt: [0.5, 0.75, 0.5], color: 0x2563eb, radius: 0.22, pulse: 0.2, intensity: 0.9, distance: 3.0, sparks: true, sparkCount: 5 }),
+    tallow_compost_fermenter: liquidProfile({ surfaceAt: [0.5, 0.7, 0.5], bubblesAt: [0.5, 0.45, 0.5], color: 0x65a30d, bubbleColor: 0xa3e635, count: 10, intensity: 0.7, distance: 2.5 }),
+    tallow_spore_cradle: organicProfile({ glowAt: [0.5, 0.45, 0.5], sporeAt: [0.5, 0.55, 0.5], color: 0x84cc16, sporeColor: 0xbef264, radius: 0.26, pulse: 0.18, motion: 0.015, lit: true, intensity: 0.6, distance: 2.4 }),
+    tallow_flesh_trellis: organicProfile({ glowAt: [0.5, 0.6, 0.5], color: 0x16a34a, radius: 0.3, pulse: 0.15, spores: false, motion: 0.02, lit: true, intensity: 0.65, distance: 2.6 }),
+    tallow_sacrificial_altar: thermalProfile({ flameAt: [0.5, 0.55, 0.5], glowAt: [0.5, 0.5, 0.5], color: 0xdc2626, intensity: 0.95, distance: 3.2 }),
+    vesper_amputation_rig: poweredProfile({ glowAt: [0.5, 0.78, 0.5], sparkAt: [0.5, 0.82, 0.5], color: 0xb91c1c, radius: 0.22, pulse: 0.2, intensity: 0.85, distance: 2.8, sparks: true, sparkCount: 5 }),
+    vesper_autocannon_bipod: poweredProfile({ glowAt: [0.5, 0.62, 0.5], color: 0xf59e0b, radius: 0.2, pulse: 0.1, intensity: 0.7, distance: 2.5 }),
+    vesper_hanging_cage: lampProfile({ glowAt: [0.5, 0.45, 0.5], color: 0xef4444, radius: 0.16, pulse: 0.25, intensity: 0.6, distance: 2.4 }),
+    vesper_reloading_station: lampProfile({ glowAt: [0.5, 0.72, 0.5], color: 0xfde047, radius: 0.22, pulse: 0.05, intensity: 0.8, distance: 2.8 }),
+
+    // Wave E: Pass 1 Hive, Cryo Brutality, Tina & Chasm (18 models)
+    tina_molted_carapace: organicProfile({ glowAt: [0.5, 0.5, 0.5], color: 0xa3e635, radius: 0.25, pulse: 0.1, spores: false, motion: 0.008, lit: true, intensity: 0.5, distance: 2.2 }),
+    tina_mimic_vanity: lampProfile({ glowAt: [0.5, 0.75, 0.5], color: 0xf1f5f9, radius: 0.26, pulse: 0.03, intensity: 0.95, distance: 3.2 }),
+    tina_trophy_trove: lampProfile({ glowAt: [0.5, 0.68, 0.5], color: 0xfbbf24, radius: 0.24, pulse: 0.06, intensity: 0.85, distance: 3.0 }),
+    hive_visceral_ovipositor: organicProfile({ glowAt: [0.5, 0.7, 0.5], sporeAt: [0.5, 0.75, 0.5], color: 0xe11d48, sporeColor: 0xfb7185, radius: 0.35, pulse: 0.2, motion: 0.02, lit: true, intensity: 0.9, distance: 3.2 }),
+    hive_vivisected_engineer: poweredProfile({ glowAt: [0.5, 0.65, 0.5], color: 0x06b6d4, radius: 0.2, pulse: 0.15, intensity: 0.75, distance: 2.6 }),
+    hive_gestation_sac: organicProfile({ glowAt: [0.5, 0.5, 0.5], color: 0xf59e0b, radius: 0.3, pulse: 0.16, spores: false, motion: 0.018, lit: true, intensity: 0.7, distance: 2.6 }),
+    hive_pulmonary_bellows: profile({ maxDistance: 20, effects: [atBounds('glow', [0.5, 0.6, 0.5], { color: 0xf43f5e, radius: 0.28, pulse: 0.25 }), atBounds('steam', [0.5, 0.72, 0.5], { color: 0xfda4af, count: 8, height: 0.7, radius: 0.3 })], light: { bounds: [0.5, 0.6, 0.5], color: 0xf43f5e, intensity: 0.8, distance: 2.8, decay: 2 }, motion: { kind: 'breathe', amount: 0.025, speed: 1.5 } }),
+    hive_amniotic_feeder_trough: liquidProfile({ surfaceAt: [0.5, 0.35, 0.5], bubblesAt: [0.5, 0.2, 0.5], color: 0x84cc16, bubbleColor: 0xbef264, count: 9, intensity: 0.75, distance: 2.6 }),
+    cryo_ruptured_pod: coldProfile({ at: [0.5, 0.6, 0.5], glowAt: [0.5, 0.45, 0.5] }),
+    cryo_cannibal_butchery_table: lampProfile({ glowAt: [0.5, 0.72, 0.5], color: 0xd97706, radius: 0.22, pulse: 0.12, intensity: 0.9, distance: 2.8 }),
+    cryo_ice_core_specimen: coldProfile({ at: [0.5, 0.7, 0.5], glowAt: [0.5, 0.65, 0.5] }),
+    cryo_thawing_trough: thermalProfile({ flameAt: [0.5, 0.35, 0.5], glowAt: [0.5, 0.4, 0.5], color: 0xf97316, intensity: 0.8, distance: 2.8 }),
+    cryo_frozen_shelter_pod: lampProfile({ glowAt: [0.5, 0.6, 0.5], color: 0xef4444, radius: 0.18, pulse: 0.3, intensity: 0.5, distance: 2.2 }),
+    chasm_hanging_elevator: lampProfile({ glowAt: [0.5, 0.85, 0.5], color: 0xf59e0b, radius: 0.22, pulse: 0.15, intensity: 0.9, distance: 3.2 }),
+    chasm_suicide_ledge_cross: profile({ maxDistance: 18, effects: [atBounds('glow', [0.5, 0.5, 0.5], { color: 0xf59e0b, radius: 0.2, pulse: 0.18 })], light: { bounds: [0.5, 0.5, 0.5], color: 0xf59e0b, intensity: 0.7, distance: 2.5, decay: 2, flicker: 0.15 } }),
+    chasm_dredge_hook_crane: lampProfile({ glowAt: [0.5, 0.88, 0.5], color: 0xeab308, radius: 0.24, pulse: 0.4, intensity: 1.1, distance: 3.8 }),
+    ind_hydraulic_manifold: ventProfile({ at: [0.5, 0.65, 0.5], color: 0x94a3b8, count: 8, height: 0.8, radius: 0.25 }),
+    ind_fuel_rod_cask: lampProfile({ glowAt: [0.5, 0.7, 0.5], color: 0xf59e0b, radius: 0.22, pulse: 0.35, intensity: 1.0, distance: 3.2 }),
+
+    // Wave F: 2026-10-11 World Completion Machinery, Daily Life & Camps
+    life_server_racks: poweredProfile({ glowAt: [0.5, 0.7, 0.5], color: 0x38bdf8, radius: 0.2, pulse: 0.18, intensity: 0.6, distance: 2.5 }),
+    life_transformer_bank: poweredProfile({ glowAt: [0.5, 0.65, 0.5], sparkAt: [0.5, 0.75, 0.5], color: 0xef4444, radius: 0.22, pulse: 0.25, intensity: 0.8, distance: 2.8, sparks: true, sparkCount: 6 }),
+    life_fire_station: lampProfile({ glowAt: [0.5, 0.75, 0.5], color: 0xdc2626, radius: 0.18, pulse: 0.3, intensity: 0.7, distance: 2.4 }),
+    life_conveyor_section: lampProfile({ glowAt: [0.5, 0.5, 0.5], color: 0xfacc15, radius: 0.18, pulse: 0.1, intensity: 0.6, distance: 2.2 }),
+    life_cistern_tank: liquidProfile({ surfaceAt: [0.5, 0.65, 0.5], bubblesAt: [0.5, 0.3, 0.5], color: 0x38bdf8, bubbleColor: 0xbae6fd, count: 8, intensity: 0.7, distance: 2.6 }),
+    life_scaffold_tower: lampProfile({ glowAt: [0.5, 0.85, 0.5], color: 0xfef08a, radius: 0.22, pulse: 0.05, intensity: 0.8, distance: 2.8 }),
+    life_forklift: lampProfile({ glowAt: [0.5, 0.75, 0.5], color: 0xf59e0b, radius: 0.22, pulse: 0.35, intensity: 0.9, distance: 3.0 }),
+    life_shower_stall: ventProfile({ at: [0.5, 0.8, 0.5], color: 0xe0f2fe, count: 8, height: 0.8, radius: 0.3 }),
+    life_laundry_machines: lampProfile({ glowAt: [0.5, 0.6, 0.5], color: 0xf59e0b, radius: 0.18, pulse: 0.2, intensity: 0.6, distance: 2.2 }),
+    life_overseer_desk: lampProfile({ glowAt: [0.5, 0.65, 0.5], color: 0x22c55e, radius: 0.2, pulse: 0.05, intensity: 0.75, distance: 2.5 }),
+    life_planning_board: lampProfile({ glowAt: [0.5, 0.7, 0.5], color: 0xfef08a, radius: 0.2, pulse: 0.04, intensity: 0.7, distance: 2.4 }),
+    life_algae_tank: liquidProfile({ surfaceAt: [0.5, 0.55, 0.5], bubblesAt: [0.5, 0.35, 0.5], color: 0x22c55e, bubbleColor: 0x86efac, count: 10, intensity: 0.85, distance: 2.8 }),
+    cryo_ice_crawler: lampProfile({ glowAt: [0.5, 0.65, 0.7], color: 0x7dd3fc, radius: 0.28, pulse: 0.08, intensity: 1.2, distance: 4.0 }),
+    cryo_frozen_cascade: coldProfile({ at: [0.5, 0.7, 0.5], glowAt: [0.5, 0.5, 0.5] }),
+    cryo_snowbound_crates: coldProfile({ at: [0.5, 0.4, 0.5] }),
+    cryo_ice_blocks: coldProfile({ at: [0.5, 0.3, 0.5] }),
+    hive_resin_pillar: organicProfile({ glowAt: [0.5, 0.6, 0.5], color: 0x4ade80, radius: 0.28, pulse: 0.16, spores: true, motion: 0.012, lit: true, intensity: 0.8, distance: 2.8 }),
+    hive_cocooned_crew: organicProfile({ glowAt: [0.5, 0.5, 0.5], color: 0x84cc16, radius: 0.26, pulse: 0.22, spores: true, motion: 0.02, lit: true, intensity: 0.7, distance: 2.5 }),
+    hive_pheromone_node: organicProfile({ glowAt: [0.5, 0.65, 0.5], sporeAt: [0.5, 0.75, 0.5], color: 0xa3e635, sporeColor: 0xd9f99d, radius: 0.3, pulse: 0.25, motion: 0.018, lit: true, intensity: 0.75, distance: 2.8 }),
+    hive_tendril_arch: organicProfile({ glowAt: [0.5, 0.8, 0.5], color: 0x4ade80, radius: 0.35, pulse: 0.14, spores: false, motion: 0.015, lit: true, intensity: 0.6, distance: 2.6 }),
+    hive_assimilated_generator: poweredProfile({ glowAt: [0.5, 0.6, 0.5], sparkAt: [0.5, 0.7, 0.5], color: 0x84cc16, radius: 0.25, pulse: 0.3, intensity: 1.0, distance: 3.2, sparks: true, sparkCount: 8 }),
+    crash_engine_nacelle: smoulderProfile({ at: [0.5, 0.65, 0.5], glowAt: [0.5, 0.5, 0.5], color: 0x64748b, count: 7, intensity: 1.1, distance: 3.5 }),
+    salvage_tagged_heap: lampProfile({ glowAt: [0.5, 0.5, 0.5], color: 0xf59e0b, radius: 0.18, pulse: 0.3, intensity: 0.7, distance: 2.4 }),
+    camp_canvas_tent: lampProfile({ glowAt: [0.5, 0.45, 0.5], color: 0xfbbf24, radius: 0.25, pulse: 0.08, intensity: 0.9, distance: 2.8 }),
+    camp_water_barrel: liquidProfile({
+        surfaceAt: [0.5, 0.76, 0.5],
+        bubblesAt: [0.5, 0.72, 0.5],
+        color: 0x6eb7bd,
+        bubbleColor: 0xbce8e8,
+        radius: 0.3,
+        bubbleRadius: 0.24,
+        count: 3,
+        lit: false
+    }),
+    life_sink_row: liquidProfile({
+        surfaceAt: [0.5, 0.68, 0.54],
+        bubblesAt: [0.5, 0.64, 0.54],
+        color: 0x8ec9d1,
+        bubbleColor: 0xd8f4f5,
+        radius: 0.2,
+        bubbleRadius: 0.15,
+        count: 3,
+        lit: false
+    }),
+
+    // 2026-10-12 rebuild cohort. Colors intentionally match each modeled
+    // practical source; the authored FX_* empties win over these bounds.
+    base_door_sealable_bulkhead: lampProfile({ glowAt: [0.5, 0.55, 0.75], color: 0x38bdf8, pulse: 0.16, intensity: 0.75, distance: 3.0 }),
+    door_arch_guillotine_frame: lampProfile({ glowAt: [0.15, 0.5, 0.5], color: 0xff4433, pulse: 0.28, intensity: 1.0, distance: 3.8 }),
+    door_arch_guillotine_slab: poweredProfile({ glowAt: [0.5, 0.1, 0.5], color: 0xff4433, pulse: 0.22, lit: false }),
+    door_arch_guillotine_assembled: lampProfile({ glowAt: [0.15, 0.5, 0.5], color: 0xff4433, pulse: 0.28, intensity: 1.0, distance: 3.8 }),
+    base_o2_atmospheric_regulator: poweredProfile({ glowAt: [0.5, 0.6, 0.75], color: 0x38bdf8, pulse: 0.12, intensity: 0.85, distance: 3.0 }),
+    base_o2_overhead_duct: poweredProfile({ glowAt: [0.5, 0.5, 0.75], color: 0x22c55e, pulse: 0.06, intensity: 0.35, distance: 1.8 }),
+    base_power_junction_box: poweredProfile({ glowAt: [0.5, 0.6, 0.8], color: 0xfacc15, pulse: 0.16, intensity: 0.65, distance: 2.3 }),
+    ship_module_navigation_core: poweredProfile({ glowAt: [0.5, 0.5, 0.7], color: 0x38bdf8, pulse: 0.18, intensity: 0.95, distance: 3.2 }),
+    ship_module_comms_transceiver: poweredProfile({ glowAt: [0.5, 0.75, 0.5], color: 0x22c55e, pulse: 0.32, intensity: 0.85, distance: 3.4 }),
+    ship_module_engine_manifold: thermalProfile({ flameAt: [0.5, 0.6, 0.5], glowAt: [0.5, 0.6, 0.5], color: 0xf97316, scale: 0.28, intensity: 0.8, distance: 2.8 }),
+    ship_module_life_support_core: poweredProfile({ glowAt: [0.5, 0.6, 0.5], color: 0x38bdf8, pulse: 0.14, intensity: 1.0, distance: 3.3 }),
+    wall_macro_buttress_3: lampProfile({ glowAt: [0.5, 0.4, 0.5], color: 0xff4433, pulse: 0.08, intensity: 0.45, distance: 2.2 }),
+    wall_macro_straight_4: lampProfile({ glowAt: [0.5, 0.85, 0.7], color: 0xb8e5d6, pulse: 0.035, intensity: 0.7, distance: 3.0 }),
+    weapon_flamethrower_m70: thermalProfile({ flameAt: [0.95, 0.45, 0.5], glowAt: [0.7, 0.4, 0.5], color: 0xf97316, scale: 0.18, intensity: 0.45, distance: 1.8 }),
+    weapon_fuel_canister_heavy: poweredProfile({ glowAt: [0.5, 0.75, 0.5], color: 0xf97316, pulse: 0.08, intensity: 0.35, distance: 1.6 }),
+    barrier_ice_intact: coldProfile({ at: [0.5, 0.6, 0.5], glowAt: [0.5, 0.5, 0.5], count: 5 }),
+    barrier_ice_fractured: coldProfile({ at: [0.5, 0.5, 0.5], glowAt: [0.5, 0.45, 0.5], count: 8 }),
+    barrier_ice_melting: liquidProfile({ surfaceAt: [0.5, 0.15, 0.5], bubblesAt: [0.5, 0.1, 0.5], color: 0x7dd3fc, count: 5, intensity: 0.55, distance: 2.4 }),
+
+    // 2026-10-14 Interactive World Expansion (60 props)
+    geo_steam_manifold_actuator: profile({
+        effects: [{ kind: 'steam', bounds: [0.5, 0.75, 0.5], count: 8, height: 0.6, radius: 0.18 }],
+        light: { bounds: [0.5, 0.65, 0.5], color: 0xef4444, intensity: 0.85, distance: 2.8, decay: 2, pulse: 0.18 }
+    }),
+    tallow_vaccine_alembic: liquidProfile({ surfaceAt: [0.5, 0.55, 0.5], bubblesAt: [0.5, 0.35, 0.5], color: 0x22c55e, bubbleColor: 0x86efac, count: 6, intensity: 0.85, distance: 2.8 }),
+    hydro_mycelial_seed_vault: organicProfile({ glowAt: [0.5, 0.55, 0.5], color: 0xf59e0b, radius: 0.22, pulse: 0.15 }),
+    tallow_irrigation_sluice_gate: liquidProfile({ surfaceAt: [0.5, 0.25, 0.5], bubblesAt: [0.5, 0.15, 0.5], color: 0x22d3ee, count: 5, intensity: 0.7, distance: 2.5 }),
+    tallow_apothecary_dryer_rack: lampProfile({ glowAt: [0.5, 0.7, 0.5], color: 0xf59e0b, pulse: 0.12 }),
+    geo_pressure_relief_siren: poweredProfile({ glowAt: [0.5, 0.85, 0.5], color: 0xef4444, pulse: 0.35, intensity: 1.1, distance: 3.4, sparks: true }),
+    meridian_optic_nerve_patchbay: poweredProfile({ glowAt: [0.5, 0.65, 0.5], color: 0x22d3ee, pulse: 0.18, intensity: 0.95, distance: 3.0 }),
+    substation_stepdown_transformer: poweredProfile({ glowAt: [0.5, 0.75, 0.5], color: 0xf59e0b, pulse: 0.25, intensity: 1.25, distance: 3.8, sparks: true, sparkCount: 8 }),
+    meridian_servitor_recharge_cradle: poweredProfile({ glowAt: [0.5, 0.7, 0.5], color: 0x22c55e, pulse: 0.15, intensity: 0.85, distance: 2.8 }),
+    meridian_logic_core_drum: poweredProfile({ glowAt: [0.5, 0.6, 0.5], color: 0x22d3ee, pulse: 0.22, intensity: 1.0, distance: 3.2 }),
+    substation_breaker_interlock: poweredProfile({ glowAt: [0.5, 0.65, 0.5], color: 0xef4444, pulse: 0.2, intensity: 0.85, sparks: true }),
+    meridian_soldering_hearth: thermalProfile({ flameAt: [0.5, 0.55, 0.5], glowAt: [0.5, 0.55, 0.5], color: 0xf59e0b, scale: 0.25, intensity: 0.85, distance: 2.6 }),
+    vesper_ordnance_disarm_table: lampProfile({ glowAt: [0.5, 0.65, 0.5], color: 0xef4444, pulse: 0.25, intensity: 0.8, distance: 2.5 }),
+    vesper_trench_warning_klaxon: lampProfile({ glowAt: [0.5, 0.85, 0.5], color: 0xef4444, pulse: 0.45, intensity: 1.2, distance: 3.6 }),
+    vesper_ballistic_chronograph: poweredProfile({ glowAt: [0.5, 0.6, 0.5], color: 0x22d3ee, pulse: 0.12, intensity: 0.75, distance: 2.4 }),
+    vesper_mortar_loading_cradle: poweredProfile({ glowAt: [0.5, 0.55, 0.5], color: 0xf59e0b, pulse: 0.1, intensity: 0.7, distance: 2.3 }),
+    vesper_dogtag_retrieval_crypt: lampProfile({ glowAt: [0.5, 0.65, 0.5], color: 0xef4444, pulse: 0.15, intensity: 0.65, distance: 2.2 }),
+    vesper_barricade_welding_rig: poweredProfile({ glowAt: [0.5, 0.6, 0.5], color: 0x22d3ee, sparks: true, sparkCount: 8, intensity: 1.0, distance: 3.0 }),
+    corp_biometric_wall_safe: lampProfile({ glowAt: [0.5, 0.55, 0.5], color: 0xf59e0b, pulse: 0.1 }),
+    corp_quantum_ledger_podium: poweredProfile({ glowAt: [0.5, 0.75, 0.5], color: 0x22d3ee, pulse: 0.2, intensity: 0.9, distance: 2.8 }),
+    corp_compliance_choker_bench: lampProfile({ glowAt: [0.5, 0.65, 0.5], color: 0xef4444, pulse: 0.3, intensity: 0.75, distance: 2.4 }),
+    corp_asset_incinerator_chute: thermalProfile({ flameAt: [0.5, 0.45, 0.5], glowAt: [0.5, 0.45, 0.5], color: 0xef4444, scale: 0.35, intensity: 0.95, distance: 3.0 }),
+    corp_cryo_transport_coffin: coldProfile({ at: [0.5, 0.45, 0.5], glowAt: [0.5, 0.5, 0.5], count: 6 }),
+    corp_executive_whisper_booth: lampProfile({ glowAt: [0.5, 0.85, 0.5], color: 0xf59e0b, pulse: 0.08, intensity: 0.6, distance: 2.2 }),
+    suture_flesh_mending_bath: liquidProfile({ surfaceAt: [0.5, 0.5, 0.5], bubblesAt: [0.5, 0.35, 0.5], color: 0x22c55e, bubbleColor: 0x86efac, count: 6, intensity: 0.9, distance: 3.0 }),
+    suture_larval_nursery_urn: organicProfile({ glowAt: [0.5, 0.55, 0.5], color: 0xf59e0b, radius: 0.2, motion: 0.008 }),
+    relay_harmonic_tuning_fork: poweredProfile({ glowAt: [0.5, 0.75, 0.5], color: 0x22d3ee, pulse: 0.25, intensity: 1.05, distance: 3.3 }),
+    relay_acoustic_diaphragm: organicProfile({ glowAt: [0.5, 0.5, 0.5], color: 0xf59e0b, radius: 0.26, motion: 0.012 }),
+    carapace_chitin_press: poweredProfile({ glowAt: [0.5, 0.65, 0.5], color: 0xf59e0b, pulse: 0.12, intensity: 0.85, distance: 2.8 }),
+    carapace_ossuary_anvil: thermalProfile({ flameAt: [0.5, 0.55, 0.5], glowAt: [0.5, 0.55, 0.5], color: 0xef4444, scale: 0.28, intensity: 0.8, distance: 2.5 }),
+    vass_translation_phonograph: poweredProfile({ glowAt: [0.5, 0.6, 0.5], color: 0x22d3ee, pulse: 0.15, intensity: 0.75, distance: 2.4 }),
+    vass_bio_centrifuge_rack: liquidProfile({ surfaceAt: [0.5, 0.65, 0.5], bubblesAt: [0.5, 0.5, 0.5], color: 0x22c55e, bubbleColor: 0x86efac, count: 5, intensity: 0.8, distance: 2.6 }),
+    vass_neural_sync_helmet: poweredProfile({ glowAt: [0.5, 0.7, 0.5], color: 0x22d3ee, pulse: 0.22, intensity: 0.9, distance: 2.8 }),
+    vass_hybrid_blood_synthesizer: liquidProfile({ surfaceAt: [0.5, 0.6, 0.5], bubblesAt: [0.5, 0.4, 0.5], color: 0x22c55e, bubbleColor: 0x86efac, count: 5, intensity: 0.85, distance: 2.8 }),
+    vass_containment_bell_jar: liquidProfile({ surfaceAt: [0.5, 0.55, 0.5], bubblesAt: [0.5, 0.4, 0.5], color: 0x22c55e, bubbleColor: 0x86efac, count: 4, intensity: 0.95, distance: 3.0 }),
+    vass_dissection_stereomicroscope: poweredProfile({ glowAt: [0.5, 0.55, 0.5], color: 0x22d3ee, pulse: 0.08, intensity: 0.75, distance: 2.2 }),
+    tina_vocal_mimic_synthesizer: poweredProfile({ glowAt: [0.5, 0.6, 0.5], color: 0xef4444, pulse: 0.35, intensity: 0.85, distance: 2.6 }),
+    tina_cosmetic_skin_loom: lampProfile({ glowAt: [0.5, 0.7, 0.5], color: 0xef4444, pulse: 0.2, intensity: 0.75, distance: 2.4 }),
+    tina_forged_council_ballot_box: lampProfile({ glowAt: [0.5, 0.75, 0.5], color: 0xf59e0b, pulse: 0.15, intensity: 0.65, distance: 2.2 }),
+    tina_shedding_cocoon_niche: organicProfile({ glowAt: [0.5, 0.5, 0.5], color: 0xf59e0b, radius: 0.24, motion: 0.006 }),
+    tina_secret_distress_beacon: poweredProfile({ glowAt: [0.5, 0.8, 0.5], color: 0x22d3ee, pulse: 0.4, intensity: 1.05, distance: 3.2 }),
+    chasm_seismic_geophone_station: poweredProfile({ glowAt: [0.5, 0.65, 0.5], color: 0xf59e0b, pulse: 0.16, intensity: 0.8, distance: 2.6 }),
+    chasm_cable_traversal_winch: poweredProfile({ glowAt: [0.5, 0.65, 0.5], color: 0xef4444, pulse: 0.12, intensity: 0.85, distance: 2.8 }),
+    chasm_abyss_sounding_mortar: poweredProfile({ glowAt: [0.5, 0.65, 0.5], color: 0xef4444, sparks: true, intensity: 0.9, distance: 2.9 }),
+    chasm_steam_whistle_buoy: ventProfile({ at: [0.5, 0.8, 0.5], count: 7, color: 0xf59e0b }),
+    chasm_hanging_cage_crane: lampProfile({ glowAt: [0.5, 0.85, 0.5], color: 0xef4444, pulse: 0.25, intensity: 1.15, distance: 3.8 }),
+    chasm_geothermal_survey_transit: poweredProfile({ glowAt: [0.5, 0.65, 0.5], color: 0x22d3ee, pulse: 0.1, intensity: 0.75, distance: 2.3 }),
+    scout_tachyon_radar_mast: poweredProfile({ glowAt: [0.5, 0.9, 0.5], color: 0x22d3ee, pulse: 0.3, intensity: 1.25, distance: 4.0 }),
+    scout_ejection_pod_chassis: lampProfile({ glowAt: [0.5, 0.65, 0.5], color: 0xef4444, pulse: 0.22, intensity: 0.85, distance: 2.7 }),
+    tank_reactive_armor_forge: thermalProfile({ flameAt: [0.5, 0.55, 0.5], glowAt: [0.5, 0.55, 0.5], color: 0xf59e0b, scale: 0.32, intensity: 0.9, distance: 2.8 }),
+    tank_kinetic_ram_breech: poweredProfile({ glowAt: [0.5, 0.6, 0.5], color: 0xef4444, sparks: true, intensity: 0.9, distance: 2.8 }),
+    engineer_magnetic_bottle_cell: thermalProfile({ flameAt: [0.5, 0.5, 0.5], glowAt: [0.5, 0.5, 0.5], color: 0xf59e0b, scale: 0.45, intensity: 1.35, distance: 4.2 }),
+    engineer_robotic_welding_arm: poweredProfile({ glowAt: [0.5, 0.6, 0.5], color: 0x22d3ee, sparks: true, sparkCount: 9, intensity: 1.1, distance: 3.2 }),
+    evac_avionics_gyro_gimbal: poweredProfile({ glowAt: [0.5, 0.65, 0.5], color: 0x22d3ee, pulse: 0.2, intensity: 1.05, distance: 3.3 }),
+    evac_cryo_hypergolic_manifold: coldProfile({ at: [0.5, 0.6, 0.5], glowAt: [0.5, 0.65, 0.5], count: 6 }),
+    evac_cabin_co2_scrubber: poweredProfile({ glowAt: [0.5, 0.65, 0.5], color: 0x22d3ee, pulse: 0.14, intensity: 0.85, distance: 2.7 }),
+    evac_manual_abort_detonator: lampProfile({ glowAt: [0.5, 0.65, 0.5], color: 0xef4444, pulse: 0.5, intensity: 1.25, distance: 3.5 }),
+    evac_cargo_ballast_scale: lampProfile({ glowAt: [0.5, 0.55, 0.5], color: 0xf59e0b, pulse: 0.1, intensity: 0.7, distance: 2.2 }),
+    mothership_docking_umbilical_collar: organicProfile({ glowAt: [0.5, 0.5, 0.5], color: 0x22c55e, radius: 0.35, motion: 0.015, intensity: 1.4, distance: 4.5 }),
+
     ...profilesFor([
         'life_galley_hotplate', 'life_barrel_heater', 'life_warmth_hearth',
         'life_pheromone_censer'
@@ -794,16 +1021,25 @@ export function createPropFx(root, model, type) {
     let elapsed = (seed % 4096) / 193;
     let disposed = false;
     let enabled = true;
+    let mode = 'idle';
     const api = {
         type,
         group,
         lightSources,
         get enabled() { return enabled; },
+        get mode() { return mode; },
         /** Switch the effects and their pooled light (never `.visible` on a light). */
         setEnabled(next) {
             enabled = Boolean(next);
             api.update(0);
             return enabled;
+        },
+        /** Named interaction state for persistence and authored prop behavior. */
+        setMode(next) {
+            mode = String(next || 'idle');
+            if (['off', 'spent', 'disabled', 'destroyed'].includes(mode)) api.setEnabled(false);
+            else if (['idle', 'on', 'working', 'open', 'armed'].includes(mode)) api.setEnabled(true);
+            return mode;
         },
         toggle() { return api.setEnabled(!enabled); },
         update(delta = 0, cameraPosition = null) {

@@ -61,6 +61,12 @@ const WALK_THROUGH_ARCHES = new Set([
     'arch_deco_archway_grand_02',
     'arch_deco_archway_grand_03',
     'arch_deco_archway_grand_04',
+    'arch_deco_doorway',
+    'arch_bulkhead_frame',
+    'arch_rib_ceiling_vault_01',
+    'arch_rib_ceiling_vault_02',
+    'arch_rib_ceiling_vault_03',
+    'hive_tendril_arch',
     'prop_biomech_arch'
 ]);
 

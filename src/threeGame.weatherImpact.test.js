@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CLIFF_TILE, EXTERIOR_CANYON_TILE, ThreeGame } from './threeGame.js';
 
 describe('weather surface collision and puddle behavior', () => {
-    it('detects canyon abyss tiles (EXTERIOR_CANYON_TILE, CLIFF_TILE, holes) with negative fall height', () => {
+    it('treats intact cliff ledges as floor while canyon void and holes remain abyss', () => {
         const game = Object.create(ThreeGame.prototype);
         game.getCachedTileType = (x, z) => {
             if (x === 0 && z === 0) return EXTERIOR_CANYON_TILE;
@@ -15,7 +15,7 @@ describe('weather surface collision and puddle behavior', () => {
 
         // Canyon abyss / void
         expect(game.getWeatherSurfaceHeight(0, 0)).toEqual({ type: 'abyss', height: -15.0 });
-        expect(game.getWeatherSurfaceHeight(1, 0)).toEqual({ type: 'abyss', height: -15.0 });
+        expect(game.getWeatherSurfaceHeight(1, 0)).toEqual({ type: 'floor', height: 0.05 });
         expect(game.getWeatherSurfaceHeight(3, 0)).toEqual({ type: 'abyss', height: -15.0 });
 
         // Wall top

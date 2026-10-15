@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import * as THREE from 'three';
 import {
     getWeaponCalibration,
     getWeaponCalibrationProfiles,
@@ -28,5 +29,39 @@ describe('weapon calibration profiles', () => {
         const profile = getWeaponCalibration('siege_breaker', 'gameplay');
         expect(getWeaponScaleForBounds([0, 0, 0], 'siege_breaker', 'gameplay')).toBe(profile.maxScale);
         expect(getWeaponScaleForBounds([100, 100, 100], 'siege_breaker', 'gameplay')).toBe(profile.minScale);
+    });
+
+    it('calibrates gameplay weapons with forward barrel pointing forward (+X authored model axis) and sights facing up (+X hand axis)', () => {
+        for (const id of ['gg1', 'talon', 'talon_c', 'siege_breaker', 'tesla_lock']) {
+            const cal = getWeaponCalibration(id, 'gameplay');
+            expect(cal.forwardAxis).toBe('+X');
+            expect(cal.muzzleAxis).toBe('+X');
+            expect(cal.handAimAxis).toBe('+Y');
+            if (id === 'gg1') {
+                expect(cal.sightAxis).toBe('-Z');
+                expect(cal.rotation[0]).toBeCloseTo(-Math.PI / 2);
+                expect(cal.rotation[1]).toBeCloseTo(-Math.PI / 2);
+                expect(cal.rotation[2]).toBeCloseTo(0);
+            } else {
+                expect(cal.sightAxis).toBe('+Y');
+                expect(cal.rotation[0]).toBeCloseTo(Math.PI);
+                expect(cal.rotation[1]).toBeCloseTo(0);
+                expect(cal.rotation[2]).toBeCloseTo(-Math.PI / 2);
+            }
+            const muzzle = new THREE.Vector3(1, 0, 0)
+                .applyEuler(new THREE.Euler(...cal.rotation));
+            const handAim = new THREE.Vector3(0, 1, 0);
+            expect(THREE.MathUtils.radToDeg(muzzle.angleTo(handAim))).toBeLessThanOrEqual(15);
+
+            // Sights point upward (+X in RightHand bone coordinates)
+            const sightVector = cal.sightAxis === '-Z' ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(0, 1, 0);
+            const handSight = sightVector.applyEuler(new THREE.Euler(...cal.rotation));
+            expect(THREE.MathUtils.radToDeg(handSight.angleTo(new THREE.Vector3(1, 0, 0)))).toBeLessThanOrEqual(15);
+
+            // Grip / magazine extends downward (-X in RightHand bone coordinates, down into palm)
+            const gripVector = cal.sightAxis === '-Z' ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, -1, 0);
+            const handGrip = gripVector.applyEuler(new THREE.Euler(...cal.rotation));
+            expect(THREE.MathUtils.radToDeg(handGrip.angleTo(new THREE.Vector3(-1, 0, 0)))).toBeLessThanOrEqual(15);
+        }
     });
 });

@@ -10,14 +10,16 @@ const LIGHTING_RHYTHMS = Object.freeze({
 });
 
 const DRESSING_KITS = Object.freeze({
-    bunker_utility: Object.freeze({ structure: 'frame', cables: 1 }),
-    airlock_threshold: Object.freeze({ structure: 'frame', cables: 0 }),
-    pipes_and_cable_trays: Object.freeze({ structure: 'frame', cables: 2 }),
-    canyon_railing: Object.freeze({ structure: 'rail', cables: 0 }),
-    barricade_staging: Object.freeze({ structure: 'frame', cables: 0 }),
-    camp_signage: Object.freeze({ structure: 'frame', cables: 1 }),
-    maintenance_hatch: Object.freeze({ structure: 'frame', cables: 2 }),
-    gate_staging: Object.freeze({ structure: 'frame', cables: 0 })
+    bunker_utility: Object.freeze({ structure: 'frame', cables: 1, floorGuides: 1 }),
+    airlock_threshold: Object.freeze({ structure: 'double-frame', cables: 0, floorGuides: 2 }),
+    pipes_and_cable_trays: Object.freeze({ structure: 'service-rib', cables: 2, floorGuides: 1 }),
+    canyon_railing: Object.freeze({ structure: 'rail', cables: 0, floorGuides: 1 }),
+    barricade_staging: Object.freeze({ structure: 'braced-frame', cables: 0, floorGuides: 2 }),
+    camp_signage: Object.freeze({ structure: 'camp-arch', cables: 1, floorGuides: 1 }),
+    maintenance_hatch: Object.freeze({ structure: 'low-rib', cables: 2, floorGuides: 1 }),
+    gate_staging: Object.freeze({ structure: 'monumental-arch', cables: 0, floorGuides: 3 }),
+    biome_transition: Object.freeze({ structure: 'transition-arch', cables: 1, floorGuides: 2 }),
+    hive_warning: Object.freeze({ structure: 'organic-arch', cables: 0, floorGuides: 2 })
 });
 
 function isWalkable(grid, x, y) {
@@ -69,8 +71,12 @@ export function planHallwayRouteDressing(metadata, grid) {
             lightingRhythm: marker.lightingRhythm ?? 'even',
             structure: kit.structure,
             cableCount: kit.cables,
+            floorGuideCount: kit.floorGuides ?? 0,
             signalCount: rhythm.signals,
             signalColor: rhythm.color,
+            landmark: Boolean(marker.landmark),
+            cadence: Number.isInteger(marker.cadence) ? marker.cadence : 0,
+            archetypeId: marker.archetypeId ?? null,
             ...geometry
         });
     }

@@ -5,6 +5,8 @@
 import { ensureLocaleReady } from './i18n.js';
 
 await ensureLocaleReady();
+const { mountUnifiedHudConsole } = await import('./hudConsole.js');
+mountUnifiedHudConsole();
 await import('./hudInformationArchitecture.js');
 await import('./hudGameplayState.js');
 await import('./suitConditionController.js');

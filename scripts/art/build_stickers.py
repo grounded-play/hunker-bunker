@@ -243,8 +243,9 @@ LEGACY_TABLE = ROOT / 'src/data/legacyDecalLayers.js'
 # (pattern, roughness, metalness): first match wins.
 LEGACY_SURFACES = [
     (r'grate|grille|medallion|panel|chevron|stripes|stencil|meridian|mirror', 0.5, 0.55),
-    (r'spill|pool|seep|fluid|condensation|water|slime|sample', 0.18, 0.0),
+    (r'spill|pool|seep|fluid|condensation|water|slime|sample|acid|coolant', 0.18, 0.05),
     (r'frost|fracture|ice', 0.25, 0.0),
+    (r'splatter', 0.35, 0.05),
     (r'rust|scorch|burn|bullet|scars|breach|claw|bite', 0.8, 0.2),
     (r'.', 0.82, 0.0),
 ]

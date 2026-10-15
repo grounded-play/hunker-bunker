@@ -111,7 +111,25 @@ describe('realizeHallwayConnector', () => {
             expect(marker.lightingRhythm).toBe(archetype.lightingRhythm);
             // The kit grammar reads topology past the carve and fits module width to it.
             expect(marker.width).toBe(result.width);
+            expect(marker.archetypeId).toBe(archetype.id);
         }
+    });
+
+    it('deduplicates bends and crowns a multi-portal hub as the hallway landmark', () => {
+        const result = realizeHallwayConnector(archetype, seededRandom(8), {
+            openings: {
+                west: { open: true, offset: 2 },
+                east: { open: true, offset: 10 },
+                north: { open: true, offset: 6 }
+            }
+        });
+        const keys = result.wayfindingMarkers.map(({ x, y }) => `${x},${y}`);
+        expect(new Set(keys).size).toBe(keys.length);
+        expect(result.wayfindingMarkers).toContainEqual(expect.objectContaining({
+            x: result.hub.x,
+            y: result.hub.y,
+            landmark: true
+        }));
     });
 
     it('only carves toward chunk-edge sockets that were declared active', () => {

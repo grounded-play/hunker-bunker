@@ -1,4 +1,6 @@
 import { computePropFacingYaw, chooseSpacedModel } from './propBehavior.js';
+import { doorApronCellsForDoor } from './placementSafety.js';
+import { isWallMountedModel } from './modelPresentationRegistry.js';
 
 function cellKey(cell) {
     return `${cell.x},${cell.y}`;
@@ -52,21 +54,15 @@ function findCellWallNormal(cell, grid) {
 }
 
 export function isWallBackedPropType(type) {
-    return type === 'prop_fungal_tendril_altar'
-        || type === 'prop_flesh_steel_cradle'
-        || type === 'prop_shrine_plinth_broken'
-        || type === 'prop_biomech_sphincter_hatch_vent'
-        || type === 'prop_biomech_tracheal_wall_pipe'
-        || type === 'prop_decon_eyewash_shower_station'
-        || type === 'prop_exhaust_blower_fan_hood'
-        || type === 'prop_wall_cable_tray_swag'
-        || type === 'prop_vertebral_cable_riser'
-        || type === 'prop_oxygen_bottle_cascade_rack'
-        || type === 'prop_pipe_organ_heat_exchanger'
-        || type === 'prop_ceiling_crane_hoist';
+    return isWallMountedModel(type);
 }
 
-function pickCandidate(candidates, random, grid, center, wallOnly = false) {
+function pickCandidate(candidates, random, grid, center, {
+    wallOnly = false,
+    kind = 'small',
+    doors = [],
+    placements = []
+} = {}) {
     if (candidates.length === 0) return null;
     // Props belong at the perimeter: keep the room center open for the player,
     // ship consoles, mission fixtures, and readable combat lanes. Wall-backed
@@ -74,13 +70,34 @@ function pickCandidate(candidates, random, grid, center, wallOnly = false) {
     let pool = wallOnly
         ? candidates.filter((cell) => findCellWallNormal(cell, grid) !== null)
         : candidates;
-    if (pool.length === 0 && wallOnly) pool = candidates;
-    const scored = pool.map((cell) => ({
-        cell,
-        score: wallAdjacency(cell, grid) * 100
-            + Math.hypot(cell.x - center.x, cell.y - center.y)
-            + random() * 0.01
-    })).sort((a, b) => b.score - a.score);
+    if (pool.length === 0 && wallOnly) return null;
+    const focalPlacements = placements.filter((placement) => (
+        ['signature', 'large', 'structural', 'interaction'].includes(placement.kind)
+    ));
+    const scored = pool.map((cell) => {
+        const wallCount = wallAdjacency(cell, grid);
+        const centerDistance = Math.hypot(cell.x - center.x, cell.y - center.y);
+        const doorDistance = doors.length
+            ? Math.min(...doors.map((door) => Math.abs(cell.x - door.x) + Math.abs(cell.y - door.y)))
+            : centerDistance;
+        const placedDistance = placements.length
+            ? Math.min(...placements.map((placement) => Math.hypot(cell.x - placement.x, cell.y - placement.y)))
+            : 3;
+        const focalDistance = focalPlacements.length
+            ? Math.min(...focalPlacements.map((placement) => Math.hypot(cell.x - placement.x, cell.y - placement.y)))
+            : placedDistance;
+        const isSupport = !['signature', 'large', 'ammo-cache', 'pickup'].includes(kind);
+        // Corners are valuable for large silhouettes, but treating a second
+        // wall as +100 made every small object flee to the four corners. Give
+        // support dressing enough edge bias to stay out of combat lanes while
+        // still allowing it to cluster around the room's authored focal prop.
+        let score = wallCount * (isSupport ? 14 : 40) + centerDistance;
+        if (kind === 'signature') score += doorDistance * 9;
+        else if (['large', 'ammo-cache'].includes(kind)) score += doorDistance * 3 + placedDistance * 5;
+        else if (kind === 'pickup') score = -wallCount * 18 - centerDistance + doorDistance * 0.5;
+        else score += -Math.abs(focalDistance - 1.6) * 8 + doorDistance;
+        return { cell, score: score + random() * 0.01 };
+    }).sort((a, b) => b.score - a.score);
     const selected = scored[0].cell;
     const indexInCandidates = candidates.indexOf(selected);
     if (indexInCandidates >= 0) candidates.splice(indexInCandidates, 1);
@@ -175,7 +192,8 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
     const budget = normalizePopulationBudget(room.populationBudget);
     const doorLanes = room.navigation?.doorLanes ?? [];
     const fixtureCells = room.navigation?.reserved ?? [];
-    const reserved = new Set([...doorLanes, ...fixtureCells].map(cellKey));
+    const directionalDoorAprons = (room.doors ?? []).flatMap((door) => doorApronCellsForDoor(door));
+    const reserved = new Set([...doorLanes, ...directionalDoorAprons, ...fixtureCells].map(cellKey));
     for (const door of doorLanes) {
         for (let dy = -1; dy <= 1; dy += 1) {
             for (let dx = -1; dx <= 1; dx += 1) reserved.add(`${door.x + dx},${door.y + dy}`);
@@ -241,7 +259,12 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
     const reservePlacement = (kind, type, blocking = false) => {
         if (kind !== 'signature' && budgetedObjectCount() >= roomObjectLimit) return false;
         const wallOnly = isWallBackedPropType(type);
-        const cell = pickCandidate(candidates, random, grid, center, wallOnly);
+        const cell = pickCandidate(candidates, random, grid, center, {
+            wallOnly,
+            kind,
+            doors: doorLanes,
+            placements
+        });
         if (!cell) return false;
         reserved.add(cellKey(cell));
         const wallNormal = findCellWallNormal(cell, grid);
@@ -264,6 +287,9 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
             kind,
             type,
             blocking,
+            layoutZone: kind === 'signature'
+                ? 'focal-edge'
+                : ['large', 'ammo-cache'].includes(kind) ? 'perimeter-anchor' : kind === 'pickup' ? 'access-lane' : 'support-cluster',
             wallNormal,
             yaw
         });

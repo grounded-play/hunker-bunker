@@ -58,7 +58,7 @@ export class HudInformationArchitecture {
         this.tracker = documentRef.getElementById('objective-tracker');
         this.mapModal = documentRef.getElementById('tactical-map-modal');
         this.mapSidebar = documentRef.querySelector('.tactical-map-sidebar');
-        this.drawerHome = this.drawer?.parentNode ?? null;
+        this.drawerHome = documentRef.querySelector('.hud-console__mission-slot') ?? this.drawer?.parentNode ?? null;
         this.drawerHomeNext = this.drawer?.nextSibling ?? null;
         this.userExpanded = false;
         this.observer = null;

@@ -985,6 +985,14 @@ export class Act2Manager {
         });
     }
 
+    setHiveQuestActive(id, questId) {
+        return this._mutate((s) => {
+            const hive = s.hives.find((entry) => entry.id === id);
+            if (!hive || !questId || hive.questFlags[questId] === 'done') return;
+            hive.questFlags[questId] = 'active';
+        });
+    }
+
     // Mirrors completeCampQuest/completeHiveQuest's shape. bondDelta is
     // accepted for signature symmetry with those two but always ignored —
     // the scientist record has no bond field, she is a single quest-giver,

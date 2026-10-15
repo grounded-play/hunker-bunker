@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { adaptSteamCacheResult, createCacheOpeningResult, getCacheOpeningPools } from './cacheOpening.js';
+import {
+    adaptSteamCacheResult,
+    canTransitionCacheReveal,
+    createCacheOpeningResult,
+    getCacheOpeningPools,
+    transitionCacheReveal
+} from './cacheOpening.js';
 import { DUPLICATE_SHARD_BONUS } from './craftingMatrix.js';
 
 describe('cache opening contract', () => {
@@ -53,5 +59,16 @@ describe('cache opening contract', () => {
         expect(pools.cosmetic).toContain(4111);
         expect(pools.powerUp).toContain(4147);
         expect(pools.material).toContain(4159);
+    });
+
+    it('enforces the transactional reveal lifecycle', () => {
+        expect(transitionCacheReveal('idle', 'submitting')).toBe('submitting');
+        expect(transitionCacheReveal('submitting', 'spinning')).toBe('spinning');
+        expect(transitionCacheReveal('spinning', 'revealed')).toBe('revealed');
+        expect(transitionCacheReveal('revealed', 'settling')).toBe('settling');
+        expect(transitionCacheReveal('settling', 'idle')).toBe('idle');
+        expect(canTransitionCacheReveal('submitting', 'idle')).toBe(true);
+        expect(() => transitionCacheReveal('idle', 'revealed')).toThrow(/Invalid cache reveal transition/);
+        expect(() => transitionCacheReveal('broken', 'idle')).toThrow(/Unknown cache reveal state/);
     });
 });

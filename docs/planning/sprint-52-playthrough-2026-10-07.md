@@ -1,6 +1,6 @@
 # Sprint 52 — Smooth the whole run; walk-through world, footprints, popups
 
-Status: **implementation complete; acceptance pending** on `dev/sprint-51`. The original work landed 2026-10-07; the Deck run and the first-draw shader follow-up below remain open. See the status log at the end.
+Status: **historical implementation record; acceptance reopened** on `dev/sprint-52`. The current owner-playtest findings, responsible code, and fix gates live in [the 2026-10-12 Steam Deck and PC remediation plan](playtest-remediation-steam-deck-and-pc-2026-10-12.md).
 
 ## The owner, 2026-10-07, after a Deck playthrough
 
@@ -116,10 +116,10 @@ Order: performance first (it affects everything), then the quick collision fixes
   - Measured before and after on the long-walk probe and on a real Deck log.
 - **Not on the table:** cutting models, shadows, post-processing or animation (your standing rule). The logs show the time goes to the CPU, not the GPU.
 
-### B. Walk under arches; floors never block (P1, small)
+### B. Walk under arches; floors never block (P1, reopened)
 
-- [x] **B1. Archways are walk-through.**
-  - Grand archways, bulkhead frames and biomech arches block only at their two pillar feet: two small colliders at each side of the opening, along the model's width.
+- [ ] **B1. Archways are walk-through. Reopened 2026-10-12.**
+  - Grand archways have pillar collision, but the current behavior table explicitly leaves `arch_bulkhead_frame` solid and does not classify `hive_tendril_arch`. See Defect 7 in the current remediation plan.
   - Columns and buttresses stay solid.
 - [x] **B2. Floor pieces never block.** Anything flagged as a floor overlay, or a `decal_*` / `scatter_*puddle` type, is never solid, however it was placed.
 - **Tests:** collision flags per type; walking through an archway's center succeeds and walking into a pillar is blocked; an e2e walk across a floor grate.

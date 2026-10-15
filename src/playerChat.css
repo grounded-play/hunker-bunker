@@ -38,7 +38,13 @@
 .player-chat-footer label { display: flex; align-items: center; gap: 8px; }
 .player-chat-footer input { width: 20px; height: 20px; }
 .player-chat-actions > span { flex-basis: 100%; }
-.hud-corner-settings [data-player-chat-open] { margin-right: 8px; width: auto; font-size: 12px; }
+.player-chat-trigger--unavailable,
+#game-viewport :is(.hud-corner-settings, .menu-corner-settings, .armory-corner-settings, .net-corner-settings) .calibrate-btn.player-chat-trigger--unavailable,
+#armory-screen .armory-corner-settings .calibrate-btn.player-chat-trigger--unavailable,
+#multiplayer-modal .net-corner-settings .calibrate-btn.player-chat-trigger--unavailable,
+#ui .hud-corner-settings .calibrate-btn.player-chat-trigger--unavailable {
+    display: none !important;
+}
 @media (max-height: 650px) {
     #player-chat-modal .player-chat-panel { padding: 10px; gap: 6px; }
     .player-chat-log { height: 100px; }

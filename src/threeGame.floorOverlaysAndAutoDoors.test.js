@@ -1,12 +1,35 @@
 import * as THREE from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ThreeGame } from './threeGame.js';
+import { CLIFF_TILE, EXTERIOR_CANYON_TILE, isOutsideDoorApron, planInstancedFloorCoverage, ThreeGame } from './threeGame.js';
 
 afterEach(() => {
     vi.unstubAllGlobals();
 });
 
 describe('floor overlays', () => {
+    it('reserves a 1.6m doorway apron from general scatter', () => {
+        const doors = [{ x: 5, y: 5 }];
+        expect(isOutsideDoorApron(5, 5, doors)).toBe(false);
+        expect(isOutsideDoorApron(6, 6, doors)).toBe(false);
+        expect(isOutsideDoorApron(7, 5, doors)).toBe(true);
+    });
+
+    it('covers every walkable corridor and repairs voids directly outside portals', () => {
+        const grid = [
+            [EXTERIOR_CANYON_TILE, EXTERIOR_CANYON_TILE, EXTERIOR_CANYON_TILE],
+            [EXTERIOR_CANYON_TILE, 'D', '.'],
+            [CLIFF_TILE, 'T', '.']
+        ];
+        const coverage = planInstancedFloorCoverage(grid);
+        const covered = new Set(coverage.floorCells.map(({ localX, localY }) => `${localX},${localY}`));
+        expect(covered).toEqual(new Set(['1,0', '0,1', '1,1', '2,1', '0,2', '1,2', '2,2']));
+        expect(coverage.repairedCells).toEqual(expect.arrayContaining([
+            { localX: 1, localY: 0 },
+            { localX: 0, localY: 1 },
+            { localX: 0, localY: 2 }
+        ]));
+        expect(grid[0][0]).toBe(EXTERIOR_CANYON_TILE);
+    });
     it('honors the authored blocking contract for room props', () => {
         const texture = new THREE.Texture();
         const material = new THREE.SpriteMaterial({ map: texture });
@@ -147,6 +170,51 @@ describe('automatic doors', () => {
         expect(game.proceduralDoorStates.get('door').state).toBe('closed');
     });
 
+    // Doors between rooms drop straight into the floor (owner, 2026-10-15),
+    // including doors saved by an older build with a lift, split or swing.
+    it('sinks every door family in place, whatever motion it was saved with', () => {
+        installHudStubs();
+        const makeMesh = (x) => {
+            const mesh = new THREE.Object3D();
+            mesh.position.set(x, 2, 0);
+            mesh.scale.set(3.35, 1.72, 0.58);
+            mesh.userData = {
+                worldX: x, worldZ: 0, openY: -4, closedY: 2,
+                closedPosition: { x, z: 0 },
+                closedScale: { x: 3.35, y: 1.72, z: 0.58 },
+                doorOpenAmount: 0,
+                doorOrientation: 'horizontal'
+            };
+            new THREE.Group().add(mesh);
+            return mesh;
+        };
+        const crown = makeMesh(0);
+        const split = makeMesh(5);
+        const swing = makeMesh(10);
+        const game = {
+            wallHeight: 2.8,
+            player: null,
+            proceduralDoorMeshes: new Map([['crown', crown], ['split', split], ['swing', swing]]),
+            proceduralDoorStates: new Map([
+                ['crown', { id: 'crown', state: 'open', motion: 'retract-crown', orientation: 'horizontal' }],
+                ['split', { id: 'split', state: 'open', motion: 'split-sideways', orientation: 'horizontal' }],
+                ['swing', { id: 'swing', state: 'open', motion: 'swing-fold', orientation: 'horizontal' }]
+            ]),
+            mazeAccessState: {},
+            isGameplayInputActive: () => false,
+            activeInteractiveConsole: null
+        };
+        ThreeGame.prototype.updateProceduralDoors.call(game, 1);
+        for (const [mesh, x] of [[crown, 0], [split, 5], [swing, 10]]) {
+            expect(mesh.position.y).toBeCloseTo(-4);
+            expect(mesh.position.x).toBeCloseTo(x);
+            expect(mesh.position.z).toBeCloseTo(0);
+            expect(mesh.rotation.y).toBe(0);
+            expect(mesh.scale.x).toBeCloseTo(3.35);
+            expect(mesh.scale.z).toBeCloseTo(0.58);
+        }
+    });
+
     it('uses the same approach behavior for the crash-room blast door', () => {
         installHudStubs();
         const state = { open: false, destroyed: false, doorCenterX: 9, doorZ: 3, y: 1.4, targetY: 1.4, speed: 5.5 };
@@ -168,6 +236,32 @@ describe('automatic doors', () => {
         ThreeGame.prototype.updateBunkerBlastDoor.call(game, 0.016);
         expect(state.open).toBe(false);
         expect(game.toggleBunkerBlastDoor).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not auto-close the crash-room door when it is the only start exit', () => {
+        installHudStubs();
+        const state = {
+            open: true,
+            destroyed: false,
+            autoClose: false,
+            doorCenterX: 9,
+            doorZ: 3,
+            y: -2.4,
+            targetY: -2.4,
+            speed: 5.5
+        };
+        const game = {
+            bunkerBlastDoorGroup: { position: { y: -2.4 } },
+            bunkerBlastDoorState: state,
+            player: { position: { x: 20, z: 20 } },
+            isGameplayInputActive: () => true,
+            toggleBunkerBlastDoor: vi.fn()
+        };
+
+        ThreeGame.prototype.updateBunkerBlastDoor.call(game, 0.016);
+
+        expect(state.open).toBe(true);
+        expect(game.toggleBunkerBlastDoor).not.toHaveBeenCalled();
     });
 });
 
@@ -256,6 +350,25 @@ describe('wall decals and showroom gallery', () => {
         expect(decal.position.z).toBeCloseTo(7 - 0.5 + 0.02);
 
         decal.material.dispose();
+        texture.dispose();
+    });
+
+    it('discards wall decals when no adjacent wall exists instead of floating in midair', () => {
+        const texture = new THREE.Texture();
+        const game = Object.assign(Object.create(ThreeGame.prototype), {
+            wallHeight: 2.8,
+            scatterTextures: { decal_wall_breach: texture },
+            getTileType: vi.fn(() => '.')
+        });
+
+        const decal = ThreeGame.prototype.createScatterInstance.call(game, {
+            type: 'decal_wall_breach',
+            x: 10,
+            z: 10,
+            scale: 1.0
+        });
+
+        expect(decal).toBeNull();
         texture.dispose();
     });
 

@@ -147,13 +147,21 @@ export function generateArchitecturalMazeChunk(random, {
         .filter(([, opening]) => opening?.open)
         .map(([side, opening]) => portalPoint(size, side, opening.offset));
     const shape = random() < 0.38 ? 'l' : random() < 0.52 ? 'octagonal' : 'rectangle';
-    const roomWidth = important ? 13 : 11 + Math.floor(random() * 3);
-    const roomDepth = important ? 13 : 10 + Math.floor(random() * 4);
+    const roomWidth = important ? 13 : 7 + Math.floor(random() * 7);
+    const roomDepth = important ? 13 : 7 + Math.floor(random() * 7);
+    const roomCenterX = important
+        ? center
+        : Math.max(6, Math.min(size - 7, center + Math.floor((random() - 0.5) * 9)));
+    const roomCenterY = important
+        ? center
+        : Math.max(6, Math.min(size - 7, center + Math.floor((random() - 0.5) * 9)));
+    const roomLeft = Math.max(3, Math.min(size - 4 - roomWidth + 1, roomCenterX - Math.floor(roomWidth / 2)));
+    const roomTop = Math.max(3, Math.min(size - 4 - roomDepth + 1, roomCenterY - Math.floor(roomDepth / 2)));
     const bounds = {
-        left: Math.max(3, center - Math.floor(roomWidth / 2)),
-        right: Math.min(size - 4, center + Math.floor(roomWidth / 2)),
-        top: Math.max(3, center - Math.floor(roomDepth / 2)),
-        bottom: Math.min(size - 4, center + Math.floor(roomDepth / 2))
+        left: roomLeft,
+        right: roomLeft + roomWidth - 1,
+        top: roomTop,
+        bottom: roomTop + roomDepth - 1
     };
     let authoredRoom;
 
@@ -190,7 +198,12 @@ export function generateArchitecturalMazeChunk(random, {
         authoredRoom = { bounds: bay, shape: bayShape };
     }
 
-    const target = roomMode ? { x: center, y: center } : null;
+    const target = roomMode || portals.length < 2
+        ? {
+            x: Math.floor((bounds.left + bounds.right) / 2),
+            y: Math.floor((bounds.top + bounds.bottom) / 2)
+        }
+        : null;
     for (const portal of portals) {
         const destination = target ?? { x: center, y: center };
         const bend = random() < 0.5

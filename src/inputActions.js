@@ -100,51 +100,83 @@ export function wrapMenuIndex(index, delta, length) {
     return (current + delta + length) % length;
 }
 
-const SPATIAL_VECTORS = Object.freeze({
-    up: Object.freeze({ x: 0, y: -1 }),
-    down: Object.freeze({ x: 0, y: 1 }),
-    left: Object.freeze({ x: -1, y: 0 }),
-    right: Object.freeze({ x: 1, y: 0 })
-});
-
 /**
- * Choose the nearest focus target in the requested visual direction. Primary
- * axis distance dominates; perpendicular drift breaks ties. If no candidate
- * exists in that half-plane, wrap to the opposite edge while staying near the
- * same row/column. This makes 2D Deck navigation independent of DOM order.
+ * Choose the next focus target in the requested visual direction, the way a
+ * console or TV focus engine does (and the browsers' spatial-navigation spec):
+ *
+ * 1. A candidate must lie past the current control in that direction: its
+ *    near edge beyond the current control's middle, so a control on the same
+ *    row is never "below" (nav map 2026-10-14, F12). One that is not aligned
+ *    (see 2) must lie fully past it.
+ * 2. Candidates that overlap the current control across the movement axis
+ *    (the "beam": same row for left / right, same column for up / down) beat
+ *    any diagonal one, however close.
+ * 3. Then the nearest wins, scored like the CSS spatial-navigation spec:
+ *    closest-edge distance plus the gap along the axis plus the sideways gap
+ *    weighted 30x on left / right moves and 2x on up / down, so "right"
+ *    means "on this row" far more than "a bit to the right, rows away".
+ *
+ * With nothing in that direction focus stays put (returns currentIndex), so a
+ * press at the edge of a screen never teleports across it. Pass
+ * `{ wrap: true }` to jump to the far edge instead (long lists may opt in).
  */
-export function spatialFocusIndex(rects = [], currentIndex = 0, direction = 'down') {
+export function spatialFocusIndex(rects = [], currentIndex = 0, direction = 'down', { wrap = false } = {}) {
     if (!Array.isArray(rects) || rects.length === 0) return 0;
-    const vector = SPATIAL_VECTORS[direction];
     const current = rects[currentIndex] ?? rects[0];
-    if (!vector || !current) return Math.max(0, Math.min(currentIndex, rects.length - 1));
-    const center = (rect) => ({
-        x: Number(rect.left) + (Number(rect.width) / 2),
-        y: Number(rect.top) + (Number(rect.height) / 2)
+    const vertical = direction === 'up' || direction === 'down';
+    const sign = direction === 'down' || direction === 'right' ? 1 : -1;
+    if (!current || !['up', 'down', 'left', 'right'].includes(direction)) {
+        return Math.max(0, Math.min(currentIndex, rects.length - 1));
+    }
+    const box = (rect) => {
+        const left = Number(rect.left) || 0;
+        const top = Number(rect.top) || 0;
+        const width = Number(rect.width) || 0;
+        const height = Number(rect.height) || 0;
+        // Along the movement axis: start / end; across it: lo / hi.
+        return vertical
+            ? { start: top, end: top + height, mid: top + height / 2, lo: left, hi: left + width, cross: left + width / 2 }
+            : { start: left, end: left + width, mid: left + width / 2, lo: top, hi: top + height, cross: top + height / 2 };
+    };
+    const from = box(current);
+
+    const candidates = [];
+    rects.forEach((rect, index) => {
+        if (index === currentIndex || !rect) return;
+        const to = box(rect);
+        // Past the current control: the candidate's near edge lies beyond the
+        // current control's middle (and its middle beyond ours).
+        const ahead = sign > 0
+            ? to.start >= from.mid - 1 && to.mid > from.mid + 1
+            : to.end <= from.mid + 1 && to.mid < from.mid - 1;
+        if (!ahead) return;
+        const gap = Math.max(0, sign > 0 ? to.start - from.end : from.start - to.end);
+        const inBeam = Math.min(from.hi, to.hi) - Math.max(from.lo, to.lo) > 0;
+        const offset = Math.abs(to.cross - from.cross);
+        // Off the beam, a candidate must lie fully past the current control,
+        // not merely overlap it on the movement axis.
+        if (!inBeam && gap <= 0) return;
+        const sideGap = inBeam ? 0 : Math.max(to.lo - from.hi, from.lo - to.hi, 0);
+        const score = Math.hypot(gap, sideGap) + gap + sideGap * (vertical ? 2 : 30);
+        candidates.push({ index, inBeam, gap, offset, score });
     });
-    const from = center(current);
-    const candidates = rects.map((rect, index) => {
-        const to = center(rect);
-        const dx = to.x - from.x;
-        const dy = to.y - from.y;
-        const primary = (dx * vector.x) + (dy * vector.y);
-        const perpendicular = Math.abs((dx * vector.y) - (dy * vector.x));
-        return { index, primary, perpendicular };
-    }).filter((candidate) => candidate.index !== currentIndex && candidate.primary > 0.5);
 
     if (candidates.length > 0) {
-        candidates.sort((a, b) => (a.primary * 10 + a.perpendicular * 4)
-            - (b.primary * 10 + b.perpendicular * 4));
+        candidates.sort((a, b) => {
+            if (a.inBeam !== b.inBeam) return a.inBeam ? -1 : 1;
+            if (a.inBeam) return (a.gap - b.gap) || (a.offset - b.offset) || (a.index - b.index);
+            return (a.score - b.score) || (a.offset - b.offset) || (a.index - b.index);
+        });
         return candidates[0].index;
     }
 
+    if (!wrap) return currentIndex;
+    // Wrap: the control at the far edge, nearest the current row / column.
     const wrapped = rects.map((rect, index) => {
-        const to = center(rect);
-        const axis = (to.x * vector.x) + (to.y * vector.y);
-        const perpendicular = Math.abs(((to.x - from.x) * vector.y) - ((to.y - from.y) * vector.x));
-        return { index, axis, perpendicular };
+        const to = box(rect);
+        return { index, edge: to.mid * sign, offset: Math.abs(to.cross - from.cross) };
     }).filter((candidate) => candidate.index !== currentIndex);
-    wrapped.sort((a, b) => a.axis - b.axis || a.perpendicular - b.perpendicular || a.index - b.index);
+    wrapped.sort((a, b) => a.edge - b.edge || a.offset - b.offset || a.index - b.index);
     return wrapped[0]?.index ?? currentIndex;
 }
 
@@ -201,9 +233,17 @@ const NEUTRAL_PAD = Object.freeze({
     menuTabRight: false
 });
 
-export function createActionRouter() {
+// Holding a direction in a menu (stick or D-pad) moves once, then repeats
+// after this delay at this interval, like a console list. Keyboard arrows get
+// the OS key repeat instead.
+export const MENU_REPEAT_DELAY_MS = 380;
+export const MENU_REPEAT_INTERVAL_MS = 110;
+
+export function createActionRouter({ now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now()) } = {}) {
     let activeSet = ACTION_SETS.MENU;
     let previous = {};
+    let heldSince = {};
+    let lastRepeat = {};
 
     // Rising-edge detector for discrete presses so a held button fires once.
     function edge(name, level) {
@@ -212,12 +252,36 @@ export function createActionRouter() {
         return fired;
     }
 
+    // A direction fires on press, then repeats while held.
+    function repeating(name, level) {
+        if (!level) {
+            previous[name] = false;
+            delete heldSince[name];
+            delete lastRepeat[name];
+            return false;
+        }
+        const at = now();
+        if (!previous[name]) {
+            previous[name] = true;
+            heldSince[name] = at;
+            lastRepeat[name] = at;
+            return true;
+        }
+        if (at - heldSince[name] < MENU_REPEAT_DELAY_MS) return false;
+        const sincePress = at - heldSince[name];
+        if (lastRepeat[name] === heldSince[name] || at - lastRepeat[name] >= MENU_REPEAT_INTERVAL_MS) {
+            lastRepeat[name] = at;
+            return sincePress >= MENU_REPEAT_DELAY_MS;
+        }
+        return false;
+    }
+
     function deriveMenuActions(pad) {
         return {
-            up: edge('menu_up', pad.menuUp),
-            down: edge('menu_down', pad.menuDown),
-            left: edge('menu_left', pad.menuLeft),
-            right: edge('menu_right', pad.menuRight),
+            up: repeating('menu_up', pad.menuUp),
+            down: repeating('menu_down', pad.menuDown),
+            left: repeating('menu_left', pad.menuLeft),
+            right: repeating('menu_right', pad.menuRight),
             // `fire` is RT in the browser fallback. Native layouts bind RT to
             // menu_confirm directly; accepting either keeps the semantics
             // identical while stale Steam layouts are being replaced.
@@ -267,6 +331,8 @@ export function createActionRouter() {
             if (!VALID_SETS.has(name) || name === activeSet) return;
             activeSet = name;
             previous = {};
+            heldSince = {};
+            lastRepeat = {};
         },
         deriveActions(padSnapshot) {
             const pad = padSnapshot ?? NEUTRAL_PAD;

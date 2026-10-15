@@ -74,7 +74,7 @@ test.describe('HUD suit-condition visual states', () => {
                         return [box.x, box.y, box.width, box.height].map((value) => Math.round(value * 10) / 10);
                     };
                     return {
-                        housings: ['map', 'status', 'arms'].map((panel) => rect(`.dock-housing--${panel}`)),
+                        consoleBox: rect('#hud-console'),
                         damageTier: root.dataset.suitDamageTier,
                         gameplayState: root.dataset.hudGameplayState,
                         blood: root.style.getPropertyValue('--suit-blood'),
@@ -83,8 +83,8 @@ test.describe('HUD suit-condition visual states', () => {
                     };
                 }, { operatorClass, state });
 
-                baseline ??= metrics.housings;
-                expect(metrics.housings, `${operatorClass}/${state} housing geometry`).toEqual(baseline);
+                baseline ??= metrics.consoleBox;
+                expect(metrics.consoleBox, `${operatorClass}/${state} console geometry`).toEqual(baseline);
                 if (state === 'bloodied') expect(Number(metrics.blood)).toBeGreaterThan(0);
                 if (state === 'frozen') expect(Number(metrics.frost)).toBe(1);
                 if (state === 'toxic') expect(Number(metrics.toxin)).toBe(1);

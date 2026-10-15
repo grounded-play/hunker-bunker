@@ -1,0 +1,226 @@
+{
+ "_doc": "15 s social cut: cold open, 6 drop shots, logo, CTA.",
+ "fps": 60,
+ "size": [
+  1920,
+  1080
+ ],
+ "music": {
+  "file": "public/audio/ost/Under Siege (Combat Alert).mp3",
+  "grid": "trailer/edl/under-siege-combat-alert.grid.json",
+  "anchor": {
+   "beat": "drop",
+   "at": 2.6
+  },
+  "start": 0.3,
+  "end": "beat:drop+12",
+  "gain": -1,
+  "fadeIn": 0.3,
+  "lowpass": [
+   [
+    0.3,
+    600
+   ],
+   [
+    "beat:drop",
+    19000
+   ]
+  ],
+  "tapeStop": {
+   "len": 0.5
+  }
+ },
+ "video": [
+  {
+   "shot": "cold-open-tank",
+   "in": 0.25,
+   "until": "beat:drop",
+   "grade": "night"
+  },
+  {
+   "shot": "drop-shotgun",
+   "in": 0.2,
+   "until": "beat:drop+2",
+   "grade": "hot",
+   "flash": 2,
+   "shakeAt": [
+    {
+     "at": 0.03,
+     "amp": 0.014,
+     "len": 0.3
+    }
+   ]
+  },
+  {
+   "shot": "drop-rail",
+   "in": 0.08,
+   "until": "beat:drop+4",
+   "grade": "hot",
+   "speed": [
+    [
+     0,
+     1
+    ],
+    [
+     0.15,
+     0.25
+    ]
+   ],
+   "freeze": {
+    "at": 0.32,
+    "frames": 8
+   },
+   "glitch": [
+    {
+     "at": 0.32,
+     "frames": 2
+    }
+   ]
+  },
+  {
+   "shot": "drop-flame",
+   "in": 0.3,
+   "until": "beat:drop+6",
+   "grade": "hot",
+   "whipOut": 6
+  },
+  {
+   "shot": "drop-cryo",
+   "in": 0.05,
+   "until": "beat:drop+8",
+   "grade": "hot",
+   "speed": [
+    [
+     0,
+     0.3
+    ],
+    [
+     0.9,
+     1
+    ]
+   ],
+   "whipIn": 6
+  },
+  {
+   "shot": "drop-turret",
+   "in": 0.4,
+   "until": "beat:drop+10",
+   "grade": "hot",
+   "shake": 0.003
+  },
+  {
+   "shot": "scout-dash",
+   "in": 0.0,
+   "until": "beat:drop+12",
+   "grade": "hot",
+   "speed": [
+    [
+     0,
+     1
+    ],
+    [
+     0.2,
+     0.45
+    ],
+    [
+     0.6,
+     1
+    ]
+   ]
+  },
+  {
+   "shot": "title-reveal",
+   "in": 0.4,
+   "until": 15.0,
+   "flash": 3,
+   "push": {
+    "from": 1.0,
+    "to": 1.06
+   }
+  }
+ ],
+ "text": [
+  {
+   "style": "kinetic",
+   "text": "3 OPERATORS",
+   "at": "beat:drop+4",
+   "dur": "1.5beats",
+   "size": 130
+  },
+  {
+   "style": "cta",
+   "text": "WISHLIST ON STEAM",
+   "at": "beat:drop+12+2.4",
+   "dur": 2.2,
+   "y": "h*0.62",
+   "size": 76
+  },
+  {
+   "style": "small",
+   "text": "Pre-release gameplay",
+   "at": "beat:drop+12+2.5",
+   "dur": 2.1,
+   "y": "h-70",
+   "size": 26,
+   "color": "white@0.6"
+  }
+ ],
+ "kit": [
+  {
+   "fx": "riser_2s",
+   "end": "beat:drop",
+   "gain": -8
+  },
+  {
+   "fx": "sub_hit",
+   "at": "beat:drop",
+   "gain": -2
+  },
+  {
+   "fx": "impact_metal",
+   "at": "beat:drop",
+   "gain": -6
+  },
+  {
+   "fx": "ui_text_slam",
+   "at": "beat:drop+4",
+   "gain": -8
+  },
+  {
+   "fx": "impact_metal",
+   "at": "beat:drop+12",
+   "gain": -3
+  },
+  {
+   "fx": "sub_hit",
+   "at": "beat:drop+12",
+   "gain": -3
+  }
+ ],
+ "game_sfx": {
+  "gain": 3,
+  "mute": [
+   "ui_error",
+   "ui_scan_ping",
+   "fx_menu_hover"
+  ]
+ },
+ "mix": {
+  "lufs": -14,
+  "buses": {
+   "sfx": 0
+  }
+ },
+ "qa": {
+  "freeze": [
+   [
+    "beat:drop+2",
+    "beat:drop+4"
+   ],
+   [
+    "beat:drop+12",
+    15.0
+   ]
+  ]
+ }
+}

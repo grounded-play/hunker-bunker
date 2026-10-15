@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
     buildSteamConfig,
+    DEFAULT_REMOTE_BACKEND_URL,
     DEFAULT_STEAM_CONFIG,
     normalizeBackendUrl,
     normalizeSteamAppId,
@@ -63,6 +64,10 @@ describe('write-steam-config', () => {
             HB_STEAM_BACKEND_URL: 'http://localhost:3001',
             HB_STEAM_CONFIG_REQUIRE_REMOTE: '1'
         })).toThrow(/localhost/);
+
+        expect(buildSteamConfig({
+            HB_STEAM_CONFIG_REQUIRE_REMOTE: '1'
+        }).backendUrl).toBe(DEFAULT_REMOTE_BACKEND_URL);
 
         expect(() => requireRemoteSteamBackend({
             backendUrl: 'http://steam.example.test',

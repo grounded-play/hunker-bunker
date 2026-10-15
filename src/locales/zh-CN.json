@@ -256,7 +256,8 @@
       "commentary_list": "开发者评论",
       "commentary_read_all": "全部阅读",
       "content_guide": "内容指南（成人主题）",
-      "graphics": "图形"
+      "graphics": "图形",
+      "intro_style": "开场风格"
     },
     "action": {
       "open": "打开",
@@ -312,7 +313,10 @@
       "shake_normal": "正常 (100%)",
       "aim_assist_off": "关闭",
       "aim_assist_low": "低 (仅磁吸)",
-      "aim_assist_standard": "标准 (吸附+减速)"
+      "aim_assist_standard": "标准 (吸附+减速)",
+      "intro_tactical": "战术终端（电影级）",
+      "intro_timed": "语音同步（终端）",
+      "intro_classic": "经典打字机"
     },
     "aria": {
       "language_select": "游戏语言",
@@ -504,7 +508,9 @@
       "accent_credits": "// 制作名单"
     },
     "hero_detail": {
-      "chassis_spec": "机体规格"
+      "chassis_spec": "机体规格",
+      "initializing_3d_operator": "正在初始化 {type} 3D干员…",
+      "preview_3d_unavailable": "{type} 3D预览不可用"
     },
     "archive": {
       "bunker_archive": "◈ 地堡档案",
@@ -1250,7 +1256,25 @@
       "assembled": "已组装{item}。",
       "trade_failed": "交换失败：{reason}。",
       "assemble_failed": "组装失败：{reason}。",
-      "reagents_owned": "锭 {ingots} · 矩阵 {matrix} · 龙涎香 {ambergris}"
+      "reagents_owned": "锭 {ingots} · 矩阵 {matrix} · 龙涎香 {ambergris}",
+      "search_placeholder": "搜索库存...",
+      "group_all": "所有物品",
+      "group_cosmetics": "外观",
+      "group_mods": "配件模组",
+      "group_materials": "材料",
+      "group_caches": "宝箱与钥匙",
+      "rarity_all": "所有稀有度",
+      "sort_recent": "最新获得",
+      "sort_name": "名称",
+      "sort_rarity": "稀有度",
+      "sort_quantity": "数量",
+      "clear_filters": "清除筛选",
+      "count_summary": "{types} 种物品 · 共 {total} 件",
+      "count_filtered": "{visible} / {total} 件物品 ({types} 种)",
+      "no_matching_items": "没有符合筛选条件的物品",
+      "no_items": "STEAM 仓库中没有物品",
+      "skip_reveal": "立即揭晓",
+      "retry_sync": "重试同步"
     },
     "lobby": {
       "connecting": "正在连接…",
@@ -1345,6 +1369,7 @@
       "online": "在线",
       "ready_deficit": "就绪 — 资源不足",
       "ready_permitted": "就绪 — 允许建造",
+      "install_required": "回收并安装{module}",
       "resolved": "已解决",
       "choice_required": "需要抉择",
       "event_resolved": "终端事件已解决。商店系统仍可使用。",

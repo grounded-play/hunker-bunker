@@ -1,0 +1,862 @@
+{
+ "_doc": "Trailer v4 gameplay cut. docs/planning/trailer-v4-capture-edit-and-sound-plan-2026-10-14.md \u00a74. Beat refs resolve on trailer/edl/under-siege-combat-alert.grid.json with the drop at 42.0 s. Build: npm run trailer:build:v4 -- gameplay-trailer",
+ "fps": 60,
+ "size": [
+  1920,
+  1080
+ ],
+ "music": {
+  "file": "public/audio/ost/Under Siege (Combat Alert).mp3",
+  "grid": "trailer/edl/under-siege-combat-alert.grid.json",
+  "anchor": {
+   "beat": "drop",
+   "at": 42.0
+  },
+  "start": "beat:drop-56",
+  "end": "bar:drop+8",
+  "gain": -1,
+  "fadeIn": 0.8,
+  "lowpass": [
+   [
+    "beat:drop-56",
+    380
+   ],
+   [
+    "beat:drop-44",
+    1400
+   ],
+   [
+    "beat:drop-32",
+    19000
+   ]
+  ],
+  "tapeStop": {
+   "len": 0.9
+  }
+ },
+ "video": [
+  {
+   "shot": "cold-open-tank",
+   "in": 0.25,
+   "until": 3.4,
+   "grade": "night"
+  },
+  {
+   "shot": "crawler-lunge",
+   "in": 0.0,
+   "until": 5.4,
+   "speed": [
+    [
+     0,
+     1
+    ],
+    [
+     1.1,
+     1
+    ],
+    [
+     1.5,
+     0.35
+    ]
+   ],
+   "grade": "night"
+  },
+  {
+   "black": true,
+   "until": "beat:drop-56"
+  },
+  {
+   "shot": "wreck-dawn-wide",
+   "in": 0.0,
+   "until": "beat:drop-50",
+   "fadeIn": 10,
+   "grade": "cold"
+  },
+  {
+   "kind": "split3",
+   "until": "beat:drop-44",
+   "flash": 2,
+   "stagger": 4,
+   "panels": [
+    {
+     "shot": "scout-dash",
+     "in": 0.05,
+     "grade": "cold",
+     "speed": 0.75
+    },
+    {
+     "shot": "tank-smash",
+     "in": 0.05,
+     "grade": "cold",
+     "speed": 0.75
+    },
+    {
+     "shot": "engineer-turret",
+     "in": 0.05,
+     "grade": "cold",
+     "speed": 0.75
+    }
+   ]
+  },
+  {
+   "shot": "salvage",
+   "in": 0.0,
+   "until": "beat:drop-38",
+   "grade": "cold"
+  },
+  {
+   "shot": "walk-rim",
+   "in": 0.0,
+   "until": "beat:drop-32",
+   "grade": "cold",
+   "speed": 0.64
+  },
+  {
+   "shot": "lights-out",
+   "in": 0.0,
+   "until": "beat:drop-23",
+   "grade": "cold",
+   "flicker": {
+    "at": 1.5,
+    "after": "dark"
+   }
+  },
+  {
+   "shot": "welcome-committee",
+   "in": 0.0,
+   "until": "beat:drop-15",
+   "grade": "cold",
+   "speed": 0.97
+  },
+  {
+   "shot": "walk-bunker",
+   "in": 0.3,
+   "until": "beat:drop-13",
+   "grade": "cold"
+  },
+  {
+   "shot": "walk-cryo",
+   "in": 0.3,
+   "until": "beat:drop-11",
+   "grade": "cold"
+  },
+  {
+   "shot": "walk-bio",
+   "in": 0.3,
+   "until": "beat:drop-9",
+   "grade": "cold"
+  },
+  {
+   "shot": "o2-critical",
+   "in": 0.0,
+   "until": "beat:drop-2",
+   "speed": 0.88,
+   "push": {
+    "from": 1.0,
+    "to": 1.22,
+    "cx": 0.45,
+    "cy": 0.7
+   },
+   "grade": "cold"
+  },
+  {
+   "black": true,
+   "until": "beat:drop"
+  },
+  {
+   "shot": "drop-shotgun",
+   "in": 0.2,
+   "until": "beat:drop+2",
+   "flash": 2,
+   "grade": "hot",
+   "shakeAt": [
+    {
+     "at": 0.03,
+     "amp": 0.014,
+     "len": 0.3
+    }
+   ]
+  },
+  {
+   "shot": "drop-rail",
+   "in": 0.08,
+   "until": "beat:drop+4",
+   "speed": [
+    [
+     0,
+     1
+    ],
+    [
+     0.15,
+     0.25
+    ]
+   ],
+   "freeze": {
+    "at": 0.32,
+    "frames": 8
+   },
+   "glitch": [
+    {
+     "at": 0.32,
+     "frames": 2
+    }
+   ],
+   "grade": "hot"
+  },
+  {
+   "shot": "drop-flame",
+   "in": 0.3,
+   "until": "beat:drop+6",
+   "grade": "hot",
+   "whipOut": 6
+  },
+  {
+   "shot": "drop-cryo",
+   "in": 0.05,
+   "until": "beat:drop+8",
+   "speed": [
+    [
+     0,
+     0.3
+    ],
+    [
+     0.9,
+     1
+    ]
+   ],
+   "whipIn": 6,
+   "grade": "hot"
+  },
+  {
+   "shot": "drop-turret",
+   "in": 0.4,
+   "until": "beat:drop+10",
+   "shake": 0.003,
+   "grade": "hot"
+  },
+  {
+   "shot": "scout-dash",
+   "in": 0.0,
+   "until": "beat:drop+12",
+   "speed": [
+    [
+     0,
+     1
+    ],
+    [
+     0.2,
+     0.45
+    ],
+    [
+     0.6,
+     1
+    ]
+   ],
+   "grade": "hot"
+  },
+  {
+   "shot": "camp-siege",
+   "in": 1.0,
+   "until": "beat:drop+14",
+   "grade": "hot"
+  },
+  {
+   "shot": "hive-pulse",
+   "in": 0.4,
+   "until": "beat:drop+16",
+   "push": {
+    "from": 1.0,
+    "to": 1.15
+   },
+   "grade": "hot"
+  },
+  {
+   "shot": "drop-smg",
+   "in": 0.4,
+   "until": "beat:drop+17",
+   "grade": "hot",
+   "flash": 2
+  },
+  {
+   "shot": "drop-pulse",
+   "in": 0.4,
+   "until": "beat:drop+18",
+   "grade": "hot"
+  },
+  {
+   "shot": "drop-tesla",
+   "in": 0.4,
+   "until": "beat:drop+19",
+   "grade": "hot"
+  },
+  {
+   "shot": "cold-open-tank",
+   "in": 2.0,
+   "until": "beat:drop+20",
+   "grade": "hot"
+  },
+  {
+   "shot": "drop-shotgun",
+   "in": 1.2,
+   "until": "beat:drop+21",
+   "grade": "hot"
+  },
+  {
+   "shot": "tank-smash",
+   "in": 1.2,
+   "until": "beat:drop+22",
+   "grade": "hot"
+  },
+  {
+   "shot": "drop-flame",
+   "in": 1.4,
+   "until": "beat:drop+23",
+   "grade": "hot"
+  },
+  {
+   "shot": "welcome-committee",
+   "in": 4.0,
+   "until": "beat:drop+24",
+   "grade": "hot"
+  },
+  {
+   "shot": "boss-charge",
+   "in": 0.25,
+   "until": "beat:drop+28",
+   "grade": "hot",
+   "flash": 2,
+   "shakeAt": [
+    {
+     "at": 0.05,
+     "amp": 0.01
+    }
+   ]
+  },
+  {
+   "shot": "queen-fight",
+   "in": 0.4,
+   "until": "bar:drop+8",
+   "grade": "hot"
+  },
+  {
+   "shot": "hive-pulse",
+   "in": 0.3,
+   "until": 66.0,
+   "grade": "sick",
+   "glitch": [
+    {
+     "at": 3.0,
+     "frames": 4
+    }
+   ]
+  },
+  {
+   "shot": "queen-push",
+   "in": 0.0,
+   "until": 71.0,
+   "push": {
+    "from": 1.0,
+    "to": 1.22,
+    "cx": 0.62,
+    "cy": 0.42
+   },
+   "grade": "sick"
+  },
+  {
+   "shot": "queen-turn",
+   "in": 0.0,
+   "until": 75.1,
+   "grade": "sick",
+   "speed": 0.95
+  },
+  {
+   "black": true,
+   "until": 75.6
+  },
+  {
+   "shot": "title-reveal",
+   "in": 0.4,
+   "until": 85.6,
+   "flash": 3,
+   "push": {
+    "from": 1.0,
+    "to": 1.08
+   }
+  }
+ ],
+ "text": [
+  {
+   "style": "small",
+   "text": "SCOUT",
+   "at": "beat:drop-50",
+   "dur": "6beats",
+   "x": "320-text_w/2",
+   "y": "h-110",
+   "size": 34
+  },
+  {
+   "style": "small",
+   "text": "TANK",
+   "at": "beat:drop-50+0.066",
+   "dur": "6beats",
+   "x": "960-text_w/2",
+   "y": "h-110",
+   "size": 34
+  },
+  {
+   "style": "small",
+   "text": "ENGINEER",
+   "at": "beat:drop-50+0.133",
+   "dur": "6beats",
+   "x": "1600-text_w/2",
+   "y": "h-110",
+   "size": 34
+  },
+  {
+   "style": "kinetic",
+   "text": "SALVAGE.",
+   "at": "beat:drop-37",
+   "dur": "1beats",
+   "size": 140
+  },
+  {
+   "style": "kinetic",
+   "text": "BANK IT.",
+   "at": "beat:drop-35",
+   "dur": "1beats",
+   "size": 140
+  },
+  {
+   "style": "kinetic",
+   "text": "GO DEEPER.",
+   "at": "beat:drop-33",
+   "dur": "1beats",
+   "size": 140
+  },
+  {
+   "style": "kinetic",
+   "text": "3 OPERATORS",
+   "at": "beat:drop+4",
+   "dur": "1.5beats",
+   "size": 130
+  },
+  {
+   "style": "kinetic",
+   "text": "3 BIOMES",
+   "at": "beat:drop+8",
+   "dur": "1.5beats",
+   "size": 130
+  },
+  {
+   "style": "kinetic",
+   "text": "BOSSES",
+   "at": "beat:drop+24",
+   "dur": "1.5beats",
+   "size": 130
+  },
+  {
+   "style": "kinetic",
+   "text": "10 ENDINGS",
+   "at": "beat:drop+28",
+   "dur": "1.5beats",
+   "size": 130
+  },
+  {
+   "style": "cta",
+   "text": "WISHLIST ON STEAM",
+   "at": 81.0,
+   "dur": 4.6,
+   "y": "h*0.62",
+   "size": 76
+  },
+  {
+   "style": "small",
+   "text": "Pre-release gameplay",
+   "at": 81.4,
+   "dur": 4.2,
+   "y": "h-70",
+   "size": 26,
+   "color": "white@0.6"
+  }
+ ],
+ "letterbox": [
+  {
+   "from": "beat:drop+24",
+   "to": 75.1
+  }
+ ],
+ "dialogue": [
+  {
+   "file": "public/audio/voice/mothership/voice_mothership_01_alive.mp3",
+   "at": 5.55,
+   "trim": [
+    0.0,
+    0.74
+   ],
+   "fx": "radio",
+   "gain": 0
+  },
+  {
+   "file": "public/audio/voice/mothership/voice_mothership_01_alive.mp3",
+   "at": 7.0,
+   "trim": [
+    1.55,
+    2.5
+   ],
+   "fx": "radio",
+   "gain": 0
+  },
+  {
+   "file": "public/audio/voice/mothership/voice_mothership_01_alive.mp3",
+   "at": 14.2,
+   "trim": [
+    8.7,
+    11.2
+   ],
+   "fx": "radio",
+   "gain": 0
+  },
+  {
+   "file": "public/audio/voice/bunker/voice_bunker_01_enjoy_darkness.mp3",
+   "at": 21.18,
+   "trim": [
+    3.78,
+    9.6
+   ],
+   "fx": "pa",
+   "gain": 0
+  },
+  {
+   "file": "public/audio/voice/bunker/voice_bunker_02_welcome_committee.mp3",
+   "at": 27.7,
+   "trim": [
+    2.5,
+    6.1
+   ],
+   "fx": "pa",
+   "gain": 0
+  },
+  {
+   "file": "public/audio/voice/bunker/voice_bunker_03_depth_disapproves.mp3",
+   "at": 37.4,
+   "trim": [
+    9.25,
+    13.25
+   ],
+   "fx": "pa",
+   "gain": 0
+  },
+  {
+   "file": "public/audio/voice/mothership/voice_mothership_03_orbital_purge.mp3",
+   "at": 62.7,
+   "trim": [
+    1.25,
+    7.75
+   ],
+   "fx": "radio",
+   "gain": 0
+  },
+  {
+   "file": "public/audio/voice/queen/voice_queen_01_two_heartbeats.mp3",
+   "at": 71.2,
+   "trim": [
+    0.18,
+    4.1
+   ],
+   "fx": "queen",
+   "gain": 1
+  },
+  {
+   "file": "public/audio/voice/bunker/voice_bunker_02_welcome_committee.mp3",
+   "at": 81.4,
+   "trim": [
+    7.0,
+    10.4
+   ],
+   "fx": "pa",
+   "gain": 0
+  }
+ ],
+ "kit": [
+  {
+   "fx": "sub_hit",
+   "at": 0.02,
+   "gain": -14
+  },
+  {
+   "fx": "whoosh_short",
+   "end": 3.42,
+   "gain": -12
+  },
+  {
+   "fx": "impact_metal",
+   "at": 5.4,
+   "gain": -8
+  },
+  {
+   "fx": "whoosh_long",
+   "end": "beat:drop-50",
+   "gain": -14
+  },
+  {
+   "fx": "ui_text_slam",
+   "at": "beat:drop-50",
+   "gain": -10
+  },
+  {
+   "fx": "ui_text_slam",
+   "at": "beat:drop-37",
+   "gain": -6
+  },
+  {
+   "fx": "ui_text_slam",
+   "at": "beat:drop-35",
+   "gain": -6
+  },
+  {
+   "fx": "ui_text_slam",
+   "at": "beat:drop-33",
+   "gain": -6
+  },
+  {
+   "fx": "glitch_burst",
+   "at": 23.1,
+   "gain": -10
+  },
+  {
+   "fx": "sub_hit",
+   "at": 23.1,
+   "gain": -8
+  },
+  {
+   "fx": "whoosh_short",
+   "end": "beat:drop-13",
+   "gain": -12
+  },
+  {
+   "fx": "whoosh_alt",
+   "end": "beat:drop-11",
+   "gain": -12
+  },
+  {
+   "fx": "whoosh_short",
+   "end": "beat:drop-9",
+   "gain": -12
+  },
+  {
+   "fx": "heartbeat",
+   "at": "beat:drop-9",
+   "gain": -8
+  },
+  {
+   "fx": "riser_4s",
+   "end": "beat:drop-2",
+   "gain": -8
+  },
+  {
+   "fx": "reverse_swell",
+   "end": "beat:drop",
+   "gain": -6
+  },
+  {
+   "fx": "sub_hit",
+   "at": "beat:drop",
+   "gain": -2
+  },
+  {
+   "fx": "impact_metal",
+   "at": "beat:drop",
+   "gain": -6
+  },
+  {
+   "fx": "ui_text_slam",
+   "at": "beat:drop+4",
+   "gain": -8
+  },
+  {
+   "fx": "ui_text_slam",
+   "at": "beat:drop+8",
+   "gain": -8
+  },
+  {
+   "fx": "whoosh_short",
+   "end": "beat:drop+6.2",
+   "gain": -10
+  },
+  {
+   "fx": "sub_hit",
+   "at": "beat:drop+16",
+   "gain": -6
+  },
+  {
+   "fx": "impact_metal",
+   "at": "beat:drop+24",
+   "gain": -5
+  },
+  {
+   "fx": "ui_text_slam",
+   "at": "beat:drop+24",
+   "gain": -8
+  },
+  {
+   "fx": "ui_text_slam",
+   "at": "beat:drop+28",
+   "gain": -8
+  },
+  {
+   "fx": "drone_low",
+   "at": "bar:drop+8",
+   "gain": -10
+  },
+  {
+   "fx": "glitch_burst",
+   "at": 65.0,
+   "gain": -10
+  },
+  {
+   "fx": "heartbeat",
+   "at": 67.5,
+   "gain": -6
+  },
+  {
+   "fx": "braam",
+   "at": 74.0,
+   "gain": -2
+  },
+  {
+   "fx": "reverse_swell",
+   "end": 75.6,
+   "gain": -6
+  },
+  {
+   "fx": "impact_metal",
+   "at": 75.6,
+   "gain": -3
+  },
+  {
+   "fx": "sub_hit",
+   "at": 75.6,
+   "gain": -3
+  },
+  {
+   "fx": "drone_low",
+   "at": 77.0,
+   "gain": -16
+  }
+ ],
+ "ambience": [
+  {
+   "file": "public/audio/ambient/room_tone_interior_bunker.ogg",
+   "from": 0,
+   "to": 5.4,
+   "gain": -20
+  },
+  {
+   "file": "public/audio/ambient/room_tone_exterior_wind.ogg",
+   "from": 6.0,
+   "to": "beat:drop-44",
+   "gain": -18
+  },
+  {
+   "file": "public/audio/ambient/room_tone_interior_bunker.ogg",
+   "from": "beat:drop-32",
+   "to": "beat:drop-13",
+   "gain": -16
+  },
+  {
+   "file": "public/audio/ambient/room_tone_cryo_subzero.ogg",
+   "from": "beat:drop-13",
+   "to": "beat:drop-11",
+   "gain": -14,
+   "fade": 0.08
+  },
+  {
+   "file": "public/audio/ambient/room_tone_bio_hive.ogg",
+   "from": "beat:drop-11",
+   "to": "beat:drop-9",
+   "gain": -14,
+   "fade": 0.08
+  },
+  {
+   "file": "public/audio/ambient/room_tone_exterior_wind.ogg",
+   "from": "beat:drop-9",
+   "to": "beat:drop-2",
+   "gain": -14
+  },
+  {
+   "file": "public/audio/ambient/room_tone_bio_hive.ogg",
+   "from": "bar:drop+8",
+   "to": 75.1,
+   "gain": -14
+  },
+  {
+   "file": "public/audio/ambient/room_tone_exterior_wind.ogg",
+   "from": 80.6,
+   "to": 85.6,
+   "gain": -20
+  }
+ ],
+ "game_sfx": {
+  "gain": 3,
+  "mute": [
+   "ui_error",
+   "ui_scan_ping",
+   "fx_menu_hover"
+  ]
+ },
+ "mix": {
+  "lufs": -14,
+  "duckDb": 9,
+  "buses": {
+   "music": 0,
+   "dialogue": 2,
+   "sfx": 0,
+   "kit": 0,
+   "amb": 0
+  }
+ },
+ "qa": {
+  "black": [
+   [
+    5.3,
+    "beat:drop-56"
+   ],
+   [
+    "beat:drop-2",
+    "beat:drop"
+   ],
+   [
+    74.9,
+    75.7
+   ]
+  ],
+  "freeze": [
+   [
+    "beat:drop+2",
+    "beat:drop+4"
+   ],
+   [
+    75.6,
+    80.6
+   ],
+   [
+    80.6,
+    85.6
+   ]
+  ]
+ },
+ "thumbnails": [
+  {
+   "at": "beat:drop+2.6",
+   "name": "railgun-freeze"
+  },
+  {
+   "at": "beat:drop+26.5",
+   "name": "boss"
+  },
+  {
+   "at": 72.5,
+   "name": "queen"
+  }
+ ]
+}

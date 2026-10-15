@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DRESSING_TRIANGLES } from './data/dressingTriangles.js';
 import { WORLD_3D_MODELS } from './world3dOverlay.js';
 import { WORLD_DRESSING_LIMITS, planWorldDressing } from './worldDressing.js';
+import { stampCrashSiteOrigin } from './crashSiteBuild.js';
 
 const SIZE = 31;
 // A maze chunk: one long 3-wide hall running east-west with a dead end at
@@ -109,13 +110,12 @@ describe('planWorldDressing in mazes', () => {
 });
 
 describe('planWorldDressing at the crash site', () => {
-    // The authored crash room (ThreeGame.clearSpawnArea): floor x 2-16, y 4-17
+    // The authored crash room (ThreeGame.clearSpawnArea): floor x 1-17, y 4-19
     // inside a wall band, canyon outside, and a 3-wide hall north to the edge.
     const CRASH_SIZE = 49;
     function crashGrid() {
         const rows = Array.from({ length: CRASH_SIZE }, () => Array(CRASH_SIZE).fill('X'));
-        for (let y = 3; y <= 18; y += 1) for (let x = 1; x <= 17; x += 1) rows[y][x] = x >= 2 && x <= 16 && y >= 4 && y <= 17 ? '.' : '#';
-        for (let y = 0; y <= 3; y += 1) for (let x = 8; x <= 10; x += 1) rows[y][x] = '.';
+        stampCrashSiteOrigin(rows);
         return rows.map((row) => row.join(''));
     }
     // What stands there already: the wreck at (9, 9), its console and the four

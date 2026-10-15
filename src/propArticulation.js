@@ -4,6 +4,7 @@
  * Each part is a named HB_* node whose glTF extras say how it moves; three.js
  * loads those into `userData`:
  *   hinge: hb_axis, hb_open_angle (radians, rest -> open), hb_open_offset, hb_duration
+ *   slide: hb_open_offset, hb_duration
  *   spin:  hb_axis, hb_speed (radians/second while working), hb_bob (travel along the axis)
  * The rest pose is closed / stopped. Axes and offsets are in the part's parent
  * space, so every pose is `axisAngle(axis, angle) * rest`.
@@ -31,11 +32,11 @@ function readPart(node) {
         restQuaternion: node.quaternion.clone(),
         restPosition: node.position.clone()
     };
-    if (data.hb_motion === 'hinge') {
+    if (data.hb_motion === 'hinge' || data.hb_motion === 'slide') {
         const [ox = 0, oy = 0, oz = 0] = data.hb_open_offset ?? [];
         return {
             ...base,
-            motion: 'hinge',
+            motion: data.hb_motion,
             openAngle: Number(data.hb_open_angle) || 0,
             openOffset: new THREE.Vector3(ox, oy, oz),
             duration: Math.max(0.05, Number(data.hb_duration) || 0.9),
@@ -79,7 +80,7 @@ export function createPropArticulation(model) {
         if (part) parts.push(part);
     });
     if (parts.length === 0) return null;
-    const hinges = parts.filter((part) => part.motion === 'hinge');
+    const hinges = parts.filter((part) => part.motion === 'hinge' || part.motion === 'slide');
     const rotors = parts.filter((part) => part.motion === 'spin');
     let open = false;
     let working = false;

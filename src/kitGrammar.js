@@ -182,7 +182,19 @@ export function corridorKitPlacement(grid, x, y, biome, { width = 0 } = {}) {
     const reach = Math.max(0, Math.floor(Number(width) || 0)) + 1;
     const open = ['n', 'e', 's', 'w'].filter((direction) => {
         const [dx, dy] = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] }[direction];
-        return grid[y + dy * reach]?.[x + dx * reach] === '.';
+        const probeX = x + dx * reach;
+        const probeY = y + dy * reach;
+        if (probeY >= 0 && probeY < grid.length && probeX >= 0 && probeX < (grid[probeY]?.length ?? 0)) {
+            return grid[probeY][probeX] === '.';
+        }
+        // The probe left the chunk: a carve that runs unbroken to the edge
+        // continues into the neighbour chunk, so it is an exit, not a dead end.
+        for (let step = 1; step < reach; step += 1) {
+            const cell = grid[y + dy * step]?.[x + dx * step];
+            if (cell === undefined) break;
+            if (cell !== '.') return false;
+        }
+        return true;
     });
     let role;
     if (open.length >= 4) role = 'corridorCross';

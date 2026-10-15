@@ -2483,18 +2483,6 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
               box-shadow 0.38s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-#char-preview-sprite {
-  position: relative;
-  z-index: 1;
-  width: calc(var(--vu) * 14.5);
-  height: auto;
-  image-rendering: pixelated;
-  filter:
-    drop-shadow(0 0 18px var(--sprite-glow, rgba(255, 159, 28, 0.25)))
-    drop-shadow(0 calc(var(--vu) * 0.8) calc(var(--vu) * 1.4) rgba(0, 0, 0, 0.55));
-  transform: translateY(calc(var(--vu) * 0.25)) scale(1.3);
-}
-
 #char-preview-3d {
   position: absolute;
   inset: 0;
@@ -2507,20 +2495,22 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
     drop-shadow(0 calc(var(--vu) * 0.7) calc(var(--vu) * 1.2) rgba(0, 0, 0, 0.6));
 }
 
-.char-preview-fallback {
+.char-preview-loading {
   position: absolute;
-  inset: 4% 8% 0;
-  z-index: 1;
-  width: 84%;
-  height: 96%;
-  object-fit: contain;
-  object-position: center bottom;
-  filter: drop-shadow(0 0 12px var(--sprite-glow, rgba(255, 255, 255, 0.25)));
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: calc(var(--vu) * 1.5);
+  color: rgba(213, 237, 246, 0.78);
+  font: 700 calc(var(--vu) * 0.72) / 1.35 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
 }
 
-#char-preview-sprite {
-  position: relative;
-  z-index: 2;
+.char-preview-loading[data-state="error"] {
+  color: #ff9d86;
 }
 
 .char-preview-stage::after {
@@ -7480,9 +7470,27 @@ html.boot-cursor-hidden * {
 /* Movies, cinematics, cutscenes and door transitions (main.js
    PRESENTATION_LAYER_SELECTOR): no native pointer, tactical cursor or
    gameplay reticle on top of the presentation. */
-html.presentation-cursor-hidden,
-html.presentation-cursor-hidden * {
+html.presentation-cursor-hidden:not(.presentation-pointer-active),
+html.presentation-cursor-hidden:not(.presentation-pointer-active) *:not(.global-skip-btn):not(.class-intro-skip):not(.cinematic-still-skip) {
   cursor: none !important;
+}
+
+html.presentation-cursor-hidden.presentation-pointer-active {
+  cursor: default !important;
+}
+
+html.presentation-cursor-hidden.presentation-pointer-active * {
+  cursor: default;
+}
+
+html.presentation-cursor-hidden .global-skip-btn,
+html.presentation-cursor-hidden .class-intro-skip,
+html.presentation-cursor-hidden .cinematic-still-skip,
+.global-skip-btn,
+.class-intro-skip,
+.cinematic-still-skip {
+  cursor: pointer !important;
+  pointer-events: auto !important;
 }
 
 html.presentation-cursor-hidden #tactical-cursor,
@@ -8517,6 +8525,36 @@ body.mission-intro-active #game-container canvas {
   transform: translateY(calc(var(--vu) * 4));
   opacity: 0;
   transition: transform 300ms cubic-bezier(0.2, 0.7, 0.25, 1), opacity 260ms ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.mothership-panel-video-wrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.mothership-dialogue-video-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.32;
+  filter: contrast(1.18) brightness(0.9);
+  mix-blend-mode: screen;
+}
+
+.mothership-dialogue-panel > *:not(.mothership-panel-video-wrap) {
+  position: relative;
+  z-index: 3;
+}
+
+.mothership-dialogue-panel > .terminal-scanline,
+.mothership-dialogue-panel > .terminal-flicker {
+  z-index: 2;
 }
 
 .snail-encounter-panel {
@@ -15094,17 +15132,40 @@ body.cutscene-video-active .tactical-overlay {
   position: absolute;
   right: calc(var(--vu) * 4);
   bottom: calc(var(--vu) * 3);
-  font-family: monospace;
+  font-family: 'Outfit', monospace, sans-serif;
   font-size: 11px;
+  font-weight: 700;
   letter-spacing: 0.18em;
-  color: var(--text-muted);
-  opacity: 0;
-  animation: class-intro-skip-in 0.4s ease 1.4s forwards;
-  pointer-events: none;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(11, 13, 15, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  padding: 8px 16px;
+  border-radius: 6px;
+  opacity: 0.9;
+  transition: all 0.2s ease;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  z-index: 99999;
+  user-select: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
 }
 
-@keyframes class-intro-skip-in {
-  to { opacity: 0.85; }
+.class-intro-skip:hover,
+.class-intro-skip:focus-visible {
+  opacity: 1;
+  background: rgba(255, 74, 74, 0.35);
+  border-color: var(--accent-secondary, #ff4a4a);
+  color: #fff;
+  transform: scale(1.04);
+  box-shadow: 0 0 14px rgba(255, 74, 74, 0.5);
+  outline: none;
+}
+
+html.presentation-pointer-active .class-intro-skip,
+html.presentation-pointer-active .global-skip-btn {
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 /* docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 4: squad roster
@@ -15409,6 +15470,196 @@ body.cutscene-video-active .tactical-overlay {
     transform: none;
     transition: opacity 180ms linear;
   }
+}
+
+/* ── Cinematic Headshot HUD (Overlaid on cutscene video) ── */
+.cinematic-headshot-hud {
+  position: absolute;
+  top: clamp(24px, 4vh, 48px);
+  left: clamp(24px, 4vw, 56px);
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(8, 14, 22, 0.92), rgba(3, 7, 12, 0.96));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: clamp(12px, 1.5vw, 18px);
+  border-radius: 8px;
+  border: 1px solid rgba(125, 255, 90, 0.35);
+  border-top: 2px solid #7dff5a;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85), 0 0 28px rgba(125, 255, 90, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+  animation: comms-hud-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  max-width: clamp(280px, 30vw, 380px);
+}
+
+@keyframes comms-hud-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.cinematic-headshot-hud__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(10px, 0.9vw, 12px);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #7dff5a;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(125, 255, 90, 0.2);
+  padding-bottom: 6px;
+}
+
+.cinematic-headshot-hud__beacon {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7dff5a;
+  box-shadow: 0 0 10px #7dff5a;
+  animation: comms-beacon-pulse 1.2s infinite ease-in-out;
+  flex-shrink: 0;
+}
+
+@keyframes comms-beacon-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.75); }
+}
+
+.cinematic-headshot-hud__status {
+  text-shadow: 0 0 8px rgba(125, 255, 90, 0.6);
+}
+
+.cinematic-headshot-hud__channel {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: clamp(9px, 0.8vw, 11px);
+}
+
+.cinematic-headshot-hud__card {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1.2vw, 16px);
+}
+
+.cinematic-headshot-hud__portrait-frame {
+  position: relative;
+  width: clamp(72px, 8vw, 96px);
+  height: clamp(72px, 8vw, 96px);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1.5px solid rgba(125, 255, 90, 0.7);
+  background: rgba(0, 0, 0, 0.85);
+  box-shadow: 0 0 16px rgba(125, 255, 90, 0.25);
+  flex-shrink: 0;
+}
+
+.cinematic-headshot-hud__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(0.9) contrast(1.1) brightness(0.9);
+}
+
+.cinematic-headshot-hud__scanline {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(125, 255, 90, 0.2) 50%, transparent 100%);
+  background-size: 100% 8px;
+  pointer-events: none;
+  animation: comms-scanline-sweep 3s linear infinite;
+}
+
+@keyframes comms-scanline-sweep {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.cinematic-headshot-hud__corner {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-color: #7dff5a;
+  border-style: solid;
+  pointer-events: none;
+}
+.cinematic-headshot-hud__corner--tl { top: 2px; left: 2px; border-width: 2px 0 0 2px; }
+.cinematic-headshot-hud__corner--tr { top: 2px; right: 2px; border-width: 2px 2px 0 0; }
+.cinematic-headshot-hud__corner--bl { bottom: 2px; left: 2px; border-width: 0 0 2px 2px; }
+.cinematic-headshot-hud__corner--br { bottom: 2px; right: 2px; border-width: 0 2px 2px 0; }
+
+.cinematic-headshot-hud__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cinematic-headshot-hud__name {
+  color: #7dff5a;
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(12px, 1.1vw, 15px);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(125, 255, 90, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cinematic-headshot-hud__callout {
+  color: rgba(255, 255, 255, 0.65);
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(10px, 0.9vw, 12px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cinematic-headshot-hud__meter {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.cinematic-headshot-hud__bar {
+  width: 3px;
+  height: 12px;
+  background: #7dff5a;
+  border-radius: 1px;
+  animation: comms-meter-bounce 0.8s ease-in-out infinite alternate;
+}
+.cinematic-headshot-hud__bar:nth-child(1) { height: 8px; animation-delay: 0.1s; }
+.cinematic-headshot-hud__bar:nth-child(2) { height: 14px; animation-delay: 0.3s; }
+.cinematic-headshot-hud__bar:nth-child(3) { height: 10px; animation-delay: 0.15s; }
+.cinematic-headshot-hud__bar:nth-child(4) { height: 16px; animation-delay: 0.4s; }
+
+@keyframes comms-meter-bounce {
+  0% { transform: scaleY(0.3); opacity: 0.5; }
+  100% { transform: scaleY(1.1); opacity: 1; }
+}
+
+.cinematic-headshot-hud__status-pill {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(125, 255, 90, 0.15);
+  border: 1px solid rgba(125, 255, 90, 0.4);
+  color: #7dff5a;
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(8px, 0.75vw, 10px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
 }
 
 /* ── Act 2 departure: ACT III tease card ── */
@@ -16189,6 +16440,46 @@ body.cutscene-video-active .tactical-overlay {
   font-weight: 800;
 }
 
+.vault-inventory-toolbar {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.5fr) repeat(3, minmax(112px, .8fr)) auto;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.vault-filter-control,
+.vault-filter-clear {
+  min-width: 0;
+  min-height: 34px;
+  border: 1px solid rgba(var(--vault-glow-rgb), .3);
+  border-radius: 4px;
+  background: rgba(3, 10, 18, .88);
+  color: #c9edf5;
+  padding: 5px 8px;
+  font: 800 10px 'Space Mono', monospace;
+  letter-spacing: .04em;
+}
+
+.vault-filter-clear {
+  cursor: pointer;
+  color: #22d3ee;
+}
+
+.vault-filter-clear:hover,
+.vault-filter-clear:focus-visible {
+  border-color: #22d3ee;
+  background: rgba(var(--vault-glow-rgb), .12);
+}
+
+.vault-inventory-summary {
+  min-height: 15px;
+  margin-bottom: 5px;
+  color: rgba(165, 243, 252, .62);
+  font: 800 9px 'Space Mono', monospace;
+  letter-spacing: .1em;
+  text-align: right;
+}
+
 .vault-right-column {
   flex: 1.2;
   min-width: calc(var(--vu) * 32);
@@ -16665,6 +16956,18 @@ body.cutscene-video-active .tactical-overlay {
   font-size: calc(var(--font-xs) * 0.76);
 }
 
+.vault-store-sync-btn {
+  justify-self: start;
+  border: 1px solid rgba(34, 211, 238, .55);
+  border-radius: 4px;
+  background: rgba(34, 211, 238, .1);
+  color: #a5f3fc;
+  padding: 5px 9px;
+  font: 800 9px 'Space Mono', monospace;
+  letter-spacing: .08em;
+  cursor: pointer;
+}
+
 .vault-store-open-btn {
   flex: 0 0 auto !important;
   min-width: 0 !important;
@@ -17027,6 +17330,38 @@ body.cutscene-video-active .tactical-overlay {
   filter: brightness(1.15) !important;
   transform: translateY(-2px) !important;
   box-shadow: 0 0 30px rgba(34, 211, 238, 0.7) !important;
+}
+
+.vault-reveal-skip-btn {
+  display: none !important;
+  margin-top: 10px;
+  background: rgba(3, 10, 18, 0.85) !important;
+  color: #22d3ee !important;
+  border: 1px solid rgba(34, 211, 238, 0.6) !important;
+  font-family: 'Space Mono', monospace !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.1em !important;
+  padding: 6px 16px !important;
+  border-radius: 4px !important;
+  cursor: pointer;
+  transition: all 0.2s ease !important;
+}
+
+.vault-reveal-skip-btn:hover,
+.vault-reveal-skip-btn:focus-visible {
+  background: rgba(34, 211, 238, 0.2) !important;
+  border-color: #22d3ee !important;
+}
+
+.vault-reveal-overlay[data-state="spinning"] .vault-reveal-skip-btn {
+  display: inline-flex !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vault-reveal-strip {
+    transition: none !important;
+  }
 }
 
 /* Sequential Season Pass promotion ceremony. The DOM is created lazily by
@@ -17740,8 +18075,10 @@ body.cutscene-video-active .tactical-overlay {
   .vault-grid {
     grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)) !important;
     gap: 6px !important;
-    max-height: 220px !important;
+    max-height: none !important;
   }
+  .vault-inventory-toolbar { grid-template-columns: minmax(150px, 1.3fr) repeat(3, minmax(100px, .8fr)) auto; }
+  .vault-filter-control, .vault-filter-clear { min-height: 30px; padding: 4px 6px; font-size: 8px; }
   .vault-details-panel {
     padding: 10px !important;
   }
@@ -23698,8 +24035,8 @@ body.contrast-max .hud-panel {
 
 /* Full-screen, paged settings: categories replace the continuous scroll. */
 .modal-content.settings-modal-panel { width: calc(100% - 24px) !important; height: min(94vh, 1040px) !important; max-width: 1680px !important; max-height: 94vh !important; }
-.settings-tabs { flex: 0 0 auto; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; padding: 10px clamp(14px, 2vw, 34px); border-bottom: 1px solid rgba(255,159,28,.3); background: rgba(8,12,17,.72); }
-.settings-tab { min-height: 44px; border: 1px solid rgba(255,159,28,.28); border-radius: 5px; background: rgba(255,159,28,.04); color: rgba(255,224,180,.68); font: 900 clamp(13px,1.15vw,18px) 'Outfit',sans-serif; letter-spacing: .12em; cursor: pointer; }
+.settings-tabs { flex: 0 0 auto; display: flex; flex-wrap: nowrap; gap: 8px; padding: 10px clamp(14px, 2vw, 34px); overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; overscroll-behavior-x: contain; scroll-snap-type: x proximity; border-bottom: 1px solid rgba(255,159,28,.3); background: rgba(8,12,17,.72); }
+.settings-tab { flex: 1 1 0; min-width: 0; min-height: 44px; scroll-snap-align: nearest; white-space: nowrap; border: 1px solid rgba(255,159,28,.28); border-radius: 5px; background: rgba(255,159,28,.04); color: rgba(255,224,180,.68); font: 900 clamp(11px,1vw,16px) 'Outfit',sans-serif; letter-spacing: clamp(.05em,.08vw,.12em); cursor: pointer; }
 .settings-tab.active { color: #fff2d4; border-color: #ff9f1c; background: rgba(255,159,28,.2); box-shadow: inset 0 -3px 0 #ff9f1c,0 0 16px rgba(255,159,28,.14); }
 .settings-modal-panel .settings-modal-content { overflow: hidden !important; padding: clamp(12px,1.7vw,28px) !important; }
 .settings-modal-content > .settings-category-group:not(.hidden) { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-content: start; gap: clamp(7px,.8vh,12px) clamp(14px,2vw,30px); height: 100%; margin: 0; overflow: hidden; }
@@ -23753,19 +24090,19 @@ body.contrast-max .hud-panel {
 
 @media (max-width: 760px), (max-height: 620px) {
   .settings-modal-content > .settings-category-group:not(.hidden), .terminal-objectives-grid { grid-template-columns: 1fr; overflow-y: auto; }
-  .settings-tabs { grid-template-columns: repeat(2,1fr); }
+  .settings-tab { flex: 0 0 auto; min-width: max(128px, 28vw); }
   .terminal-objective-log-summary { grid-template-columns: repeat(2,1fr); }
 }
 
 @media (min-width: 761px) and (max-width: 1180px) and (min-height: 621px) {
-  .settings-tabs { grid-template-columns: repeat(3, 1fr); }
+  .settings-tab { flex: 0 0 auto; min-width: max(136px, 18vw); }
   .terminal-objective-log-summary { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* Hero-select commands occupy a stable 3×3 command deck above INITIALIZE.
    The semantic column wrappers remain for controller navigation, but do not
    impose narrow visual rails or an inner scrollbar. */
-#menu .menu-header-actions { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); grid-auto-rows: minmax(0,1fr); align-content: stretch; gap: clamp(8px,1vw,15px); overflow: hidden; }
+#menu .menu-header-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); grid-auto-rows: minmax(0,1fr); align-content: stretch; gap: clamp(8px,1vw,15px); overflow: hidden; }
 #menu .menu-command-column { display: contents; overflow: visible; }
 #menu .menu-command-column::before { display: none; }
 #menu .menu-command { min-height: 0; justify-content: center; padding: 4px; border: 1px solid rgba(255,159,28,.1); background: rgba(0,0,0,.18); }
@@ -23910,11 +24247,6 @@ body.contrast-max .hud-panel {
   max-width: 100%;
   max-height: calc(var(--vu) * 33);
   flex: 1 1 auto;
-}
-
-#menu #char-preview-sprite {
-  width: calc(var(--vu) * 24);
-  transform: translateY(calc(var(--vu) * 0.2)) scale(1.4);
 }
 
 #menu #char-preview-name {

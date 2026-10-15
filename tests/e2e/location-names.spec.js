@@ -12,6 +12,24 @@ test('the HUD names the place underfoot only after a scan, and the map labels it
 
     const location = page.locator('#hud-location');
     await page.evaluate(() => window.game.syncPlayerLocationLabel({ force: true }));
+    // Crash site is seeded and known on landing (N1-N4)
+    await expect(location).not.toHaveClass(/is-unknown/);
+    await expect(location).toContainText('IMPACT SITE');
+
+    // Unscanned corridors read "??? · SCAN TO IDENTIFY" until a radar scan reaches them
+    await page.evaluate(() => {
+        const grid = window.game.chunkCache?.get('0,0') ?? [];
+        for (let y = 0; y < grid.length; y++) {
+            for (let x = 0; x < (grid[y]?.length ?? 0); x++) {
+                if (['.', 'D', 'R', 'B', 'L', 'O'].includes(grid[y][x]) && Math.hypot(x - 9, y - 9) > 12) {
+                    window.game.player.position.x = x;
+                    window.game.player.position.z = y;
+                    window.game.syncPlayerLocationLabel({ force: true });
+                    return;
+                }
+            }
+        }
+    });
     await expect(location).toHaveClass(/is-unknown/);
     await expect(location).toContainText('???');
 

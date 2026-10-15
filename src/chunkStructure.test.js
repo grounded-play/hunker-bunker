@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     buildMazeChunkStructure,
     buildAuthoredRoomChunkStructure,
+    buildExposureRoomChunkStructure,
     buildHallwayConnectorChunkStructure,
     CHUNK_STRUCTURE_VERSION,
     STRUCTURE_GENERATOR
@@ -159,6 +160,22 @@ describe('buildAuthoredRoomChunkStructure', () => {
     });
 });
 
+describe('buildExposureRoomChunkStructure', () => {
+    it.each([
+        [{ north: { open: true, offset: 8 }, south: { open: true, offset: 8 } }],
+        [{ east: { open: true, offset: 8 }, west: { open: true, offset: 8 } }],
+        [{ north: { open: true, offset: 8 }, east: { open: true, offset: 8 } }]
+    ])('selects a rotated authored template that preserves every live route socket', (openings) => {
+        const result = buildExposureRoomChunkStructure(seededRandom(12), {
+            chunkX: 4, chunkY: 6, tier: 3, biome: 'active', openings, roll: 0.3
+        });
+        expect(result?.generatorId).toBe(STRUCTURE_GENERATOR.AUTHORED_ROOM);
+        expect(result?.diagnostics.exposureBudget).toBe(true);
+        expect(result?.diagnostics.skippedSockets).toEqual([]);
+        expect(result?.rooms[0].doors.length).toBe(Object.values(openings).filter(({ open }) => open).length);
+    });
+});
+
 describe('buildHallwayConnectorChunkStructure', () => {
     it('runs no discarded generation pass and carries the selected archetype through diagnostics', () => {
         const result = buildHallwayConnectorChunkStructure(seededRandom(2), {
@@ -180,6 +197,15 @@ describe('buildHallwayConnectorChunkStructure', () => {
             toFamily: 'nonexistent'
         });
         expect(result).toBeNull();
+    });
+
+    it('can force a signature archetype for a planned exposure slot', () => {
+        const result = buildHallwayConnectorChunkStructure(seededRandom(2), {
+            openings: { north: { open: true, offset: 4 }, south: { open: true, offset: 4 } },
+            archetypeId: 'biome_transition_hall'
+        });
+        expect(result.diagnostics.archetypeId).toBe('biome_transition_hall');
+        expect(result.diagnostics.width).toBeGreaterThanOrEqual(2);
     });
 });
 

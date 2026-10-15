@@ -6,6 +6,32 @@ export const CACHE_ITEMDEFID = 4000;
 export const CACHE_KEY_ITEMDEFID = 4001;
 export const SHARD_ITEMDEFID = 4159;
 
+export const CACHE_REVEAL_STATES = Object.freeze([
+    'idle', 'submitting', 'spinning', 'revealed', 'settling'
+]);
+
+const CACHE_REVEAL_TRANSITIONS = Object.freeze({
+    idle: Object.freeze(['submitting']),
+    submitting: Object.freeze(['spinning', 'revealed', 'idle']),
+    spinning: Object.freeze(['revealed', 'idle']),
+    revealed: Object.freeze(['settling', 'idle']),
+    settling: Object.freeze(['idle'])
+});
+
+export function canTransitionCacheReveal(from, to) {
+    return CACHE_REVEAL_TRANSITIONS[from]?.includes(to) ?? false;
+}
+
+export function transitionCacheReveal(from, to) {
+    if (!CACHE_REVEAL_STATES.includes(from) || !CACHE_REVEAL_STATES.includes(to)) {
+        throw new Error(`Unknown cache reveal state: ${from} -> ${to}`);
+    }
+    if (!canTransitionCacheReveal(from, to)) {
+        throw new Error(`Invalid cache reveal transition: ${from} -> ${to}`);
+    }
+    return to;
+}
+
 const COSMETIC_IDS = Object.freeze([
     4100, 4101, 4102, 4103, 4104, 4105, 4106, 4107, 4108, 4109, 4110, 4111,
     4120, 4121, 4122, 4123, 4124, 4125, 4126, 4127, 4128, 4129,

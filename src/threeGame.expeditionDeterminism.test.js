@@ -3,6 +3,7 @@ import { ThreeGame } from './threeGame.js';
 import { generateRadialMazeExpedition, ROUTE_LAYOUT_VERSION } from './mazeExpedition.js';
 import { buildWorldPlan } from './ringManifest.js';
 import { createMilestoneBossLifecycleState } from './milestoneBossLifecycle.js';
+import { planRingExposureSlots } from './roomExposureBudget.js';
 
 function topologyEdgeOpening(worldPlan, axis, edgeX, edgeY) {
     const previous = axis === 'horizontal' ? `${edgeX},${edgeY - 1}` : `${edgeX - 1},${edgeY}`;
@@ -12,7 +13,7 @@ function topologyEdgeOpening(worldPlan, axis, edgeX, edgeY) {
     };
 }
 
-function authoredBuildFixture(worldPlan) {
+function authoredBuildFixture(worldPlan, radialPlan = null) {
     return {
         chunkSize: 49,
         chunkCellCount: 24,
@@ -34,7 +35,7 @@ function authoredBuildFixture(worldPlan) {
         wfcMetadataCache: new Map(),
         authoredWorldTiles: true,
         worldPlan,
-        getRadialMazePlan: () => ({ topology: worldPlan.topology, blockers: [], nodes: [], roomClusters: [], radii: [] }),
+        getRadialMazePlan: () => radialPlan ?? ({ topology: worldPlan.topology, blockers: [], nodes: [], roomClusters: [], radii: [] }),
         ensureAuthoredWorldPlan: () => worldPlan,
         getActiveAuthoredReservationIds: () => new Set(),
         getBiomeKeyForWorldPosition: () => 'ACTIVE',
@@ -67,6 +68,7 @@ function buildSnapshot(game, chunk) {
     return {
         grid: grid.map((row) => row.join('')),
         generatorId: metadata.generatorId,
+        exposureRole: metadata.exposureRole,
         rooms: metadata.roomInstances,
         doors: metadata.doors,
         doorStates: [...game.proceduralDoorStates.values()].filter((door) => door.chunkKey === key)
@@ -88,10 +90,40 @@ describe('expedition reconstruction determinism', () => {
             const expected = buildSnapshot(unloaded, chunk);
             const actual = buildSnapshot(loaded, chunk);
             expect(actual).toEqual(expected);
-            if (parity === 0) {
+            if (parity === 0 && !actual.exposureRole) {
                 expect(actual.generatorId).toBe('architectural-room');
                 expect(actual.doors.length).toBeGreaterThan(0);
                 expect(actual.doorStates.length).toBe(actual.doors.length);
+            }
+        }
+    });
+
+    it('materializes the ring exposure plan as two authored rooms and two signature halls', () => {
+        const radialPlan = generateRadialMazeExpedition(1441, { layoutVersion: ROUTE_LAYOUT_VERSION });
+        const plan = buildWorldPlan(radialPlan);
+        const game = authoredBuildFixture(plan, radialPlan);
+        const slots = planRingExposureSlots(radialPlan, 2, {
+            excludedChunkKeys: [
+                ...plan.reservations.map((entry) => entry.chunkKey),
+                ...plan.setpieceClaims.flatMap((claim) => claim.chunkKeys)
+            ]
+        });
+        const expected = new Map([
+            ...slots.authoredRoomChunkKeys.map((key) => [key, ['authored-room', 'authored-room']]),
+            [slots.signatureHallwayChunkKey, ['signature-hallway', 'hallway-connector']],
+            [slots.biomeTransitionChunkKey, ['biome-transition', 'hallway-connector']]
+        ]);
+        for (const [key, [exposureRole, generatorId]] of expected) {
+            const [chunkX, chunkY] = key.split(',').map(Number);
+            const snapshot = buildSnapshot(game, { chunkX, chunkY });
+            expect(snapshot).toMatchObject({ exposureRole, generatorId });
+            game.chunkCache.set(key, snapshot.grid);
+            expect(ThreeGame.prototype.getMazeDebugSnapshot.call(game, chunkX, chunkY)).toMatchObject({
+                generatorId,
+                exposureRole
+            });
+            if (exposureRole === 'authored-room') {
+                expect(snapshot.rooms[0].buildId).toBeTruthy();
             }
         }
     });

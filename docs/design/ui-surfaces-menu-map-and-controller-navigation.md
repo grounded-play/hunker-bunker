@@ -5,6 +5,11 @@ Companions: [Steam Deck-first display and input spec](../steam-deck-first-displa
 (the layout rules), [menu input and reachability contract](../menu-input-navigation-contract.md)
 (the focus rules), [Steam review fix plan](../planning/steam-review-build-25475189-fix-plan-2026-09-30.md).
 
+> **2026-10-14:** the measured D-pad behaviour of every screen, with
+> screenshots, lives in [controller navigation map](controller-navigation-map.md).
+> It supersedes §2–§4 of this doc for *how focus moves*; the inventory and
+> layout audit here still stand.
+
 This is the reference for every menu, sub-menu and tab in the game as it
 stands today, how a player moves between them on a controller, keyboard or
 mouse, what was wrong on 2026-10-05 and what was fixed, and the plan to

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { LoadoutManager, DEFAULT_WEAPON_LABEL, ARCHETYPE_SKINS, CLASS_CHASSIS_SKINS } from './loadout.js';
 import { getRecipe } from './fabricator.js';
 
@@ -350,5 +351,45 @@ describe('reconcileOwnership', () => {
         expect(equipped(lo).chassis).toBe('4112');
         expect(equipped(lo).voice).toBe('4148');
         expect(equipped(lo).decal).toBeNull();
+    });
+});
+
+// Every standard launch resets the run (bank, Fabricator). It used to call
+// loadout.reset() too, which threw away everything picked in the Armory a
+// moment earlier: the chassis skin, weapon finish and gun were back to
+// factory issue by the time the operator spawned.
+describe('resetRunGear', () => {
+    it('keeps Armory picks and clears only the fabricated weapon', () => {
+        const lo = new LoadoutManager({ storage: makeStorage() });
+        lo.equipChassisSkin('4119');
+        lo.setArchetype('scout', 'talon_c');
+        lo.equipWeaponSkin('tank', '4103');
+        lo.equipDecal('4120');
+        lo.getClassLoadout('scout').craftedWeaponId = 'pulse_carbine';
+        const before = JSON.parse(JSON.stringify(lo.state));
+
+        lo.resetRunGear();
+
+        expect(lo.getEquippedChassisSkinId()).toBe('4119');
+        expect(lo.getActiveArchetype('scout')).toBe(before.perClass.scout.archetypeId);
+        expect(lo.state.perClass.tank.weaponSkinId).toBe(before.perClass.tank.weaponSkinId);
+        expect(lo.state.suit.decalId).toBe(before.suit.decalId);
+        expect(lo.getEquippedId('scout')).toBeNull();
+    });
+
+    it('persists, so the run that spawns next reads the same skin', () => {
+        const storage = makeStorage();
+        const lo = new LoadoutManager({ storage });
+        lo.equipChassisSkin('4117');
+        lo.resetRunGear();
+        expect(new LoadoutManager({ storage }).getEquippedChassisSkinId()).toBe('4117');
+    });
+
+    it('is what a new run calls, not the full reset', () => {
+        const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8');
+        const start = main.indexOf('function resetRunToStartingState(');
+        const body = main.slice(start, main.indexOf('runStartTime = Date.now();', start));
+        expect(body).toContain('loadout.resetRunGear()');
+        expect(body).not.toContain('loadout.reset()');
     });
 });

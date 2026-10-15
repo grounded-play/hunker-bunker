@@ -253,6 +253,16 @@ describe('PlayerChat UI controller with mock DOM', () => {
         expect(chat.visible).toBe(true);
     });
 
+    it('hides and removes chat from focus when no multiplayer room exists', () => {
+        chat.attachSocket(null);
+
+        expect(openBtn.classList.contains('player-chat-trigger--unavailable')).toBe(true);
+        expect(openBtn.getAttribute('aria-hidden')).toBe('true');
+        expect(openBtn.getAttribute('inert')).toBe('');
+        openBtn.click();
+        expect(chat.visible).toBe(false);
+    });
+
     it('closes modal on close button click and restores focus', () => {
         const modal = mockDoc.getElementById('player-chat-modal');
         openBtn.focus();
@@ -333,4 +343,3 @@ describe('PlayerChat UI controller with mock DOM', () => {
         expect(feed.children.map((line) => line.children[1].textContent)).toEqual(['line 2', 'line 3', 'line 4']);
     });
 });
-

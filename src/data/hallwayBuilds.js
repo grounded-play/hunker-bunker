@@ -2,14 +2,10 @@
 //
 // Versioned data only, mirroring src/data/roomBuilds.js's split: this file
 // is data, src/hallwayConnector.js is the pure select/realize API. The full
-// plan lists ten archetypes; this first pass covers the ones the
-// recommended first vertical slice (ship -> camp -> medical -> O2 ->
-// trap/reward -> return shortcut -> ring crossing) actually exercises.
-// Biome-transition-hall and hive-warning-approach are real remaining
-// archetypes, deliberately deferred rather than stubbed with fake data —
-// they belong to camp/hive territory work Lane A/C own this sprint.
+// Ten archetypes cover the ship -> camp -> medical -> O2 -> trap/reward ->
+// return-shortcut loop plus biome and hive transition approaches.
 
-export const HALLWAY_BUILD_VERSION = 1;
+export const HALLWAY_BUILD_VERSION = 2;
 
 export const HALLWAY_BUILD_CATALOG = Object.freeze([
     Object.freeze({
@@ -131,5 +127,35 @@ export const HALLWAY_BUILD_CATALOG = Object.freeze([
         sightlineBreakFrequency: 'low',
         repetitionCooldown: 3,
         compatibleFamilies: { from: ['trap', 'puzzle'], to: ['gate'] }
+    }),
+    Object.freeze({
+        id: 'biome_transition_hall',
+        lengthRange: [12, 24],
+        widthRange: [2, 3],
+        maxTurns: 2,
+        elevationPolicy: 'flat',
+        junctionEligible: true,
+        coverBudget: 1,
+        lightingRhythm: 'pulsing',
+        dressingKit: 'biome_transition',
+        encounterPressure: 'medium',
+        sightlineBreakFrequency: 'medium',
+        repetitionCooldown: 3,
+        compatibleFamilies: { from: ['entry', 'camp', 'medical', 'o2'], to: ['cryo-lab', 'nest', 'hive'] }
+    }),
+    Object.freeze({
+        id: 'hive_warning_approach',
+        lengthRange: [12, 22],
+        widthRange: [1, 2],
+        maxTurns: 3,
+        elevationPolicy: 'flat',
+        junctionEligible: true,
+        coverBudget: 1,
+        lightingRhythm: 'warning',
+        dressingKit: 'hive_warning',
+        encounterPressure: 'high',
+        sightlineBreakFrequency: 'high',
+        repetitionCooldown: 3,
+        compatibleFamilies: { from: ['medical', 'cryo-lab', 'gate'], to: ['nest', 'hive'] }
     })
 ]);

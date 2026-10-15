@@ -61,11 +61,12 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'bunker-standard',
         floorStyle: 'bunker-standard',
         doorStyle: 'bunker',
-        signatureProps: ['prop_bunker_supplies', 'prop_diagnostic_console', 'prop_storage_drum_dented', 'prop_locker_bulged'],
+        signatureProps: ['prop_bunker_supplies', 'prop_diagnostic_console', 'prop_storage_drum_dented', 'prop_locker_bulged', 'corp_quantum_ledger_podium', 'corp_executive_whisper_booth'],
         largeProps: [
             'prop_cyber_junction', 'prop_conduit_hub', 'prop_storage_drum_dented', 'prop_terminal_ruptured',
             'prop_conduit_junction_box', 'decal_wall_breach', 'decal_meridian_stencil',
-            'arch_bulkhead_frame', 'arch_deco_archway_grand_01', 'arch_rib_ceiling_vault_01', 'state_column_shattered'
+            'arch_bulkhead_frame', 'arch_deco_archway_grand_01', 'arch_rib_ceiling_vault_01', 'state_column_shattered',
+            'corp_biometric_wall_safe', 'evac_cargo_ballast_scale'
         ],
         smallProps: ['scatter_cable_coil', 'scatter_bolts', 'prop_valve_wheel_fused', 'prop_torn_warning_poster', 'decal_bullet_holes', 'prop_blood_trail', 'decal_hazard_stripes', 'decal_footprints_mud'],
         ambientProps: LIVED_IN_DECALS.bunker,
@@ -80,8 +81,11 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'bunker-utility',
         floorStyle: 'bunker-utility',
         doorStyle: 'utility',
-        signatureProps: ['prop_fusion_generator', 'prop_conduit_hub', 'prop_fabricator_workstation', 'prop_o2_filter_vat'],
-        largeProps: ['prop_engineering_bench', 'prop_cyber_junction', 'prop_tesla_coil_node', 'prop_pipe_rupture', 'prop_light_cluster_dripping', 'prop_vent_grate_exploded', 'decal_wall_breach'],
+        signatureProps: ['prop_fusion_generator', 'prop_conduit_hub', 'prop_fabricator_workstation', 'prop_o2_filter_vat', 'geo_steam_manifold_actuator', 'substation_stepdown_transformer'],
+        largeProps: [
+            'prop_engineering_bench', 'prop_cyber_junction', 'prop_tesla_coil_node', 'prop_pipe_rupture', 'prop_light_cluster_dripping', 'prop_vent_grate_exploded', 'decal_wall_breach',
+            'substation_breaker_interlock', 'geo_pressure_relief_siren'
+        ],
         smallProps: ['scatter_cable_coil', 'scatter_bolts', 'prop_valve_wheel_fused', 'prop_torn_warning_poster', 'scatter_biomech_debris', 'scatter_broken_drone', 'decal_oil_spill_patch', 'decal_hazard_stripes'],
         ambientProps: LIVED_IN_DECALS.bunker,
         rareProps: ['scatter_horizon_black_box', 'decal_machine_cult_shrine', 'fixture_clock_dead'],
@@ -95,8 +99,11 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'bunker-medical',
         floorStyle: 'bunker-medical',
         doorStyle: 'medical-seal',
-        signatureProps: ['prop_medical_bed', 'prop_diagnostic_console', 'prop_vital_monitor', 'prop_surgical_cart'],
-        largeProps: ['prop_surgical_cart', 'prop_specimen_tank', 'prop_broken_specimen_tank', 'prop_biomech_triage_cradle', 'prop_flesh_steel_coffin', 'prop_flesh_steel_inhaler'],
+        signatureProps: ['prop_medical_bed', 'prop_diagnostic_console', 'prop_vital_monitor', 'prop_surgical_cart', 'suture_flesh_mending_bath', 'vass_hybrid_blood_synthesizer'],
+        largeProps: [
+            'prop_surgical_cart', 'prop_specimen_tank', 'prop_broken_specimen_tank', 'prop_biomech_triage_cradle', 'prop_flesh_steel_coffin', 'prop_flesh_steel_inhaler',
+            'vass_dissection_stereomicroscope', 'vass_bio_centrifuge_rack'
+        ],
         smallProps: ['scatter_bolts', 'decal_biohazard_stencil', 'decal_footprints_mud'],
         ambientProps: LIVED_IN_DECALS.bunker,
         encounterProfile: 'sterile'
@@ -109,11 +116,11 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'bunker-security',
         floorStyle: 'bunker-security',
         doorStyle: 'security',
-        signatureProps: ['prop_security_locker', 'prop_ammo_crate_stack', 'prop_security_barricade', 'prop_laser_trap_emitter'],
+        signatureProps: ['prop_security_locker', 'prop_ammo_crate_stack', 'prop_security_barricade', 'prop_laser_trap_emitter', 'corp_compliance_choker_bench', 'vesper_ordnance_disarm_table'],
         largeProps: [
             'prop_security_barricade', 'prop_laser_trap_emitter', 'prop_cyber_junction', 'prop_locker_bulged', 'prop_chair_operator_wrecked', 'decal_claw_scratches',
             'arch_pillar_buttress_01', 'arch_deco_archway_grand_02', 'state_wall_breached_01',
-            'state_barricade_improvised_1', 'prop_body_empty_exosuit'
+            'state_barricade_improvised_1', 'prop_body_empty_exosuit', 'vesper_ballistic_chronograph', 'tank_reactive_armor_forge'
         ],
         smallProps: ['scatter_bolts', 'decal_hazard_stripes', 'decal_bullet_holes'],
         ambientProps: LIVED_IN_DECALS.bunker,
@@ -128,8 +135,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'cryo-rough',
         floorStyle: 'cryo-rough',
         doorStyle: 'cryo',
-        signatureProps: ['prop_cryo_sleep_pod', 'prop_cave_lichen', 'prop_icey_thermal_pod', 'prop_icey_frost_vent'],
-        largeProps: ['prop_ruptured_coolant_pump', 'prop_bunker_supplies', 'prop_icey_thermal_pod', 'prop_storage_drum_dented'],
+        signatureProps: ['prop_cryo_sleep_pod', 'prop_cave_lichen', 'prop_icey_thermal_pod', 'prop_icey_frost_vent', 'chasm_geothermal_survey_transit', 'scout_ejection_pod_chassis'],
+        largeProps: ['prop_ruptured_coolant_pump', 'prop_bunker_supplies', 'prop_icey_thermal_pod', 'prop_storage_drum_dented', 'chasm_cable_traversal_winch', 'chasm_abyss_sounding_mortar'],
         smallProps: ['scatter_cryo_shards', 'scatter_cryo_icicle', 'prop_icey_frost_vent', 'decal_footprints_mud', 'decal_claw_scratches'],
         ambientProps: LIVED_IN_DECALS.cryo,
         encounterProfile: 'cryo-standard'
@@ -142,8 +149,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'cryo-clean',
         floorStyle: 'cryo-tile',
         doorStyle: 'medical-seal',
-        signatureProps: ['prop_cryo_sleep_pod', 'prop_vital_monitor', 'prop_broken_specimen_tank', 'prop_medical_bed'],
-        largeProps: ['prop_diagnostic_console', 'prop_broken_specimen_tank', 'prop_biomech_triage_cradle', 'prop_icey_thermal_pod', 'prop_flesh_steel_inhaler'],
+        signatureProps: ['prop_cryo_sleep_pod', 'prop_vital_monitor', 'prop_broken_specimen_tank', 'prop_medical_bed', 'corp_cryo_transport_coffin', 'hydro_mycelial_seed_vault'],
+        largeProps: ['prop_diagnostic_console', 'prop_broken_specimen_tank', 'prop_biomech_triage_cradle', 'prop_icey_thermal_pod', 'prop_flesh_steel_inhaler', 'suture_flesh_mending_bath', 'vass_neural_sync_helmet'],
         smallProps: ['scatter_cryo_shards', 'decal_biohazard_stencil', 'decal_meridian_stencil'],
         ambientProps: LIVED_IN_DECALS.cryo,
         rareProps: ['decal_pod_312_breach'],
@@ -157,11 +164,12 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'cryo-lab',
         floorStyle: 'cryo-tile',
         doorStyle: 'cryo-security',
-        signatureProps: ['prop_ruptured_coolant_pump', 'prop_fusion_generator', 'prop_o2_filter_vat', 'prop_tesla_coil_node'],
+        signatureProps: ['prop_ruptured_coolant_pump', 'prop_fusion_generator', 'prop_o2_filter_vat', 'prop_tesla_coil_node', 'evac_cryo_hypergolic_manifold', 'substation_stepdown_transformer'],
         largeProps: [
             'prop_engineering_bench', 'prop_cyber_junction', 'prop_tesla_coil_node', 'frozen_tanker',
             'prop_icey_frost_manifold', 'prop_icey_frost_vent', 'prop_pipe_rupture',
-            'arch_pillar_buttress_02', 'arch_deco_archway_grand_03', 'state_wall_breached_02'
+            'arch_pillar_buttress_02', 'arch_deco_archway_grand_03', 'state_wall_breached_02',
+            'chasm_seismic_geophone_station', 'substation_breaker_interlock'
         ],
         smallProps: ['scatter_cryo_shards', 'scatter_coolant_puddle', 'decal_oil_spill_patch', 'decal_hazard_stripes'],
         ambientProps: LIVED_IN_DECALS.cryo,
@@ -175,11 +183,12 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'bio-resin',
         floorStyle: 'bio-resin',
         doorStyle: 'resin',
-        signatureProps: ['prop_alien_respiratory_vent', 'prop_spore_colony', 'prop_biomech_respirator', 'prop_fungal_spore_dispenser'],
+        signatureProps: ['prop_alien_respiratory_vent', 'prop_spore_colony', 'prop_biomech_respirator', 'prop_fungal_spore_dispenser', 'carapace_chitin_press', 'carapace_ossuary_anvil'],
         largeProps: [
             'prop_alien_feeding_basin', 'prop_hive_resin_sac', 'prop_biomech_incubator',
             'prop_fungal_mycelium_loom', 'prop_fungal_resin_basin', 'prop_flesh_steel_cradle',
-            'decal_spore_growth_patch', 'arch_pillar_buttress_04', 'arch_rib_ceiling_vault_02', 'state_growth_overrun_1'
+            'decal_spore_growth_patch', 'arch_pillar_buttress_04', 'arch_rib_ceiling_vault_02', 'state_growth_overrun_1',
+            'vass_containment_bell_jar', 'suture_larval_nursery_urn'
         ],
         smallProps: ['prop_cave_spores', 'prop_cave_webs', 'decal_tallow_symbol', 'fixture_sconce_vine'],
         ambientProps: LIVED_IN_DECALS.bio,
@@ -194,12 +203,12 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'bio-nest',
         floorStyle: 'bio-hive',
         doorStyle: 'hive',
-        signatureProps: ['prop_alien_feeding_basin', 'prop_cave_eggs_intact', 'prop_biomech_incubator', 'prop_hive_resin_sac'],
+        signatureProps: ['prop_alien_feeding_basin', 'prop_cave_eggs_intact', 'prop_biomech_incubator', 'prop_hive_resin_sac', 'tina_cosmetic_skin_loom', 'tina_shedding_cocoon_niche'],
         largeProps: [
             'prop_alien_respiratory_vent', 'prop_biomech_sphincter_trap', 'prop_hive_resin_sac', 'prop_cave_hive_wounded',
             'prop_fungal_spore_dispenser', 'prop_fungal_tendril_altar', 'prop_flesh_steel_cradle',
             'decal_hive_growth', 'decal_spore_growth_patch', 'arch_rib_ceiling_vault_03', 'state_wall_breached_03',
-            'state_growth_overrun_1', 'state_growth_overrun_2'
+            'state_growth_overrun_1', 'state_growth_overrun_2', 'suture_larval_nursery_urn', 'carapace_chitin_press'
         ],
         smallProps: ['prop_cave_eggs_hatched', 'prop_cave_webs', 'scatter_hive_eggs', 'prop_blood_trail', 'decal_claw_scratches', 'fixture_sconce_vine'],
         ambientProps: LIVED_IN_DECALS.bio,
@@ -213,8 +222,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'bio-resin',
         floorStyle: 'bio-hive',
         doorStyle: 'medical-seal',
-        signatureProps: ['prop_biomech_triage_cradle', 'prop_biomech_respirator', 'prop_biomech_incubator', 'prop_flesh_steel_inhaler'],
-        largeProps: ['prop_biomech_incubator', 'prop_flesh_steel_coffin', 'prop_flesh_steel_inhaler', 'prop_broken_specimen_tank'],
+        signatureProps: ['prop_biomech_triage_cradle', 'prop_biomech_respirator', 'prop_biomech_incubator', 'prop_flesh_steel_inhaler', 'vass_hybrid_blood_synthesizer', 'suture_flesh_mending_bath'],
+        largeProps: ['prop_biomech_incubator', 'prop_flesh_steel_coffin', 'prop_flesh_steel_inhaler', 'prop_broken_specimen_tank', 'vass_bio_centrifuge_rack', 'vass_dissection_stereomicroscope'],
         smallProps: ['prop_cave_spores', 'decal_biohazard_stencil', 'decal_bio_sample_spill'],
         ambientProps: LIVED_IN_DECALS.bio,
         encounterProfile: 'sterile'
@@ -227,8 +236,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'bio-nest',
         floorStyle: 'bio-resin',
         doorStyle: 'hive',
-        signatureProps: ['prop_biomech_sphincter_trap', 'prop_laser_trap_emitter', 'prop_hive_resin_sac', 'prop_fungal_tendril_altar'],
-        largeProps: ['prop_hive_resin_sac', 'prop_security_barricade', 'state_wall_breached_03'],
+        signatureProps: ['prop_biomech_sphincter_trap', 'prop_laser_trap_emitter', 'prop_hive_resin_sac', 'prop_fungal_tendril_altar', 'tank_reactive_armor_forge', 'vesper_mortar_loading_cradle'],
+        largeProps: ['prop_hive_resin_sac', 'prop_security_barricade', 'state_wall_breached_03', 'corp_compliance_choker_bench', 'tank_kinetic_ram_breech'],
         smallProps: ['prop_cave_webs', 'decal_claw_scratches', 'fixture_sconce_vine'],
         ambientProps: LIVED_IN_DECALS.bio,
         encounterProfile: 'security'
@@ -241,8 +250,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'bio-resin',
         floorStyle: 'bio-resin',
         doorStyle: 'resin',
-        signatureProps: ['prop_fungal_mycelium_loom', 'prop_biomech_respirator', 'prop_fungal_spore_dispenser', 'prop_biomech_neural_synapse'],
-        largeProps: ['prop_fungal_spore_dispenser', 'prop_fungal_resin_basin', 'prop_conduit_hub', 'prop_biomech_neural_synapse'],
+        signatureProps: ['prop_fungal_mycelium_loom', 'prop_biomech_respirator', 'prop_fungal_spore_dispenser', 'prop_biomech_neural_synapse', 'engineer_robotic_welding_arm', 'geo_steam_manifold_actuator'],
+        largeProps: ['prop_fungal_spore_dispenser', 'prop_fungal_resin_basin', 'prop_conduit_hub', 'prop_biomech_neural_synapse', 'hydro_mycelial_seed_vault', 'engineer_magnetic_bottle_cell'],
         smallProps: ['prop_cave_spores', 'decal_oil_spill_patch', 'fixture_sconce_vine'],
         ambientProps: LIVED_IN_DECALS.bio,
         encounterProfile: 'utility'
@@ -255,8 +264,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'bunker-utility',
         floorStyle: 'bunker-utility',
         doorStyle: 'utility',
-        signatureProps: ['prop_engineering_bench', 'prop_fabricator_workstation', 'prop_conduit_hub', 'prop_tesla_coil_node'],
-        largeProps: ['prop_fusion_generator', 'prop_conduit_hub', 'prop_tesla_coil_node', 'prop_conduit_junction_box', 'prop_chair_operator_wrecked', 'prop_pipe_rupture'],
+        signatureProps: ['prop_engineering_bench', 'prop_fabricator_workstation', 'prop_conduit_hub', 'prop_tesla_coil_node', 'tank_kinetic_ram_breech', 'scout_tachyon_radar_mast'],
+        largeProps: ['prop_fusion_generator', 'prop_conduit_hub', 'prop_tesla_coil_node', 'prop_conduit_junction_box', 'prop_chair_operator_wrecked', 'prop_pipe_rupture', 'vesper_barricade_welding_rig', 'meridian_soldering_hearth'],
         smallProps: ['scatter_cable_coil', 'scatter_bolts', 'decal_oil_spill_patch', 'decal_meridian_stencil'],
         ambientProps: LIVED_IN_DECALS.bunker,
         rareProps: ['decal_machine_cult_shrine', 'fixture_clock_dead'],
@@ -270,8 +279,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'bunker-storage',
         floorStyle: 'storage',
         doorStyle: 'utility',
-        signatureProps: ['prop_bunker_supplies', 'prop_storage_drum_dented', 'prop_ammo_crate_stack', 'prop_locker_bulged'],
-        largeProps: ['prop_ammo_crate_stack', 'prop_security_locker', 'prop_locker_bulged'],
+        signatureProps: ['prop_bunker_supplies', 'prop_storage_drum_dented', 'prop_ammo_crate_stack', 'prop_locker_bulged', 'corp_asset_incinerator_chute', 'evac_cargo_ballast_scale'],
+        largeProps: ['prop_ammo_crate_stack', 'prop_security_locker', 'prop_locker_bulged', 'tina_forged_council_ballot_box', 'corp_quantum_ledger_podium'],
         smallProps: ['scatter_bolts', 'scatter_cable_coil', 'decal_hazard_stripes'],
         ambientProps: LIVED_IN_DECALS.bunker,
         rareProps: ['scatter_horizon_black_box'],
@@ -285,8 +294,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'bunker-security',
         floorStyle: 'bunker-security',
         doorStyle: 'security',
-        signatureProps: ['prop_security_locker', 'prop_ammo_crate_stack', 'prop_biomech_flesh_locker', 'prop_security_barricade'],
-        largeProps: ['prop_security_barricade', 'prop_laser_trap_emitter', 'decal_claw_scratches'],
+        signatureProps: ['prop_security_locker', 'prop_ammo_crate_stack', 'prop_biomech_flesh_locker', 'prop_security_barricade', 'vesper_ordnance_disarm_table', 'vesper_dogtag_retrieval_crypt'],
+        largeProps: ['prop_security_barricade', 'prop_laser_trap_emitter', 'decal_claw_scratches', 'tank_reactive_armor_forge', 'vesper_ballistic_chronograph'],
         smallProps: ['scatter_bolts', 'decal_hazard_stripes', 'decal_bullet_holes'],
         ambientProps: LIVED_IN_DECALS.bunker,
         rareProps: ['prop_iron_guild_dogtags'],
@@ -300,8 +309,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'cryo-clean',
         floorStyle: 'cryo-tile',
         doorStyle: 'medical-seal',
-        signatureProps: ['prop_cryo_sleep_pod', 'prop_vital_monitor', 'prop_medical_bed', 'prop_body_human_frozen'],
-        largeProps: ['prop_medical_bed', 'prop_diagnostic_console', 'prop_biomech_triage_cradle', 'prop_body_human_frozen', 'body_frozen_human'],
+        signatureProps: ['prop_cryo_sleep_pod', 'prop_vital_monitor', 'prop_medical_bed', 'prop_body_human_frozen', 'corp_cryo_transport_coffin', 'hydro_mycelial_seed_vault'],
+        largeProps: ['prop_medical_bed', 'prop_diagnostic_console', 'prop_biomech_triage_cradle', 'prop_body_human_frozen', 'body_frozen_human', 'chasm_geothermal_survey_transit', 'scout_ejection_pod_chassis'],
         smallProps: ['scatter_cryo_shards', 'scatter_coolant_puddle', 'decal_biohazard_stencil', 'decal_footprints_mud'],
         ambientProps: LIVED_IN_DECALS.cryo,
         rareProps: ['decal_pod_312_breach'],
@@ -315,8 +324,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'bio-nest',
         floorStyle: 'bio-hive',
         doorStyle: 'hive',
-        signatureProps: ['prop_alien_feeding_basin', 'prop_biomech_sphincter_trap', 'prop_fungal_resin_basin', 'prop_fungal_mycelium_loom'],
-        largeProps: ['prop_alien_respiratory_vent', 'prop_biomech_respirator', 'prop_hive_resin_sac', 'prop_fungal_resin_basin', 'prop_fungal_mycelium_loom', 'decal_spore_growth_patch'],
+        signatureProps: ['prop_alien_feeding_basin', 'prop_biomech_sphincter_trap', 'prop_fungal_resin_basin', 'prop_fungal_mycelium_loom', 'carapace_chitin_press', 'suture_larval_nursery_urn'],
+        largeProps: ['prop_alien_respiratory_vent', 'prop_biomech_respirator', 'prop_hive_resin_sac', 'prop_fungal_resin_basin', 'prop_fungal_mycelium_loom', 'decal_spore_growth_patch', 'vass_containment_bell_jar'],
         smallProps: ['prop_cave_spores', 'prop_cave_webs', 'decal_tallow_symbol'],
         ambientProps: LIVED_IN_DECALS.bio,
         encounterProfile: 'bio-nest-guard'
@@ -329,11 +338,12 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'camp-fortified',
         floorStyle: 'camp',
         doorStyle: 'camp',
-        signatureProps: ['prop_camp_crates', 'prop_camp_cookfire_lit', 'prop_ammo_crate_stack', 'prop_camp_cot'],
+        signatureProps: ['prop_camp_crates', 'prop_camp_cookfire_lit', 'prop_ammo_crate_stack', 'prop_camp_cot', 'tallow_vaccine_alembic', 'tallow_irrigation_sluice_gate'],
         largeProps: [
             'prop_camp_sandbags', 'scatter_broken_drone', 'prop_camp_cot',
             'prop_camp_crate', 'prop_camp_cookfire_doused', 'prop_chair_operator_wrecked', 'prop_storage_drum_dented', 'arch_bulkhead_frame',
-            'state_column_shattered', 'state_barricade_improvised_1', 'state_barricade_improvised_2'
+            'state_column_shattered', 'state_barricade_improvised_1', 'state_barricade_improvised_2',
+            'tallow_apothecary_dryer_rack', 'relay_harmonic_tuning_fork', 'chasm_cable_traversal_winch'
         ],
         smallProps: [
             'prop_camp_bedrolls', 'scatter_cable_coil', 'scatter_bolts', 'scatter_camp_supplies',
@@ -352,8 +362,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'bunker-storage',
         floorStyle: 'storage',
         doorStyle: 'security',
-        signatureProps: ['prop_bunker_supplies', 'prop_ammo_crate_stack', 'prop_corporate_saint_reliquary', 'prop_votive_candle_shrine'],
-        largeProps: ['prop_camp_crates', 'prop_votive_candle_shrine', 'arch_deco_archway_grand_04', 'arch_pillar_buttress_03'],
+        signatureProps: ['prop_bunker_supplies', 'prop_ammo_crate_stack', 'prop_corporate_saint_reliquary', 'prop_votive_candle_shrine', 'corp_quantum_ledger_podium', 'hydro_mycelial_seed_vault'],
+        largeProps: ['prop_camp_crates', 'prop_votive_candle_shrine', 'arch_deco_archway_grand_04', 'arch_pillar_buttress_03', 'corp_biometric_wall_safe', 'evac_cargo_ballast_scale'],
         smallProps: ['scatter_bolts', 'decal_hazard_stripes', 'decal_meridian_stencil'],
         ambientProps: LIVED_IN_DECALS.bunker,
         rareProps: ['scatter_horizon_black_box', 'arch_window_stained', 'arch_niche_shrine', 'prop_shrine_plinth_broken', 'prop_flesh_steel_coffin'],
@@ -367,14 +377,15 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'giger',
         floorStyle: 'giger',
         doorStyle: 'hive',
-        signatureProps: ['prop_corporate_saint_reliquary', 'prop_biomech_spore_umbilical_cable_rigged', 'prop_votive_candle_shrine', 'prop_oxygen_bottle_cascade_rack'],
+        signatureProps: ['prop_corporate_saint_reliquary', 'prop_biomech_spore_umbilical_cable_rigged', 'prop_votive_candle_shrine', 'prop_oxygen_bottle_cascade_rack', 'vass_translation_phonograph', 'meridian_logic_core_drum', 'mothership_docking_umbilical_collar'],
         largeProps: [
             'prop_pipe_organ_heat_exchanger', 'prop_liturgical_terminal_lectern', 'prop_coolant_drum_leaking_pool',
             'prop_exosuit_docking_gantry', 'prop_decon_eyewash_shower_station', 'prop_autopsy_dissection_slab',
             'prop_biomech_sphincter_hatch_vent', 'prop_biomech_tracheal_wall_pipe', 'prop_vertebral_cable_riser',
             'prop_ceiling_crane_hoist', 'prop_floor_drainage_sump_trough', 'prop_floor_conduit_bridge',
             'prop_wall_cable_tray_swag', 'prop_maintenance_tool_cart', 'prop_exhaust_blower_fan_hood',
-            'arch_deco_archway_grand_01', 'arch_pillar_buttress_01', 'arch_rib_ceiling_vault_01'
+            'arch_deco_archway_grand_01', 'arch_pillar_buttress_01', 'arch_rib_ceiling_vault_01',
+            'chasm_hanging_cage_crane', 'chasm_steam_whistle_buoy', 'carapace_ossuary_anvil'
         ],
         smallProps: ['prop_overhead_cage_fluorescent', 'scatter_bolts', 'scatter_cable_coil', 'fixture_sconce_vine'],
         ambientProps: LIVED_IN_DECALS.bio,
@@ -389,8 +400,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'substation',
         floorStyle: 'substation',
         doorStyle: 'utility',
-        signatureProps: ['prop_fusion_generator', 'prop_conduit_hub', 'prop_tesla_coil_node', 'prop_cyber_junction'],
-        largeProps: ['prop_engineering_bench', 'prop_conduit_junction_box', 'prop_pipe_rupture', 'prop_diagnostic_console', 'decal_substation_stencil', 'decal_electrical_scorch'],
+        signatureProps: ['prop_fusion_generator', 'prop_conduit_hub', 'prop_tesla_coil_node', 'prop_cyber_junction', 'substation_stepdown_transformer', 'substation_breaker_interlock'],
+        largeProps: ['prop_engineering_bench', 'prop_conduit_junction_box', 'prop_pipe_rupture', 'prop_diagnostic_console', 'decal_substation_stencil', 'decal_electrical_scorch', 'meridian_optic_nerve_patchbay', 'meridian_logic_core_drum'],
         smallProps: ['scatter_cable_coil', 'scatter_bolts', 'prop_valve_wheel_fused', 'decal_hazard_chevron'],
         ambientProps: LIVED_IN_DECALS.bunker,
         encounterProfile: 'utility'
@@ -403,8 +414,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'permafrost',
         floorStyle: 'permafrost',
         doorStyle: 'cryo',
-        signatureProps: ['prop_icey_thermal_pod', 'prop_icey_frost_vent', 'prop_icey_frost_manifold', 'prop_cryo_sleep_pod'],
-        largeProps: ['prop_ruptured_coolant_pump', 'frozen_tanker', 'decal_cryo_fracture', 'decal_permafrost_icicles'],
+        signatureProps: ['prop_icey_thermal_pod', 'prop_icey_frost_vent', 'prop_icey_frost_manifold', 'prop_cryo_sleep_pod', 'chasm_geothermal_survey_transit', 'chasm_abyss_sounding_mortar'],
+        largeProps: ['prop_ruptured_coolant_pump', 'frozen_tanker', 'decal_cryo_fracture', 'decal_permafrost_icicles', 'corp_cryo_transport_coffin', 'evac_cryo_hypergolic_manifold'],
         smallProps: ['scatter_cryo_shards', 'scatter_cryo_icicle', 'scatter_coolant_puddle', 'decal_footprints_mud'],
         ambientProps: LIVED_IN_DECALS.cryo,
         encounterProfile: 'cryo-standard'
@@ -417,8 +428,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'cleanroom',
         floorStyle: 'cleanroom',
         doorStyle: 'medical-seal',
-        signatureProps: ['prop_diagnostic_console', 'prop_vital_monitor', 'prop_medical_bed', 'prop_surgical_cart'],
-        largeProps: ['prop_broken_specimen_tank', 'prop_specimen_tank', 'prop_biomech_triage_cradle', 'prop_decon_eyewash_shower_station', 'decal_biohazard_stencil', 'decal_substation_stencil'],
+        signatureProps: ['prop_diagnostic_console', 'prop_vital_monitor', 'prop_medical_bed', 'prop_surgical_cart', 'vass_dissection_stereomicroscope', 'vass_bio_centrifuge_rack'],
+        largeProps: ['prop_broken_specimen_tank', 'prop_specimen_tank', 'prop_biomech_triage_cradle', 'prop_decon_eyewash_shower_station', 'decal_biohazard_stencil', 'decal_substation_stencil', 'vass_hybrid_blood_synthesizer', 'vass_containment_bell_jar'],
         smallProps: ['scatter_bolts', 'prop_overhead_cage_fluorescent', 'decal_hazard_chevron'],
         ambientProps: LIVED_IN_DECALS.bunker,
         encounterProfile: 'sterile'
@@ -431,8 +442,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'mycelium',
         floorStyle: 'mycelium',
         doorStyle: 'resin',
-        signatureProps: ['prop_spore_colony', 'prop_fungal_spore_dispenser', 'prop_fungal_mycelium_loom', 'prop_alien_respiratory_vent'],
-        largeProps: ['prop_fungal_resin_basin', 'prop_hive_resin_sac', 'prop_flesh_steel_cradle', 'decal_bio_mycelium', 'decal_bio_spore_vent', 'decal_spore_growth_patch'],
+        signatureProps: ['prop_spore_colony', 'prop_fungal_spore_dispenser', 'prop_fungal_mycelium_loom', 'prop_alien_respiratory_vent', 'hydro_mycelial_seed_vault', 'tina_cosmetic_skin_loom'],
+        largeProps: ['prop_fungal_resin_basin', 'prop_hive_resin_sac', 'prop_flesh_steel_cradle', 'decal_bio_mycelium', 'decal_bio_spore_vent', 'decal_spore_growth_patch', 'tallow_apothecary_dryer_rack', 'suture_larval_nursery_urn'],
         smallProps: ['prop_cave_spores', 'scatter_slime_puddle', 'fixture_sconce_vine'],
         ambientProps: LIVED_IN_DECALS.bio,
         encounterProfile: 'bio-standard'
@@ -445,8 +456,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'obsidian',
         floorStyle: 'obsidian',
         doorStyle: 'hive',
-        signatureProps: ['prop_corporate_saint_reliquary', 'prop_votive_candle_shrine', 'prop_liturgical_terminal_lectern', 'prop_pipe_organ_heat_exchanger'],
-        largeProps: ['arch_deco_archway_grand_01', 'arch_pillar_buttress_01', 'arch_rib_ceiling_vault_01', 'decal_cathedral_runic', 'decal_giger_relief'],
+        signatureProps: ['prop_corporate_saint_reliquary', 'prop_votive_candle_shrine', 'prop_liturgical_terminal_lectern', 'prop_pipe_organ_heat_exchanger', 'carapace_ossuary_anvil', 'mothership_docking_umbilical_collar'],
+        largeProps: ['arch_deco_archway_grand_01', 'arch_pillar_buttress_01', 'arch_rib_ceiling_vault_01', 'decal_cathedral_runic', 'decal_giger_relief', 'relay_harmonic_tuning_fork', 'chasm_hanging_cage_crane'],
         smallProps: ['scatter_bolts', 'scatter_cable_coil', 'fixture_sconce_vine'],
         ambientProps: LIVED_IN_DECALS.bio,
         encounterProfile: 'security'
@@ -459,8 +470,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'toxic_sump',
         floorStyle: 'toxic_sump',
         doorStyle: 'utility',
-        signatureProps: ['prop_floor_drainage_sump_trough', 'prop_pipe_rupture', 'prop_o2_filter_vat', 'prop_storage_drum_dented'],
-        largeProps: ['prop_coolant_drum_leaking_pool', 'prop_conduit_junction_box', 'prop_exhaust_blower_fan_hood', 'decal_hazard_chevron', 'decal_evac_treads'],
+        signatureProps: ['prop_floor_drainage_sump_trough', 'prop_pipe_rupture', 'prop_o2_filter_vat', 'prop_storage_drum_dented', 'geo_pressure_relief_siren', 'geo_steam_manifold_actuator'],
+        largeProps: ['prop_coolant_drum_leaking_pool', 'prop_conduit_junction_box', 'prop_exhaust_blower_fan_hood', 'decal_hazard_chevron', 'decal_evac_treads', 'evac_cabin_co2_scrubber', 'evac_manual_abort_detonator'],
         smallProps: ['scatter_bolts', 'decal_oil_spill_patch', 'decal_hazard_stripes'],
         ambientProps: LIVED_IN_DECALS.bunker,
         encounterProfile: 'utility'

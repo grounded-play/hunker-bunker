@@ -40,10 +40,8 @@ test.describe('Keyboard and mouse controls', () => {
         expect(moved, 'holding D should move the player').toBeGreaterThan(0.05);
 
         // Fire is a canvas pointerdown, not a key. Target the WebGL
-        // renderer's canvas specifically (inside #game-container) — a bare
-        // `canvas` selector matches index.html's #char-preview-sprite
-        // canvas first, which is hidden during gameplay and hangs
-        // Playwright's actionability wait forever.
+        // renderer's canvas specifically (inside #game-container), rather
+        // than a menu or preview WebGL surface.
         const canvas = page.locator('#game-container canvas').first();
         await canvas.click({ position: { x: 50, y: 0 } });
         await page.waitForTimeout(100);

@@ -11,12 +11,15 @@ describe('isOpeningCutscene', () => {
         }
     });
 
-    it('does not mistake ordinary cutscenes for the opening', () => {
+    it('does not mistake ordinary cutscenes or full narrative briefings for the opening', () => {
         for (const base of [
             'event-boss-encounter-cybersnail',
             'event-o2-generator-upgraded',
             'event-foundry-discovered',
             'event-queen-encounter',
+            'intro-mothership-briefing',
+            'intro-boot',
+            'credits-terminal',
             ''
         ]) {
             expect(isOpeningCutscene(base), base).toBe(false);

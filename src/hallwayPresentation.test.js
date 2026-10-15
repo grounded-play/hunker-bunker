@@ -39,8 +39,9 @@ describe('hallway route presentation', () => {
         expect(first).toEqual(planHallwayRouteDressing(metadata, corridor));
         expect(first[0]).toMatchObject({
             axis: 'z',
-            structure: 'frame',
+            structure: 'service-rib',
             cableCount: 2,
+            floorGuideCount: 1,
             signalCount: 3,
             signalColor: 0xff493d
         });
@@ -102,11 +103,12 @@ describe('hallway route presentation', () => {
         }, corridor);
 
         expect(group.children).toHaveLength(3);
-        expect(group.children.map((child) => child.count)).toEqual([3, 2, 3]);
+        expect(group.children.map((child) => child.count)).toEqual([5, 2, 4]);
         expect(group.children.every((child) => !child.userData.isWall && !child.userData.isSolidProp)).toBe(true);
         expect(group.children.filter((child) => child.userData.isHallwayRouteStructurePool)).toHaveLength(1);
         expect(group.children.filter((child) => child.userData.isHallwayRouteCablePool)).toHaveLength(1);
         expect(group.children.filter((child) => child.userData.isHallwayRouteSignalPool)).toHaveLength(1);
+        expect(group.children.find((child) => child.userData.isHallwayRouteSignalPool).userData.floorGuideCount).toBe(1);
 
         geometry.dispose();
         structureMaterial.dispose();

@@ -25,6 +25,7 @@ import { FabricatorManager, FAB_RECIPES, getFabricatedOutputIds } from './src/fa
 import { createFabricationBay, fabMissingResourceText as fabMissingResourceTextFor } from './src/fabricationBay.js';
 import { ProfileManager, exportSaveCode, importSaveCode, resetAllDataFactory, startNewCampaign } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
+import { getHeldWeaponLabel } from './src/heldWeaponLabel.js';
 import { CutsceneManager } from './src/cutscene.js';
 import { DEPTH_TIER_NAMES } from './src/data/loot.js';
 import { getVoiceAudioManifest } from './src/data/voiceBanks.js';
@@ -71,20 +72,19 @@ import {
     actionSetForAppPhase,
     createActionRouter,
     hasControllerContinuePress,
-    menuKeyboardDirection,
     spatialFocusIndex,
     wrapMenuIndex,
     shouldPreferBrowserGamepad
 } from './src/inputActions.js';
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
-import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
+import { PLAYER_SPRITE_LAYOUTS } from './src/playerSpriteLayouts.js';
 import { clearChromaGreen, repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { PRESENTATION_LAYER_SELECTOR, isPresentationMutation } from './src/presentationLayer.js';
 import { resolveAmmoPickup } from './src/ammoSurplus.js';
 import { applyInputHints } from './src/inputHints.js';
 import { computeProgressionUnlocks, loadRigPurchases } from './src/progressionUnlocks.js';
 import { createArmoryUi } from './src/armoryUi.js';
-import { initSteamVaultUI, isVaultExchangeAvailable, isVaultStoreAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, renderStorePanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
+import { cancelCacheReveal, initSteamVaultUI, isVaultExchangeAvailable, isVaultStoreAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, renderStorePanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
 import { createFoundryHub, isFoundryHubEnabled } from './src/foundryHub.js';
 import { initSeasonPassUI, cancelXpFeedback, beginSeasonRun, getSeasonRunSummary, openSeasonPassModal, seasonPass } from './src/seasonPassUi.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
@@ -105,7 +105,7 @@ import { createCampServicesUi } from './src/campServicesUi.js';
 import { createQuickCommandRadialUi } from './src/quickCommandRadialUi.js';
 import { flushPendingRunSubmits, submitRunWithRetryQueue } from './src/steam/runSubmitQueue.js';
 import { FATIGUE_STATE_KEY, describeScars, normalizeFatigueState } from './src/fatigue.js';
-import { unlockSheenForMilestone, reconcileSheenUnlocks, unlockAllSheens } from './src/weaponSheens.js';
+import { unlockSheenForMilestone, reconcileSheenUnlocks, unlockAllSheens, getSelectedSheen } from './src/weaponSheens.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
 import { createOwnershipStore } from './src/itemOwnership.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
@@ -1081,6 +1081,29 @@ function getControllerFocusRoot() {
     return null;
 }
 
+// Entry focus for a surface with no rule of its own (nav map F2 / F7): a
+// confirm dialog opens on its safe choice; anything else on its first real
+// content control -- not its close button, a corner CHAT / settings shortcut
+// or its tab bar, which LB / RB already drive. Those only when nothing else is
+// there.
+const CONTROLLER_CANCEL_SELECTOR = '#quit-cancel-btn, #reset-save-cancel, #confirm-no, #trade-cancel-btn, [data-confirm-cancel]';
+const CONTROLLER_PERIPHERAL_SELECTOR = [
+    '.close-modal', '[data-menu-back]', '[data-player-chat-open]', '.open-settings-btn',
+    '.net-settings-btn', '.armory-settings-btn', '.armory-chat-btn', '[aria-label^="Close"]',
+    'a[target="_blank"]'
+].join(', ');
+const CONTROLLER_TAB_SELECTOR = [
+    '[role="tab"]', '.tab-btn', '.vault-tab-btn', '.terminal-tab-btn', '.season-pass-tab-btn',
+    '.foundry-hub__tab', '.class-tab', '[data-settings-tab]'
+].join(', ');
+
+function getDefaultControllerEntry(focusables) {
+    return focusables.find((element) => element.matches(CONTROLLER_CANCEL_SELECTOR))
+        ?? focusables.find((element) => !element.matches(CONTROLLER_PERIPHERAL_SELECTOR) && !element.matches(CONTROLLER_TAB_SELECTOR))
+        ?? focusables.find((element) => !element.matches(CONTROLLER_PERIPHERAL_SELECTOR))
+        ?? focusables[0];
+}
+
 function getPreferredControllerFocusTarget(root, focusables) {
     if (!focusables.length) return null;
     if (root?.id === 'splash') {
@@ -1099,9 +1122,16 @@ function getPreferredControllerFocusTarget(root, focusables) {
             ?? focusables[0];
     }
     if (root?.id === 'settings-popup') {
-        return focusables.find((element) => element.id === 'main-nightvision-toggle')
-            ?? focusables.find((element) => element.closest?.('.setting-item'))
+        // Paused: RESUME, so A goes straight back to the run. From a menu:
+        // the open tab's first row.
+        return (appPhase === 'gameplay' ? focusables.find((element) => element.id === 'resume-settings') : null)
+            ?? focusables.find((element) => element.closest?.('.setting-item') && element.id !== 'resume-settings')
             ?? focusables[0];
+    }
+    if (root?.id === 'multiplayer-modal') {
+        // The deployment console's job is DEPLOY; it used to open on CHAT.
+        return focusables.find((element) => element.id === 'net-deploy-btn' && !element.disabled)
+            ?? getDefaultControllerEntry(focusables);
     }
     if (root?.id === 'fabrication-modal') {
         return focusables.find((element) => element.id === 'fab-activate-btn' && !element.disabled)
@@ -1147,7 +1177,7 @@ function getPreferredControllerFocusTarget(root, focusables) {
             ?? focusables.find((element) => element.id === 'mothership-choice-tutorial' && isElementVisible(element))
             ?? focusables[0];
     }
-    return focusables[0];
+    return getDefaultControllerEntry(focusables);
 }
 
 let activeControllerFocusRoot = null;
@@ -1240,53 +1270,59 @@ function syncControllerFocusBoundary() {
     let closingInvoker = null;
 
     if (nextRoot !== activeControllerFocusRoot) {
-        if (isModalFocusRoot(nextRoot) && active && active !== document.body && !isElementInFocusRoot(nextRoot, active)) {
-            controllerFocusInvokers.set(nextRoot, active);
+        const previousRoot = activeControllerFocusRoot;
+        if (isModalFocusRoot(nextRoot) && !controllerFocusInvokers.has(nextRoot)) {
+            // The opener: still focused if nothing moved yet, else the last
+            // control the covered surface had (most surfaces focus their own
+            // first control as they open, before this sync runs).
+            const opener = active && active !== document.body && !isElementInFocusRoot(nextRoot, active)
+                ? active
+                : (previousRoot ? controllerFocusMemory.get(previousRoot) : null);
+            if (opener) controllerFocusInvokers.set(nextRoot, opener);
         }
-        if (isModalFocusRoot(activeControllerFocusRoot)) {
-            closingInvoker = controllerFocusInvokers.get(activeControllerFocusRoot) ?? null;
-        }
-        if (isElementInFocusRoot(activeControllerFocusRoot, active)) {
-            controllerFocusMemory.set(activeControllerFocusRoot, active);
+        if (isModalFocusRoot(previousRoot) && !isFocusRootOpen(previousRoot)) {
+            closingInvoker = controllerFocusInvokers.get(previousRoot) ?? null;
+            controllerFocusInvokers.delete(previousRoot);
+            // Closed, not covered: the next time it opens it starts at its
+            // entry target, not wherever the player left it last time.
+            controllerFocusMemory.delete(previousRoot);
+        } else if (isElementInFocusRoot(previousRoot, active)) {
+            controllerFocusMemory.set(previousRoot, active);
         }
         activeControllerFocusRoot = nextRoot;
     }
 
     if (!nextRoot) return null;
+    const focusables = getVisibleControllerFocusables(nextRoot);
+    // B from a sub-surface goes back to the control that opened it, even when
+    // the closing code already parked focus somewhere else (nav map F8).
+    if (closingInvoker && closingInvoker !== active && focusables.includes(closingInvoker)) {
+        focusControllerTarget(closingInvoker);
+        return closingInvoker;
+    }
     if (active && active !== document.body && isElementInFocusRoot(nextRoot, active)) return active;
 
-    const focusables = getVisibleControllerFocusables(nextRoot);
     const remembered = controllerFocusMemory.get(nextRoot);
-    const target = closingInvoker && focusables.includes(closingInvoker)
-        ? closingInvoker
-        : remembered && focusables.includes(remembered)
-            ? remembered
-            : getPreferredControllerFocusTarget(nextRoot, focusables);
+    const target = remembered && focusables.includes(remembered)
+        ? remembered
+        : getPreferredControllerFocusTarget(nextRoot, focusables);
     if (target) focusControllerTarget(target);
     return target ?? null;
 }
 
-function moveControllerFocus(delta) {
-    const root = getControllerFocusRoot();
-    const focusables = getVisibleControllerFocusables(root ?? document);
-    if (!focusables.length) return null;
-
-    let index = focusables.indexOf(document.activeElement);
-    if (index < 0 || (root && !isElementInFocusRoot(root, document.activeElement))) {
-        const preferred = getPreferredControllerFocusTarget(root, focusables);
-        if (preferred) {
-            index = focusables.indexOf(preferred);
-        } else {
-            index = 0;
+// Remember the last focused control of every open surface as focus moves, so
+// a sub-surface knows what opened it and Back can return there.
+document.addEventListener('focusin', (event) => {
+    const target = event.target;
+    if (!target || target === document.body) return;
+    for (const id of STEAM_INPUT_FOCUS_ROOT_IDS) {
+        const root = document.getElementById(id);
+        if (root && isFocusRootOpen(root) && isElementInFocusRoot(root, target)) {
+            controllerFocusMemory.set(root, target);
+            return;
         }
-    } else {
-        index = (index + delta + focusables.length) % focusables.length;
     }
-
-    const target = focusables[index] ?? null;
-    focusControllerTarget(target, { playHover: true });
-    return target;
-}
+});
 
 // A scrollable region with nothing focusable inside it (lore text, a log's
 // body, codex detail) can't be reached by moving focus, so a controller could
@@ -1313,121 +1349,163 @@ function scrollFocuslessRegion(root, code) {
     return true;
 }
 
-function moveAchievementsDirectionalFocus(code) {
-    const modal = document.getElementById('achievements-modal');
-    const active = document.activeElement;
-    if (!modal || !modal.contains(active)) return false;
-    const cards = Array.from(modal.querySelectorAll('#achievements-grid .achievement-card'));
-    if (!cards.length) return false;
+const MENU_DIRECTION_BY_CODE = Object.freeze({
+    ArrowUp: 'up', KeyW: 'up',
+    ArrowDown: 'down', KeyS: 'down',
+    ArrowLeft: 'left', KeyA: 'left',
+    ArrowRight: 'right', KeyD: 'right'
+});
 
-    const isCard = active?.classList?.contains('achievement-card');
-    const isClose = active?.id === 'close-achievements-modal';
-
-    if (isClose) {
-        if (code === 'ArrowDown' || code === 'KeyS' || code === 'ArrowRight' || code === 'KeyD') {
-            return focusControllerTarget(cards[0], { playHover: true });
-        }
-        return false;
-    }
-
-
-    if (!isCard) return false;
-
-    const currentIndex = cards.indexOf(active);
-    if (currentIndex < 0) return false;
-
-    let columns = 1;
-    if (cards.length > 1) {
-        const firstTop = cards[0].offsetTop;
-        for (let i = 1; i < cards.length; i += 1) {
-            if (cards[i].offsetTop === firstTop) {
-                columns += 1;
-            } else {
-                break;
-            }
-        }
-    }
-
-    if (code === 'ArrowDown' || code === 'KeyS') {
-        const nextIndex = currentIndex + columns;
-        if (nextIndex < cards.length) {
-            return focusControllerTarget(cards[nextIndex], { playHover: true });
-        }
-        return true;
-    }
-
-    if (code === 'ArrowUp' || code === 'KeyW') {
-        const prevIndex = currentIndex - columns;
-        if (prevIndex >= 0) {
-            return focusControllerTarget(cards[prevIndex], { playHover: true });
-        }
-        return focusControllerTarget(document.getElementById('close-achievements-modal') || cards[0], { playHover: true });
-    }
-
-    if (code === 'ArrowRight' || code === 'KeyD') {
-        const nextIndex = currentIndex + 1;
-        if (nextIndex < cards.length) {
-            return focusControllerTarget(cards[nextIndex], { playHover: true });
-        }
-        return true;
-    }
-
-    if (code === 'ArrowLeft' || code === 'KeyA') {
-        const prevIndex = currentIndex - 1;
-        if (prevIndex >= 0) {
-            return focusControllerTarget(cards[prevIndex], { playHover: true });
-        }
-        return true;
-    }
-
-    return false;
-}
-
-// One directional step in a menu, shared by the Steam Input poll and the
-// gamepad-menu-nav event so both behave the same.
-function moveControllerDirectional(root, code, backward) {
-    if (root?.id === 'menu') return moveMenuDirectionalFocus(code);
-    if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(code)) return true;
-    if (moveTabBarSelection(document.activeElement, code)) return true;
-    if (root?.id === 'achievements-modal' && moveAchievementsDirectionalFocus(code)) return true;
-    if (scrollFocuslessRegion(root, code)) return true;
-    if (moveSpatialControllerFocus(root, code)) return true;
-    return moveControllerFocus(backward ? -1 : 1);
-}
-
-const SPATIAL_FOCUS_ROOT_IDS = new Set([
-    'achievements-modal',
-    'steam-vault-modal',
-    // The Armory tile picker (skins, sheens, charms...) is its own focus
-    // root; without this the D-pad's up / down stepped through DOM order.
-    'armory-picker-modal',
-    'armory-screen',
-    'foundry-hub-modal',
-    'fabrication-modal',
-    'archive-modal',
-    'codex-modal',
-    'multiplayer-modal',
-    'console-terminal-modal',
-    'field-workbench-modal',
-    'camp-services-modal',
-    'mature-content-audit-modal',
-    'season-pass-modal'
-]);
-
-function moveSpatialControllerFocus(root, code) {
-    if (!root || !SPATIAL_FOCUS_ROOT_IDS.has(root.id)) return false;
-    const direction = code === 'KeyW' || code === 'ArrowUp' ? 'up'
-        : code === 'KeyS' || code === 'ArrowDown' ? 'down'
-            : code === 'KeyA' || code === 'ArrowLeft' ? 'left'
-                : code === 'KeyD' || code === 'ArrowRight' ? 'right'
-                    : null;
+// One directional step in any menu. Arrow keys, WASD, the browser gamepad
+// poll, native Steam Input and the gamepad-menu-nav event all land here, so a
+// press means the same thing on every screen and every device
+// (docs/design/controller-navigation-map.md). Every screen moves spatially and
+// stops at its edges; the few semantic rules that geometry can't express come
+// first.
+function navigateMenu(root, code) {
+    const direction = MENU_DIRECTION_BY_CODE[code];
     if (!direction) return false;
-    const focusables = getVisibleControllerFocusables(root);
+    const from = document.activeElement;
+    const horizontalStep = direction === 'right' ? 1 : direction === 'left' ? -1 : 0;
+    let handled;
+    if (root && (!from || from === document.body || !isElementInFocusRoot(root, from))) {
+        // Nothing on this surface has focus yet: the first press lands on its
+        // entry target rather than moving relative to something behind it.
+        const target = getPreferredControllerFocusTarget(root, getVisibleControllerFocusables(root));
+        handled = target ? focusControllerTarget(target, { playHover: true }) : false;
+    } else if (moveVirtualKeyboardGridFocus(code)) handled = true;
+    // Left / right change a focused slider, or a dropdown in a settings-style
+    // row, instead of leaving it; up / down always move on (A opens a
+    // dropdown's full list).
+    else if (horizontalStep && adjustsOnHorizontal(from)
+        && (adjustRangeInputValue(from, horizontalStep) || adjustSelectValue(from, horizontalStep))) handled = true;
+    else if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(code)) handled = true;
+    else if (moveTabBarSelection(from, code)) handled = true;
+    else if (scrollFocuslessRegion(root, code)) handled = true;
+    else if (moveArmoryAdvanceFocus(root, code)) handled = true;
+    else if (moveExplicitNavTarget(from, direction)) handled = true;
+    else handled = moveSpatialControllerFocus(root, direction);
+
+    const to = document.activeElement;
+    if (handled && from !== to) {
+        debugLog.info('INPUT', 'focus-route', {
+            root: root?.id ?? null,
+            from: from?.id || from?.getAttribute?.('data-type') || from?.className || null,
+            direction: code,
+            to: to?.id || to?.getAttribute?.('data-type') || to?.className || null,
+            inputSource: steamInputState.lastInputMode
+        });
+    }
+    return handled;
+}
+
+// Sliders always take left / right. A dropdown only does inside a settings
+// row (label left, value right) or a container marked data-nav-adjust; in a
+// toolbar (Vault filters, debug bars) it is an ordinary stop, or focus could
+// never get past it (nav remap 2026-10-14: the Vault search box sat behind
+// a filter dropdown and was unreachable).
+function adjustsOnHorizontal(element) {
+    if (isRangeInputElement(element)) return true;
+    const select = element?.matches?.('select') ? element : null;
+    return Boolean(select?.closest?.('.setting-item, .armory-row, [data-nav-adjust]'));
+}
+
+// A control (or a container around it) can name where a direction goes when
+// the layout alone would pick the wrong neighbour:
+// data-nav-up="#net-mode-solo-btn". The target must be visible and enabled.
+function moveExplicitNavTarget(from, direction) {
+    const holder = from?.closest?.(`[data-nav-${direction}]`);
+    const selector = holder?.getAttribute(`data-nav-${direction}`);
+    if (!selector) return false;
+    const target = [...document.querySelectorAll(selector)]
+        .find((element) => getVisibleControllerFocusables(element.parentElement ?? document).includes(element));
+    return target ? focusControllerTarget(target, { playHover: true }) : false;
+}
+
+// Spatial focus for every surface: the nearest control in the pressed
+// direction, aligned controls first (spatialFocusIndex). At the edge of the
+// screen focus stays where it is; a container marked data-nav-wrap (a long
+// list) wraps to its far end instead.
+function moveSpatialControllerFocus(root, direction) {
+    const focusables = getVisibleControllerFocusables(root ?? document);
     if (!focusables.length) return false;
-    const currentIndex = Math.max(0, focusables.indexOf(document.activeElement));
-    const rects = focusables.map((element) => element.getBoundingClientRect());
-    const nextIndex = spatialFocusIndex(rects, currentIndex, direction);
-    return focusControllerTarget(focusables[nextIndex], { playHover: true });
+    const active = document.activeElement;
+    const currentIndex = focusables.indexOf(active);
+    if (currentIndex < 0) {
+        const target = getPreferredControllerFocusTarget(root, focusables);
+        return target ? focusControllerTarget(target, { playHover: true }) : false;
+    }
+    // Nested controls (a commentary entry and its PLAY button): Right steps
+    // into the entry's first inner control, and Left from an inner control
+    // with nothing further left steps back out to the entry.
+    const inner = focusables.filter((element) => element !== active && active.contains(element));
+    if (direction === 'right' && inner.length) return focusControllerTarget(inner[0], { playHover: true });
+    const outer = focusables.filter((element) => element !== active && element.contains(active)).at(-1) ?? null;
+
+    // Otherwise a control never moves to its own container or to a control
+    // nested in it: those aren't "above" or "below" it.
+    const candidates = focusables.filter((element) => element === active
+        || (!element.contains(active) && !active.contains(element)));
+    const rects = candidates.map((element) => element.getBoundingClientRect());
+    const wrap = Boolean(active.closest?.('[data-nav-wrap]'));
+    const fromIndex = candidates.indexOf(active);
+    const nextIndex = spatialFocusIndex(rects, fromIndex, direction, { wrap });
+    if (nextIndex === fromIndex) {
+        if (direction === 'left' && outer) return focusControllerTarget(outer, { playHover: true });
+        return true;
+    }
+    let target = candidates[nextIndex];
+    // Moving into a tab bar from outside it lands on the selected tab, not on
+    // whichever tab happens to sit above (Settings: Up from the first row went
+    // to CAMERA & HUD while SESSION was open).
+    const bar = target.matches?.(CONTROLLER_TAB_SELECTOR) ? (target.closest('[role="tablist"]') ?? target.parentElement) : null;
+    if (bar && !bar.contains(active)) {
+        const selected = [...bar.querySelectorAll(CONTROLLER_TAB_SELECTOR)].find((tab) => focusables.includes(tab)
+            && (tab.getAttribute('aria-selected') === 'true' || tab.classList.contains('active') || tab.classList.contains('is-active')));
+        if (selected) target = selected;
+    }
+    return focusControllerTarget(target, { playHover: true });
+}
+
+let lastArmoryContentFocus = null;
+
+// Geometry-only wrapping cannot express the Armory's semantic exit. Preserve
+// spatial movement inside the panels, but give the final content row and the
+// footer a deterministic Down -> Embark edge. Up returns to the last panel
+// control instead of wrapping to an unrelated header action.
+function moveArmoryAdvanceFocus(root, code) {
+    if (root?.id !== 'armory-screen') return false;
+    const active = document.activeElement;
+    const embark = document.getElementById('armory-btn-embark');
+    if (!active || !embark) return false;
+    const isDown = code === 'ArrowDown' || code === 'KeyS';
+    const isUp = code === 'ArrowUp' || code === 'KeyW';
+
+    if (active === embark && isUp) {
+        const focusables = getVisibleControllerFocusables(root);
+        const remembered = lastArmoryContentFocus && focusables.includes(lastArmoryContentFocus)
+            ? lastArmoryContentFocus
+            : focusables.filter((element) => !element.closest('.armory-footer')).at(-1);
+        return remembered ? focusControllerTarget(remembered, { playHover: true }) : true;
+    }
+    if (!isDown || !root.contains(active)) return false;
+    if (active.closest('.armory-footer')) {
+        return focusControllerTarget(embark, { playHover: true });
+    }
+
+    lastArmoryContentFocus = active;
+    const activeRect = active.getBoundingClientRect();
+    const activeBottom = activeRect.top + activeRect.height / 2;
+    const activeLeft = activeRect.left;
+    const activeRight = activeRect.right;
+    const hasContentBelow = getVisibleControllerFocusables(root).some((element) => {
+        if (element === active || element.closest('.armory-footer')) return false;
+        const rect = element.getBoundingClientRect();
+        const horizOverlap = Math.min(activeRight, rect.right) - Math.max(activeLeft, rect.left);
+        if (horizOverlap < -60) return false;
+        return rect.top + rect.height / 2 > activeBottom + 2;
+    });
+    return hasContentBelow ? false : focusControllerTarget(embark, { playHover: true });
 }
 
 // Left / right (arrows, A / D, D-pad) on a focused tab selects its neighbour
@@ -1474,136 +1552,6 @@ function moveSettingsDirectionalFocus(code) {
     return false;
 }
 
-let lastHeroMenuCommandFocus = null;
-
-function moveHeroSelectPanelFocus(code) {
-    const active = document.activeElement;
-    const isLeft = code === 'KeyA' || code === 'ArrowLeft';
-    const isRight = code === 'KeyD' || code === 'ArrowRight';
-    const isUp = code === 'KeyW' || code === 'ArrowUp';
-    const isDown = code === 'KeyS' || code === 'ArrowDown';
-    if (!isLeft && !isRight && !isUp && !isDown) return false;
-
-    const commandRail = active?.closest?.('.menu-header-actions');
-    const heroRail = active?.closest?.('.char-selection');
-    const previewRail = active?.closest?.('.preview-box');
-    const initializeButton = active?.id === 'start-game';
-    const settingsButton = active?.closest?.('.menu-corner-settings .open-settings-btn');
-    const chatButton = active?.closest?.('.menu-corner-settings [data-player-chat-open]');
-    const selectedHero = document.querySelector('.char-selection .char-card.selected')
-        ?? document.querySelector('.char-selection .char-card');
-    const heroBackBtn = document.getElementById('hero-select-back-btn');
-
-    if (active === heroBackBtn) {
-        const visibleCommands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
-        const target = isUp
-            ? (lastHeroMenuCommandFocus && visibleCommands.includes(lastHeroMenuCommandFocus)
-                ? lastHeroMenuCommandFocus
-                : visibleCommands.at(-1))
-            : isRight
-                ? (document.getElementById('hero-polish-btn') ?? selectedHero)
-                : isDown
-                    ? document.getElementById('start-game')
-                    : null;
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-
-    if (chatButton) {
-        const target = isRight
-            ? document.querySelector('.menu-corner-settings .open-settings-btn')
-            : isLeft
-                ? document.getElementById('hero-polish-btn')
-                : (isDown ? selectedHero : null);
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-
-    if (settingsButton) {
-        const target = isLeft
-            ? (document.querySelector('.menu-corner-settings [data-player-chat-open]') ?? document.getElementById('hero-polish-btn'))
-            : (isDown ? selectedHero : null);
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-
-    if (initializeButton) {
-        if (isRight) {
-            return focusControllerTarget(document.getElementById('hero-polish-btn') ?? selectedHero, { playHover: true });
-        }
-        if (isDown) {
-            return (selectedHero || heroBackBtn) ? focusControllerTarget(selectedHero ?? heroBackBtn, { playHover: true }) : true;
-        }
-        const visibleCommands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
-        const target = lastHeroMenuCommandFocus && visibleCommands.includes(lastHeroMenuCommandFocus)
-            ? lastHeroMenuCommandFocus
-            : visibleCommands.at(-1);
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-
-    if (commandRail) {
-        lastHeroMenuCommandFocus = active;
-        if (!isRight) return true;
-        const target = document.getElementById('hero-polish-btn')
-            ?? selectedHero
-            ?? document.getElementById('start-game');
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-
-    if (heroRail) {
-        const focusableElements = getVisibleControllerFocusables(heroRail);
-        const index = Math.max(0, focusableElements.indexOf(active));
-        let target = null;
-        if (isUp) {
-            if (index === 0) target = document.querySelector('.menu-corner-settings .open-settings-btn');
-            else target = focusableElements[index - 1];
-        } else if (isDown) {
-            if (index < focusableElements.length - 1) target = focusableElements[index + 1];
-            else target = document.getElementById('start-game');
-        } else if (isLeft) {
-            if (active === heroBackBtn) target = document.getElementById('start-game');
-            else target = document.getElementById('hero-polish-btn');
-        } else if (isRight) {
-            target = document.querySelector('.menu-corner-settings .open-settings-btn');
-        }
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-
-    if (previewRail) {
-        // The rail stacks the callsign row (input + randomize) above the
-        // polish slot. Up/Down walk it in order and only leave at its ends;
-        // Left/Right move along the callsign row before leaving the rail.
-        // Jumping straight out left the callsign row unreachable.
-        const railItems = getVisibleControllerFocusables(previewRail);
-        const railIndex = railItems.indexOf(active);
-        if (railIndex >= 0 && (isUp || isDown)) {
-            const next = railItems[railIndex + (isUp ? -1 : 1)];
-            if (next) return focusControllerTarget(next, { playHover: true });
-        }
-        const row = active?.closest?.('.roster-id-row');
-        if (row && (isLeft || isRight)) {
-            const rowItems = getVisibleControllerFocusables(row);
-            const next = rowItems[rowItems.indexOf(active) + (isLeft ? -1 : 1)];
-            if (next) return focusControllerTarget(next, { playHover: true });
-        }
-        const target = isRight
-            ? (selectedHero ?? heroBackBtn ?? document.getElementById('start-game'))
-            : isLeft
-                ? (lastHeroMenuCommandFocus ?? getVisibleControllerFocusables(document.querySelector('.menu-header-actions'))[0])
-                : isUp
-                    ? document.querySelector('.menu-corner-settings .open-settings-btn')
-                    : document.getElementById('start-game');
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-
-    return false;
-}
-
-function moveMenuDirectionalFocus(code) {
-    if (moveVirtualKeyboardGridFocus(code)) return true;
-    if (moveMenuCommandGridFocus(code)) return true;
-    if (moveHeroSelectPanelFocus(code)) return true;
-    const direction = menuKeyboardDirection(code);
-    return direction ? Boolean(moveControllerFocus(direction)) : false;
-}
-
 // Row-aware grid navigation for the on-screen keyboard. Rows are uneven
 // widths (10/10/9/8/2 keys), so this clamps column position against each
 // row's own length rather than assuming a fixed column count.
@@ -1625,95 +1573,16 @@ function moveVirtualKeyboardGridFocus(code) {
     } else if (code === 'KeyD' || code === 'ArrowRight') {
         target = keysInRow[(colIndex + 1) % keysInRow.length];
     } else if (code === 'KeyW' || code === 'ArrowUp') {
-        const nextRow = rows[(rowIndex - 1 + rows.length) % rows.length];
+        // Off the top row: leave the grid (to ✕ / the field) by geometry.
+        if (rowIndex === 0) return false;
+        const nextRow = rows[rowIndex - 1];
         const nextKeys = Array.from(nextRow.querySelectorAll('.virtual-keyboard-key'));
         target = nextKeys[Math.min(colIndex, nextKeys.length - 1)];
     } else if (code === 'KeyS' || code === 'ArrowDown') {
-        const nextRow = rows[(rowIndex + 1) % rows.length];
+        if (rowIndex === rows.length - 1) return false;
+        const nextRow = rows[rowIndex + 1];
         const nextKeys = Array.from(nextRow.querySelectorAll('.virtual-keyboard-key'));
         target = nextKeys[Math.min(colIndex, nextKeys.length - 1)];
-    }
-
-    return target ? focusControllerTarget(target, { playHover: true }) : false;
-}
-
-function moveOperatorPolishGridFocus(code) {
-    const active = document.activeElement;
-    if (!active?.classList?.contains('operator-polish-chip')) return false;
-    const chips = Array.from(document.querySelectorAll('#operator-polish-grid .operator-polish-chip'));
-    const index = chips.indexOf(active);
-    if (index < 0 || !chips.length) return false;
-
-    const columnCount = 4;
-    let nextIndex = index;
-    if (code === 'KeyA' || code === 'ArrowLeft') nextIndex = index % columnCount === 0 ? index + columnCount - 1 : index - 1;
-    if (code === 'KeyD' || code === 'ArrowRight') nextIndex = index % columnCount === columnCount - 1 ? index - columnCount + 1 : index + 1;
-    if (code === 'KeyW' || code === 'ArrowUp') {
-        // The close button sits above the grid; wrapping to the bottom row
-        // left it unreachable without a pointer.
-        if (index < columnCount) {
-            const close = document.getElementById('close-operator-polish-modal');
-            if (close && getVisibleControllerFocusables(close.parentElement).includes(close)) {
-                return focusControllerTarget(close, { playHover: true });
-            }
-        }
-        nextIndex = (index - columnCount + chips.length) % chips.length;
-    }
-    if (code === 'KeyS' || code === 'ArrowDown') nextIndex = (index + columnCount) % chips.length;
-    return focusControllerTarget(chips[nextIndex], { playHover: true });
-}
-
-function moveMenuCommandGridFocus(code) {
-    const active = document.activeElement;
-    // CAREER TELEMETRY's RECORDS ▸ sits above the command grid.
-    const recordsBtn = document.getElementById('homebase-records-btn');
-    if (active === recordsBtn) {
-        const commands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
-        const target = (code === 'KeyS' || code === 'ArrowDown')
-            ? commands[0]
-            : (code === 'KeyD' || code === 'ArrowRight')
-                ? (document.getElementById('hero-polish-btn') ?? document.querySelector('.char-selection .char-card.selected'))
-                : null;
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-    if (active?.id === 'start-game') {
-        if (code !== 'KeyW' && code !== 'ArrowUp') return false;
-        const visibleCommands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
-        const target = lastHeroMenuCommandFocus && visibleCommands.includes(lastHeroMenuCommandFocus)
-            ? lastHeroMenuCommandFocus
-            : visibleCommands.at(-1);
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-    if (!active?.closest?.('.menu-header-actions')) return false;
-
-    // The command wrappers are semantic groups, but CSS flattens them into a
-    // three-column visual grid. Navigate the grid the player can actually see
-    // instead of the old two-column wrapper structure.
-    const commands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'))
-        .filter((element) => element.matches('button, .steam-account-badge--menu'));
-    const index = commands.indexOf(active);
-    if (index < 0) return false;
-    const columnCount = 2;
-    const columnIndex = index % columnCount;
-    let target = null;
-
-    if (code === 'KeyW' || code === 'ArrowUp') {
-        target = index >= columnCount
-            ? commands[index - columnCount]
-            : (recordsBtn && isElementVisible(recordsBtn) ? recordsBtn : commands[index]);
-    } else if (code === 'KeyS' || code === 'ArrowDown') {
-        if (index + columnCount >= commands.length) {
-            lastHeroMenuCommandFocus = active;
-            target = document.getElementById('hero-select-back-btn') ?? document.getElementById('start-game');
-        } else {
-            target = commands[index + columnCount];
-        }
-    } else if (code === 'KeyA' || code === 'ArrowLeft') {
-        if (columnIndex === 0) return false;
-        target = commands[index - 1];
-    } else if (code === 'KeyD' || code === 'ArrowRight') {
-        if (columnIndex === columnCount - 1 || index + 1 >= commands.length) return false;
-        target = commands[index + 1];
     }
 
     return target ? focusControllerTarget(target, { playHover: true }) : false;
@@ -1741,20 +1610,9 @@ document.addEventListener('keydown', (event) => {
     // every nested submenu use Deck/keyboard navigation when opened in-run.
     if (appPhase === 'gameplay' && !isModalFocusRoot(root)) return;
 
-    const direction = menuKeyboardDirection(event.code);
-    if (direction) {
+    if (MENU_DIRECTION_BY_CODE[event.code] && !event.ctrlKey && !event.metaKey && !event.altKey) {
         event.preventDefault();
-        if (root.id === 'operator-polish-modal' && moveOperatorPolishGridFocus(event.code)) return;
-        if (root.id === 'menu' && moveMenuDirectionalFocus(event.code)) return;
-        if (root.id === 'settings-popup' && moveSettingsDirectionalFocus(event.code)) return;
-        if (moveTabBarSelection(document.activeElement, event.code)) return;
-        const horizontal = ['KeyA', 'KeyD', 'ArrowLeft', 'ArrowRight'].includes(event.code);
-        const active = document.activeElement;
-        const adjusted = horizontal && (
-            adjustRangeInputValue(active, direction)
-            || adjustSelectValue(active, direction)
-        );
-        if (!adjusted && !moveSpatialControllerFocus(root, event.code)) moveControllerFocus(direction);
+        navigateMenu(root, event.code);
     } else if (event.code === 'Enter' || event.code === 'Space') {
         event.preventDefault();
         activateControllerFocusedElement();
@@ -2002,6 +1860,9 @@ function activateControllerFocusedElement() {
     if (!activeElement || activeElement === document.body || (root && !isElementInFocusRoot(root, activeElement))) {
         activeElement = getPreferredControllerFocusTarget(root, focusables);
         if (activeElement) focusControllerTarget(activeElement);
+        // On a dialog, a press that only found focus must not also click:
+        // the target could be CONFIRM QUIT or RESET SAVE (nav map F2).
+        if (isModalFocusRoot(root)) return Boolean(activeElement);
     }
 
     if (!activeElement) return false;
@@ -2123,10 +1984,13 @@ function triggerControllerPauseAction() {
         toggleTacticalMapModal(false);
         return true;
     }
+    // isFocusRootOpen, not just the `hidden` class: #hb-debug-console is
+    // always mounted and hides with display:none, so a class-only test read it
+    // as an open modal and Start sent Escape to it instead of pausing.
     const activeModal = STEAM_INPUT_FOCUS_ROOT_IDS
         .filter((id) => id !== 'splash' && id !== 'menu')
         .map((id) => document.getElementById(id))
-        .find((element) => element && !element.classList.contains('hidden') && element !== settingsPopup);
+        .find((element) => element !== settingsPopup && isFocusRootOpen(element));
     if (activeModal) {
         dispatchControllerEscape();
         noteModalClosed('pause-active-modal');
@@ -2292,11 +2156,32 @@ function isPresentationLayerActive() {
 // classes, which re-queued the observer forever and froze the page at the
 // title screen (found by bisecting a hang to 05c4300, 2026-09-24).
 let presentationCursorWasActive = false;
+let presentationPointerTimer = null;
+function handlePresentationPointerActivity() {
+    if (!document.documentElement.classList.contains('presentation-cursor-hidden')) return;
+    document.documentElement.classList.add('presentation-pointer-active');
+    if (presentationPointerTimer) {
+        clearTimeout(presentationPointerTimer);
+    }
+    presentationPointerTimer = setTimeout(() => {
+        document.documentElement.classList.remove('presentation-pointer-active');
+    }, 2500);
+}
+window.addEventListener('pointermove', handlePresentationPointerActivity, { passive: true });
+window.addEventListener('pointerdown', handlePresentationPointerActivity, { passive: true });
+
 function syncPresentationCursor() {
     const active = isPresentationLayerActive();
     const root = document.documentElement;
     if (root.classList.contains('presentation-cursor-hidden') !== active) {
         root.classList.toggle('presentation-cursor-hidden', active);
+    }
+    if (!active) {
+        root.classList.remove('presentation-pointer-active');
+        if (presentationPointerTimer) {
+            clearTimeout(presentationPointerTimer);
+            presentationPointerTimer = null;
+        }
     }
     const becameActive = active && !presentationCursorWasActive;
     presentationCursorWasActive = active;
@@ -2357,11 +2242,13 @@ function handleSteamMenuInput(actions) {
 
     const camStickX = Math.abs(Number(actions.camera?.x) || 0) > 0.15 ? Number(actions.camera?.x) : 0;
     const camStickY = Math.abs(Number(actions.camera?.y) || 0) > 0.15 ? Number(actions.camera?.y) : 0;
-    const moveStickX = Math.abs(Number(actions.move?.x) || 0) > 0.25 ? Number(actions.move?.x) : 0;
-    const moveStickY = Math.abs(Number(actions.move?.y) || 0) > 0.25 ? Number(actions.move?.y) : 0;
-
-    const pointerX = Number(actions.pointer?.x) || camStickX || moveStickX || 0;
-    const pointerY = Number(actions.pointer?.y) || camStickY || moveStickY || 0;
+    // The left stick navigates menus exactly like the D-pad (it arrives as
+    // menuUp/Down/Left/Right). It used to also drive this free cursor, which
+    // focused whatever it passed over, so one push moved focus twice and
+    // fought itself (controller nav remap 2026-10-14). The cursor is the right
+    // stick / trackpad only.
+    const pointerX = Number(actions.pointer?.x) || camStickX || 0;
+    const pointerY = Number(actions.pointer?.y) || camStickY || 0;
     const pointerMag = Math.hypot(pointerX, pointerY);
     const deltaY = Number(actions.cameraDelta?.y) || 0;
     const deltaX = Number(actions.cameraDelta?.x) || 0;
@@ -2401,27 +2288,20 @@ function handleSteamMenuInput(actions) {
     }
 
     const moved = Boolean(actions.up || actions.down || actions.left || actions.right);
-    const activeElement = document.activeElement;
-    const horizontalDirection = actions.left ? -1 : actions.right ? 1 : 0;
-    // Left/right quick-adjusts the focused control; up/down always moves focus.
-    // Letting up/down adjust a <select> too meant a focused dropdown swallowed
-    // vertical navigation, so focus could never leave it -- and A now opens the
-    // full option list anyway, which is the discoverable way to change one.
-    const controlAdjusted = Boolean(activeElement && horizontalDirection && (
-        adjustRangeInputValue(activeElement, horizontalDirection)
-        || adjustSelectValue(activeElement, horizontalDirection)
-    ));
 
     const root = getControllerFocusRoot();
+    let rehomed = false;
     if (steamInputState.lastInputMode === 'controller' && (!document.activeElement || document.activeElement === document.body || !isElementInFocusRoot(root, document.activeElement))) {
         const focusables = getVisibleControllerFocusables(root ?? document);
         const preferred = getPreferredControllerFocusTarget(root, focusables);
         if (preferred) focusControllerTarget(preferred);
+        rehomed = Boolean(preferred);
     } else if (actions.tabLeft) {
         handleControllerTabNavigation(root, -1);
     } else if (actions.tabRight) {
         handleControllerTabNavigation(root, 1);
-    } else if (moved && !controlAdjusted) {
+    } else if (moved) {
+        // Left / right on a slider or dropdown adjust it (navigateMenu).
         const code = actions.up
             ? 'ArrowUp'
             : actions.down
@@ -2429,10 +2309,13 @@ function handleSteamMenuInput(actions) {
                 : actions.left
                     ? 'ArrowLeft'
                     : 'ArrowRight';
-        moveControllerDirectional(root, code, actions.up || actions.left);
+        navigateMenu(root, code);
     }
 
-    if (actions.confirm || actions.fire || actions.triggerRight) {
+    // A press that only brought focus back onto a dialog doesn't also click
+    // whatever it landed on (nav map F2: that was RESET SAVE).
+    const confirmSwallowed = rehomed && isModalFocusRoot(root);
+    if (!confirmSwallowed && (actions.confirm || actions.fire || actions.triggerRight)) {
         if (controllerAimCursor) {
             const hovered = document.elementFromPoint(controllerAimCursor.x, controllerAimCursor.y);
             const clickable = hovered?.closest?.('button, select, input, a, .char-card, .class-tab, .armory-btn, .armory-select, .toggle, .splash-btn, .about-btn, [tabindex]:not([tabindex="-1"])');
@@ -2469,7 +2352,7 @@ window.addEventListener('gamepad-menu-nav', (event) => {
             menu_left: 'ArrowLeft',
             menu_right: 'ArrowRight'
         };
-        moveControllerDirectional(getControllerFocusRoot(), codeByAction[action], action === 'menu_up' || action === 'menu_left');
+        navigateMenu(getControllerFocusRoot(), codeByAction[action]);
     } else if (action === 'menu_confirm') {
         activateControllerFocusedElement();
     } else if (action === 'menu_back') {
@@ -3013,6 +2896,9 @@ const state = {
         textFloor: [16, 18, 20, 22, 24].includes(Number(localStorage.getItem('hb_text_floor')))
             ? Number(localStorage.getItem('hb_text_floor'))
             : 18,
+        introStyle: ['tactical_terminal', 'timed_verbatim', 'classic'].includes(localStorage.getItem('hb_intro_style'))
+            ? localStorage.getItem('hb_intro_style')
+            : 'tactical_terminal',
         cameraMode: localStorage.getItem('hb_camera_mode') === 'third-person' ? 'third-person' : 'isometric',
         cameraDistance: ['close', 'standard', 'wide'].includes(localStorage.getItem('hb_camera_distance'))
             ? localStorage.getItem('hb_camera_distance')
@@ -4342,6 +4228,7 @@ window.addEventListener('enemy-hit', (event) => {
 });
 window.addEventListener('weapon-clip-updated', (event) => {
     renderWeaponClipState(event?.detail ?? {});
+    syncEquippedWeaponLabel(event?.detail?.fieldWeaponId ?? null);
 });
 let _lastShipHp = null;
 window.addEventListener('ship-health-changed', (event) => {
@@ -5238,6 +5125,9 @@ function renderOperatorPolishUi() {
         button.className = `operator-polish-chip${isUnlocked ? '' : ' is-locked'}${selected.id === polish.id ? ' is-selected' : ''}`;
         button.style.setProperty('--polish-color', polish.color);
         button.setAttribute('aria-disabled', String(!isUnlocked));
+        // Locked finishes stay reachable by pad / keys so their unlock clue can
+        // be read (the focus handler below shows it); they have no click action.
+        if (!isUnlocked) button.setAttribute('data-controller-focusable', '');
         button.setAttribute('aria-label', `${polish.name}${isUnlocked ? '' : ` locked. Clue: ${polish.hint}`}`);
         button.innerHTML = `<span class="operator-polish-chip__swatch"></span><span>${String(polish.id + 1).padStart(2, '0')} // ${polish.name}</span>`;
         if (isUnlocked) {
@@ -5247,7 +5137,6 @@ function renderOperatorPolishUi() {
                 window.game?.setOperatorPolish?.(next.color);
                 scoutHeroPreview?.setOperatorPolish?.(next.color);
                 armorySceneInstance?.setOperatorPolish?.(next.color);
-                void renderPreviewFrame(activePreviewType, previewFrameIndex);
                 renderOperatorPolishUi();
                 armoryUiInstance?.refresh?.();
                 window.AudioManager?.play?.('ui_click', { volume: 0.5 });
@@ -5959,7 +5848,7 @@ function resetRunToStartingState({
         if (resetBank) {
             bankManager.reset();
             fabricator.reset();
-            loadout.reset();
+            loadout.resetRunGear();
             stopFabTicker();
             refreshFabAccess();
             syncEquippedWeaponLabel();
@@ -6481,6 +6370,11 @@ function buildArchiveModal() {
                 entry.type = 'button';
                 entry.setAttribute('aria-label', t('ui.lore.open_log', { key: String(key).startsWith('drop_') ? (window.game?.getLoreTitle?.(key) ?? key) : key }));
                 entry.addEventListener('click', () => openArchiveLogDetail(key));
+            } else {
+                // Undiscovered logs are focus stops too, so a pad can walk the
+                // whole archive; they open nothing (nav map F9).
+                entry.setAttribute('tabindex', '0');
+                entry.setAttribute('aria-label', `${archiveLogLabel(key, false)}. ${t('ui.lore.encrypted')}`);
             }
 
             const avatar = document.createElement('div');
@@ -8588,30 +8482,36 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         overlay.className = 'class-intro-overlay';
         overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(`/cutscenes/${charBase}-poster.jpg`)}')`);
 
-        const skipHint = document.createElement('div');
+        const skipHint = document.createElement('button');
+        skipHint.type = 'button';
         skipHint.className = 'class-intro-skip';
         skipHint.textContent = t('ui.cinematic.skip_any');
+        skipHint.setAttribute('aria-label', t('ui.cinematic.skip_any'));
 
         let settled = false;
         let step = 'character'; // 'character' | 'launch' | 'done'
         let guardTimer = null;
         let videoElement = null;
         let checkSkipInterval = null;
-        let inputArmed = false;
-
-        const armTimer = window.setTimeout(() => {
-            inputArmed = true;
-        }, 500);
 
         const clearTimers = () => {
             if (guardTimer) {
                 window.clearTimeout(guardTimer);
                 guardTimer = null;
             }
-            if (armTimer) {
-                window.clearTimeout(armTimer);
-            }
         };
+
+        const triggerSkip = () => {
+            cleanupAndResolve();
+        };
+
+        const onSkipClick = (event) => {
+            event?.preventDefault?.();
+            event?.stopPropagation?.();
+            triggerSkip();
+        };
+        skipHint.addEventListener('click', onSkipClick);
+        skipHint.addEventListener('pointerup', onSkipClick);
 
         function cleanupAndResolve() {
             if (settled) return;
@@ -8622,6 +8522,8 @@ function playClassIntroSequence(playerType = 'SCOUT') {
                 clearInterval(checkSkipInterval);
                 checkSkipInterval = null;
             }
+            skipHint.removeEventListener('click', onSkipClick);
+            skipHint.removeEventListener('pointerup', onSkipClick);
             window.removeEventListener('keydown', onKey);
             overlay.removeEventListener('pointerup', onPointerUp);
             overlay.classList.add('is-closing');
@@ -8710,32 +8612,17 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             playVideoSource(launchBase, cleanupAndResolve);
         }
 
-        let lastInputTime = 0;
-        const handleAdvance = () => {
-            const now = Date.now();
-            if (now - lastInputTime < 300) return;
-            lastInputTime = now;
-            if (step === 'launch') {
-                cleanupAndResolve();
-            } else {
-                startLaunchStep();
-            }
-        };
+
 
         function onKey(event) {
-            if (!inputArmed && event.key !== 'Escape') return;
+            if (['Shift', 'Control', 'Alt', 'Meta'].includes(event.key)) return;
             event.preventDefault();
-            if (event.key === 'Escape') {
-                cleanupAndResolve();
-            } else {
-                handleAdvance();
-            }
+            triggerSkip();
         }
 
         function onPointerUp(event) {
-            if (!inputArmed) return;
             event.preventDefault();
-            handleAdvance();
+            triggerSkip();
         }
 
         window.addEventListener('keydown', onKey);
@@ -8747,13 +8634,12 @@ function playClassIntroSequence(playerType = 'SCOUT') {
                 cleanupAndResolve();
                 return;
             }
-            if (!inputArmed) return;
             if (typeof navigator !== 'undefined' && navigator.getGamepads) {
                 const pads = navigator.getGamepads() || [];
                 const anyPressed = Array.from(pads).some((gp) => gp?.connected && gp?.buttons?.some((b) => b?.pressed));
                 if (anyPressed && !lastGamepadPressed) {
                     lastGamepadPressed = true;
-                    handleAdvance();
+                    triggerSkip();
                 } else if (!anyPressed) {
                     lastGamepadPressed = false;
                 }
@@ -8966,9 +8852,11 @@ function playCutsceneVideo(base, options = {}) {
             video.appendChild(sourceEl);
         }
 
-        const skipHint = document.createElement('div');
+        const skipHint = document.createElement('button');
+        skipHint.type = 'button';
         skipHint.className = 'class-intro-skip cinematic-still-skip';
-        skipHint.textContent = t('ui.cinematic.skip_space');
+        skipHint.textContent = t('ui.cinematic.skip_any');
+        skipHint.setAttribute('aria-label', t('ui.cinematic.skip_any'));
 
         // Render text overlay on top of video when kicker/title/body are provided
         const resolvedKicker = kicker || fallback?.kicker || '';
@@ -9008,6 +8896,59 @@ function playCutsceneVideo(base, options = {}) {
             }
         }
 
+        const showSpeakerHeadshot = Boolean(
+            options.showSpeakerHeadshot ||
+            options.showHeadshot ||
+            resolvedBase === 'intro-mothership-briefing'
+        );
+
+        let headshotEl = null;
+        if (showSpeakerHeadshot) {
+            const speakerInfo = options.speaker || {
+                name: 'MOTHERSHIP COMMAND',
+                portrait: '/lore_portraits/survivor_00.webp',
+                callout: 'ORBITAL COMMAND RELAY',
+                channel: 'SEC-09 // CH 01 (142.8 MHz)'
+            };
+            headshotEl = document.createElement('div');
+            headshotEl.className = 'cinematic-headshot-hud';
+            headshotEl.innerHTML = `
+                <div class="cinematic-headshot-hud__header">
+                    <span class="cinematic-headshot-hud__beacon" aria-hidden="true"></span>
+                    <span class="cinematic-headshot-hud__status" data-i18n="cinematic.live_transmission">LIVE TRANSMISSION</span>
+                    <span class="cinematic-headshot-hud__channel">${speakerInfo.channel || '142.8 MHz'}</span>
+                </div>
+                <div class="cinematic-headshot-hud__card">
+                    <div class="cinematic-headshot-hud__portrait-frame">
+                        <img class="cinematic-headshot-hud__img" src="${assetUrl(speakerInfo.portrait || '/lore_portraits/survivor_00.webp')}" alt="" />
+                        <span class="cinematic-headshot-hud__scanline" aria-hidden="true"></span>
+                        <span class="cinematic-headshot-hud__corner cinematic-headshot-hud__corner--tl" aria-hidden="true"></span>
+                        <span class="cinematic-headshot-hud__corner cinematic-headshot-hud__corner--tr" aria-hidden="true"></span>
+                        <span class="cinematic-headshot-hud__corner cinematic-headshot-hud__corner--bl" aria-hidden="true"></span>
+                        <span class="cinematic-headshot-hud__corner cinematic-headshot-hud__corner--br" aria-hidden="true"></span>
+                    </div>
+                    <div class="cinematic-headshot-hud__info">
+                        <div class="cinematic-headshot-hud__name">${speakerInfo.name || 'MOTHERSHIP COMMAND'}</div>
+                        <div class="cinematic-headshot-hud__callout">${speakerInfo.callout || 'ORBITAL COMMAND RELAY'}</div>
+                        <div class="cinematic-headshot-hud__meter" aria-hidden="true">
+                            <span class="cinematic-headshot-hud__bar"></span>
+                            <span class="cinematic-headshot-hud__bar"></span>
+                            <span class="cinematic-headshot-hud__bar"></span>
+                            <span class="cinematic-headshot-hud__bar"></span>
+                            <span class="cinematic-headshot-hud__status-pill" data-i18n="cinematic.transmitting">TRANSMITTING</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const portraitImg = headshotEl.querySelector('.cinematic-headshot-hud__img');
+            if (portraitImg) {
+                portraitImg.onerror = () => {
+                    portraitImg.onerror = null;
+                    portraitImg.src = assetUrl('/lore_portraits/survivor_00.webp');
+                };
+            }
+        }
+
         let settled = false;
         let played = false;
         let fadingOut = false;
@@ -9017,6 +8958,14 @@ function playCutsceneVideo(base, options = {}) {
         }, 15000);
 
         let checkGamepadInterval = null;
+        const onSkipClick = (event) => {
+            event?.preventDefault?.();
+            event?.stopPropagation?.();
+            finish({ skipped: true });
+        };
+        skipHint.addEventListener('click', onSkipClick);
+        skipHint.addEventListener('pointerup', onSkipClick);
+
         const finish = ({ skipped = false } = {}) => {
             if (settled) return;
             settled = true;
@@ -9026,6 +8975,8 @@ function playCutsceneVideo(base, options = {}) {
                 checkGamepadInterval = null;
             }
             window.clearTimeout(guardTimer);
+            skipHint.removeEventListener('click', onSkipClick);
+            skipHint.removeEventListener('pointerup', onSkipClick);
             window.removeEventListener('keydown', onKey);
             overlay.removeEventListener('pointerup', onPointer);
 
@@ -9074,16 +9025,13 @@ function playCutsceneVideo(base, options = {}) {
             }, cleanupDelay);
         };
 
-        const overlayMountTime = Date.now();
         const onKey = (event) => {
-            if (event.code !== 'Space' && event.code !== 'Enter' && event.code !== 'Escape') return;
-            if (Date.now() - overlayMountTime < 450) return;
+            if (['Shift', 'Control', 'Alt', 'Meta'].includes(event.key)) return;
             event.preventDefault();
             finish({ skipped: true });
         };
 
         const onPointer = (event) => {
-            if (Date.now() - overlayMountTime < 600) return;
             event.preventDefault();
             finish({ skipped: true });
         };
@@ -9094,7 +9042,6 @@ function playCutsceneVideo(base, options = {}) {
                 clearInterval(checkGamepadInterval);
                 return;
             }
-            if (Date.now() - overlayMountTime < 600) return;
             if (typeof navigator !== 'undefined' && navigator.getGamepads) {
                 const pads = navigator.getGamepads() || [];
                 const anyPressed = Array.from(pads).some((gp) => gp?.connected && gp?.buttons?.some((b) => b?.pressed));
@@ -9149,6 +9096,7 @@ function playCutsceneVideo(base, options = {}) {
         overlay.append(video);
         if (shade) overlay.append(shade);
         if (copy) overlay.append(copy);
+        if (headshotEl) overlay.append(headshotEl);
         overlay.append(skipHint);
         host.appendChild(overlay);
 
@@ -9158,6 +9106,7 @@ function playCutsceneVideo(base, options = {}) {
         }).catch(finish);
     });
 }
+window.playCutsceneVideo = playCutsceneVideo;
 
 function playCinematicStills(rawSpec = {}) {
     const spec = normalizeCinematicStillSpec(rawSpec);
@@ -9220,11 +9169,16 @@ function playCinematicStills(rawSpec = {}) {
         let settled = false;
         let frameTimer = 0;
         let finishTimer = 0;
+        let checkGamepadInterval = null;
         const finish = (skipped = false) => {
             if (settled) return;
             settled = true;
             window.clearTimeout(frameTimer);
             window.clearTimeout(finishTimer);
+            if (checkGamepadInterval) {
+                clearInterval(checkGamepadInterval);
+                checkGamepadInterval = null;
+            }
             window.removeEventListener('keydown', onKey);
             overlay.removeEventListener('pointerup', onPointer);
             skip.removeEventListener('click', onSkipClick);
@@ -9234,6 +9188,7 @@ function playCinematicStills(rawSpec = {}) {
         };
         const onKey = (event) => {
             if (!spec.allowSkip) return;
+            if (['Shift', 'Control', 'Alt', 'Meta'].includes(event.key)) return;
             event.preventDefault();
             finish(true);
         };
@@ -9252,6 +9207,24 @@ function playCinematicStills(rawSpec = {}) {
             overlay.addEventListener('pointerup', onPointer);
             skip.addEventListener('click', onSkipClick);
             skip.focus({ preventScroll: true });
+
+            let lastGamepadPressed = false;
+            checkGamepadInterval = setInterval(() => {
+                if (settled) {
+                    clearInterval(checkGamepadInterval);
+                    return;
+                }
+                if (typeof navigator !== 'undefined' && navigator.getGamepads) {
+                    const pads = navigator.getGamepads() || [];
+                    const anyPressed = Array.from(pads).some((gp) => gp?.connected && gp?.buttons?.some((b) => b?.pressed));
+                    if (anyPressed && !lastGamepadPressed) {
+                        lastGamepadPressed = true;
+                        finish(true);
+                    } else if (!anyPressed) {
+                        lastGamepadPressed = false;
+                    }
+                }
+            }, 50);
         }
         if (spec.images[1]) {
             frameTimer = window.setTimeout(() => {
@@ -9600,19 +9573,12 @@ function ensureScoutHeroPreview() {
             .then((preview) => {
                 scoutHeroPreview = preview;
                 preview.setOperatorPolish(getSelectedPolish?.()?.color ?? 0xffffff);
-                const targetType = (typeof activePreviewType !== 'undefined' ? activePreviewType : null)
-                    ?? document.querySelector('.char-card.selected')?.getAttribute('data-type')
-                    ?? 'SCOUT';
-                void preview.setType(targetType);
-                preview.setVisible(true);
-                const sprite = document.getElementById('char-preview-sprite');
-                const fallback = document.getElementById('char-preview-fallback');
-                sprite?.classList.add('hidden');
-                fallback?.classList.add('hidden');
+                preview.setVisible(false);
                 return preview;
             })
             .catch((error) => {
-                console.warn('[scout-hero-preview] keeping 2D fallback', error);
+                scoutHeroPreviewPromise = null;
+                console.warn('[scout-hero-preview] 3D preview unavailable', error);
                 return null;
             });
     }
@@ -9620,7 +9586,10 @@ function ensureScoutHeroPreview() {
 }
 
 const transitionFromTitleToMenu = (afterClosed = null) => {
-    ensureScoutHeroPreview();
+    // Build the 3D preview as the hero menu opens, then show the chosen class.
+    ensureScoutHeroPreview().then((preview) => {
+        if (preview && activePreviewType) void syncHeroPreview(activePreviewType);
+    });
     const currentSelectedType = document.querySelector('.char-card.selected')?.getAttribute('data-type') || 'SCOUT';
     warmClassIntroMedia?.(currentSelectedType);
     triggerDoorTransition(
@@ -11309,6 +11278,7 @@ function organizeSettingsPanels() {
         ['setting-ui-scale', 'accessibility'],
         ['setting-text-floor', 'accessibility'],
         ['setting-text-speed', 'accessibility'],
+        ['setting-intro-style', 'session'],
         ['setting-colorblind-toggle', 'accessibility'],
         ['setting-subtitle-size', 'accessibility'],
         ['setting-subtitle-backdrop', 'accessibility'],
@@ -11452,7 +11422,10 @@ function selectSettingsTab(tabName = 'session', { focus = false } = {}) {
         tab.tabIndex = active ? 0 : -1;
     });
     panels.forEach((panel) => panel.classList.toggle('hidden', panel.dataset.settingsPanel !== selected?.dataset.settingsTab));
-    if (focus) selected?.focus();
+    if (focus) {
+        selected?.focus({ preventScroll: true });
+        selected?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
 }
 
 settingsPopup?.querySelector('.settings-tabs')?.addEventListener('click', (event) => {
@@ -11469,10 +11442,16 @@ settingsPopup?.querySelector('.settings-tabs')?.addEventListener('keydown', (eve
         moveSettingsDirectionalFocus(event.key);
         return;
     }
-    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
     const tabs = [...settingsPopup.querySelectorAll('[data-settings-tab]')];
     const index = tabs.indexOf(document.activeElement);
     if (index < 0) return;
+    if (event.key === 'Home' || event.key === 'End') {
+        event.preventDefault();
+        const target = event.key === 'Home' ? tabs[0] : tabs[tabs.length - 1];
+        selectSettingsTab(target.dataset.settingsTab, { focus: true });
+        return;
+    }
+    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
     event.preventDefault();
     const direction = event.key === 'ArrowRight' ? 1 : -1;
     selectSettingsTab(tabs[(index + direction + tabs.length) % tabs.length].dataset.settingsTab, { focus: true });
@@ -11507,7 +11486,11 @@ function openSettingsModal() {
     }
 
     settingsPopup.classList.remove('hidden');
-    selectSettingsTab(settingsPopup.querySelector('.settings-tab.active')?.dataset.settingsTab ?? 'session');
+    // Paused mid-run: always the Session tab, where RESUME is. From a menu:
+    // the tab the player last used.
+    selectSettingsTab(appPhase === 'gameplay'
+        ? 'session'
+        : settingsPopup.querySelector('.settings-tab.active')?.dataset.settingsTab ?? 'session');
     syncSteamInputPhase('menu');
     if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
     if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
@@ -11537,6 +11520,9 @@ function openSettingsModal() {
 
     const txtSpeedSelect = document.getElementById('setting-text-speed');
     if (txtSpeedSelect) txtSpeedSelect.value = state.settings.textSpeed || 'normal';
+
+    const introStyleSelect = document.getElementById('setting-intro-style');
+    if (introStyleSelect) introStyleSelect.value = state.settings.introStyle || 'tactical_terminal';
 
     const cbToggle = document.getElementById('setting-colorblind-toggle');
     if (cbToggle) cbToggle.checked = !!state.settings.colorblindAssist;
@@ -12464,12 +12450,25 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
     const view = compact ? { zoom: 2.6, panX: 0, panY: 0, debugRevealAll: false } : tacticalMapState;
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
+    // The HUD canvas used to retain its 300x180 backing store while CSS
+    // squeezed it into a tiny circle. Match the rectangular console slot so
+    // map text and geometry are drawn at their actual display size.
+    if (compact && canvas.clientWidth > 0 && canvas.clientHeight > 0) {
+        const nextWidth = Math.max(1, Math.round(canvas.clientWidth));
+        const nextHeight = Math.max(1, Math.round(canvas.clientHeight));
+        if (canvas.width !== nextWidth || canvas.height !== nextHeight) {
+            canvas.width = nextWidth;
+            canvas.height = nextHeight;
+        }
+    }
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const width = canvas.width;
     const height = canvas.height;
     ctx.clearRect(0, 0, width, height);
+
+    if (compact) ctx.save();
 
     ctx.fillStyle = getMapFogPattern(ctx) ?? '#04080e';
     ctx.fillRect(0, 0, width, height);
@@ -12780,24 +12779,52 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
         ctx.restore();
     }
 
-    // Names of scanned rooms and hallways (src/locationNames.js). Unscanned
-    // places carry no label; the full map only, the minimap stays clean.
-    if (!compact) {
+    // Scanned place names. The HUD map gets a strict label budget and omits
+    // ordinary hallways; the full map uses the same collision pass at larger
+    // type instead of painting every 8px label over its neighbours.
+    {
+        const kindPriority = { crash_site: 0, landmark: 1, room: 2, hall: 3 };
+        const candidates = detailedChunks.flatMap((chunk) => chunk.labels ?? [])
+            .filter((label) => label?.text && (!compact || label.kind !== 'hall'))
+            .map((label) => ({
+                ...label,
+                point: worldToMap(label.x, label.z),
+                distance: Math.hypot(label.x - player.x, label.z - player.z),
+                priority: kindPriority[label.kind] ?? 4
+            }))
+            .filter((label) => {
+                if (!compact) return label.point.x >= 8 && label.point.x <= width - 8 && label.point.y >= 8 && label.point.y <= height - 8;
+                return label.point.x >= 12 && label.point.x <= width - 12 && label.point.y >= 12 && label.point.y <= height - 12;
+            })
+            .sort((a, b) => a.priority - b.priority || a.distance - b.distance);
+        const labelBudget = compact ? 5 : 36;
+        const accepted = [];
         ctx.save();
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = 'rgba(2, 6, 11, 0.85)';
-        for (const chunk of detailedChunks) {
-            for (const label of chunk.labels ?? []) {
-                const point = worldToMap(label.x, label.z);
-                if (point.x < -80 || point.x > width + 80 || point.y < -20 || point.y > height + 20) continue;
-                const isHighlight = label.kind === 'room' || label.kind === 'crash_site' || label.kind === 'landmark';
-                ctx.font = isHighlight ? 'bold 9px Space Mono, monospace' : '8px Space Mono, monospace';
-                ctx.fillStyle = label.kind === 'crash_site' ? 'rgba(255, 230, 110, 0.96)' : isHighlight ? 'rgba(255, 214, 140, 0.92)' : 'rgba(150, 215, 235, 0.7)';
-                ctx.strokeText(label.text, point.x, point.y);
-                ctx.fillText(label.text, point.x, point.y);
-            }
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = 'rgba(2, 6, 11, 0.92)';
+        for (const label of candidates) {
+            if (accepted.length >= labelBudget) break;
+            const isHighlight = label.kind === 'room' || label.kind === 'crash_site' || label.kind === 'landmark';
+            const fontSize = compact ? (isHighlight ? 13 : 12) : (isHighlight ? 15 : 13);
+            ctx.font = `${isHighlight ? 'bold ' : ''}${fontSize}px Space Mono, monospace`;
+            const textWidth = ctx.measureText(label.text).width;
+            const rect = {
+                left: label.point.x - textWidth / 2 - 4,
+                right: label.point.x + textWidth / 2 + 4,
+                top: label.point.y - fontSize / 2 - 3,
+                bottom: label.point.y + fontSize / 2 + 3
+            };
+            if (rect.left < 4 || rect.right > width - 4 || rect.top < 4 || rect.bottom > height - 4) continue;
+            if (accepted.some((other) => rect.left < other.right && rect.right > other.left && rect.top < other.bottom && rect.bottom > other.top)) continue;
+            accepted.push(rect);
+            ctx.lineWidth = compact ? 3 : 4;
+            ctx.fillStyle = label.kind === 'crash_site'
+                ? 'rgba(255, 230, 110, 0.98)'
+                : isHighlight ? 'rgba(255, 222, 158, 0.96)' : 'rgba(170, 225, 240, 0.82)';
+            ctx.strokeText(label.text, label.point.x, label.point.y);
+            ctx.fillText(label.text, label.point.x, label.point.y);
         }
         ctx.restore();
     }
@@ -12915,16 +12942,14 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
         ctx.restore();
     }
 
-    // Minimap bezel radial falloff: softens outer edges so waves and unmapped borders fade smoothly
+    // Console map edge falloff. Keep it rectangular so room labels can use the
+    // full width instead of disappearing outside a legacy circular mask.
     if (compact) {
         ctx.save();
-        const edgeGrad = ctx.createRadialGradient(
-            width / 2, height / 2, Math.min(width, height) * 0.44,
-            width / 2, height / 2, Math.max(width, height) * 0.58
-        );
+        const edgeGrad = ctx.createLinearGradient(0, 0, 0, height);
         edgeGrad.addColorStop(0, 'rgba(4, 10, 18, 0)');
-        edgeGrad.addColorStop(0.75, 'rgba(4, 10, 18, 0.35)');
-        edgeGrad.addColorStop(1, 'rgba(4, 10, 18, 0.75)');
+        edgeGrad.addColorStop(0.72, 'rgba(4, 10, 18, 0.08)');
+        edgeGrad.addColorStop(1, 'rgba(4, 10, 18, 0.38)');
         ctx.fillStyle = edgeGrad;
         ctx.fillRect(0, 0, width, height);
         ctx.restore();
@@ -12976,6 +13001,7 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
     ctx.fillStyle = 'rgba(0, 229, 255, 0.6)';
     ctx.textAlign = 'left';
     if (!compact) ctx.fillText(`ZOOM: ${view.zoom.toFixed(1)}x`, 12, height - 12);
+    if (compact) ctx.restore();
 }
 
 function toggleTacticalMapModal(forceState) {
@@ -13599,7 +13625,10 @@ const foundryHub = createFoundryHub({
         store: () => showVaultPanels(renderStorePanel)
     },
     renderLoadout: (container) => renderFoundryLoadout(container),
-    onClose: () => finishFabricationSession(),
+    onClose: () => {
+        cancelCacheReveal('foundry-closed');
+        finishFabricationSession();
+    },
     log: (event, detail) => debugLog.info('FOUNDRY', `hub-${event}`, detail)
 });
 window.foundryHub = foundryHub;
@@ -13918,6 +13947,10 @@ function renderCodexModal() {
                     <div class="codex-card__name">${t('ui.codex.uncatalogued')}</div>
                     <div class="codex-card__blurb">${t('ui.codex.encounter_hint')}</div>
                 `;
+                // Focusable so a pad can browse the whole codex and read how to
+                // log an entry; it opens nothing (nav map F9).
+                card.setAttribute('tabindex', '0');
+                card.setAttribute('aria-label', `${t('ui.codex.uncatalogued')}. ${t('ui.codex.encounter_hint')}`);
             }
             section.appendChild(card);
         }
@@ -14959,6 +14992,10 @@ const coverPct = document.getElementById('vitals-cover-pct');
 
 function renderCoverBar(humanity = 100, stage = 'latent') {
     if (!coverRow) return;
+    if (stage === 'latent' && humanity >= 100) {
+        coverRow.classList.add('hidden');
+        return;
+    }
     coverRow.classList.remove('hidden');
     const pct = Math.max(0, Math.min(100, Math.round(humanity)));
     if (coverBar) {
@@ -15434,9 +15471,27 @@ document.addEventListener('click', (event) => {
     }
 });
 
-function syncEquippedWeaponLabel() {
+// The gun in hand, not a generic SIDEARM: a field weapon picked up this run,
+// a Foundry weapon, or the class gun / its finish (src/heldWeaponLabel.js).
+let heldFieldWeaponId = null;
+function syncEquippedWeaponLabel(fieldWeaponId = heldFieldWeaponId) {
+    heldFieldWeaponId = fieldWeaponId ?? null;
     const titleEl = document.querySelector('#weapon-status-panel .weapon-status-panel__title');
-    if (titleEl) titleEl.textContent = loadout.getEquippedLabel(fabricator);
+    if (!titleEl) return;
+    const label = getHeldWeaponLabel({
+        loadout,
+        fabricator,
+        classId: window.game?.playerType ?? getSelectedHeroType?.(),
+        fieldWeaponId: heldFieldWeaponId
+    });
+    // The static key would put SIDEARM back on the next translation pass.
+    titleEl.removeAttribute('data-i18n');
+    if (titleEl.textContent !== label) {
+        titleEl.textContent = label;
+        titleEl.title = label;
+        // Long gun names step the type down before they need an ellipsis.
+        titleEl.toggleAttribute('data-long', label.length > 20);
+    }
 }
 
 const TACTICAL_CALLSIGNS = Object.freeze([
@@ -15819,26 +15874,16 @@ function spawnSmoke(x, y, count, isVertical = true) {
 
 // Character Selection Logic
 const charCards = document.querySelectorAll('.char-card');
-const previewSprite = document.getElementById('char-preview-sprite');
-const previewFallback = document.getElementById('char-preview-fallback');
-const preview3dCanvas = document.getElementById('char-preview-3d');
+const previewLoading = document.getElementById('char-preview-loading');
 const previewDoor = document.getElementById('char-preview-door');
 const previewName = document.getElementById('char-preview-name');
-const previewSpriteContext = previewSprite?.getContext('2d', { willReadFrequently: true }) ?? null;
-const PREVIEW_FRAME_MS = 110;
 const PREVIEW_DOOR_CLOSE_MS = 360;
 const PREVIEW_DOOR_HOLD_MS = 220;
 const PREVIEW_DOOR_OPEN_MS = 520;
-let previewFrameIndex = 0;
-let previewAnimationTimer = null;
 let previewDoorTimer = null;
 let pendingPreviewType = null;
+let heroPreviewRequestGeneration = 0;
 const previewSpriteImages = new Map();
-const PREVIEW_PORTRAITS = Object.freeze({
-    SCOUT: '/Scout.full_v2.webp',
-    TANK: '/Tank.full_v2.webp',
-    ENGINEER: '/Eng.Full_v2.webp'
-});
 
 charCards.forEach((card) => {
     card.setAttribute('role', 'button');
@@ -15886,75 +15931,19 @@ function getPreviewSpriteImage(path, layout) {
     return imagePromise;
 }
 
-async function renderPreviewFrame(type, frameIndex = previewFrameIndex) {
-    const data = heroData[type];
-    if (!data || !previewSprite || !previewSpriteContext) return;
-    // The preview is on the loadout screen (#menu). Drawing it anywhere else
-    // decoded and chroma-keyed a 2048x2048 sheet during boot, behind the
-    // title (issue #106), and redrew it every 110 ms through a whole run. The
-    // interval draws the first frame within a tick of the menu opening; the
-    // fallback portrait covers that tick, as it does a slow load.
-    if (appPhase !== 'menu') return;
-
-    const image = await getPreviewSpriteImage(data.path, data).catch(() => null);
-    if (!image || !heroData[type] || heroData[type].path !== data.path) {
-        previewFallback?.classList.remove('hidden');
-        return;
-    }
-
-    const frameWidth = Math.floor(image.width / data.columns);
-    const frameHeight = Math.floor(image.height / data.rows);
-    const walkFrame = ((frameIndex % data.walkFrames) + data.walkFrames) % data.walkFrames;
-    const previewCell = data.directionCells[data.previewDirection];
-    const sourceX = (previewCell.baseColumn + walkFrame) * frameWidth;
-    const sourceY = previewCell.row * frameHeight;
-
-    if (previewSprite.width !== frameWidth || previewSprite.height !== frameHeight) {
-        previewSprite.width = frameWidth;
-        previewSprite.height = frameHeight;
-    }
-
-    previewSpriteContext.clearRect(0, 0, frameWidth, frameHeight);
-    previewSpriteContext.imageSmoothingEnabled = false;
-    previewSpriteContext.drawImage(
-        image,
-        sourceX,
-        sourceY,
-        frameWidth,
-        frameHeight,
-        0,
-        0,
-        frameWidth,
-        frameHeight
-    );
-    const polish = getSelectedPolish();
-    if (polish.id !== 0) {
-        previewSpriteContext.save();
-        previewSpriteContext.globalCompositeOperation = 'multiply';
-        previewSpriteContext.fillStyle = polish.color;
-        previewSpriteContext.fillRect(0, 0, frameWidth, frameHeight);
-        previewSpriteContext.restore();
-    }
-    previewFallback?.classList.add('hidden');
-
-}
-
-async function syncHeroPreview(type) {
+async function syncHeroPreview(type, { loadPreview = true } = {}) {
     const data = heroData[type];
     if (!data) return;
+    // A door transition may still be closing for an older selection. Do not
+    // let that stale callback replace the label or start another GLB load when
+    // the player has already queued a newer operator.
+    if (pendingPreviewType && pendingPreviewType !== type) return;
+    const requestGeneration = ++heroPreviewRequestGeneration;
 
     activePreviewType = type;
-    const is3dActive = scoutHeroPreview && preview3dCanvas && !preview3dCanvas.classList.contains('hidden');
-    if (!is3dActive) {
-        scoutHeroPreview?.setVisible(false);
-        previewSprite?.classList.remove('hidden');
-        if (previewFallback) {
-            previewFallback.src = assetUrl(PREVIEW_PORTRAITS[type] ?? PREVIEW_PORTRAITS.SCOUT);
-            previewFallback.classList.remove('hidden');
-        }
-        previewFrameIndex = 0;
-        void renderPreviewFrame(type, previewFrameIndex);
-    }
+    previewLoading?.classList.remove('hidden');
+    previewLoading?.setAttribute('data-state', 'loading');
+    if (previewLoading) previewLoading.textContent = t('ui.hero_detail.initializing_3d_operator', { type });
     if (previewName) previewName.textContent = data.name;
 
     const activeChassisSpec = type === 'TANK'
@@ -15966,25 +15955,52 @@ async function syncHeroPreview(type) {
     if (summaryEl) summaryEl.textContent = `${t('ui.hero_detail.chassis_spec')} // ${activeChassisSpec}`;
     renderHeroLoadoutStrip(type);
 
-    if (scoutHeroPreview) {
+    // The 3D preview loads with its screen, not at boot (issue #106): the
+    // boot-time sync only labels the class until the hero menu opens.
+    const preview = scoutHeroPreview ?? (loadPreview ? await ensureScoutHeroPreview() : null);
+    if (requestGeneration !== heroPreviewRequestGeneration) return;
+    if (preview) {
+        const classId = String(type).toLowerCase();
+        const classLoadout = window.loadout?.getClassLoadout?.(classId);
+        const chassisSkinId = window.loadout?.getEquippedChassisSkinId?.();
+        const chassisSupported = window.loadout?.isChassisSupportedForClass?.(classId, chassisSkinId) ?? true;
+        const chassisBody = window.loadout?.getEquippedChassisBody?.();
+        const sheenColor = typeof getSelectedSheen === 'function' ? getSelectedSheen().color : 0xffffff;
+        const presentation = {
+            classType: type,
+            loadout: {
+                archetypeId: classLoadout?.archetypeId,
+                weaponSkinId: classLoadout?.weaponSkinId,
+                charmId: classLoadout?.charmId,
+                sheenColor,
+                chassisSkinId: chassisSupported ? chassisSkinId : null,
+                chassisBody
+            }
+        };
+        const loadOp = preview.setPresentation
+            ? preview.setPresentation(presentation)
+            : preview.setType(type);
         const loaded = await Promise.race([
-            scoutHeroPreview.setType(type).catch((error) => {
-                console.warn('[hero-preview] keeping posed sprite fallback', error);
+            loadOp.catch((error) => {
+                console.warn('[hero-preview] 3D operator failed to load', error);
                 return false;
             }),
             new Promise((resolve) => window.setTimeout(() => resolve(false), 8000))
         ]);
+        if (requestGeneration !== heroPreviewRequestGeneration) return;
         if (activePreviewType === type) {
             if (loaded) {
-                scoutHeroPreview.setVisible(true);
-                previewSprite?.classList.add('hidden');
-                previewFallback?.classList.add('hidden');
-            } else if (!is3dActive) {
-                scoutHeroPreview.setVisible(false);
-                previewSprite?.classList.remove('hidden');
-                previewFallback?.classList.remove('hidden');
+                preview.setVisible(true);
+                previewLoading?.classList.add('hidden');
+            } else {
+                preview.setVisible(false);
+                previewLoading?.setAttribute('data-state', 'error');
+                if (previewLoading) previewLoading.textContent = t('ui.hero_detail.preview_3d_unavailable', { type });
             }
         }
+    } else if (loadPreview && activePreviewType === type) {
+        previewLoading?.setAttribute('data-state', 'error');
+        if (previewLoading) previewLoading.textContent = t('ui.hero_detail.preview_3d_unavailable', { type });
     }
 
     // Update custom properties on preview stage wrapper for matching class glow colors
@@ -16022,18 +16038,14 @@ async function syncHeroPreview(type) {
     }
 }
 
-function startHeroPreviewAnimation() {
-    if (!previewSprite || previewAnimationTimer !== null) return;
-
-    previewAnimationTimer = window.setInterval(() => {
-        const frameCount = getPlayerSpriteLayout(activePreviewType).walkFrames;
-        previewFrameIndex = (previewFrameIndex + 1) % frameCount;
-        void renderPreviewFrame(activePreviewType, previewFrameIndex);
-    }, PREVIEW_FRAME_MS);
-}
-
 function triggerHeroPreviewSwap(type) {
     if (!heroData[type]) return;
+
+    // Selection state is immediate even though the blast-door/model swap is
+    // staged. This also makes the latest requested type authoritative while
+    // an older door timer is still in flight.
+    activePreviewType = type;
+    if (previewName) previewName.textContent = heroData[type].name;
 
     if (!previewDoor) {
         syncHeroPreview(type);
@@ -16641,11 +16653,10 @@ whenDocumentParsed(async () => {
         // Class intro videos are not warmed here: boot already streams the
         // DoorIntro cinematic. They warm on menu entry and on class pick,
         // both well ahead of New Run's playClassIntroSequence.
-        syncHeroPreview(initialType);
+        syncHeroPreview(initialType, { loadPreview: false });
         updateHeroStats(initialType);
     }
     renderOperatorPolishUi();
-    startHeroPreviewAnimation();
     if (mainDebugToggle) mainDebugToggle.checked = false;
 
     // Check if player has active save data to enable CONTINUE
@@ -16800,6 +16811,15 @@ whenDocumentParsed(async () => {
         });
     }
 
+    const settingIntroStyle = document.getElementById('setting-intro-style');
+    if (settingIntroStyle) {
+        settingIntroStyle.value = state.settings.introStyle;
+        settingIntroStyle.addEventListener('change', (e) => {
+            state.settings.introStyle = e.target.value;
+            localStorage.setItem('hb_intro_style', state.settings.introStyle);
+        });
+    }
+
     const settingColorblindToggle = document.getElementById('setting-colorblind-toggle');
     if (settingColorblindToggle) {
         settingColorblindToggle.addEventListener('change', (e) => {
@@ -16866,6 +16886,85 @@ whenDocumentParsed(async () => {
                 audio: [
                     ...GAMEPLAY_FOLEY_MANIFEST,
                     ...GAMEPLAY_ENEMY_MANIFEST,
+                    // AudioCraft Generated Soundsets
+                    { key: 'terminal_beep_000', url: '/audio/generated/terminal_beep_000.ogg' },
+                    { key: 'terminal_beep_001', url: '/audio/generated/terminal_beep_001.ogg' },
+                    { key: 'terminal_beep_002', url: '/audio/generated/terminal_beep_002.ogg' },
+                    { key: 'terminal_deny_000', url: '/audio/generated/terminal_deny_000.ogg' },
+                    { key: 'terminal_deny_001', url: '/audio/generated/terminal_deny_001.ogg' },
+                    { key: 'terminal_deny_002', url: '/audio/generated/terminal_deny_002.ogg' },
+                    { key: 'vault_open_000', url: '/audio/generated/vault_open_000.ogg' },
+                    { key: 'vault_open_001', url: '/audio/generated/vault_open_001.ogg' },
+                    { key: 'vault_open_002', url: '/audio/generated/vault_open_002.ogg' },
+                    { key: 'flesh_seal_000', url: '/audio/generated/flesh_seal_000.ogg' },
+                    { key: 'flesh_seal_001', url: '/audio/generated/flesh_seal_001.ogg' },
+                    { key: 'flesh_seal_002', url: '/audio/generated/flesh_seal_002.ogg' },
+                    { key: 'enemy_idle_boss_000', url: '/audio/enemies/enemy_idle_boss_000.ogg' },
+                    { key: 'enemy_idle_boss_001', url: '/audio/enemies/enemy_idle_boss_001.ogg' },
+                    { key: 'enemy_idle_boss_002', url: '/audio/enemies/enemy_idle_boss_002.ogg' },
+                    { key: 'enemy_alert_crawler_000', url: '/audio/enemies/enemy_alert_crawler_000.ogg' },
+                    { key: 'enemy_alert_crawler_001', url: '/audio/enemies/enemy_alert_crawler_001.ogg' },
+                    { key: 'enemy_alert_crawler_002', url: '/audio/enemies/enemy_alert_crawler_002.ogg' },
+                    { key: 'item_pickup_000', url: '/audio/generated/item_pickup_000.ogg' },
+                    { key: 'item_pickup_001', url: '/audio/generated/item_pickup_001.ogg' },
+                    { key: 'item_pickup_002', url: '/audio/generated/item_pickup_002.ogg' },
+                    { key: 'crane_motor_000', url: '/audio/generated/crane_motor_000.ogg' },
+                    { key: 'crane_motor_001', url: '/audio/generated/crane_motor_001.ogg' },
+                    { key: 'crane_motor_002', url: '/audio/generated/crane_motor_002.ogg' },
+                    { key: 'power_hum_000', url: '/audio/generated/power_hum_000.ogg' },
+                    { key: 'power_hum_001', url: '/audio/generated/power_hum_001.ogg' },
+                    { key: 'power_hum_002', url: '/audio/generated/power_hum_002.ogg' },
+                    { key: 'steam_burst_000', url: '/audio/generated/steam_burst_000.ogg' },
+                    { key: 'steam_burst_001', url: '/audio/generated/steam_burst_001.ogg' },
+                    { key: 'steam_burst_002', url: '/audio/generated/steam_burst_002.ogg' },
+                    { key: 'chem_siphon_000', url: '/audio/generated/chem_siphon_000.ogg' },
+                    { key: 'chem_siphon_001', url: '/audio/generated/chem_siphon_001.ogg' },
+                    { key: 'chem_siphon_002', url: '/audio/generated/chem_siphon_002.ogg' },
+                    { key: 'flesh_squish_000', url: '/audio/generated/flesh_squish_000.ogg' },
+                    { key: 'flesh_squish_001', url: '/audio/generated/flesh_squish_001.ogg' },
+                    { key: 'flesh_squish_002', url: '/audio/generated/flesh_squish_002.ogg' },
+                    { key: 'neural_tap_000', url: '/audio/generated/neural_tap_000.ogg' },
+                    { key: 'neural_tap_001', url: '/audio/generated/neural_tap_001.ogg' },
+                    { key: 'neural_tap_002', url: '/audio/generated/neural_tap_002.ogg' },
+                    { key: 'toolbox_open_000', url: '/audio/generated/toolbox_open_000.ogg' },
+                    { key: 'toolbox_open_001', url: '/audio/generated/toolbox_open_001.ogg' },
+                    { key: 'toolbox_open_002', url: '/audio/generated/toolbox_open_002.ogg' },
+                    { key: 'water_shower_000', url: '/audio/generated/water_shower_000.ogg' },
+                    { key: 'water_shower_001', url: '/audio/generated/water_shower_001.ogg' },
+                    { key: 'water_shower_002', url: '/audio/generated/water_shower_002.ogg' },
+                    { key: 'water_slosh_000', url: '/audio/generated/water_slosh_000.ogg' },
+                    { key: 'water_slosh_001', url: '/audio/generated/water_slosh_001.ogg' },
+                    { key: 'water_slosh_002', url: '/audio/generated/water_slosh_002.ogg' },
+                    { key: 'generator_complete_000', url: '/audio/generated/generator_complete_000.ogg' },
+                    { key: 'generator_complete_001', url: '/audio/generated/generator_complete_001.ogg' },
+                    { key: 'fan_wind_000', url: '/audio/generated/fan_wind_000.ogg' },
+                    { key: 'fan_wind_001', url: '/audio/generated/fan_wind_001.ogg' },
+                    { key: 'exosuit_charge_000', url: '/audio/generated/exosuit_charge_000.ogg' },
+                    { key: 'exosuit_charge_001', url: '/audio/generated/exosuit_charge_001.ogg' },
+                    { key: 'exosuit_charge_002', url: '/audio/generated/exosuit_charge_002.ogg' },
+                    { key: 'enemy_alert_snail_000', url: '/audio/enemies/enemy_alert_snail_000.ogg' },
+                    { key: 'enemy_alert_snail_001', url: '/audio/enemies/enemy_alert_snail_001.ogg' },
+                    { key: 'enemy_alert_snail_002', url: '/audio/enemies/enemy_alert_snail_002.ogg' },
+                    { key: 'enemy_alert_boss_000', url: '/audio/enemies/enemy_alert_boss_000.ogg' },
+                    { key: 'enemy_alert_boss_001', url: '/audio/enemies/enemy_alert_boss_001.ogg' },
+                    { key: 'enemy_break_wall_000', url: '/audio/impacts/enemy_break_wall_000.ogg' },
+                    { key: 'enemy_break_wall_001', url: '/audio/impacts/enemy_break_wall_001.ogg' },
+                    { key: 'enemy_break_wall_002', url: '/audio/impacts/enemy_break_wall_002.ogg' },
+                    { key: 'crystal_shatter_000', url: '/audio/impacts/crystal_shatter_000.ogg' },
+                    { key: 'crystal_shatter_001', url: '/audio/impacts/crystal_shatter_001.ogg' },
+                    { key: 'crystal_shatter_002', url: '/audio/impacts/crystal_shatter_002.ogg' },
+                    { key: 'chen_sealed_confession_console_000', url: '/audio/generated/chen_sealed_confession_console_000.ogg' },
+                    { key: 'chen_sealed_confession_console_001', url: '/audio/generated/chen_sealed_confession_console_001.ogg' },
+                    { key: 'evac_manifest_allocation_terminal_000', url: '/audio/generated/evac_manifest_allocation_terminal_000.ogg' },
+                    { key: 'evac_manifest_allocation_terminal_001', url: '/audio/generated/evac_manifest_allocation_terminal_001.ogg' },
+                    { key: 'scout_tracking_beacon_core_000', url: '/audio/generated/scout_tracking_beacon_core_000.ogg' },
+                    { key: 'scout_tracking_beacon_core_001', url: '/audio/generated/scout_tracking_beacon_core_001.ogg' },
+                    { key: 'relay_false_beacon_spire_000', url: '/audio/generated/relay_false_beacon_spire_000.ogg' },
+                    { key: 'relay_false_beacon_spire_001', url: '/audio/generated/relay_false_beacon_spire_001.ogg' },
+                    { key: 'ind_biomass_grinder_000', url: '/audio/generated/ind_biomass_grinder_000.ogg' },
+                    { key: 'ind_biomass_grinder_001', url: '/audio/generated/ind_biomass_grinder_001.ogg' },
+                    { key: 'hive_visceral_ovipositor_000', url: '/audio/generated/hive_visceral_ovipositor_000.ogg' },
+                    { key: 'hive_visceral_ovipositor_001', url: '/audio/generated/hive_visceral_ovipositor_001.ogg' },
                     { key: 'impactSoft_medium_000', url: '/audio/enemies/impactSoft_medium_000.ogg' },
                     { key: 'impactSoft_medium_001', url: '/audio/enemies/impactSoft_medium_001.ogg' },
                     { key: 'impactSoft_medium_002', url: '/audio/enemies/impactSoft_medium_002.ogg' },
@@ -16953,6 +17052,68 @@ whenDocumentParsed(async () => {
 
                     // Starter Camp Ambient Weather Bed
                     { key: 'amb_camp_rain_loop', url: '/audio/ambient/amb_camp_rain_loop.wav' },
+
+                    // Atmospheric Long Room Tones (Continuous, subtle, evolving beds)
+                    { key: 'room_tone_exterior_wind', url: '/audio/ambient/room_tone_exterior_wind.ogg', fallbackUrl: '/audio/ambient/room_tone_exterior_wind.wav' },
+                    { key: 'room_tone_interior_bunker', url: '/audio/ambient/room_tone_interior_bunker.ogg', fallbackUrl: '/audio/ambient/room_tone_interior_bunker.wav' },
+                    { key: 'room_tone_cryo_subzero', url: '/audio/ambient/room_tone_cryo_subzero.ogg', fallbackUrl: '/audio/ambient/room_tone_cryo_subzero.wav' },
+                    { key: 'room_tone_bio_hive', url: '/audio/ambient/room_tone_bio_hive.ogg', fallbackUrl: '/audio/ambient/room_tone_bio_hive.wav' },
+                    { key: 'room_tone_cathedral_crypt', url: '/audio/ambient/room_tone_cathedral_crypt.ogg', fallbackUrl: '/audio/ambient/room_tone_cathedral_crypt.wav' },
+                    { key: 'room_tone_safe_ship', url: '/audio/ambient/room_tone_safe_ship.ogg', fallbackUrl: '/audio/ambient/room_tone_safe_ship.wav' },
+
+                    // Ejected Brass Shell Casings (Surface Foley)
+                    { key: 'shell_drop_metal_000', url: '/audio/foley/casings/shell_drop_metal_000.ogg' },
+                    { key: 'shell_drop_metal_001', url: '/audio/foley/casings/shell_drop_metal_001.ogg' },
+                    { key: 'shell_drop_metal_002', url: '/audio/foley/casings/shell_drop_metal_002.ogg' },
+                    { key: 'shell_drop_snow_000', url: '/audio/foley/casings/shell_drop_snow_000.ogg' },
+                    { key: 'shell_drop_snow_001', url: '/audio/foley/casings/shell_drop_snow_001.ogg' },
+                    { key: 'shell_drop_snow_002', url: '/audio/foley/casings/shell_drop_snow_002.ogg' },
+                    { key: 'shell_drop_stone_000', url: '/audio/foley/casings/shell_drop_stone_000.ogg' },
+                    { key: 'shell_drop_stone_001', url: '/audio/foley/casings/shell_drop_stone_001.ogg' },
+                    { key: 'shell_drop_stone_002', url: '/audio/foley/casings/shell_drop_stone_002.ogg' },
+                    { key: 'shell_drop_slime_000', url: '/audio/foley/casings/shell_drop_slime_000.ogg' },
+                    { key: 'shell_drop_slime_001', url: '/audio/foley/casings/shell_drop_slime_001.ogg' },
+                    { key: 'shell_drop_slime_002', url: '/audio/foley/casings/shell_drop_slime_002.ogg' },
+                    { key: 'shell_drop_wood_000', url: '/audio/foley/casings/shell_drop_wood_000.ogg' },
+                    { key: 'shell_drop_wood_001', url: '/audio/foley/casings/shell_drop_wood_001.ogg' },
+                    { key: 'shell_drop_wood_002', url: '/audio/foley/casings/shell_drop_wood_002.ogg' },
+
+                    // Weapon Fire Profiles (Shotgun, Carbine, SMG, Railgun, Cryo, Tesla)
+                    { key: 'weapon_fire_shotgun_000', url: '/audio/weapons/weapon_fire_shotgun_000.ogg' },
+                    { key: 'weapon_fire_shotgun_001', url: '/audio/weapons/weapon_fire_shotgun_001.ogg' },
+                    { key: 'weapon_fire_shotgun_002', url: '/audio/weapons/weapon_fire_shotgun_002.ogg' },
+                    { key: 'weapon_fire_carbine_000', url: '/audio/weapons/weapon_fire_carbine_000.ogg' },
+                    { key: 'weapon_fire_carbine_001', url: '/audio/weapons/weapon_fire_carbine_001.ogg' },
+                    { key: 'weapon_fire_carbine_002', url: '/audio/weapons/weapon_fire_carbine_002.ogg' },
+                    { key: 'weapon_fire_smg_000', url: '/audio/weapons/weapon_fire_smg_000.ogg' },
+                    { key: 'weapon_fire_smg_001', url: '/audio/weapons/weapon_fire_smg_001.ogg' },
+                    { key: 'weapon_fire_smg_002', url: '/audio/weapons/weapon_fire_smg_002.ogg' },
+                    { key: 'weapon_fire_railgun_000', url: '/audio/weapons/weapon_fire_railgun_000.ogg' },
+                    { key: 'weapon_fire_railgun_001', url: '/audio/weapons/weapon_fire_railgun_001.ogg' },
+                    { key: 'weapon_fire_railgun_002', url: '/audio/weapons/weapon_fire_railgun_002.ogg' },
+                    { key: 'weapon_fire_cryo_000', url: '/audio/weapons/weapon_fire_cryo_000.ogg' },
+                    { key: 'weapon_fire_cryo_001', url: '/audio/weapons/weapon_fire_cryo_001.ogg' },
+                    { key: 'weapon_fire_cryo_002', url: '/audio/weapons/weapon_fire_cryo_002.ogg' },
+                    { key: 'weapon_fire_tesla_000', url: '/audio/weapons/weapon_fire_tesla_000.ogg' },
+                    { key: 'weapon_fire_tesla_001', url: '/audio/weapons/weapon_fire_tesla_001.ogg' },
+                    { key: 'weapon_fire_tesla_002', url: '/audio/weapons/weapon_fire_tesla_002.ogg' },
+
+                    // Tracer Flybys
+                    { key: 'tracer_flyby_ballistic_000', url: '/audio/tracers/tracer_flyby_ballistic_000.ogg' },
+                    { key: 'tracer_flyby_ballistic_001', url: '/audio/tracers/tracer_flyby_ballistic_001.ogg' },
+                    { key: 'tracer_flyby_ballistic_002', url: '/audio/tracers/tracer_flyby_ballistic_002.ogg' },
+                    { key: 'tracer_flyby_frost_000', url: '/audio/tracers/tracer_flyby_frost_000.ogg' },
+                    { key: 'tracer_flyby_frost_001', url: '/audio/tracers/tracer_flyby_frost_001.ogg' },
+                    { key: 'tracer_flyby_heavy_000', url: '/audio/tracers/tracer_flyby_heavy_000.ogg' },
+                    { key: 'tracer_flyby_heavy_001', url: '/audio/tracers/tracer_flyby_heavy_001.ogg' },
+                    { key: 'tracer_flyby_chitin_000', url: '/audio/tracers/tracer_flyby_chitin_000.ogg' },
+                    { key: 'tracer_flyby_chitin_001', url: '/audio/tracers/tracer_flyby_chitin_001.ogg' },
+
+                    // Hyper-Localized Point-Source Ambience
+                    { key: 'amb_point_tallow_forge', url: '/audio/ambient/points/amb_point_tallow_forge.ogg', fallbackUrl: '/audio/ambient/points/amb_point_tallow_forge.wav' },
+                    { key: 'amb_point_vesper_generator', url: '/audio/ambient/points/amb_point_vesper_generator.ogg', fallbackUrl: '/audio/ambient/points/amb_point_vesper_generator.wav' },
+                    { key: 'amb_point_meridian_chimes', url: '/audio/ambient/points/amb_point_meridian_chimes.ogg', fallbackUrl: '/audio/ambient/points/amb_point_meridian_chimes.wav' },
+                    { key: 'amb_point_hive_sac', url: '/audio/ambient/points/amb_point_hive_sac.ogg', fallbackUrl: '/audio/ambient/points/amb_point_hive_sac.wav' },
 
                     // Foley Set 01: Mothership Comms
                     { key: 'foley_mothership_room_loop', url: '/audio/foley/mothership/foley_mothership_room_loop.wav' },

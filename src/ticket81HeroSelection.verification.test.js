@@ -1,26 +1,28 @@
 import { describe, expect, it } from 'vitest';
 
 describe('Ticket #81 — Hero Selection & Class Preview Verification', () => {
-    it('proves each hero class specifies isolated preview config with weapons hidden', () => {
+    it('proves each hero class specifies isolated preview config with armed loadout visible', () => {
         const configs = {
-            SCOUT: { targetHeight: 1.95, idleActionName: 'heroIdle', weaponVisible: false },
+            SCOUT: { targetHeight: 1.95, idleActionName: 'idle', weaponVisible: true, weaponArchetype: 'talon' },
             ENGINEER: {
                 targetHeight: 1.95,
                 modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
-                idleActionName: 'heroIdle',
-                weaponVisible: false,
+                idleActionName: 'idle',
+                weaponVisible: true,
                 weaponEnabled: true,
+                weaponArchetype: 'tesla_lock'
             },
             TANK: {
                 targetHeight: 1.86,
                 modelUrl: '/3d/runtime/tank-rigged.glb',
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
-                idleActionName: 'heroIdle',
-                weaponVisible: false,
+                idleActionName: 'idle',
+                weaponVisible: true,
                 weaponEnabled: true,
+                weaponArchetype: 'siege_breaker',
                 weaponMount: { position: [0.03, 0.02, 0.03] }
             }
         };
@@ -28,8 +30,9 @@ describe('Ticket #81 — Hero Selection & Class Preview Verification', () => {
         for (const [cls, config] of Object.entries(configs)) {
             expect(config.targetHeight).toBeGreaterThan(1.8);
             expect(config.targetHeight).toBeLessThan(2.1);
-            expect(config.idleActionName).toBe('heroIdle');
-            expect(config.weaponVisible).toBe(false);
+            expect(config.idleActionName).toBe('idle');
+            expect(config.weaponVisible).toBe(true);
+            expect(config.weaponArchetype).toBeTruthy();
             if (cls !== 'SCOUT') {
                 expect(config.modelUrl).toMatch(/\.glb$/);
                 expect(config.animationModelUrl).toMatch(/\.glb$/);

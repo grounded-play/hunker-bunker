@@ -7,6 +7,8 @@ import { recordAssetLoad } from './assetLoadTelemetry.js';
 import { getWeaponCalibration, getWeaponScaleForBounds } from './weaponCalibration.js';
 import { getCharmSocketTransform, resolveCharmModelOffset, getCharmCordLoopPoints } from './charmSockets.js';
 import { applyWeaponSheen } from './weaponSheenMaterial.js';
+import { resolveWeaponModel } from './data/weaponModelFrames.js';
+import { frameWeaponModel } from './weaponModelFrame.js';
 import { isMaterialFinish, applyWeaponMaterialFinish } from './weaponFinishMaterial.js';
 import { CHARM_GLB_MAP } from './charmModels.js';
 import { createOperatorEquipmentController } from './operatorEquipmentSockets.js';
@@ -132,9 +134,10 @@ export async function createClassWeapon(archetypeId, { position = null, skinId =
         console.warn('[player-3d-overlay] charm unavailable; keeping the weapon', error);
         return null;
     }) : Promise.resolve(null);
-    const skinUrl = skinId ? WEAPON_SKIN_MESHES[skinId] : null;
-    const archetypeUrl = WEAPON_ARCHETYPES[archetypeId] ?? WEAPON_URL;
-    const url = skinUrl ?? archetypeUrl;
+    const resolved = resolveWeaponModel(archetypeId, skinId);
+    const skinUrl = resolved.bespoke ? resolved.url : null;
+    const archetypeUrl = resolved.archetypeUrl;
+    let url = resolved.url;
     let template;
     try {
         template = await loadWeaponTemplate(url);
@@ -146,9 +149,14 @@ export async function createClassWeapon(archetypeId, { position = null, skinId =
         }
         console.warn(`[player-3d-overlay] weapon archetype "${archetypeId}" (${url}) failed to load; falling back to GG1`, err);
         template = await loadWeaponTemplate(WEAPON_URL);
+        url = WEAPON_URL;
     }
-    const weapon = template.scene.clone(true);
-    if (skinId && isMaterialFinish(skinId)) {
+    // Turned and slid so the muzzle points away from the operator and the
+    // grip sits where the class frame's hand pose expects it.
+    const weapon = frameWeaponModel(template.scene.clone(true), { url, archetypeId, archetypeUrl, context: 'gameplay' });
+    // A finish with its own model is shown as authored; painting the
+    // procedural finish over it flattened its textures.
+    if (skinId && !skinUrl && isMaterialFinish(skinId)) {
         applyWeaponMaterialFinish(weapon, skinId);
     }
     applyWeaponSheen(weapon, sheenColor);
@@ -158,6 +166,11 @@ export async function createClassWeapon(archetypeId, { position = null, skinId =
     const size = bounds.getSize(new THREE.Vector3());
     const calibration = getWeaponCalibration(archetypeId, 'gameplay');
     const scale = getWeaponScaleForBounds(size, archetypeId, 'gameplay');
+    weapon.userData.weaponCalibration = {
+        gripAnchor: calibration.anchor,
+        muzzleAxis: calibration.muzzleAxis,
+        handAimAxis: calibration.handAimAxis
+    };
     weapon.scale.multiplyScalar(scale);
     // Preserve the hand-alignment turn and rotate the flat source around its
     // remaining axis so the weapon sits upright in the Scout's grip.
@@ -254,6 +267,28 @@ export function computeUpperBodyAimOffset(rootYaw, aimX, aimZ, maxTurn = Math.PI
     const aimYaw = computeOverlayYaw(aimX, aimZ);
     const offset = Math.atan2(Math.sin(aimYaw - rootYaw), Math.cos(aimYaw - rootYaw));
     return THREE.MathUtils.clamp(offset, -maxTurn, maxTurn);
+}
+
+export function computeUpperBodyTurnTarget(rootYaw, state = {}) {
+    if (!state.hasAim) return 0;
+    const aimOffset = computeUpperBodyAimOffset(rootYaw, state.aimX, state.aimZ);
+    if (state.isMoving && Math.hypot(state.moveX ?? 0, state.moveZ ?? 0) > 1e-4) return aimOffset;
+    const presentationAim = THREE.MathUtils.clamp(Number(state.presentationAim) || 0, 0, 1);
+    return THREE.MathUtils.clamp(aimOffset, -0.35, 0.35) * presentationAim;
+}
+
+export function resolveWeaponMountOptions({
+    weaponMount,
+    weaponSkinId = null,
+    weaponSheenColor = null,
+    charmId = null
+} = {}) {
+    return {
+        position: weaponMount?.position ?? null,
+        skinId: weaponSkinId ?? weaponMount?.skinId ?? null,
+        sheenColor: weaponSheenColor ?? weaponMount?.sheenColor ?? 0xffffff,
+        charmId: charmId ?? weaponMount?.charmId ?? null
+    };
 }
 
 export function selectOverlayAnimation({
@@ -497,6 +532,9 @@ export async function createPlayer3dOverlay({
     weaponEnabled = true,
     weaponArchetype = 'gg1',
     weaponMount = undefined,
+    weaponSkinId = null,
+    weaponSheenColor = null,
+    charmId = null,
     modelUrl = MODEL_URL,
     animationModelUrl = null,
     animationBonePrefix = null,
@@ -561,7 +599,13 @@ export async function createPlayer3dOverlay({
             if (!rightHand && /RightHand$/.test(object.name)) rightHand = object;
         });
     }
-    const weapon = weaponEnabled && rightHand ? await createClassWeapon(weaponArchetype, weaponMount) : null;
+    const resolvedWeaponMount = resolveWeaponMountOptions({
+        weaponMount,
+        weaponSkinId,
+        weaponSheenColor,
+        charmId
+    });
+    const weapon = weaponEnabled && rightHand ? await createClassWeapon(weaponArchetype, resolvedWeaponMount) : null;
     if (weapon) {
         // The Mixamo rig is authored in centimeters and normalized by scaling
         // its armature. Compensate for the hand's complete inherited scale so
@@ -778,7 +822,7 @@ export async function createPlayer3dOverlay({
             const followMovement = state.isMoving && Math.hypot(state.moveX, state.moveZ) > 1e-4;
             const facingX = followMovement ? state.moveX : (state.hasAim ? state.aimX : state.moveX);
             const facingZ = followMovement ? state.moveZ : (state.hasAim ? state.aimZ : state.moveZ);
-            if (Math.hypot(facingX, facingZ) > 1e-4) {
+            if (!state.lockRootFacing && Math.hypot(facingX, facingZ) > 1e-4) {
                 const targetYaw = computeOverlayYaw(facingX, facingZ);
                 const yawDelta = Math.atan2(
                     Math.sin(targetYaw - root.rotation.y),
@@ -855,9 +899,7 @@ export async function createPlayer3dOverlay({
             }
             mixer.update(delta);
             syncFollowerBones();
-            const targetUpperBodyTurn = followMovement && state.hasAim
-                ? computeUpperBodyAimOffset(root.rotation.y, state.aimX, state.aimZ)
-                : 0;
+            const targetUpperBodyTurn = computeUpperBodyTurnTarget(root.rotation.y, state);
             upperBodyTurn = THREE.MathUtils.damp(upperBodyTurn, targetUpperBodyTurn, 12, delta);
             const turnPerBone = upperBodyTurn / Math.max(upperBodyBones.length, 1);
             for (const bone of upperBodyBones) bone.rotation.y += turnPerBone;
@@ -868,8 +910,8 @@ export async function createPlayer3dOverlay({
                 const isSprinting = Boolean(state?.isSprinting);
                 const speed = state?.groundSpeed || (isMoving ? (isSprinting ? 6.5 : 3.8) : 0);
 
-                let targetAngX = 0;
-                let targetAngZ = 0;
+                let targetAngX;
+                let targetAngZ;
                 const dt = Math.min(delta, 0.1);
                 if (speed > 0.1 && isMoving) {
                     charmPhysics.timer += dt;
@@ -877,6 +919,12 @@ export async function createPlayer3dOverlay({
                     const bobAmp = (isSprinting ? 0.22 : 0.12) * Math.min(speed / 4, 1.5);
                     targetAngX = Math.sin(charmPhysics.timer * bobFreq) * bobAmp;
                     targetAngZ = Math.cos(charmPhysics.timer * bobFreq * 0.5) * (bobAmp * 0.7);
+                } else {
+                    charmPhysics.timer += dt;
+                    const breatheFreq = 2.4;
+                    const breatheAmp = 0.04;
+                    targetAngX = Math.sin(charmPhysics.timer * breatheFreq) * breatheAmp;
+                    targetAngZ = Math.cos(charmPhysics.timer * breatheFreq * 0.7) * (breatheAmp * 0.6);
                 }
 
                 const forceX = -charmPhysics.stiffness * (charmPhysics.angleX - targetAngX) - charmPhysics.damping * charmPhysics.velX;

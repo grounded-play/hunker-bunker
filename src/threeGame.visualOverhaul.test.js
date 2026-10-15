@@ -19,7 +19,12 @@ describe('Visual Overhaul Phase B & D (Surface Depth & Grade)', () => {
         it('injects roughness variation and derived surface relief into floorMaterial', () => {
             expect(threeGameSource).toContain('hbFloorRoughness = mix(bunkerRough, cryoRough, cryoMix)');
             expect(threeGameSource).toContain('hbFloorNormalPerturb = vec3(-dFloorX * 1.5, 0.0, -dFloorY * 1.5)');
-            expect(threeGameSource).toContain('roughnessFactor = clamp(hbFloorRoughness, 0.04, 1.0)');
+            // 2026-10-15: floors keep a minimum roughness, fade screen-space
+            // relief with pixel footprint, and widen roughness where the
+            // normal varies quickly (specular anti-aliasing).
+            expect(threeGameSource).toContain('roughnessFactor = clamp(hbFloorRoughness, ${FLOOR_MIN_ROUGHNESS.toFixed(2)}, 1.0)');
+            expect(threeGameSource).toContain('-dFloorY * 1.5) * hbFloorDetailFade');
+            expect(threeGameSource).toContain('float hbNormalVariance = 0.15 * (dot(hbNormalDx, hbNormalDx) + dot(hbNormalDy, hbNormalDy));');
             expect(threeGameSource).toContain('normal = normalize(normal + hbFloorNormalPerturb)');
         });
 

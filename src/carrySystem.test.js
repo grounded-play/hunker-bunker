@@ -1,0 +1,154 @@
+import { describe, expect, it } from 'vitest';
+import {
+    addCarryObject,
+    beginCarry,
+    canDashWhileCarrying,
+    canUseWeaponWhileCarrying,
+    companionCarrierCoverPosition,
+    createCarryObject,
+    createCarryState,
+    deliverCarriedObject,
+    dropCarriedObject,
+    getCarryMobilityProfile,
+    getCarrierTacticalStance,
+    installCarriedObject,
+    installWorldObject,
+    recoverStrandedCarryObjects,
+    removeMissionCarryObjects,
+    resetCarryRunState,
+    shouldStaggerDropCargo,
+    shouldCompanionCoverCarrier
+} from './carrySystem.js';
+
+const bed = () => createCarryObject({
+    instanceId: 'bed-1',
+    definitionId: 'field-cot',
+    missionId: 'first-night',
+    massClass: 'heavy',
+    worldPosition: { x: 12, z: 8 },
+    buildTags: ['bed', 'sleep'],
+    runId: 'run-a'
+});
+
+describe('two-handed carry state', () => {
+    it('moves a world object into one owned carry slot and blocks weapons', () => {
+        const state = addCarryObject(createCarryState('run-a'), bed()).state;
+        const result = beginCarry(state, 'bed-1', 'player-a');
+        expect(result.ok).toBe(true);
+        expect(result.state.worldObjects).toEqual([]);
+        expect(result.state.carried).toMatchObject({ instanceId: 'bed-1', carrierPlayerId: 'player-a' });
+        expect(canUseWeaponWhileCarrying(result.state)).toBe(false);
+        expect(canDashWhileCarrying(result.state)).toBe(false);
+        expect(getCarryMobilityProfile(result.state)).toMatchObject({
+            moveMultiplier: 0.72, turnMultiplier: 0.78, canSprint: false
+        });
+        expect(beginCarry(result.state, 'anything', 'player-a')).toMatchObject({ ok: false, reason: 'hands-full' });
+    });
+
+    it('drops heavy cargo only for landed directional damage, never ambient drain', () => {
+        let state = addCarryObject(createCarryState('run-a'), bed()).state;
+        state = beginCarry(state, 'bed-1', 'player-a').state;
+        expect(shouldStaggerDropCargo(state, { damage: 1, hasDirectionalSource: false })).toBe(false);
+        expect(shouldStaggerDropCargo(state, { damage: 1, hasDirectionalSource: true })).toBe(true);
+        expect(shouldStaggerDropCargo(createCarryState('run-a'), { damage: 5, hasDirectionalSource: true })).toBe(false);
+    });
+
+    it('drops mission cargo without changing identity or letting another player own the action', () => {
+        let state = addCarryObject(createCarryState('run-a'), bed()).state;
+        state = beginCarry(state, 'bed-1', 'player-a').state;
+        expect(dropCarriedObject(state, { x: 3.5, z: 4.5 }, { carrierPlayerId: 'player-b' }))
+            .toMatchObject({ ok: false, reason: 'not-owner' });
+        const result = dropCarriedObject(state, { x: 3.5, z: 4.5 }, { carrierPlayerId: 'player-a' });
+        expect(result.dropped).toMatchObject({ instanceId: 'bed-1', worldPosition: { x: 3.5, z: 4.5 } });
+        expect(result.state.carried).toBeNull();
+        expect(canUseWeaponWhileCarrying(result.state)).toBe(true);
+    });
+
+    it('delivers owned cargo without installing it and removes reset mission cargo', () => {
+        let state = addCarryObject(createCarryState('run-a'), bed()).state;
+        state = beginCarry(state, 'bed-1', 'player-a').state;
+        expect(deliverCarriedObject(state, { carrierPlayerId: 'player-b' }))
+            .toMatchObject({ ok: false, reason: 'not-owner' });
+        const delivered = deliverCarriedObject(state, { carrierPlayerId: 'player-a' });
+        expect(delivered.delivered).toMatchObject({ instanceId: 'bed-1', carrierPlayerId: null });
+        expect(delivered.state).toMatchObject({ carried: null, worldObjects: [], installed: [] });
+
+        const staged = addCarryObject(createCarryState('run-a'), bed()).state;
+        const removed = removeMissionCarryObjects(staged, 'first-night');
+        expect(removed.removed).toHaveLength(1);
+        expect(removed.state.worldObjects).toEqual([]);
+    });
+
+    it('installs only into a compatible socket and preserves installed modules across run reset', () => {
+        let state = addCarryObject(createCarryState('run-a'), bed()).state;
+        state = beginCarry(state, 'bed-1', 'player-a').state;
+        expect(installCarriedObject(state, { id: 'engine', acceptsTags: ['engine'] }, { carrierPlayerId: 'player-a' }))
+            .toMatchObject({ ok: false, reason: 'incompatible-socket' });
+        const result = installCarriedObject(state, {
+            id: 'sleep-bay',
+            acceptsTags: ['bed'],
+            transform: { x: 2, z: 3, yaw: 0 }
+        }, { carrierPlayerId: 'player-a' });
+        expect(result.installed).toMatchObject({ instanceId: 'bed-1', socketId: 'sleep-bay' });
+        expect(resetCarryRunState('run-b', result.state.installed)).toMatchObject({
+            runId: 'run-b', carried: null, worldObjects: [], installed: [{ instanceId: 'bed-1', socketId: 'sleep-bay' }]
+        });
+
+        // installWorldObject installs directly from loose world cargo
+        const worldState = addCarryObject(createCarryState('run-a'), bed()).state;
+        const worldResult = installWorldObject(worldState, 'bed-1', {
+            id: 'sleep-bay',
+            acceptsTags: ['bed'],
+            transform: { x: 5, z: 6, yaw: 0 }
+        });
+        expect(worldResult.ok).toBe(true);
+        expect(worldResult.installed).toMatchObject({ instanceId: 'bed-1', socketId: 'sleep-bay' });
+        expect(worldResult.state.worldObjects).toHaveLength(0);
+        expect(worldResult.state.installed).toHaveLength(1);
+    });
+
+    it('triggers companion cover-carrier tactical stance when carrier has hands full', () => {
+        let state = addCarryObject(createCarryState('run-a'), bed()).state;
+        expect(getCarrierTacticalStance(state)).toBe('normal');
+        expect(shouldCompanionCoverCarrier(state)).toBe(false);
+
+        state = beginCarry(state, 'bed-1', 'player-a').state;
+        expect(getCarrierTacticalStance(state)).toBe('cover-carrier');
+        expect(shouldCompanionCoverCarrier(state)).toBe(true);
+        expect(companionCarrierCoverPosition({ x: 10, z: 10 }, { dirX: 0, dirZ: 1 }, 0))
+            .toEqual({ x: 11.05, z: 10.75 });
+    });
+
+    it('recovers mission cargo only after repeated off-navigation checks', () => {
+        let state = addCarryObject(createCarryState('run-a'), bed()).state;
+        state.worldObjects[0] = {
+            ...state.worldObjects[0],
+            worldPosition: { x: 999, z: 999 },
+            lastSafePosition: { x: 6, z: 7 }
+        };
+        const isNavigable = ({ x }) => x < 100;
+        let audit = recoverStrandedCarryObjects(state, { isNavigable, requiredFailedChecks: 3 });
+        expect(audit.recovered).toEqual([]);
+        audit = recoverStrandedCarryObjects(audit.state, { isNavigable, requiredFailedChecks: 3 });
+        expect(audit.recovered).toEqual([]);
+        audit = recoverStrandedCarryObjects(audit.state, { isNavigable, requiredFailedChecks: 3 });
+        expect(audit.recovered[0]).toMatchObject({
+            instanceId: 'bed-1', worldPosition: { x: 6, z: 7 }, recoveryCount: 1
+        });
+    });
+
+    it('falls back to authored staging when both current and last-safe positions become invalid', () => {
+        let state = addCarryObject(createCarryState('run-a'), bed()).state;
+        state.worldObjects[0] = {
+            ...state.worldObjects[0],
+            worldPosition: { x: 999, z: 999 },
+            lastSafePosition: { x: 888, z: 888 },
+            failedRecoveryChecks: 2
+        };
+        const result = recoverStrandedCarryObjects(state, {
+            isNavigable: ({ x }) => x < 100,
+            requiredFailedChecks: 3
+        });
+        expect(result.recovered[0].worldPosition).toEqual({ x: 12, z: 8 });
+    });
+});

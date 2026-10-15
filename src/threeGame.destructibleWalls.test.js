@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import * as THREE from 'three';
 import { LEDGE_TILE, ThreeGame } from './threeGame.js';
 
 function call(method, fakeThis, ...args) {
@@ -307,13 +308,66 @@ describe('instanced wall tile identity', () => {
         expect(call('findWallByPoolInstance', fakeThis, pool, 9)).toBeNull();
     });
 
+    it('resolves a visible wall-run facade hit to the nearest destructible tile record', () => {
+        const pool = { userData: { isInstancedWallPool: true } };
+        const first = makeRecord(4, 5, 0, pool);
+        const second = makeRecord(5, 5, 1, pool);
+        const facade = {
+            hidden: false,
+            memberKeys: [first.wallKey, second.wallKey]
+        };
+        const facadePool = {
+            userData: { isWall: true, isWallRunFacadePool: true, facadeStates: [facade] }
+        };
+        const fakeThis = {
+            _wallInstanceIndex: new Map([[first.wallKey, first], [second.wallKey, second]]),
+            findWallByPoolInstance: ThreeGame.prototype.findWallByPoolInstance
+        };
+
+        const resolved = call('resolveDestructibleWallHit', fakeThis, {
+            object: facadePool,
+            instanceId: 0,
+            point: { x: 4.85, z: 5 }
+        });
+
+        expect(resolved).toBe(second);
+    });
+
+    it('does not reduce protected wall HP and reports a protected refusal', () => {
+        const wall = {
+            userData: {
+                isWall: true,
+                indestructible: true,
+                wallKey: '4,5',
+                wallHp: 8,
+                maxWallHp: 8
+            }
+        };
+        const recordWallImpact = vi.fn();
+
+        const result = call('damageWall', { recordWallImpact }, wall, 3, { source: 'player' });
+
+        expect(result).toBe(false);
+        expect(wall.userData.wallHp).toBe(8);
+        expect(recordWallImpact).toHaveBeenCalledWith(wall, expect.objectContaining({
+            refusalReason: 'protected'
+        }));
+    });
+
     it('retires only the destroyed matrix slot and leaves the shared pool active', () => {
         const pool = {
             setMatrixAt: vi.fn(),
             instanceMatrix: { needsUpdate: false }
         };
+        const facadePool = {
+            setMatrixAt: vi.fn(),
+            instanceMatrix: { needsUpdate: false }
+        };
         const first = makeRecord(4, 5, 0, pool);
         const second = makeRecord(5, 5, 1, pool);
+        const facade = { pool: facadePool, instanceIndex: 3, runId: 'run-a', hidden: false };
+        first.wallRunFacade = facade;
+        second.wallRunFacade = facade;
         const grid = makeGrid();
         const fakeThis = {
             chunkSize: 19,
@@ -336,6 +390,10 @@ describe('instanced wall tile identity', () => {
         expect(pool.setMatrixAt).toHaveBeenCalledTimes(1);
         expect(pool.setMatrixAt.mock.calls[0][0]).toBe(0);
         expect(pool.instanceMatrix.needsUpdate).toBe(true);
+        expect(facadePool.setMatrixAt).toHaveBeenCalledOnce();
+        expect(facadePool.setMatrixAt).toHaveBeenCalledWith(3, expect.any(THREE.Matrix4));
+        expect(facadePool.instanceMatrix.needsUpdate).toBe(true);
+        expect(facade.hidden).toBe(true);
         expect(fakeThis._wallInstanceIndex.has(first.wallKey)).toBe(false);
         expect(fakeThis._wallInstanceIndex.get(second.wallKey)).toBe(second);
         expect(fakeThis.wallMeshes).toEqual([pool]);
@@ -464,7 +522,8 @@ describe('instanced wall tile identity', () => {
                 }]
             },
             wallMeshes: [pool],
-            findWallByPoolInstance: ThreeGame.prototype.findWallByPoolInstance
+            findWallByPoolInstance: ThreeGame.prototype.findWallByPoolInstance,
+            resolveDestructibleWallHit: ThreeGame.prototype.resolveDestructibleWallHit
         };
         const projectile = { mesh: { position: { x: 0, z: 0 } }, vx: 1, vz: 0 };
 

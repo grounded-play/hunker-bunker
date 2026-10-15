@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+export const DEFAULT_REMOTE_BACKEND_URL = 'https://steam.tuesdaycinema.club';
+
 export const DEFAULT_STEAM_CONFIG = Object.freeze({
     backendUrl: 'http://localhost:3001',
     appId: 4957040,
@@ -60,13 +62,17 @@ export function requireRemoteSteamBackend(config) {
 }
 
 export function buildSteamConfig(env = process.env) {
+    const isRemoteRequired = isEnabled(env.HB_STEAM_CONFIG_REQUIRE_REMOTE);
+    const defaultUrl = isRemoteRequired
+        ? DEFAULT_REMOTE_BACKEND_URL
+        : DEFAULT_STEAM_CONFIG.backendUrl;
     const config = {
-        backendUrl: normalizeBackendUrl(env.HB_STEAM_BACKEND_URL),
+        backendUrl: normalizeBackendUrl(cleanString(env.HB_STEAM_BACKEND_URL, defaultUrl)),
         logUploadToken: cleanString(env.HB_LOG_UPLOAD_TOKEN, DEFAULT_STEAM_CONFIG.logUploadToken),
         appId: normalizeSteamAppId(env.HB_STEAM_APPID),
         authIdentity: cleanString(env.HB_STEAM_AUTH_IDENTITY, DEFAULT_STEAM_CONFIG.authIdentity)
     };
-    return isEnabled(env.HB_STEAM_CONFIG_REQUIRE_REMOTE)
+    return isRemoteRequired
         ? requireRemoteSteamBackend(config)
         : config;
 }

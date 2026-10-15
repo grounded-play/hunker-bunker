@@ -50,6 +50,19 @@ describe('createPropArticulation', () => {
         expect(articulation.state).toBe('closing');
     });
 
+    it('slides a guillotine without introducing rotation', () => {
+        const model = new THREE.Group();
+        const slab = new THREE.Object3D();
+        slab.userData = { hb_motion: 'slide', hb_open_offset: [0, 2.4, 0], hb_duration: 1.2 };
+        model.add(slab);
+        const articulation = createPropArticulation(model);
+        articulation.toggle();
+        while (articulation.update(0.1));
+        expect(articulation.state).toBe('open');
+        expect(slab.position.y).toBeCloseTo(2.4);
+        expect(slab.quaternion.angleTo(new THREE.Quaternion())).toBeLessThan(1e-6);
+    });
+
     it('spins a rotor up while working, stops it after, and needs no frames at rest', () => {
         const model = new THREE.Group();
         const rotor = new THREE.Object3D();

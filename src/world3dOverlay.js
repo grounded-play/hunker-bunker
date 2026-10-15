@@ -387,7 +387,172 @@ export const WORLD_3D_MODELS = Object.freeze({
     life_surgical_lamp: { url: '/3d/runtime/new3ds/life_surgical_lamp.glb', height: 2.3, yaw: 0 },
     life_transformer_bank: { url: '/3d/runtime/new3ds/life_transformer_bank.glb', height: 2.2, yaw: 0 },
     life_weight_bench: { url: '/3d/runtime/new3ds/life_weight_bench.glb', height: 1.4, maxSpan: 2.2, yaw: 0 },
-    salvage_tagged_heap: { url: '/3d/runtime/new3ds/salvage_tagged_heap.glb', height: 1.4, yaw: 0 }
+    salvage_tagged_heap: { url: '/3d/runtime/new3ds/salvage_tagged_heap.glb', height: 1.4, yaw: 0 },
+
+    // 2026-10-12 World story expansion mature props (40 models)
+    // A. Corporate Horizon Atrocities & Governance
+    corp_interrogation_chair: { url: '/3d/runtime/new3ds/corp_interrogation_chair.glb', height: 1.6, yaw: 0 },
+    corp_debt_severing_kiosk: { url: '/3d/runtime/new3ds/corp_debt_severing_kiosk.glb', height: 1.8, yaw: 0 },
+    corp_dissection_gurney: { url: '/3d/runtime/new3ds/corp_dissection_gurney.glb', height: 1.1, maxSpan: 2.2, yaw: 0 },
+    corp_executive_sarcophagus: { url: '/3d/runtime/new3ds/corp_executive_sarcophagus.glb', height: 2.2, yaw: 0 },
+    corp_incinerator_hopper: { url: '/3d/runtime/new3ds/corp_incinerator_hopper.glb', height: 2.4, yaw: 0 },
+    corp_suppression_barrier: { url: '/3d/runtime/new3ds/corp_suppression_barrier.glb', height: 1.7, maxSpan: 2.4, yaw: 0 },
+
+    // B. Meridian Camp & Cyber-Deity Rites
+    meridian_cyber_graft_bench: { url: '/3d/runtime/new3ds/meridian_cyber_graft_bench.glb', height: 1.3, maxSpan: 2.0, yaw: 0 },
+    meridian_mainframe_altar: { url: '/3d/runtime/new3ds/meridian_mainframe_altar.glb', height: 2.6, yaw: 0 },
+    meridian_capacitor_bomb: { url: '/3d/runtime/new3ds/meridian_capacitor_bomb.glb', height: 1.4, yaw: 0 },
+    meridian_servitor_dock: { url: '/3d/runtime/new3ds/meridian_servitor_dock.glb', height: 2.1, yaw: 0 },
+
+    // C. Tallow Camp & Spore Gestation
+    tallow_compost_fermenter: { url: '/3d/runtime/new3ds/tallow_compost_fermenter.glb', height: 2.3, yaw: 0 },
+    tallow_spore_cradle: { url: '/3d/runtime/new3ds/tallow_spore_cradle.glb', height: 1.2, maxSpan: 1.5, yaw: 0 },
+    tallow_flesh_trellis: { url: '/3d/runtime/new3ds/tallow_flesh_trellis.glb', height: 2.5, yaw: 0 },
+    tallow_sacrificial_altar: { url: '/3d/runtime/new3ds/tallow_sacrificial_altar.glb', height: 1.3, maxSpan: 2.4, yaw: 0 },
+
+    // D. Vesper Iron Guild & Frontline Butchery
+    vesper_amputation_rig: { url: '/3d/runtime/new3ds/vesper_amputation_rig.glb', height: 1.2, maxSpan: 2.0, yaw: 0 },
+    vesper_autocannon_bipod: { url: '/3d/runtime/new3ds/vesper_autocannon_bipod.glb', height: 1.4, maxSpan: 2.2, yaw: 0 },
+    vesper_hanging_cage: { url: '/3d/runtime/new3ds/vesper_hanging_cage.glb', height: 2.5, yaw: 0 },
+    vesper_reloading_station: { url: '/3d/runtime/new3ds/vesper_reloading_station.glb', height: 1.5, yaw: 0 },
+
+    // E. Mayor Tina's Infiltration & Metamorphosis
+    tina_molted_carapace: { url: '/3d/runtime/new3ds/tina_molted_carapace.glb', height: 1.9, yaw: 0 },
+    tina_covert_nursery_chest: { url: '/3d/runtime/new3ds/tina_covert_nursery_chest.glb', height: 1.0, maxSpan: 1.4, yaw: 0 },
+    tina_mimic_vanity: { url: '/3d/runtime/new3ds/tina_mimic_vanity.glb', height: 1.6, yaw: 0 },
+    tina_trophy_trove: { url: '/3d/runtime/new3ds/tina_trophy_trove.glb', height: 1.3, yaw: 0 },
+
+    // F. The PregAlien Hive & Visceral Assimilation
+    hive_visceral_ovipositor: { url: '/3d/runtime/new3ds/hive_visceral_ovipositor.glb', height: 2.8, yaw: 0 },
+    hive_vivisected_engineer: { url: '/3d/runtime/new3ds/hive_vivisected_engineer.glb', height: 2.2, yaw: 0 },
+    hive_gestation_sac: { url: '/3d/runtime/new3ds/hive_gestation_sac.glb', height: 2.0, yaw: 0 },
+    hive_pulmonary_bellows: { url: '/3d/runtime/new3ds/hive_pulmonary_bellows.glb', height: 2.2, yaw: 0 },
+    hive_amniotic_feeder_trough: { url: '/3d/runtime/new3ds/hive_amniotic_feeder_trough.glb', height: 1.1, maxSpan: 2.6, yaw: 0 },
+    hive_sphincter_iris: { url: '/3d/runtime/new3ds/hive_sphincter_iris.glb', height: 2.8, yaw: 0 },
+
+    // G. Cryo District: Hypothermic Brutality
+    cryo_ruptured_pod: { url: '/3d/runtime/new3ds/cryo_ruptured_pod.glb', height: 2.4, yaw: 0 },
+    cryo_cannibal_butchery_table: { url: '/3d/runtime/new3ds/cryo_cannibal_butchery_table.glb', height: 1.2, maxSpan: 2.2, yaw: 0 },
+    cryo_ice_core_specimen: { url: '/3d/runtime/new3ds/cryo_ice_core_specimen.glb', height: 1.8, yaw: 0 },
+    cryo_thawing_trough: { url: '/3d/runtime/new3ds/cryo_thawing_trough.glb', height: 1.0, maxSpan: 1.8, yaw: 0 },
+    cryo_frozen_shelter_pod: { url: '/3d/runtime/new3ds/cryo_frozen_shelter_pod.glb', height: 1.7, maxSpan: 2.4, yaw: 0 },
+
+    // H. The Chasm Void & Final Drops
+    chasm_hanging_elevator: { url: '/3d/runtime/new3ds/chasm_hanging_elevator.glb', height: 3.2, yaw: 0 },
+    chasm_suicide_ledge_cross: { url: '/3d/runtime/new3ds/chasm_suicide_ledge_cross.glb', height: 2.0, yaw: 0 },
+    chasm_dredge_hook_crane: { url: '/3d/runtime/new3ds/chasm_dredge_hook_crane.glb', height: 2.8, maxSpan: 3.0, yaw: 0 },
+
+    // I. Industrial Meat & Crash Debris
+    ind_biomass_grinder: { url: '/3d/runtime/new3ds/ind_biomass_grinder.glb', height: 2.2, yaw: 0 },
+    ind_hydraulic_manifold: { url: '/3d/runtime/new3ds/ind_hydraulic_manifold.glb', height: 1.9, yaw: 0 },
+    ind_fuel_rod_cask: { url: '/3d/runtime/new3ds/ind_fuel_rod_cask.glb', height: 2.4, yaw: 0 },
+    crash_cockpit_canopy: { url: '/3d/runtime/new3ds/crash_cockpit_canopy.glb', height: 2.2, maxSpan: 3.4, yaw: 0 },
+
+    // 2026-10-12 World story expansion pass 2 mature props (19 models)
+    bay_c_pod_312_rupture: { url: '/3d/runtime/new3ds/bay_c_pod_312_rupture.glb', height: 2.2, maxSpan: 2.5, yaw: 0 },
+    carapace_sentry_chrysalis: { url: '/3d/runtime/new3ds/carapace_sentry_chrysalis.glb', height: 2.4, yaw: 0 },
+    chen_sealed_confession_console: { url: '/3d/runtime/new3ds/chen_sealed_confession_console.glb', height: 1.8, yaw: 0 },
+    corp_biometric_collar_chute: { url: '/3d/runtime/new3ds/corp_biometric_collar_chute.glb', height: 2.1, yaw: 0 },
+    crawler_signal_antenna_rig: { url: '/3d/runtime/new3ds/crawler_signal_antenna_rig.glb', height: 2.8, yaw: 0 },
+    decon_exosuit_scrubber_station: { url: '/3d/runtime/new3ds/decon_exosuit_scrubber_station.glb', height: 2.4, yaw: 0 },
+    engineer_wave_relay_dynamo: { url: '/3d/runtime/new3ds/engineer_wave_relay_dynamo.glb', height: 2.2, yaw: 0 },
+    evac_four_seat_cockpit_module: { url: '/3d/runtime/new3ds/evac_four_seat_cockpit_module.glb', height: 2.2, maxSpan: 3.5, yaw: 0 },
+    evac_manifest_allocation_terminal: { url: '/3d/runtime/new3ds/evac_manifest_allocation_terminal.glb', height: 1.9, yaw: 0 },
+    evac_preflight_fuel_umbilical: { url: '/3d/runtime/new3ds/evac_preflight_fuel_umbilical.glb', height: 2.6, yaw: 0 },
+    queen_royal_brood_throne: { url: '/3d/runtime/new3ds/queen_royal_brood_throne.glb', height: 3.0, maxSpan: 2.8, yaw: 0 },
+    relay_false_beacon_spire: { url: '/3d/runtime/new3ds/relay_false_beacon_spire.glb', height: 3.2, yaw: 0 },
+    royal_egg_clutch_caul: { url: '/3d/runtime/new3ds/royal_egg_clutch_caul.glb', height: 1.6, maxSpan: 2.2, yaw: 0 },
+    scout_tracking_beacon_core: { url: '/3d/runtime/new3ds/scout_tracking_beacon_core.glb', height: 1.7, yaw: 0 },
+    sector_zero_bore_drillhead: { url: '/3d/runtime/new3ds/sector_zero_bore_drillhead.glb', height: 2.5, maxSpan: 2.8, yaw: 0 },
+    suture_mercy_cocoon_canopy: { url: '/3d/runtime/new3ds/suture_mercy_cocoon_canopy.glb', height: 2.0, maxSpan: 2.4, yaw: 0 },
+    tank_orbital_siege_cannon: { url: '/3d/runtime/new3ds/tank_orbital_siege_cannon.glb', height: 3.0, maxSpan: 4.5, yaw: 0 },
+    vass_acoustic_resonator_tank: { url: '/3d/runtime/new3ds/vass_acoustic_resonator_tank.glb', height: 2.3, yaw: 0 },
+    vass_hybrid_embryo_incubator: { url: '/3d/runtime/new3ds/vass_hybrid_embryo_incubator.glb', height: 2.1, yaw: 0 },
+
+    // 2026-10-12 Weapons, base rebuild, architecture, and ship modules
+    barrier_ice_fractured: { url: '/3d/runtime/new3ds/barrier_ice_fractured.glb', height: 2.7, span: 2.4, yaw: 0 },
+    barrier_ice_intact: { url: '/3d/runtime/new3ds/barrier_ice_intact.glb', height: 2.7, span: 2.4, yaw: 0 },
+    barrier_ice_melting: { url: '/3d/runtime/new3ds/barrier_ice_melting.glb', height: 2.7, span: 2.4, yaw: 0 },
+    base_cot_installed: { url: '/3d/runtime/new3ds/base_cot_installed.glb', height: 0.65, span: 2.1, yaw: 0 },
+    base_door_sealable_bulkhead: { url: '/3d/runtime/new3ds/base_door_sealable_bulkhead.glb', height: 2.4, span: 1.8, yaw: 0 },
+    base_o2_atmospheric_regulator: { url: '/3d/runtime/new3ds/base_o2_atmospheric_regulator.glb', height: 1.6, span: 1.3, yaw: 0 },
+    base_o2_overhead_duct: { url: '/3d/runtime/new3ds/base_o2_overhead_duct.glb', height: 0.35, span: 1.0, yaw: 0 },
+    base_power_junction_box: { url: '/3d/runtime/new3ds/base_power_junction_box.glb', height: 0.7, span: 0.55, yaw: 0 },
+    carry_field_cot_folded: { url: '/3d/runtime/new3ds/carry_field_cot_folded.glb', height: 0.35, span: 1.1, yaw: 0 },
+    mod_pressure_seal: { url: '/3d/runtime/new3ds/mod_pressure_seal.glb', height: 0.42, span: 0.55, yaw: 0 },
+    door_arch_guillotine_assembled: { url: '/3d/runtime/new3ds/door_arch_guillotine_assembled.glb', height: 4.2, span: 2.4, yaw: 0 },
+    door_arch_guillotine_frame: { url: '/3d/runtime/new3ds/door_arch_guillotine_frame.glb', height: 4.2, span: 2.4, yaw: 0 },
+    door_arch_guillotine_slab: { url: '/3d/runtime/new3ds/door_arch_guillotine_slab.glb', height: 3.0, span: 2.2, yaw: 0 },
+    ship_module_comms_transceiver: { url: '/3d/runtime/new3ds/ship_module_comms_transceiver.glb', height: 2.0, span: 1.4, yaw: 0 },
+    ship_module_engine_manifold: { url: '/3d/runtime/new3ds/ship_module_engine_manifold.glb', height: 1.2, span: 1.5, yaw: 0 },
+    ship_module_life_support_core: { url: '/3d/runtime/new3ds/ship_module_life_support_core.glb', height: 1.8, span: 1.5, yaw: 0 },
+    ship_module_navigation_core: { url: '/3d/runtime/new3ds/ship_module_navigation_core.glb', height: 1.4, span: 1.25, yaw: 0 },
+    wall_macro_buttress_3: { url: '/3d/runtime/new3ds/wall_macro_buttress_3.glb', height: 2.8, span: 3.0, yaw: 0 },
+    wall_macro_straight_4: { url: '/3d/runtime/new3ds/wall_macro_straight_4.glb', height: 2.8, span: 4.0, yaw: 0 },
+    weapon_flamethrower_case: { url: '/3d/runtime/new3ds/weapon_flamethrower_case.glb', height: 0.40, span: 1.45, yaw: 0 },
+    weapon_flamethrower_m70: { url: '/3d/runtime/new3ds/weapon_flamethrower_m70.glb', height: 0.42, span: 1.2, yaw: 0 },
+    weapon_fuel_canister_heavy: { url: '/3d/runtime/new3ds/weapon_fuel_canister_heavy.glb', height: 0.70, span: 0.55, yaw: 0 },
+
+    // 2026-10-14 Interactive World Expansion (60 models)
+    geo_steam_manifold_actuator: { url: '/3d/runtime/new3ds/geo_steam_manifold_actuator.glb', height: 2.1, span: 1.4, yaw: 0 },
+    tallow_vaccine_alembic: { url: '/3d/runtime/new3ds/tallow_vaccine_alembic.glb', height: 1.8, span: 1.2, yaw: 0 },
+    hydro_mycelial_seed_vault: { url: '/3d/runtime/new3ds/hydro_mycelial_seed_vault.glb', height: 2.2, span: 1.5, yaw: 0 },
+    tallow_irrigation_sluice_gate: { url: '/3d/runtime/new3ds/tallow_irrigation_sluice_gate.glb', height: 2.5, span: 1.8, yaw: 0 },
+    tallow_apothecary_dryer_rack: { url: '/3d/runtime/new3ds/tallow_apothecary_dryer_rack.glb', height: 1.9, span: 1.3, yaw: 0 },
+    geo_pressure_relief_siren: { url: '/3d/runtime/new3ds/geo_pressure_relief_siren.glb', height: 1.6, span: 0.8, yaw: 0 },
+    meridian_optic_nerve_patchbay: { url: '/3d/runtime/new3ds/meridian_optic_nerve_patchbay.glb', height: 2.0, span: 1.6, yaw: 0 },
+    substation_stepdown_transformer: { url: '/3d/runtime/new3ds/substation_stepdown_transformer.glb', height: 2.8, span: 2.2, yaw: 0 },
+    meridian_servitor_recharge_cradle: { url: '/3d/runtime/new3ds/meridian_servitor_recharge_cradle.glb', height: 2.3, span: 1.4, yaw: 0 },
+    meridian_logic_core_drum: { url: '/3d/runtime/new3ds/meridian_logic_core_drum.glb', height: 2.4, span: 1.8, yaw: 0 },
+    substation_breaker_interlock: { url: '/3d/runtime/new3ds/substation_breaker_interlock.glb', height: 1.9, span: 1.1, yaw: 0 },
+    meridian_soldering_hearth: { url: '/3d/runtime/new3ds/meridian_soldering_hearth.glb', height: 1.4, span: 1.2, yaw: 0 },
+    vesper_ordnance_disarm_table: { url: '/3d/runtime/new3ds/vesper_ordnance_disarm_table.glb', height: 1.3, span: 1.6, yaw: 0 },
+    vesper_trench_warning_klaxon: { url: '/3d/runtime/new3ds/vesper_trench_warning_klaxon.glb', height: 1.7, span: 0.7, yaw: 0 },
+    vesper_ballistic_chronograph: { url: '/3d/runtime/new3ds/vesper_ballistic_chronograph.glb', height: 1.5, span: 1.0, yaw: 0 },
+    vesper_mortar_loading_cradle: { url: '/3d/runtime/new3ds/vesper_mortar_loading_cradle.glb', height: 1.8, span: 1.3, yaw: 0 },
+    vesper_dogtag_retrieval_crypt: { url: '/3d/runtime/new3ds/vesper_dogtag_retrieval_crypt.glb', height: 2.0, span: 1.2, yaw: 0 },
+    vesper_barricade_welding_rig: { url: '/3d/runtime/new3ds/vesper_barricade_welding_rig.glb', height: 1.6, span: 1.1, yaw: 0 },
+    corp_biometric_wall_safe: { url: '/3d/runtime/new3ds/corp_biometric_wall_safe.glb', height: 1.2, span: 1.0, yaw: 0 },
+    corp_quantum_ledger_podium: { url: '/3d/runtime/new3ds/corp_quantum_ledger_podium.glb', height: 1.5, span: 1.1, yaw: 0 },
+    corp_compliance_choker_bench: { url: '/3d/runtime/new3ds/corp_compliance_choker_bench.glb', height: 1.4, span: 1.8, yaw: 0 },
+    corp_asset_incinerator_chute: { url: '/3d/runtime/new3ds/corp_asset_incinerator_chute.glb', height: 2.2, span: 1.3, yaw: 0 },
+    corp_cryo_transport_coffin: { url: '/3d/runtime/new3ds/corp_cryo_transport_coffin.glb', height: 1.3, span: 2.3, yaw: 0 },
+    corp_executive_whisper_booth: { url: '/3d/runtime/new3ds/corp_executive_whisper_booth.glb', height: 2.6, span: 1.5, yaw: 0 },
+    suture_flesh_mending_bath: { url: '/3d/runtime/new3ds/suture_flesh_mending_bath.glb', height: 1.4, span: 2.2, yaw: 0 },
+    suture_larval_nursery_urn: { url: '/3d/runtime/new3ds/suture_larval_nursery_urn.glb', height: 1.6, span: 1.0, yaw: 0 },
+    relay_harmonic_tuning_fork: { url: '/3d/runtime/new3ds/relay_harmonic_tuning_fork.glb', height: 2.7, span: 1.2, yaw: 0 },
+    relay_acoustic_diaphragm: { url: '/3d/runtime/new3ds/relay_acoustic_diaphragm.glb', height: 2.4, span: 2.0, yaw: 0 },
+    carapace_chitin_press: { url: '/3d/runtime/new3ds/carapace_chitin_press.glb', height: 2.6, span: 1.8, yaw: 0 },
+    carapace_ossuary_anvil: { url: '/3d/runtime/new3ds/carapace_ossuary_anvil.glb', height: 1.3, span: 1.5, yaw: 0 },
+    vass_translation_phonograph: { url: '/3d/runtime/new3ds/vass_translation_phonograph.glb', height: 1.6, span: 1.1, yaw: 0 },
+    vass_bio_centrifuge_rack: { url: '/3d/runtime/new3ds/vass_bio_centrifuge_rack.glb', height: 1.8, span: 1.2, yaw: 0 },
+    vass_neural_sync_helmet: { url: '/3d/runtime/new3ds/vass_neural_sync_helmet.glb', height: 1.7, span: 0.9, yaw: 0 },
+    vass_hybrid_blood_synthesizer: { url: '/3d/runtime/new3ds/vass_hybrid_blood_synthesizer.glb', height: 2.1, span: 1.4, yaw: 0 },
+    vass_containment_bell_jar: { url: '/3d/runtime/new3ds/vass_containment_bell_jar.glb', height: 1.5, span: 0.9, yaw: 0 },
+    vass_dissection_stereomicroscope: { url: '/3d/runtime/new3ds/vass_dissection_stereomicroscope.glb', height: 1.3, span: 0.8, yaw: 0 },
+    tina_vocal_mimic_synthesizer: { url: '/3d/runtime/new3ds/tina_vocal_mimic_synthesizer.glb', height: 1.4, span: 0.8, yaw: 0 },
+    tina_cosmetic_skin_loom: { url: '/3d/runtime/new3ds/tina_cosmetic_skin_loom.glb', height: 1.8, span: 1.3, yaw: 0 },
+    tina_forged_council_ballot_box: { url: '/3d/runtime/new3ds/tina_forged_council_ballot_box.glb', height: 1.2, span: 0.8, yaw: 0 },
+    tina_shedding_cocoon_niche: { url: '/3d/runtime/new3ds/tina_shedding_cocoon_niche.glb', height: 2.2, span: 1.4, yaw: 0 },
+    tina_secret_distress_beacon: { url: '/3d/runtime/new3ds/tina_secret_distress_beacon.glb', height: 1.5, span: 0.8, yaw: 0 },
+    chasm_seismic_geophone_station: { url: '/3d/runtime/new3ds/chasm_seismic_geophone_station.glb', height: 1.7, span: 1.1, yaw: 0 },
+    chasm_cable_traversal_winch: { url: '/3d/runtime/new3ds/chasm_cable_traversal_winch.glb', height: 2.2, span: 1.8, yaw: 0 },
+    chasm_abyss_sounding_mortar: { url: '/3d/runtime/new3ds/chasm_abyss_sounding_mortar.glb', height: 1.8, span: 1.0, yaw: 0 },
+    chasm_steam_whistle_buoy: { url: '/3d/runtime/new3ds/chasm_steam_whistle_buoy.glb', height: 2.4, span: 1.2, yaw: 0 },
+    chasm_hanging_cage_crane: { url: '/3d/runtime/new3ds/chasm_hanging_cage_crane.glb', height: 3.2, span: 2.4, yaw: 0 },
+    chasm_geothermal_survey_transit: { url: '/3d/runtime/new3ds/chasm_geothermal_survey_transit.glb', height: 1.6, span: 0.9, yaw: 0 },
+    scout_tachyon_radar_mast: { url: '/3d/runtime/new3ds/scout_tachyon_radar_mast.glb', height: 3.4, span: 1.4, yaw: 0 },
+    scout_ejection_pod_chassis: { url: '/3d/runtime/new3ds/scout_ejection_pod_chassis.glb', height: 1.8, span: 2.4, yaw: 0 },
+    tank_reactive_armor_forge: { url: '/3d/runtime/new3ds/tank_reactive_armor_forge.glb', height: 2.2, span: 1.6, yaw: 0 },
+    tank_kinetic_ram_breech: { url: '/3d/runtime/new3ds/tank_kinetic_ram_breech.glb', height: 2.0, span: 1.8, yaw: 0 },
+    engineer_magnetic_bottle_cell: { url: '/3d/runtime/new3ds/engineer_magnetic_bottle_cell.glb', height: 1.9, span: 1.4, yaw: 0 },
+    engineer_robotic_welding_arm: { url: '/3d/runtime/new3ds/engineer_robotic_welding_arm.glb', height: 2.1, span: 1.2, yaw: 0 },
+    evac_avionics_gyro_gimbal: { url: '/3d/runtime/new3ds/evac_avionics_gyro_gimbal.glb', height: 1.8, span: 1.3, yaw: 0 },
+    evac_cryo_hypergolic_manifold: { url: '/3d/runtime/new3ds/evac_cryo_hypergolic_manifold.glb', height: 2.4, span: 1.6, yaw: 0 },
+    evac_cabin_co2_scrubber: { url: '/3d/runtime/new3ds/evac_cabin_co2_scrubber.glb', height: 1.7, span: 1.1, yaw: 0 },
+    evac_manual_abort_detonator: { url: '/3d/runtime/new3ds/evac_manual_abort_detonator.glb', height: 1.4, span: 0.8, yaw: 0 },
+    evac_cargo_ballast_scale: { url: '/3d/runtime/new3ds/evac_cargo_ballast_scale.glb', height: 0.4, span: 2.0, yaw: 0 },
+    mothership_docking_umbilical_collar: { url: '/3d/runtime/new3ds/mothership_docking_umbilical_collar.glb', height: 3.0, span: 2.8, yaw: 0 }
 });
 
 // Metric-scale set-piece shells are deliberately separate from prop models.
@@ -601,6 +766,7 @@ const WORLD_3D_ONLY_PREFIXES = Object.freeze(['arch_', 'state_', 'fixture_', 'ki
 // placement of them found no scatter material and was silently dropped.
 const WORLD_3D_ONLY_TYPES = Object.freeze(new Set([
     'frozen_tanker', 'prop_body_human_frozen', 'prop_body_empty_exosuit', 'body_frozen_human',
+    'barrier_ice_intact', 'barrier_ice_melting', 'barrier_ice_fractured',
     'prop_autopsy_dissection_slab',
     'prop_biomech_sphincter_hatch_vent',
     'prop_biomech_spore_umbilical_cable',
@@ -621,7 +787,8 @@ const WORLD_3D_ONLY_TYPES = Object.freeze(new Set([
     'prop_pipe_organ_heat_exchanger',
     'prop_vertebral_cable_riser',
     'prop_votive_candle_shrine',
-    'prop_wall_cable_tray_swag'
+    'prop_wall_cable_tray_swag',
+    'hive_tendril_arch'
 ]));
 
 // Scattered body sprites alternate between the two models of each body, by

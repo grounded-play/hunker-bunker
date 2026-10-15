@@ -256,7 +256,8 @@
       "commentary_list": "ENTWICKLERKOMMENTAR",
       "commentary_read_all": "ALLE LESEN",
       "content_guide": "INHALTSLEITFADEN (REIFE THEMEN)",
-      "graphics": "GRAFIK"
+      "graphics": "GRAFIK",
+      "intro_style": "INTRO-STIL"
     },
     "action": {
       "open": "ÖFFNEN",
@@ -312,7 +313,10 @@
       "shake_normal": "NORMAL (100%)",
       "aim_assist_off": "AUS",
       "aim_assist_low": "NIEDRIG (NUR MAGNETISMUS)",
-      "aim_assist_standard": "STANDARD (FANGEN + REIBUNG)"
+      "aim_assist_standard": "STANDARD (FANGEN + REIBUNG)",
+      "intro_tactical": "TAKTIK-TERMINAL (KINOREIF)",
+      "intro_timed": "SYNCHRONISIERT (TERMINAL)",
+      "intro_classic": "KLASSISCHE SCHREIBMASCHINE"
     },
     "aria": {
       "language_select": "Spielsprache",
@@ -504,7 +508,9 @@
       "accent_credits": "// CREDITS"
     },
     "hero_detail": {
-      "chassis_spec": "CHASSIS-SPEZIFIKATION"
+      "chassis_spec": "CHASSIS-SPEZIFIKATION",
+      "initializing_3d_operator": "INITIALISIERE {type} 3D-OPERATOR…",
+      "preview_3d_unavailable": "{type} 3D-VORSCHAU NICHT VERFÜGBAR"
     },
     "archive": {
       "bunker_archive": "◈ BUNKER-ARCHIV",
@@ -1250,7 +1256,25 @@
       "assembled": "{item} MONTIERT.",
       "trade_failed": "Tausch fehlgeschlagen: {reason}.",
       "assemble_failed": "Montage fehlgeschlagen: {reason}.",
-      "reagents_owned": "BARREN {ingots} · MATRIX {matrix} · AMBRA {ambergris}"
+      "reagents_owned": "BARREN {ingots} · MATRIX {matrix} · AMBRA {ambergris}",
+      "search_placeholder": "INVENTAR DURCHSUCHEN...",
+      "group_all": "ALLE GEGENSTÄNDE",
+      "group_cosmetics": "KOSMETIK",
+      "group_mods": "MODS",
+      "group_materials": "MATERIALIEN",
+      "group_caches": "KISTEN & SCHLÜSSEL",
+      "rarity_all": "ALLE SELTENHEITEN",
+      "sort_recent": "KÜRZLICH",
+      "sort_name": "NAME",
+      "sort_rarity": "SELTENHEIT",
+      "sort_quantity": "MENGE",
+      "clear_filters": "ZURÜCKSETZEN",
+      "count_summary": "{types} GEGENSTANDSARTEN · {total} GESAMT",
+      "count_filtered": "{visible} VON {total} GEGENSTÄNDEN ({types} ARTEN)",
+      "no_matching_items": "KEINE GEGENSTÄNDE ENTSPRECHEN DEN FILTERN",
+      "no_items": "KEINE GEGENSTÄNDE IM STEAM-TRESOR GEFUNDEN",
+      "skip_reveal": "JETZT ENTHÜLLEN",
+      "retry_sync": "SYNC ERNEUT VERSUCHEN"
     },
     "lobby": {
       "connecting": "VERBINDE...",
@@ -1345,6 +1369,7 @@
       "online": "ONLINE",
       "ready_deficit": "BEREIT – RESSOURCENMANGEL",
       "ready_permitted": "BEREIT – BAU ERLAUBT",
+      "install_required": "{module} BERGEN UND INSTALLIEREN",
       "resolved": "GELÖST",
       "choice_required": "ENTSCHEIDUNG ERFORDERLICH",
       "event_resolved": "Terminal-Ereignis gelöst. Shop-Systeme bleiben verfügbar.",

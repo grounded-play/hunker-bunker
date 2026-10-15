@@ -310,7 +310,10 @@ export function createDeveloperCommentary({
         Promise.resolve(loadVoices()).then(() => {
             if (!disposed && !modal.classList.contains('hidden')) renderList();
         }, () => {});
-        requestFrame(() => focusTarget(doc.getElementById('close-commentary-list')));
+        // Open on the first entry, not ✕: A on ✕ just closed the list again
+        // (controller nav map F7). ✕ stays reachable, and B closes.
+        requestFrame(() => focusTarget(doc.querySelector?.('#commentary-list .commentary-list__item')
+            ?? doc.getElementById('close-commentary-list')));
     }
 
     function closeList() {

@@ -256,7 +256,8 @@
       "commentary_list": "COMENTARIOS DEL DESARROLLADOR",
       "commentary_read_all": "LEER TODO",
       "content_guide": "GUÍA DE CONTENIDO (TEMAS MADUROS)",
-      "graphics": "GRÁFICOS"
+      "graphics": "GRÁFICOS",
+      "intro_style": "ESTILO DE INTRO"
     },
     "action": {
       "open": "ABRIR",
@@ -312,7 +313,10 @@
       "shake_normal": "NORMAL (100%)",
       "aim_assist_off": "DESACTIVADO",
       "aim_assist_low": "BAJO (SOLO MAGNETISMO)",
-      "aim_assist_standard": "ESTÁNDAR (IMÁN Y FRICCIÓN)"
+      "aim_assist_standard": "ESTÁNDAR (IMÁN Y FRICCIÓN)",
+      "intro_tactical": "TERMINAL TÁCTICA (CINEMÁTICA)",
+      "intro_timed": "SINCRONIZADO (TERMINAL)",
+      "intro_classic": "MÁQUINA DE ESCRIBIR CLÁSICA"
     },
     "aria": {
       "language_select": "Idioma del juego",
@@ -504,7 +508,9 @@
       "accent_credits": "// CRÉDITOS"
     },
     "hero_detail": {
-      "chassis_spec": "ESPECIFICACIÓN DEL CHASIS"
+      "chassis_spec": "ESPECIFICACIÓN DEL CHASIS",
+      "initializing_3d_operator": "INICIALIZANDO OPERADOR 3D {type}…",
+      "preview_3d_unavailable": "VISTA PREVIA 3D DE {type} NO DISPONIBLE"
     },
     "archive": {
       "bunker_archive": "◈ ARCHIVO DEL BÚNKER",
@@ -1250,7 +1256,25 @@
       "assembled": "{item} ENSAMBLADO.",
       "trade_failed": "El canje falló: {reason}.",
       "assemble_failed": "El ensamble falló: {reason}.",
-      "reagents_owned": "LINGOTES {ingots} · MATRIZ {matrix} · ÁMBAR GRIS {ambergris}"
+      "reagents_owned": "LINGOTES {ingots} · MATRIZ {matrix} · ÁMBAR GRIS {ambergris}",
+      "search_placeholder": "BUSCAR EN INVENTARIO...",
+      "group_all": "TODOS LOS OBJETOS",
+      "group_cosmetics": "COSMÉTICOS",
+      "group_mods": "MODS",
+      "group_materials": "MATERIALES",
+      "group_caches": "ALISOS Y LLAVES",
+      "rarity_all": "TODAS LAS RAREZAS",
+      "sort_recent": "RECIENTE",
+      "sort_name": "NOMBRE",
+      "sort_rarity": "RAREZA",
+      "sort_quantity": "CANTIDAD",
+      "clear_filters": "LIMPIAR",
+      "count_summary": "{types} TIPOS · {total} EN TOTAL",
+      "count_filtered": "{visible} DE {total} OBJETOS ({types} TIPOS)",
+      "no_matching_items": "NINGÚN OBJETO COINCIDE CON LOS FILTROS",
+      "no_items": "NO SE DETECTARON OBJETOS EN LA BÓVEDA DE STEAM",
+      "skip_reveal": "REVELAR AHORA",
+      "retry_sync": "REINTENTAR SINCRONIZACIÓN"
     },
     "lobby": {
       "connecting": "CONECTANDO...",
@@ -1345,6 +1369,7 @@
       "online": "EN LÍNEA",
       "ready_deficit": "LISTO: DÉFICIT DE RECURSOS",
       "ready_permitted": "LISTO: CONSTRUCCIÓN PERMITIDA",
+      "install_required": "RECUPERA E INSTALA {module}",
       "resolved": "RESUELTO",
       "choice_required": "SE REQUIERE ELECCIÓN",
       "event_resolved": "Evento del terminal resuelto. Los sistemas de la tienda siguen disponibles.",
