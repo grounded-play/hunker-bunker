@@ -1,6 +1,14 @@
 import * as THREE from 'three';
 import { isSearchableType } from './propInteractions.js';
 
+function safePlaySound(sound, options, game = null) {
+    if (game?.playSound) {
+        game.playSound(sound, options);
+    } else if (typeof window !== 'undefined' && window.AudioManager?.play) {
+        window.AudioManager.play(sound, options);
+    }
+}
+
 /**
  * Contextual Interaction Vignette Presets
  * Physical character engagement when interacting with key world props.
@@ -14,27 +22,68 @@ export const INTERACTION_VIGNETTE_PRESETS = Object.freeze({
         standoff: 0.65,
         faceProp: true,
         sound: 'toolbox_open',
-        interruptibleOnDamage: true
+        interruptibleOnDamage: true,
+        milestones: Object.freeze([
+            {
+                time: 0.25,
+                run(game, v) {
+                    const pos = v.sprite?.position ?? game.player.position;
+                    game.spawnPhysicalBurst?.(pos.x, pos.z, { color: 0xd4af37, count: 6, upward: 0.15 });
+                    safePlaySound('toolbox_open', { volume: 0.42 }, game);
+                }
+            }
+        ])
     }),
     exosuit_dock: Object.freeze({
         id: 'exosuit_dock',
-        animation: 'rummaging',
+        animation: 'exosuit_dock',
         duration: 1.8,
-        alignSeconds: 0.3,
-        standoff: 0.15,
+        alignSeconds: 0.35,
+        standoff: 0.20,
         faceProp: false,
         sound: 'exosuit_charge',
-        interruptibleOnDamage: true
+        interruptibleOnDamage: true,
+        milestones: Object.freeze([
+            {
+                time: 0.35,
+                run(game, v) {
+                    const pos = v.sprite?.position ?? game.player.position;
+                    game.spawnPhysicalBurst?.(pos.x, pos.z, { color: 0xffcc00, count: 18, upward: 0.25 });
+                    game.triggerCameraShake?.(0.04, 0.15);
+                    game.tintPlayerSprites?.(0xffea60);
+                    setTimeout(() => game.tintPlayerSprites?.(game._playerPolishHex ?? 0xffffff), 180);
+                    safePlaySound('exosuit_charge', { volume: 0.7 }, game);
+                }
+            },
+            {
+                time: 1.0,
+                run(game, v) {
+                    const pos = v.sprite?.position ?? game.player.position;
+                    game.spawnPhysicalBurst?.(pos.x, pos.z, { color: 0xffffff, count: 12, upward: 0.35 });
+                    game.triggerCameraShake?.(0.06, 0.2);
+                }
+            }
+        ])
     }),
     terminal_hack: Object.freeze({
         id: 'terminal_hack',
-        animation: 'rummaging',
+        animation: 'terminal_hack',
         duration: 1.2,
         alignSeconds: 0.2,
         standoff: 0.60,
         faceProp: true,
         sound: 'terminal_beep',
-        interruptibleOnDamage: true
+        interruptibleOnDamage: true,
+        milestones: Object.freeze([
+            {
+                time: 0.20,
+                run(game, v) {
+                    const pos = v.sprite?.position ?? game.player.position;
+                    game.spawnPhysicalBurst?.(pos.x, pos.z, { color: 0x38bdf8, count: 8, upward: 0.2 });
+                    safePlaySound('terminal_beep', { volume: 0.5 }, game);
+                }
+            }
+        ])
     })
 });
 
@@ -140,7 +189,8 @@ export function createInteractionVignetteController(game) {
                 startYaw,
                 targetPos: socket.position,
                 targetYaw: socket.yaw,
-                animationStarted: false
+                animationStarted: false,
+                firedMilestones: new Set()
             };
 
             // Trigger animation immediately
@@ -172,6 +222,14 @@ export function createInteractionVignetteController(game) {
             } else {
                 game.player.position.copy(v.targetPos);
                 game.player.rotation.y = v.targetYaw;
+            }
+
+            // Trigger milestone effects (particles, sounds, tremors)
+            for (const milestone of v.preset.milestones ?? []) {
+                if (v.elapsed >= milestone.time && !v.firedMilestones.has(milestone)) {
+                    v.firedMilestones.add(milestone);
+                    milestone.run?.(game, v);
+                }
             }
 
             if (v.elapsed >= v.duration) {

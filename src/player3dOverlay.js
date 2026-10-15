@@ -66,6 +66,11 @@ export const SIGNATURE_GESTURES = Object.freeze([
 ]);
 
 const ONE_SHOTS = new Set(['fire', 'reload', 'hit', 'land', 'melee', ...ENGINEER_GESTURES, ...SIGNATURE_GESTURES]);
+export const GESTURE_FALLBACKS = Object.freeze({
+    rummaging: Object.freeze(['reload', 'heroIdle', 'idle']),
+    exosuit_dock: Object.freeze(['floatingTrance', 'heroIdle', 'idle']),
+    terminal_hack: Object.freeze(['reload', 'heroIdle', 'idle'])
+});
 const BLENDABLE_ACTIONS = ['idle', 'walk', 'run', 'backward', 'strafeLeft', 'strafeRight', 'fall'];
 // Below INJURED_HP_RATIO, idle/walk/run cross-fade to their limping
 // counterparts (see computeLocomotionWeights callers). Only these three carry
@@ -788,17 +793,22 @@ export async function createPlayer3dOverlay({
             triggerCharmSpringImpulse(intensity);
         },
         trigger(name, duration = null) {
-            if (!actions.has(name)) return;
-            forcedName = name;
-            forcedTimer = duration ?? actions.get(name).getClip().duration;
-            actions.get(name).reset().setEffectiveWeight(0).play();
-            if (name === 'fire') triggerCharmSpringImpulse(1.6);
-            else if (name === 'melee') triggerCharmSpringImpulse(2.4);
-            else if (name === 'hit') triggerCharmSpringImpulse(2.0);
-            else if (name === 'land') triggerCharmSpringImpulse(1.5);
+            let actionName = name;
+            if (!actions.has(actionName)) {
+                actionName = GESTURE_FALLBACKS[name]?.find((candidate) => actions.has(candidate)) ?? null;
+            }
+            if (!actionName || !actions.has(actionName)) return;
+            forcedName = actionName;
+            forcedTimer = duration ?? actions.get(actionName).getClip().duration;
+            actions.get(actionName).reset().setEffectiveWeight(0).play();
+            if (actionName === 'fire') triggerCharmSpringImpulse(1.6);
+            else if (actionName === 'melee') triggerCharmSpringImpulse(2.4);
+            else if (actionName === 'hit') triggerCharmSpringImpulse(2.0);
+            else if (actionName === 'land') triggerCharmSpringImpulse(1.5);
         },
         clearTrigger(name = null) {
-            if (!forcedName || (name && forcedName !== name)) return;
+            if (!forcedName) return;
+            if (name && forcedName !== name && !GESTURE_FALLBACKS[name]?.includes(forcedName)) return;
             actions.get(forcedName)?.fadeOut(0.12);
             forcedName = null;
             forcedTimer = 0;

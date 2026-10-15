@@ -74,7 +74,11 @@ describe('interactionVignette', () => {
                     trigger: vi.fn(),
                     clearTrigger: vi.fn()
                 },
-                acknowledgePropExperience: vi.fn()
+                acknowledgePropExperience: vi.fn(),
+                spawnPhysicalBurst: vi.fn(),
+                triggerCameraShake: vi.fn(),
+                tintPlayerSprites: vi.fn(),
+                playSound: vi.fn()
             };
         }
 
@@ -105,6 +109,61 @@ describe('interactionVignette', () => {
 
             // Finish duration (1.4s)
             controller.update(1.3);
+            expect(controller.isActive()).toBe(false);
+            expect(onComplete).toHaveBeenCalledTimes(1);
+        });
+
+        it('fires timed milestones (surges, camera shakes, and sound) during exosuit_dock vignette', () => {
+            const game = mockGame();
+            game.player.position.set(10, 0, 8);
+            const controller = createInteractionVignetteController(game);
+
+            const sprite = new THREE.Sprite();
+            sprite.position.set(10, 0, 10);
+            sprite.userData = {
+                type: 'prop_exosuit_docking_gantry',
+                wallNormal: { x: 0, z: -1 }
+            };
+
+            const onComplete = vi.fn();
+            controller.startVignette({
+                sprite,
+                onComplete
+            });
+
+            expect(controller.isActive()).toBe(true);
+            expect(game.player3dOverlay.trigger).toHaveBeenCalledWith('exosuit_dock', 1.8);
+
+            // Step to 0.2s: before milestone 1 (0.35s)
+            controller.update(0.2);
+            expect(game.spawnPhysicalBurst).not.toHaveBeenCalled();
+            expect(game.triggerCameraShake).not.toHaveBeenCalled();
+            expect(game.playSound).not.toHaveBeenCalled();
+
+            // Step past 0.35s: milestone 1 should fire
+            controller.update(0.2); // total elapsed: 0.4s
+            expect(game.spawnPhysicalBurst).toHaveBeenCalledWith(10, 10, expect.objectContaining({
+                color: 0xffcc00,
+                count: 18
+            }));
+            expect(game.triggerCameraShake).toHaveBeenCalledWith(0.04, 0.15);
+            expect(game.tintPlayerSprites).toHaveBeenCalledWith(0xffea60);
+            expect(game.playSound).toHaveBeenCalledWith('exosuit_charge', { volume: 0.7 });
+
+            // Step slightly further to 0.6s: milestone 1 must NOT fire again
+            controller.update(0.2);
+            expect(game.playSound).toHaveBeenCalledTimes(1);
+
+            // Step past 1.0s: milestone 2 should fire
+            controller.update(0.5); // total elapsed: 1.1s
+            expect(game.spawnPhysicalBurst).toHaveBeenCalledWith(10, 10, expect.objectContaining({
+                color: 0xffffff,
+                count: 12
+            }));
+            expect(game.triggerCameraShake).toHaveBeenCalledWith(0.06, 0.2);
+
+            // Complete vignette (duration: 1.8s)
+            controller.update(0.8);
             expect(controller.isActive()).toBe(false);
             expect(onComplete).toHaveBeenCalledTimes(1);
         });

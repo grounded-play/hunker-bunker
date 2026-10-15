@@ -48,6 +48,7 @@ export const PROP_EXPERIENCE_PROFILES = Object.freeze({
     bay_c_pod_312_rupture: terminal(0x4deeea, { duration: 0.45, intensity: 1.8 }),
     chen_sealed_confession_console: terminal(0xffa834, { duration: 0.5, intensity: 2.0 }),
     decon_exosuit_scrubber_station: mechanism(0xd8f8ff, ['use', 'ambient', 'damage']),
+    prop_exosuit_docking_gantry: mechanism(0xffcc00, ['use', 'ambient', 'damage']),
     engineer_wave_relay_dynamo: mechanism(0x38bdf8, ['use', 'ambient', 'damage']),
     evac_four_seat_cockpit_module: terminal(0xff7830, { duration: 0.5, intensity: 1.9 }),
     tank_orbital_siege_cannon: mechanism(0xff4433, ['use', 'damage']),
