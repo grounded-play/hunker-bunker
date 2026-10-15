@@ -85,7 +85,7 @@ Status: green on `dev/sprint-53`.
 
 Open work retained from the plan:
 
-1. author `FX_EMITTER_00` transforms in the three proof assets currently covered
+1. author `FX_EMITTER_00` transforms in the four proof assets currently covered
    by explicit fallback directions;
 2. add spent-state destruction variants and broaden destruction transfers beyond
    the initial steam rupture and bio-spill paths;
@@ -143,6 +143,22 @@ Status: implemented and opt-in.
 - Disabling the view or destroying the game disposes every helper geometry and
   material. Ordinary play performs no debug allocations or per-frame debug work.
 - Focused runtime verification: 7 tests passed; focused ESLint and
+  `git diff --check` passed.
+
+### 2026-10-15 — Slice 2D: interaction-triggered beneficial emission
+
+Status: implemented for the decontamination exosuit scrubber.
+
+- Activating `decon_exosuit_scrubber_station` now pulses a telegraphed, bounded
+  decon-foam volume through the shared interaction-trigger path.
+- A player who remains in the foam receives one `heal` payload and one `cleanse`
+  payload. The old immediate interaction heal was removed so the effect cannot be
+  applied twice or independently of the visible emission.
+- The scrubber starts disabled, returns to idle after its short active/cooldown
+  window, and can be explicitly shut off by its next interaction state.
+- Added the shipped scrubber GLB to the outlet audit; it is currently safe through
+  an explicit upward fallback and remains in the authored-anchor art queue.
+- Focused verification: 4 files passed, 45 tests passed; focused ESLint and
   `git diff --check` passed.
 
 ## Decision summary

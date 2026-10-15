@@ -78,6 +78,23 @@ describe('world emitter profiles and state', () => {
         expect(applyWorldEmitterAction(state, 'enable')).toBe(false);
     });
 
+    it('defines a finite interaction window for healing and cleansing foam', () => {
+        const value = getWorldEmitterProfile('decon_exosuit_scrubber_station');
+        expect(value.trigger).toMatchObject({ kind: 'interaction', startsEnabled: false });
+        expect(value.payload).toEqual([
+            expect.objectContaining({ kind: 'heal', amount: 15 }),
+            expect.objectContaining({ kind: 'cleanse', amount: 10 })
+        ]);
+        const state = createWorldEmitterState(value, { id: 'decon:a' });
+        expect(state.enabled).toBe(false);
+        expect(applyWorldEmitterAction(state, 'pulse')).toBe(true);
+        expect(state.phase).toBe(EMITTER_PHASE.TELEGRAPH);
+        advance(state, 0.4);
+        expect(state.phase).toBe(EMITTER_PHASE.ACTIVE);
+        advance(state, 1);
+        expect(state.phase).toBe(EMITTER_PHASE.IDLE);
+    });
+
     it('creates stable, one-shot destruction children', () => {
         const rupture = createWorldEmitterState(getWorldEmitterProfile('prop_pipe_rupture'), { id: 'pipe:c' });
         expect(destroyWorldEmitterState(rupture)).toEqual([

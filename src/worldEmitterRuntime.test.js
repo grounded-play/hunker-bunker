@@ -20,6 +20,22 @@ function pipeAt(x = 0, z = 0) {
     return sprite;
 }
 
+function deconAt(x = 0, z = 0) {
+    const parent = new THREE.Group();
+    const sprite = new THREE.Object3D();
+    sprite.position.set(x, 0, z);
+    sprite.userData = { type: 'decon_exosuit_scrubber_station', scatterKey: `decon:${x}:${z}` };
+    parent.add(sprite);
+    const root = new THREE.Group();
+    root.position.copy(sprite.position);
+    const model = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1));
+    root.add(model);
+    root.userData.propFx = createPropFx(root, model, 'decon_exosuit_scrubber_station');
+    parent.add(root);
+    sprite.userData.world3dRoot = root;
+    return sprite;
+}
+
 describe('WorldEmitterRuntime', () => {
     it('discovers both prop emitters and a virtual fungal source', () => {
         const runtime = new WorldEmitterRuntime();
@@ -102,6 +118,33 @@ describe('WorldEmitterRuntime', () => {
         const stateB = [...b.runtime.sources.values()][0].state;
         expect(stateA.phase).toBe(stateB.phase);
         expect(stateA.phaseTime).toBeCloseTo(stateB.phaseTime, 6);
+    });
+
+    it('turns an interaction mode into one telegraphed heal and cleanse exposure', () => {
+        const runtime = new WorldEmitterRuntime();
+        const scrubber = deconAt();
+        const game = {
+            scatterSprites: [scrubber],
+            player: { position: new THREE.Vector3(0, 0, 0) },
+            applyWorldEmitterPayload: vi.fn()
+        };
+        runtime.syncSources(game.scatterSprites);
+        expect(runtime.sources.get('decon:0:0').state.enabled).toBe(false);
+
+        expect(runtime.applyMode(scrubber, 'working')).toBe(true);
+        for (let i = 0; i < 4; i += 1) runtime.update(0.1, game);
+
+        expect(game.applyWorldEmitterPayload).toHaveBeenCalledWith(
+            expect.objectContaining({ kind: 'heal', amount: 15, reason: 'decon-foam' }),
+            expect.any(Object),
+            expect.any(THREE.Vector3)
+        );
+        expect(game.applyWorldEmitterPayload).toHaveBeenCalledWith(
+            expect.objectContaining({ kind: 'cleanse', amount: 10, reason: 'decon-foam' }),
+            expect.any(Object),
+            expect.any(THREE.Vector3)
+        );
+        expect(game.applyWorldEmitterPayload).toHaveBeenCalledTimes(2);
     });
 
     it('transfers a destroyed pipe into a timed world hazard after its root is removed', () => {

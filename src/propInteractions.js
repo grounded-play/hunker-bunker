@@ -275,9 +275,7 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
     decon_exosuit_scrubber_station: statefulInteraction(
         '[E] CYCLE DECON SCRUBBER',
         () => 'EXOSUIT SCRUBBER: PRESSURIZED DECON FOAM CYCLED. BIOLOGICAL STATUS CLEANSED.',
-        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'water_shower', onUse: (game) => {
-            game.healPlayer?.(15);
-        } }
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'water_shower' }
     ),
     engineer_wave_relay_dynamo: statefulInteraction(
         '[E] ENGAGE WAVE DYNAMO',

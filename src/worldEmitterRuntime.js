@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {
     EMITTER_PHASE,
+    EMITTER_TRIGGER,
     applyWorldEmitterAction,
     createWorldEmitterState,
     destroyWorldEmitterState,
@@ -104,7 +105,12 @@ export class WorldEmitterRuntime {
 
     applyMode(sprite, mode) {
         if (['off', 'spent', 'disabled', 'destroyed', 'closed'].includes(String(mode))) return this.applyAction(sprite, 'disable');
-        if (['idle', 'on', 'working', 'open', 'armed'].includes(String(mode))) return this.applyAction(sprite, 'enable');
+        if (['idle', 'on', 'working', 'open', 'armed'].includes(String(mode))) {
+            const entry = this.registerSource(sprite);
+            if (!entry) return false;
+            const action = entry.profile.trigger.kind === EMITTER_TRIGGER.INTERACTION ? 'pulse' : 'enable';
+            return applyWorldEmitterAction(entry.state, action);
+        }
         return false;
     }
 

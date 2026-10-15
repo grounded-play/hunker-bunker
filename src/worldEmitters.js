@@ -40,6 +40,23 @@ export const PROP_EMITTER_PROFILES = Object.freeze({
         payload: [{ kind: 'damage', amount: 1, reason: 'steam-burn' }],
         onDestroy: { kind: 'rupture_then_stop', duration: 1.5, payloadScale: 1.5 }
     }),
+    decon_exosuit_scrubber_station: profile({
+        substance: 'decon_foam',
+        source: { anchor: 'FX_EMITTER_00', fallbackDirection: [0, 1, 0] },
+        trigger: {
+            kind: EMITTER_TRIGGER.INTERACTION,
+            telegraph: 0.35,
+            active: 0.35,
+            cooldown: [0.6, 0.6],
+            startsEnabled: false
+        },
+        volume: { shape: 'sphere', radius: 2.6, tickInterval: 1 },
+        payload: [
+            { kind: 'heal', amount: 15, reason: 'decon-foam' },
+            { kind: 'cleanse', amount: 10, reason: 'decon-foam' }
+        ],
+        onDestroy: { kind: 'stop' }
+    }),
     fungal_spore_vent: profile({
         substance: 'spores',
         source: { fallbackDirection: [0, 1, 0] },
