@@ -13771,6 +13771,7 @@ export class ThreeGame {
             fp.measure('updateBiomeAtmosphere', () => this.biomeAtmosphere?.update(delta, this.player ? this.player.position : { x: 0, y: 0, z: 0 }));
             fp.measure('updateAmbientVents', () => this.ambientVentSystem?.update(delta, now, this.player ? this.player.position : null, this, this.lastDayBlend ?? 1.0));
             fp.measure('updateWorldEmitters', () => this.worldEmitterRuntime?.update(delta, this));
+            fp.measure('updateWorldPools', () => this.updateWorldPools?.(delta, now / 1000));
             fp.measure('updateFloorFog', () => this.floorFogSystem?.update(delta, now, this.lastDayBlend ?? 1.0));
             fp.measure('updateWeather', () => this.updateWeather(delta));
             fp.measure('updateDayNightCycle', () => this.updateDayNightCycle(delta));
@@ -25722,6 +25723,30 @@ export class ThreeGame {
         return created;
     }
 
+    updateWorldPools(delta, nowSeconds = performance.now() / 1000) {
+        const pools = this.worldPoolSystem;
+        if (!pools) return 0;
+        pools.update(nowSeconds);
+        if (!this.player || this.isPlayerDead || this.isPlayerDowned) return 0;
+        const playerPosition = this.player.position;
+        return pools.tickExposure(
+            delta,
+            this.multiplayerLocalPlayerId ?? 'local',
+            playerPosition,
+            (payload, pool) => {
+                const blocked = shouldBlockAttackPath(
+                    { x: pool.x, z: pool.z },
+                    { x: playerPosition.x, z: playerPosition.z },
+                    {
+                        containmentZones: this.getActiveContainmentZones?.() ?? [],
+                        doors: this.getActiveDoors?.() ?? []
+                    }
+                );
+                if (!blocked) this.applyWorldEmitterPayload?.(payload, pool, pool);
+            }
+        );
+    }
+
     resolveFallDamage() {
         const hardened = Boolean(this.bank?.getState?.()?.tier2Unlocks?.fallHardening);
         const raw = hardened ? FALL_DAMAGE_BASE / 2 : FALL_DAMAGE_BASE;
@@ -30826,7 +30851,9 @@ export class ThreeGame {
             if (Math.hypot(x - sprite.position.x, z - sprite.position.z) <= radius) return surface;
         }
         for (const puddle of this.dynamicPuddles ?? []) {
-            if (puddle?.active && Math.hypot(x - puddle.x, z - puddle.z) <= puddle.radius) return 'slime';
+            if (puddle?.active && Math.hypot(x - puddle.x, z - puddle.z) <= puddle.radius) {
+                return puddle.trackSurface ?? (puddle.substance && puddle.substance !== 'bio_slime' ? 'water' : 'slime');
+            }
         }
         for (const corpse of this.corpses ?? []) {
             const position = corpse?.position;
@@ -43143,6 +43170,7 @@ export class ThreeGame {
             z,
             radius: damageRadius,
             payload: [{ kind: 'poison', duration: 3 }],
+            tickInterval: 0.4,
             trackSurface: 'slime',
             createdAt: performance.now() / 1000
         }, { merge: false }) ?? { x, z, radius: damageRadius, active: true };
@@ -43165,21 +43193,6 @@ export class ThreeGame {
                 const t = age / duration;
                 sprite.material.opacity = 0.85 * (1 - t);
                 
-                // Deal damage if player walks in it
-                if (this.player && !this.isPlayerDead && age % 0.4 < dt) {
-                    const d = Math.hypot(this.player.position.x - x, this.player.position.z - z);
-                    const containmentBlocked = shouldBlockAttackPath(
-                        { x, z },
-                        { x: this.player.position.x, z: this.player.position.z },
-                        {
-                            containmentZones: this.getActiveContainmentZones?.() ?? [],
-                            doors: this.getActiveDoors?.() ?? []
-                        }
-                    );
-                    if (d <= damageRadius && !containmentBlocked) {
-                        this.playerPoisonTimer = 3.0; // poisoned for 3 seconds
-                    }
-                }
             },
             dispose: () => {
                 if (!this.worldPoolSystem?.remove(footprintZone)) {

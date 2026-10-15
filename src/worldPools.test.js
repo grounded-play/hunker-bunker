@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { WorldPoolSystem } from './worldPools.js';
 
 describe('WorldPoolSystem', () => {
@@ -40,5 +40,25 @@ describe('WorldPoolSystem', () => {
         system.clear();
         expect(system.pools).toBe(alias);
         expect(alias).toEqual([]);
+    });
+
+    it('applies pool payloads on a per-target cadence and rearms after exit', () => {
+        const system = new WorldPoolSystem();
+        system.add({
+            id: 'coolant:a',
+            x: 0,
+            z: 0,
+            radius: 1,
+            tickInterval: 0.5,
+            payload: [{ kind: 'damage', amount: 1 }]
+        });
+        const apply = vi.fn();
+        const inside = { x: 0.5, y: 0, z: 0 };
+        expect(system.tickExposure(0.1, 'player:a', inside, apply)).toBe(1);
+        expect(system.tickExposure(0.1, 'player:a', inside, apply)).toBe(0);
+        expect(system.tickExposure(0.4, 'player:a', inside, apply)).toBe(1);
+        expect(system.tickExposure(0.1, 'player:b', inside, apply)).toBe(1);
+        system.tickExposure(0.1, 'player:a', { x: 5, y: 0, z: 0 }, apply);
+        expect(system.tickExposure(0.1, 'player:a', inside, apply)).toBe(1);
     });
 });

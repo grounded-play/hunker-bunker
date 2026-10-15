@@ -161,6 +161,22 @@ Status: implemented for the decontamination exosuit scrubber.
 - Focused verification: 4 files passed, 45 tests passed; focused ESLint and
   `git diff --check` passed.
 
+### 2026-10-15 — Slice 4B: unified pool exposure cadence
+
+Status: implemented for registered dynamic pools.
+
+- `WorldPoolSystem` now owns per-target payload cadence, exit/re-entry rearming,
+  expiry, and exposure cleanup in addition to identity, merging, and capacity.
+- `ThreeGame` advances pool gameplay through the same damage/heal/infect/poison/
+  cleanse adapter used by directional emitters, with existing containment and
+  closed-door path blocking.
+- Toxic spore puddles no longer run a second bespoke poison loop inside their
+  visual tween; presentation lifetime and gameplay registration remain linked.
+- Dynamic tracks now honor each pool's declared `trackSurface`, while retaining
+  the legacy slime fallback used by older tests/callers.
+- Focused verification: 4 files passed, 24 tests passed; focused ESLint and
+  `git diff --check` passed.
+
 ## Decision summary
 
 Build one data-driven `WorldEmitterSystem` for prop-attached emissions and liquid

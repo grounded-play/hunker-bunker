@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
+import { WorldPoolSystem } from './worldPools.js';
 
 function game(overrides = {}) {
     return {
@@ -87,5 +88,26 @@ describe('ThreeGame world emitter payload adapter', () => {
         expect(subject.playerPoisonTimer).toBe(2.5);
         expect(subject.applyWorldEmitterPayload({ kind: 'cleanse', amount: 5 })).toBe(true);
         expect(load).toBe(3);
+    });
+
+    it('routes registered pool exposure through the shared payload adapter', () => {
+        const subject = game({
+            player: { position: { x: 0, y: 0, z: 0 } },
+            worldPoolSystem: new WorldPoolSystem(),
+            getActiveContainmentZones: () => [],
+            getActiveDoors: () => [],
+            updateWorldPools: ThreeGame.prototype.updateWorldPools
+        });
+        subject.worldPoolSystem.add({
+            id: 'coolant:test',
+            x: 0,
+            z: 0,
+            radius: 1,
+            payload: [{ kind: 'damage', amount: 1, reason: 'cryo-spill' }]
+        });
+
+        expect(subject.updateWorldPools(0.1, 0)).toBe(1);
+        expect(subject.takeDamage).toHaveBeenCalledWith(1, 'cryo-spill', 0, 0);
+        expect(subject.updateWorldPools(0.1, 0.1)).toBe(0);
     });
 });
