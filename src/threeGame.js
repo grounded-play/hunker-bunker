@@ -39917,7 +39917,15 @@ export class ThreeGame {
             const attackerIndex = this.umbilicalAttackers?.indexOf?.(umbilicalAttacker) ?? -1;
             if (attackerIndex >= 0) this.umbilicalAttackers.splice(attackerIndex, 1);
         }
-        sprite.userData.world3dRoot?.removeFromParent();
+        const world3dRoot = sprite.userData.world3dRoot;
+        if (world3dRoot) {
+            this.disposeWorld3dPropFx?.(world3dRoot);
+            this.disposeWorld3dPropExperience?.(world3dRoot);
+            if (world3dRoot.userData?.mixer) this.world3dMixers?.delete?.(world3dRoot.userData.mixer);
+            world3dRoot.userData?.dispose?.();
+            world3dRoot.removeFromParent();
+            sprite.userData.world3dRoot = null;
+        }
         if (sprite.parent) sprite.parent.remove(sprite);
         return true;
     }

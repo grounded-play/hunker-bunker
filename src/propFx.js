@@ -4,6 +4,7 @@ import * as THREE from 'three';
 // empties with these names; until an asset is re-authored, each effect uses
 // the normalized fallback position in its profile.
 export const PROP_FX_ANCHORS = Object.freeze({
+    EMITTER: 'FX_EMITTER_00',
     LIGHT: 'FX_LIGHT_00',
     FLAME: 'FX_FLAME_00',
     SMOKE: 'FX_SMOKE_00',
@@ -224,7 +225,17 @@ const HERO_PROFILES = {
     }),
     prop_pipe_rupture: profile({
         effects: [
-            { kind: 'steam', anchor: PROP_FX_ANCHORS.STEAM, position: [0, 0.56, 0], color: 0xc8e2e5, count: 9, height: 0.72, radius: 0.24 }
+            {
+                kind: 'steam',
+                anchor: PROP_FX_ANCHORS.EMITTER,
+                legacyAnchor: PROP_FX_ANCHORS.STEAM,
+                position: [0, 0.56, 0],
+                direction: [1, 0.15, 0],
+                color: 0xc8e2e5,
+                count: 9,
+                height: 0.72,
+                radius: 0.24
+            }
         ]
     }),
     prop_coolant_drum_leaking_pool: profile({
@@ -388,7 +399,16 @@ const AMBIENT_PROFILES = {
 
     // 2026-10-14 Interactive World Expansion (60 props)
     geo_steam_manifold_actuator: profile({
-        effects: [{ kind: 'steam', bounds: [0.5, 0.75, 0.5], count: 8, height: 0.6, radius: 0.18 }],
+        effects: [{
+            kind: 'steam',
+            anchor: PROP_FX_ANCHORS.EMITTER,
+            legacyAnchor: PROP_FX_ANCHORS.STEAM,
+            bounds: [0.5, 0.75, 0.5],
+            direction: [0.7, 0.45, 0],
+            count: 8,
+            height: 0.6,
+            radius: 0.18
+        }],
         light: { bounds: [0.5, 0.65, 0.5], color: 0xef4444, intensity: 0.85, distance: 2.8, decay: 2, pulse: 0.18 }
     }),
     tallow_vaccine_alembic: liquidProfile({ surfaceAt: [0.5, 0.55, 0.5], bubblesAt: [0.5, 0.35, 0.5], color: 0x22c55e, bubbleColor: 0x86efac, count: 6, intensity: 0.85, distance: 2.8 }),
@@ -626,24 +646,54 @@ function seededRandom(seed) {
     };
 }
 
-function effectPosition(root, model, spec) {
+function modelBoundsInRoot(root, model) {
+    root.updateMatrixWorld(true);
+    const rootInverse = new THREE.Matrix4().copy(root.matrixWorld).invert();
+    const objectToRoot = new THREE.Matrix4();
+    const bounds = new THREE.Box3().makeEmpty();
+    model.traverse((object) => {
+        if (!object.geometry) return;
+        object.geometry.computeBoundingBox?.();
+        if (!object.geometry.boundingBox) return;
+        objectToRoot.multiplyMatrices(rootInverse, object.matrixWorld);
+        bounds.union(object.geometry.boundingBox.clone().applyMatrix4(objectToRoot));
+    });
+    return bounds;
+}
+
+/** Resolve an effect's root-local origin and orientation. Local +Y is emission direction. */
+export function resolvePropFxTransform(root, model, spec = {}) {
     const position = new THREE.Vector3(...(spec.position ?? [0, 0, 0]));
-    const authored = spec.anchor ? model.getObjectByName(spec.anchor) : null;
+    const quaternion = new THREE.Quaternion();
+    const anchorNames = [spec.anchor, spec.legacyAnchor].filter(Boolean);
+    const authored = anchorNames.map((name) => model.getObjectByName(name)).find(Boolean) ?? null;
     if (authored) {
         root.updateMatrixWorld(true);
         authored.getWorldPosition(position);
-        return root.worldToLocal(position);
+        root.worldToLocal(position);
+        const rootWorldQuaternion = root.getWorldQuaternion(new THREE.Quaternion()).invert();
+        authored.getWorldQuaternion(quaternion);
+        quaternion.premultiply(rootWorldQuaternion).normalize();
+        return { position, quaternion, source: 'anchor', anchor: authored.name };
     }
     if (spec.bounds) {
-        const bounds = new THREE.Box3().setFromObject(model);
+        const bounds = modelBoundsInRoot(root, model);
         const [x = 0.5, y = 0.5, z = 0.5] = spec.bounds;
-        position.set(
-            THREE.MathUtils.lerp(bounds.min.x, bounds.max.x, x),
-            THREE.MathUtils.lerp(bounds.min.y, bounds.max.y, y),
-            THREE.MathUtils.lerp(bounds.min.z, bounds.max.z, z)
-        );
+        if (!bounds.isEmpty()) {
+            position.set(
+                THREE.MathUtils.lerp(bounds.min.x, bounds.max.x, x),
+                THREE.MathUtils.lerp(bounds.min.y, bounds.max.y, y),
+                THREE.MathUtils.lerp(bounds.min.z, bounds.max.z, z)
+            );
+        }
     }
-    return position;
+    if (spec.direction) {
+        const direction = new THREE.Vector3(...spec.direction);
+        if (direction.lengthSq() > 1e-8) {
+            quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+        }
+    }
+    return { position, quaternion, source: spec.bounds ? 'bounds' : 'position', anchor: null };
 }
 
 function createFlame(spec, uniforms) {
@@ -990,7 +1040,13 @@ export function createPropFx(root, model, type) {
             object = createRisingPoints(spec, timeUniforms, seed ^ hashString(`${spec.kind}:${spec.anchor}`));
         } else if (spec.kind === 'glow') object = createGlow(spec, pulseTargets);
         if (!object) continue;
-        object.position.copy(effectPosition(root, model, spec));
+        const transform = resolvePropFxTransform(root, model, spec);
+        object.position.copy(transform.position);
+        // Preserve the primitive's base orientation (for example the water
+        // circle's XZ plane) while rotating local +Y into the authored outlet.
+        object.quaternion.premultiply(transform.quaternion);
+        object.userData.propFxTransformSource = transform.source;
+        object.userData.propFxAnchor = transform.anchor;
         group.add(object);
     }
 
@@ -998,7 +1054,7 @@ export function createPropFx(root, model, type) {
         const spec = config.light;
         const light = new THREE.PointLight(spec.color, spec.intensity, spec.distance, spec.decay);
         light.name = `${type}:PropFxLight`;
-        light.position.copy(effectPosition(root, model, spec));
+        light.position.copy(resolvePropFxTransform(root, model, spec).position);
         light.visible = false; // Enabled only after ThreeGame registers it with the fixed pool.
         light.castShadow = false;
         light.userData.isAnchorPracticalLight = true;
