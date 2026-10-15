@@ -35,6 +35,21 @@ export function stampCrashSiteOrigin(grid, build = CRASH_SITE_BUILD, {
     return true;
 }
 
+/**
+ * Origin-chunk cells that dressing must leave walkable: the three-cell exit
+ * hall behind the blast door, the door row, and the declared maneuver lane
+ * down the room (data/crashSiteBuild.js). Local = world in the origin chunk.
+ */
+export function crashSiteClearCells(build = CRASH_SITE_BUILD) {
+    const lane = build.clearManeuverLane;
+    const halfWidth = Math.max(build.northPreHall.halfWidth, lane.halfWidth);
+    const cells = [];
+    for (let y = build.northPreHall.top; y <= lane.toZ; y += 1) {
+        for (let x = lane.centerX - halfWidth; x <= lane.centerX + halfWidth; x += 1) cells.push({ x, y });
+    }
+    return cells;
+}
+
 function borderOpenings(grid) {
     const size = grid.length;
     const groups = [];
@@ -99,11 +114,15 @@ export function stampCrashSiteApproach(grid, build = CRASH_SITE_BUILD, {
     }
     carveDisk(grid, hub.x, hub.y, approach.halfWidth);
     for (const opening of captured) carveLine(grid, opening.cell, hub, approach.halfWidth);
-    addWallShell(grid);
 
     const openings = Object.fromEntries(['north', 'south', 'west', 'east'].map((side) => [side, { open: false, offset: 0 }]));
     for (const opening of captured) openings[opening.side] = openingRecord(opening);
     constrainBorderSockets(grid, openings);
+    // Shell last, like every other chunk generator: constrainBorderSockets
+    // re-solidifies the two border rows, so a shell built before it left the
+    // shared socket running between bare border cells (later turned into
+    // walkable ledge) instead of walls.
+    addWallShell(grid);
 
     const markerYs = [];
     for (let y = grid.length - 2; y > hub.y + 1; y -= 6) markerYs.push(y);

@@ -111,6 +111,31 @@ describe('corridor topology placement', () => {
         expect(corridorKitPlacement(grid(['###', '...', '###']), 1, 1, 'active').modelScale).toBe(1);
     });
 
+    // A route that runs off the chunk edge continues into the neighbour chunk:
+    // it is an exit, not a dead end (2026-10-14: the crash approach capped its
+    // shared socket with corridor_wide_end, a walk-through wall).
+    it('treats a carve that runs off the grid edge as open, not a dead end', () => {
+        // Closed to the north, carved down to the last row: a dead end that
+        // opens south into the next chunk.
+        const deadEnd = [
+            '#########',
+            '#########',
+            '#########',
+            '##.....##',
+            '##.....##',
+            '##.....##',
+            '##.....##'
+        ];
+        const end = corridorKitPlacement(grid(deadEnd), 4, 5, 'active', { width: 2 });
+        expect(end.role).toBe('corridorWideEnd');
+        expect(opensTo(end)).toBe('s');
+        // Carved through: open both ways, a straight module.
+        const through = Array.from({ length: 7 }, () => '##.....##');
+        const straight = corridorKitPlacement(grid(through), 4, 5, 'active', { width: 2 });
+        expect(straight.role).toBe('corridorWide');
+        expect(opensTo(straight)).toBe('ns');
+    });
+
     it('selects corner, junction, and intersection silhouettes from connectivity', () => {
         expect(corridorKitPlacement(grid(['#.#', '#..', '###']), 1, 1, 'bio').role).toBe('corridorCorner');
         expect(corridorKitPlacement(grid(['#.#', '...', '###']), 1, 1, 'bio').role).toBe('corridorT');

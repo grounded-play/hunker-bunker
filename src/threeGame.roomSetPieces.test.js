@@ -241,6 +241,44 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
         });
     });
 
+    // The crash approach is lined by the grid's own destructible walls; a kit
+    // shell over it is an indestructible, collision-free wall (2026-10-14).
+    it('never drops a random solid prop into the crash exit hall or maneuver lane', () => {
+        const size = 49;
+        const open = Array.from({ length: size }, (_, y) => Array.from({ length: size }, (_, x) => (
+            x === 0 || y === 0 || x === size - 1 || y === size - 1 ? '#' : '.'
+        )));
+        const game = {
+            ...makeFakeGame(),
+            chunkSize: size,
+            getRoomTypeGrid: () => Array.from({ length: size }, () => Array(size).fill('chamber'))
+        };
+        const inLane = ({ x, z }) => x >= 8 && x <= 10 && z >= 1 && z <= 18;
+        const origin = ThreeGame.prototype.createChunkSetPiecePlacements.call(game, 0, 0, open.map((row) => [...row]))
+            .filter((p) => p.scatterKey.startsWith('prop:'));
+        expect(origin.length).toBeGreaterThan(0);
+        expect(origin.filter(inLane)).toEqual([]);
+        // Elsewhere the same cells are ordinary floor and may be dressed.
+        const other = ThreeGame.prototype.createChunkSetPiecePlacements.call(game, 2, 2, open.map((row) => [...row]))
+            .filter((p) => p.scatterKey.startsWith('prop:'))
+            .map((p) => ({ x: p.x - 2 * size, z: p.z - 2 * size }));
+        expect(other.some(inLane)).toBe(true);
+    });
+
+    it('leaves the crash approach to its destructible wall shell, without kit modules', () => {
+        const game = makeFakeGame();
+        game.getBiomeKeyForWorldPosition = () => 'active';
+        game.wfcMetadataCache = new Map([['0,0', {
+            generatorId: 'crash-site-approach',
+            roomInstances: [],
+            wayfindingMarkers: [{ x: 8, y: 8, width: 3, dressingKit: 'gate_staging', lightingRhythm: 'dim' }]
+        }]]);
+        const approachGrid = Array.from({ length: 17 }, () => Array(17).fill('#'));
+        for (let y = 0; y < 17; y += 1) for (let x = 5; x <= 11; x += 1) approachGrid[y][x] = '.';
+        const placements = ThreeGame.prototype.createChunkSetPiecePlacements.call(game, 0, 0, approachGrid);
+        expect(placements.some((placement) => placement.scatterKey.startsWith('hallway-kit:'))).toBe(false);
+    });
+
     it('fits a wide hallway with the wide module, turned along a north-south route', () => {
         const game = makeFakeGame();
         game.getBiomeKeyForWorldPosition = () => 'active';

@@ -251,7 +251,7 @@ import {
     stampLattice
 } from './wfcGenerator.js';
 import { generateArchitecturalMazeChunk } from './architecturalMaze.js';
-import { stampCrashSiteApproach, stampCrashSiteOrigin } from './crashSiteBuild.js';
+import { crashSiteClearCells, stampCrashSiteApproach, stampCrashSiteOrigin } from './crashSiteBuild.js';
 import { CRASH_SITE_BUILD } from './data/crashSiteBuild.js';
 import { applyVerticalBridgeFeature, VERTICAL_TILE } from './verticalWfc.js';
 import {
@@ -1637,6 +1637,19 @@ const LOOT_RARITIES = [
     { key: 'rare', weight: 0.13, color: 0x58bbff },
     { key: 'legendary', weight: 0.05, color: 0xffb347 }
 ];
+// Pickup rarity reads as a tint plus a soft floor ring. At the old 0.95
+// emissive / 0.66-0.9 ring the bodies cleared the bloom threshold and every
+// pickup drew as a blown-out white dome (2026-10-14 playtest).
+export const PICKUP_RARITY_EMISSIVE = 0.35;
+export function pickupIdleGlowOpacity(time, bobOffset = 0) {
+    return 0.3 + Math.sin(time * 3.1 + bobOffset) * 0.06;
+}
+// Gameplay bloom. The composer renders into a half-float (HDR) target and
+// tone-maps afterwards, so ordinary lit surfaces already exceed 1.0 there: at
+// the old 0.92 threshold bloom lifted whole frames 15-25% and haloed lit
+// props. 2.0 keeps it to genuine emissives (screens, light strips, pickups'
+// rings at spawn), with a small, tight halo (2026-10-14 playtest).
+export const GAMEPLAY_BLOOM = Object.freeze({ strength: 0.4, radius: 0.35, threshold: 2.0 });
 const JUNK_SCATTER_VARIANTS = [
     { type: 'bunker_junk', weight: 0.55, glowColor: 0xffcc74, smokeColor: 0x95a1ab },
     { type: 'bunker_junk_uncommon', weight: 0.27, glowColor: 0x66ff9a, smokeColor: 0x7ebd98 },
@@ -2838,9 +2851,9 @@ export class ThreeGame {
         //
         // The concept art is built around glowing vascular circuitry and
         // emissive towers; without bloom those read as painted-on decals rather
-        // than light. Threshold is deliberately high -- below ~0.9 every lit
-        // wall blooms and the set turns to soup, which is the usual way this
-        // effect makes a game look worse rather than better.
+        // than light. Threshold is deliberately high: the composer target is
+        // half-float HDR, so lit walls and floors pass 1.0 before tone mapping
+        // and a threshold near 1 blooms the whole set (see GAMEPLAY_BLOOM).
         //
         // Half-resolution: the Deck is the target and bloom is the cheapest
         // thing here to run at reduced scale without anyone noticing.
@@ -2849,9 +2862,9 @@ export class ThreeGame {
                 Math.max(1, Math.floor(window.innerWidth * 0.5)),
                 Math.max(1, Math.floor(window.innerHeight * 0.5))
             ),
-            0.72,   // strength -- restrained; this sits under AgX, not over it
-            0.48,   // radius
-            0.92    // threshold: genuine emissives only
+            GAMEPLAY_BLOOM.strength,
+            GAMEPLAY_BLOOM.radius,
+            GAMEPLAY_BLOOM.threshold
         );
         this.composer.addPass(this.bloomPass);
 
@@ -37165,6 +37178,12 @@ export class ThreeGame {
                 }
             }
         }
+        // The crash exit hall, door row and maneuver lane stay walkable: a
+        // random solid prop once landed in the middle of the three-cell hall
+        // behind the blast door (2026-10-14 playtest).
+        if (chunkX === CRASH_SITE_BUILD.originChunk.x && chunkY === CRASH_SITE_BUILD.originChunk.y) {
+            for (const cell of crashSiteClearCells()) reservedCells.add(`${cell.x},${cell.y}`);
+        }
         const hasAuthoredRoomPopulation = Boolean(
             wfcMeta?.roomInstances?.some((room) => room.populationPlan?.placements?.length)
             || wfcMeta?.anchors?.length
@@ -37172,8 +37191,12 @@ export class ThreeGame {
 
         // HallwayConnector records its carved route as sparse wayfinding
         // markers. Dress those markers with the matching reskinned modular
-        // kit; topology chooses rotation so sockets stay aligned.
-        if (wfcMeta?.generatorId === 'hallway-connector' || wfcMeta?.generatorId === 'crash-site-approach') {
+        // kit; topology chooses rotation so sockets stay aligned. The crash
+        // approach is not skinned: kit modules are collision-free and cannot
+        // be destroyed, and that route is lined by the grid's own
+        // destructible walls (2026-10-14 playtest: its end cap read as a
+        // wall across the crash exit that the player walked through).
+        if (wfcMeta?.generatorId === 'hallway-connector') {
             for (const marker of wfcMeta.wayfindingMarkers ?? []) {
                 const worldX = chunkX * this.chunkSize + marker.x;
                 const worldZ = chunkY * this.chunkSize + marker.y;
@@ -39033,7 +39056,7 @@ export class ThreeGame {
             new THREE.MeshBasicMaterial({
                 color: root.userData.rarity.color,
                 transparent: true,
-                opacity: 0.7,
+                opacity: pickupIdleGlowOpacity(0, placement.bobOffset ?? 0),
                 side: THREE.DoubleSide,
                 depthWrite: false
             })
@@ -39078,10 +39101,9 @@ export class ThreeGame {
                 material.color?.lerp?.(accent, 0.58);
                 if (material.emissive) {
                     material.emissive.lerp(accent, 0.72);
-                    material.emissiveIntensity = Math.max(
-                        material.emissiveIntensity ?? 0,
-                        pickup.userData.rarity.emissiveIntensity ?? 0.95
-                    );
+                    // Set, not raise: the body meshes carry their own
+                    // 0.72-0.85 emissive, which read as blown-out domes.
+                    material.emissiveIntensity = pickup.userData.rarity.emissiveIntensity ?? PICKUP_RARITY_EMISSIVE;
                 }
                 material.userData.pickupRarityColor = rarityColor;
             }
@@ -39398,8 +39420,7 @@ export class ThreeGame {
                 shadow.scale.setScalar(pickup.userData.scale * 1.1);
             }
             if (pickup.userData.glow) {
-                const rarityPulse = 0.78 + Math.sin(time * 3.1 + pickup.userData.bobOffset) * 0.12;
-                pickup.userData.glow.material.opacity = rarityPulse;
+                pickup.userData.glow.material.opacity = pickupIdleGlowOpacity(time, pickup.userData.bobOffset);
                 pickup.userData.glow.scale.setScalar(1 + Math.sin(time * 2.3 + pickup.userData.bobOffset) * 0.08);
             }
 

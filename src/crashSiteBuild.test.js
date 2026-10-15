@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CHUNK_SIZE } from './tileCatalog.js';
 import { CRASH_SITE_BUILD } from './data/crashSiteBuild.js';
-import { stampCrashSiteApproach, stampCrashSiteOrigin, validateCrashSiteConnection } from './crashSiteBuild.js';
+import { crashSiteClearCells, stampCrashSiteApproach, stampCrashSiteOrigin, validateCrashSiteConnection } from './crashSiteBuild.js';
 
 const blank = (tile = 'X') => Array.from({ length: CHUNK_SIZE }, () => Array(CHUNK_SIZE).fill(tile));
 
@@ -51,6 +51,35 @@ describe('two-zone crash site build', () => {
             valid: false,
             reason: 'shared-socket-blocked'
         });
+    });
+
+    // 2026-10-14 playtest: the two border rows of the approach were stamped
+    // after its wall shell, so the shared socket ran between walkable ledge
+    // instead of walls. Both seam rows must keep a wall on each side.
+    it('lines the shared socket with walls on both seam rows', () => {
+        for (let variant = 0; variant < 4; variant += 1) {
+            const grid = blank('X');
+            stampCrashSiteApproach(grid, CRASH_SITE_BUILD, { variant });
+            const x = CRASH_SITE_BUILD.center.x;
+            for (const y of [CHUNK_SIZE - 1, CHUNK_SIZE - 2]) {
+                expect(grid[y].slice(x - 1, x + 2), `variant ${variant} row ${y}`).toEqual(['.', '.', '.']);
+                expect(grid[y][x - 2], `variant ${variant} row ${y} west`).toBe('#');
+                expect(grid[y][x + 2], `variant ${variant} row ${y} east`).toBe('#');
+            }
+        }
+    });
+
+    // 2026-10-14 playtest: a random solid prop landed in the middle of the
+    // three-cell exit hall behind the blast door.
+    it('declares the exit hall, door row and maneuver lane as clear of dressing', () => {
+        const cells = new Set(crashSiteClearCells().map(({ x, y }) => `${x},${y}`));
+        const x = CRASH_SITE_BUILD.center.x;
+        for (let y = CRASH_SITE_BUILD.northPreHall.top; y <= CRASH_SITE_BUILD.clearManeuverLane.toZ; y += 1) {
+            expect(cells.has(`${x},${y}`), `centre ${x},${y}`).toBe(true);
+            expect(cells.has(`${x - 1},${y}`), `west ${x - 1},${y}`).toBe(true);
+            expect(cells.has(`${x + 1},${y}`), `east ${x + 1},${y}`).toBe(true);
+        }
+        expect(cells.has('2,10')).toBe(false);
     });
 
     it('varies the exterior approach footprint without moving its shared socket', () => {
