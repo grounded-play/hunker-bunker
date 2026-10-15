@@ -539,11 +539,11 @@ export function isDestructibleDressingType(type, layer) {
     if (typeof type !== 'string') return false;
     if (type.startsWith('arch_') || type.startsWith('gate_') || type === 'state_column_shattered') return false;
     if (type.includes('terminal') && !type.includes('ruptured')) return false;
-    return type.startsWith('prop_')
-        || type.startsWith('life_')
-        || type.startsWith('bunker_junk_')
-        || type.startsWith('state_barricade_')
-        || type.startsWith('scatter_');
+    // Dressing catalogs now include faction-prefixed world-expansion props
+    // (vass_, suture_, corp_, etc.). Treat physical dressing as destructible
+    // by default so adding a new prefix cannot silently create bulletproof
+    // furniture; only explicit architectural/terminal exclusions survive.
+    return true;
 }
 
 function kitFamilyLabel(themeId) {

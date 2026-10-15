@@ -48,7 +48,7 @@ export const DRESSING_KITS = Object.freeze({
             'corp_biometric_wall_safe', 'corp_asset_incinerator_chute', 'tina_vocal_mimic_synthesizer'],
         wallDecals: [...COMMON.wallDecals, 'decal_wall_panel_grille_01', 'decal_wall_panel_grille_02', 'decal_hazard_stripes',
             'decal_meridian_stencil', 'prop_torn_warning_poster', 'decal_substation_stencil', 'decal_wall_conduit_patch',
-            'decal_wall_grime_drip', 'decal_wall_breach', 'decal_execution_wall_splatter', 'decal_pod_312_rupture_splatter'],
+            'decal_wall_grime_drip', 'decal_execution_wall_splatter', 'decal_pod_312_rupture_splatter'],
         clutter: [...COMMON.clutter, 'prop_storage_drum_dented', 'prop_camp_crates', 'prop_valve_wheel_fused', 'prop_vent_grate_exploded',
             'life_footlocker_open', 'life_galley_hotplate', 'life_sanitation_bidet', 'life_vulval_drain_sump',
             'camp_water_barrel', 'salvage_tagged_heap', 'life_arcade_cabinet',
@@ -65,7 +65,7 @@ export const DRESSING_KITS = Object.freeze({
             'decal_electrical_scorch', 'decal_hazard_chevron', 'decal_door_wear_apron', 'decal_junction_turn_wear',
             'decal_strip_cart_ruts', 'decal_walkway_borders', 'decal_strip_drag_marks', 'decal_puddle_slick',
             'decal_strip_drain_gutter', 'decal_corner_grit_pocket',
-            'decal_strip_arterial_spray', 'decal_strip_high_voltage_scorch',
+            'decal_strip_arterial_spray', 'decal_strip_high_voltage_scorch', 'decal_failed_decon_kit',
             'decal_pod_312_rupture_splatter', 'decal_strip_exosuit_coolant']
     },
     cryo: {
@@ -120,7 +120,7 @@ export const DRESSING_KITS = Object.freeze({
             'decal_door_wear_apron', 'decal_strip_hive_veins', 'decal_puddle_slick', 'decal_flesh_press',
             'decal_strip_drain_gutter', 'decal_corner_grit_pocket',
             'decal_strip_umbilical_veins', 'decal_strip_acid_trench', 'decal_queen_oviposition_pool',
-            'decal_strip_crawler_acid']
+            'decal_strip_crawler_acid', 'decal_bio_sample_spill']
     },
     camp: {
         wallProps: ['prop_wall_cable_tray_swag', 'prop_locker_bulged', 'fixture_sconce_vine', 'prop_overhead_cage_fluorescent',
@@ -146,7 +146,7 @@ export const DRESSING_KITS = Object.freeze({
         floorDecals: ['decal_footprints_mud', 'decal_oil_spill_patch', 'decal_tallow_symbol', 'prop_blood_trail', 'decal_evac_treads',
             'decal_door_wear_apron', 'decal_strip_cart_ruts', 'decal_strip_drag_marks', 'decal_puddle_slick',
             'decal_abandoned_meal_tray', 'decal_worker_sleep_roll', 'decal_corner_grit_pocket', 'decal_strip_viscera_drag',
-            'decal_strip_crawler_acid']
+            'decal_strip_crawler_acid', 'decal_barricade_last_stand']
     },
     cathedral: {
         wallProps: ['arch_niche_shrine', 'arch_window_stained', 'prop_vertebral_cable_riser', 'fixture_sconce_vine',
@@ -166,7 +166,7 @@ export const DRESSING_KITS = Object.freeze({
         floorDecals: ['decal_floor_medallion_01', 'decal_floor_medallion_02', 'decal_floor_medallion_03', 'decal_floor_medallion_04',
             'decal_fluid_seep', 'decal_growth_creep_1', 'decal_cathedral_runic', 'decal_strip_drag_marks',
             'decal_puddle_slick', 'decal_corner_grit_pocket',
-            'decal_pod_312_rupture_splatter']
+            'decal_friction_burn', 'decal_pod_312_rupture_splatter']
     }
 });
 

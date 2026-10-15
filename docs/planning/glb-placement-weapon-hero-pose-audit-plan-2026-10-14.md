@@ -75,6 +75,10 @@ Planning baseline: `bc3f5b30`
   - The renderer now rejects known wrong-plane placements and uses the shared
     support offset, preventing flush coplanar wall/floor quads from fighting.
   - Added registry/renderer coverage and a duplicate floor-surface-id gate.
+  - Kept seeded room layouts stable by replacing wrong-plane pool entries in
+    place, and changed physical dressing to default destructible so the new
+    faction-prefixed props do not become bulletproof merely because their
+    names no longer start with `prop_` or `life_`.
 - Remaining: route special scatter/setpiece decals through the P2 registry and
   add contact-sheet visual regression probes (P5).
 Date: 2026-10-14
