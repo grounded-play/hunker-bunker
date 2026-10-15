@@ -9,8 +9,6 @@ Outputs:
   public/3d/runtime/decals/<name>.png
 """
 
-import os
-import glob
 from pathlib import Path
 from PIL import Image
 import numpy as np

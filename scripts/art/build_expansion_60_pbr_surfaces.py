@@ -435,12 +435,10 @@ def gen_crash_hull_ablative_tile():
 # 9. T09: Overlapping Beetle Chitin Shingles (tex_pbr_hive_chitin_plates)
 # ===========================================================================
 def gen_hive_chitin_plates():
-    rng = np.random.default_rng(9109)
     y, x = np.mgrid[0:SIZE, 0:SIZE] / float(SIZE)
 
     # Overlapping shingle plates of black/midnight-purple chitin
     shingle_y = (y * 8.0) % 1.0
-    shingle_edge = shingle_y < 0.10
 
     chitin_base = np.array([0.11, 0.08, 0.14], dtype=np.float32)
     color = np.zeros((SIZE, SIZE, 3), dtype=np.float32) + chitin_base
@@ -470,7 +468,6 @@ def gen_hive_chitin_plates():
 # ===========================================================================
 def gen_hydro_fermenter_sludge():
     rng = np.random.default_rng(9110)
-    y, x = np.mgrid[0:SIZE, 0:SIZE] / float(SIZE)
 
     # Dense decaying black cave moss and geothermal silt
     silt_col = np.array([0.12, 0.14, 0.11], dtype=np.float32)
@@ -500,7 +497,6 @@ def gen_hydro_fermenter_sludge():
 # 11. T11: Gantry Corrugated Walkway (tex_pbr_evac_gantry_corrugated_deck)
 # ===========================================================================
 def gen_evac_gantry_corrugated_deck():
-    rng = np.random.default_rng(9111)
     y, x = np.mgrid[0:SIZE, 0:SIZE] / float(SIZE)
 
     # Yellow and black diagonal hazard warning stripes
@@ -538,7 +534,6 @@ def gen_evac_gantry_corrugated_deck():
 # 12. T12: Biomechanical Obsidian Flagstone (tex_pbr_obsidian_cathedral_flagstone)
 # ===========================================================================
 def gen_obsidian_cathedral_flagstone():
-    rng = np.random.default_rng(9112)
     y, x = np.mgrid[0:SIZE, 0:SIZE] / float(SIZE)
 
     # Mirror-polished black volcanic flagstone with Giger pelvic canals

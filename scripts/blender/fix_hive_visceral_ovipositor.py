@@ -1,7 +1,7 @@
 import os
 import subprocess
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Vector
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 SOURCE_PATH = os.path.join(ROOT, 'art', 'source', '3d', 'raw-masters-2026-10-12', 'hive_visceral_ovipositor.glb')
@@ -37,7 +37,6 @@ def fix_ovipositor():
     min_y = min(v.co.y for v in verts)
     max_y = max(v.co.y for v in verts)
     min_z = min(v.co.z for v in verts)
-    max_z = max(v.co.z for v in verts)
 
     offset = Vector((-(min_x + max_x) / 2, -(min_y + max_y) / 2, -min_z))
     bpy.ops.transform.translate(value=offset)

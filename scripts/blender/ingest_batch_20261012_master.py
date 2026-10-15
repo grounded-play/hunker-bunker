@@ -8,14 +8,12 @@ Optimizes raw image-to-3D exports from art/raw/ into public/3d/runtime/new3ds/:
 - Applies meshopt compression via gltfpack.
 """
 
-import math
 import os
 import subprocess
-import sys
 
 import bmesh
 import bpy
-from mathutils import Matrix, Quaternion, Vector
+from mathutils import Matrix, Vector
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 SOURCE_DIR = os.path.join(ROOT, 'art', 'raw')
