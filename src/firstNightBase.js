@@ -1,9 +1,20 @@
 import { addCarryObject, createCarryObject } from './carrySystem.js';
 import { getBaseModuleDefinition } from './data/baseModules.js';
+import { CRASH_SITE_BUILD } from './data/crashSiteBuild.js';
 
 export const FIRST_NIGHT_COT_MISSION_ID = 'first-night-cot-recovery';
 export const FIRST_NIGHT_SEAL_MISSION_ID = 'first-night-berth-seal';
-export const FIRST_NIGHT_COT_HANDOFF_OFFSET = Object.freeze({ x: -2.2, z: 2.6 });
+
+// The sleep berth sits on the crash site's authored bed socket, open floor in
+// the main chamber's south-west, clear of the maneuver lane (data/
+// crashSiteBuild.js). It used to sit at ship (-2, +2): 0.6 m from the
+// console, so the bed marker covered the shop prompt and the player spawned
+// standing in it (owner, 2026-10-15). Kept relative to the ship.
+const FIRST_BED_SOCKET = CRASH_SITE_BUILD.constructionSockets.find(({ id }) => id === 'first-bed');
+export const FIRST_NIGHT_BERTH_OFFSET = Object.freeze({
+    x: FIRST_BED_SOCKET.x - CRASH_SITE_BUILD.center.x,
+    z: FIRST_BED_SOCKET.z - CRASH_SITE_BUILD.center.z
+});
 
 const RECOVERY_DEFINITIONS = Object.freeze([
     Object.freeze({
@@ -34,8 +45,9 @@ const LEGACY_GIVEAWAY_MODULE_IDS = new Set(['starter-berth-wall-w', 'starter-ber
  * seal are physical recovery lessons whose sockets complete the first room.
  */
 export function planFirstNightBase({ shipX = 0, shipZ = 0 } = {}) {
-    const x = Math.round(shipX - 2);
-    const z = Math.round(shipZ + 2);
+    // Whole cells: the seal graph rounds module positions (baseSealGraph.js).
+    const x = Math.round(shipX + FIRST_NIGHT_BERTH_OFFSET.x);
+    const z = Math.round(shipZ + FIRST_NIGHT_BERTH_OFFSET.z);
     const installSockets = Object.freeze([
         Object.freeze({
             id: 'ship-sleep-bay',
@@ -88,10 +100,16 @@ export function ensureFirstNightBaseState(state, options = {}) {
         installed: [
             ...installedWithoutLegacyGiveaways,
             ...plan.shell.filter(({ instanceId }) => !installedIds.has(instanceId))
-        ]
+        ],
+        worldObjects: returnCampReservedCot(state.worldObjects ?? [], plan)
     };
+    // One step at a time (owner, 2026-10-15): the hull patch and door seal
+    // appear once the cot is in, not lying at the wreck from the start.
+    const cotIn = Boolean(installedCot(next));
+    if (!cotIn) next = { ...next, worldObjects: next.worldObjects.filter((object) => !untouchedSealCargo(object, plan)) };
     const addedCargo = [];
     for (const recovery of plan.recoveryCargo) {
+        if (recovery.missionId === FIRST_NIGHT_SEAL_MISSION_ID && !cotIn) continue;
         const alreadyExists = next.installed.some(({ definitionId }) => definitionId === recovery.definitionId)
             || next.carried?.definitionId === recovery.definitionId
             || next.worldObjects.some(({ definitionId }) => definitionId === recovery.definitionId);
@@ -120,6 +138,25 @@ export function ensureFirstNightBaseState(state, options = {}) {
     };
 }
 
+// Saves from the camp-handoff build (a7abbb17) can hold the cot reserved at a
+// survivor camp's rack, 120 m+ out. The cot is a first-night tutorial piece
+// beside the wreck again; a cot the player already took is left where it is.
+function returnCampReservedCot(worldObjects, plan) {
+    return worldObjects.map((object) => {
+        if (object.definitionId !== 'cot_bed' || object.handoff?.type !== 'camp-cot' || object.handoff?.status !== 'reserved') return object;
+        const rest = { ...object };
+        delete rest.handoff;
+        const home = { ...plan.cotSource };
+        return { ...rest, worldPosition: home, sourcePosition: { ...home }, lastSafePosition: { ...home } };
+    });
+}
+
+function untouchedSealCargo(object, plan) {
+    if (object.missionId !== FIRST_NIGHT_SEAL_MISSION_ID) return false;
+    const source = plan.recoveryCargo.find(({ definitionId }) => definitionId === object.definitionId)?.worldPosition;
+    return Boolean(source) && object.worldPosition?.x === source.x && object.worldPosition?.z === source.z;
+}
+
 export function availableFirstNightSocket(state, plan, object) {
     if (!object) return null;
     const occupied = new Set((state?.installed ?? []).map(({ socketId }) => socketId));
@@ -132,63 +169,4 @@ export function availableFirstNightSocket(state, plan, object) {
 
 export function installedCot(state) {
     return state?.installed?.find(({ definitionId }) => definitionId === 'cot_bed') ?? null;
-}
-
-/**
- * Moves the still-unclaimed tutorial cot from the crash debris to an authored
- * camp supply rack. The camp owns the handoff until its interaction releases
- * the object; installed/carried/released cots are never teleported.
- */
-export function stageFirstNightCotAtCamp(state, camp) {
-    if (!state || !camp?.id || !Number.isFinite(camp?.pos?.x) || !Number.isFinite(camp?.pos?.z)) {
-        return { state, staged: null };
-    }
-    const index = state.worldObjects.findIndex((object) => (
-        object.definitionId === 'cot_bed'
-        && object.missionId === FIRST_NIGHT_COT_MISSION_ID
-        && object.handoff?.status !== 'released'
-    ));
-    if (index < 0) return { state, staged: null };
-
-    const position = {
-        x: camp.pos.x + FIRST_NIGHT_COT_HANDOFF_OFFSET.x,
-        z: camp.pos.z + FIRST_NIGHT_COT_HANDOFF_OFFSET.z
-    };
-    const current = state.worldObjects[index];
-    if (current.handoff?.campId === camp.id
-        && current.worldPosition?.x === position.x
-        && current.worldPosition?.z === position.z) {
-        return { state, staged: null };
-    }
-    const staged = {
-        ...current,
-        worldPosition: position,
-        sourcePosition: { ...position },
-        lastSafePosition: { ...position },
-        handoff: { type: 'camp-cot', campId: camp.id, status: 'reserved' }
-    };
-    const worldObjects = [...state.worldObjects];
-    worldObjects[index] = staged;
-    return { state: { ...state, worldObjects }, staged };
-}
-
-export function getFirstNightCotHandoff(state, campId) {
-    return state?.worldObjects?.find((object) => (
-        object.definitionId === 'cot_bed'
-        && object.missionId === FIRST_NIGHT_COT_MISSION_ID
-        && object.handoff?.type === 'camp-cot'
-        && object.handoff?.campId === campId
-        && object.handoff?.status === 'reserved'
-    )) ?? null;
-}
-
-export function releaseFirstNightCotHandoff(state, campId) {
-    const index = state?.worldObjects?.findIndex((object) => object.instanceId === getFirstNightCotHandoff(state, campId)?.instanceId) ?? -1;
-    if (index < 0) return { ok: false, reason: 'missing-handoff', state };
-    const worldObjects = [...state.worldObjects];
-    worldObjects[index] = {
-        ...worldObjects[index],
-        handoff: { ...worldObjects[index].handoff, status: 'released' }
-    };
-    return { ok: true, object: worldObjects[index], state: { ...state, worldObjects } };
 }

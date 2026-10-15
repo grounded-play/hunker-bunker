@@ -21,6 +21,7 @@ function baseGame() {
         scatterSprites: [],
         getActiveShip: () => ({ tileX: 0, tileZ: 0 }),
         getFirstNightBasePlan: ThreeGame.prototype.getFirstNightBasePlan,
+        bootstrapFirstNightBaseRecovery: ThreeGame.prototype.bootstrapFirstNightBaseRecovery,
         reconcileCarryObjectVisuals: vi.fn(),
         syncBunkerCot: vi.fn(),
         showBunkerLine: vi.fn(),
@@ -32,16 +33,25 @@ function baseGame() {
 describe('physical first-night cargo runtime', () => {
     beforeEach(() => browserStub());
 
-    it('bootstraps three physical recovery pieces beside the incomplete berth', () => {
+    it('bootstraps the cot beside the incomplete berth, and the seal parts once it is in', () => {
         const game = baseGame();
         const result = ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
         expect(result.addedCot).toBe(true);
+        expect(game.carryState.worldObjects).toEqual([
+            expect.objectContaining({ definitionId: 'cot_bed', modelType: 'carry_field_cot_folded' })
+        ]);
+        expect(game.carryState.installed.some(({ definitionId }) => definitionId === 'cot_bed')).toBe(false);
+
+        ThreeGame.prototype.beginCarryObject.call(game, game.carryState.worldObjects[0].instanceId);
+        const socket = game.getFirstNightBasePlan().installSocket.transform;
+        game.player.position.x = socket.x;
+        game.player.position.z = socket.z;
+        expect(ThreeGame.prototype.installCurrentCarryObject.call(game)).toBe(true);
         expect(game.carryState.worldObjects).toEqual(expect.arrayContaining([
-            expect.objectContaining({ definitionId: 'cot_bed', modelType: 'carry_field_cot_folded' }),
             expect.objectContaining({ definitionId: 'hull_patch_panel', modelType: 'crash_hull_panels' }),
             expect.objectContaining({ definitionId: 'door_seal_kit', modelType: 'mod_pressure_seal' })
         ]));
-        expect(game.carryState.installed.some(({ definitionId }) => definitionId === 'cot_bed')).toBe(false);
+        expect(game.showBunkerLine).toHaveBeenLastCalledWith(expect.stringContaining('2 BERTH MODULES STILL MISSING'));
     });
 
     it('lifts with both hands, safely drops, then installs at the ship socket', () => {

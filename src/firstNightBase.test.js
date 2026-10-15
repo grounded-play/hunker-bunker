@@ -4,11 +4,8 @@ import { evaluateRoomSealGraph } from './baseSealGraph.js';
 import {
     availableFirstNightSocket,
     ensureFirstNightBaseState,
-    getFirstNightCotHandoff,
     installedCot,
-    planFirstNightBase,
-    releaseFirstNightCotHandoff,
-    stageFirstNightCotAtCamp
+    planFirstNightBase
 } from './firstNightBase.js';
 
 function installDefinition(state, plan, definitionId) {
@@ -18,32 +15,51 @@ function installDefinition(state, plan, definitionId) {
     return installCarriedObject(next, socket, { carrierPlayerId: 'local' }).state;
 }
 
+const ids = (objects) => objects.map(({ definitionId }) => definitionId);
+
 describe('first-night base recovery', () => {
-    it('places the cot, hull patch, and pressure seal on a short route beside an incomplete berth', () => {
+    it('puts the berth on the authored bed socket, well clear of the console', () => {
+        const plan = planFirstNightBase({ shipX: 9, shipZ: 9 });
+        const { x, z } = plan.installSocket.transform;
+        expect({ x, z }).toEqual({ x: 4, z: 16 });
+        // Console sits at ship + (-1.6, 1.6); the old berth was 0.6 m from it.
+        const fromConsole = Math.hypot(x - (9 - 1.6), z - (9 + 1.6));
+        expect(fromConsole).toBeGreaterThan(4);
+    });
+
+    it('lays out only the cot beside the wreck while the berth is incomplete', () => {
         const result = ensureFirstNightBaseState(createCarryState('run-a'), { shipX: 10, shipZ: 20 });
-        expect(result.addedCargo.map(({ definitionId }) => definitionId)).toEqual([
-            'cot_bed', 'hull_patch_panel', 'door_seal_kit'
-        ]);
-        expect(result.state.worldObjects).toEqual(expect.arrayContaining([
+        expect(ids(result.addedCargo)).toEqual(['cot_bed']);
+        expect(result.state.worldObjects).toEqual([
             expect.objectContaining({
                 definitionId: 'cot_bed',
                 missionId: 'first-night-cot-recovery',
                 modelType: 'carry_field_cot_folded',
                 worldPosition: { x: 15, z: 22 }
-            }),
-            expect.objectContaining({ definitionId: 'hull_patch_panel', modelType: 'crash_hull_panels' }),
-            expect.objectContaining({ definitionId: 'door_seal_kit', modelType: 'mod_pressure_seal' })
-        ]));
+            })
+        ]);
         const seal = evaluateRoomSealGraph({ modules: result.state.installed, defaultSafeBubble: null });
         expect(seal).toMatchObject({ isEnclosed: false, isOxygenated: false, isSleepSafe: false });
         expect(seal.leaks.map(({ side }) => side).sort()).toEqual(['east', 'west']);
     });
 
-    it('becomes sleep-safe only after all three recovered pieces reach compatible sockets', () => {
+    it('brings out the hull patch and door seal once the cot is installed', () => {
         let { state, plan } = ensureFirstNightBaseState(createCarryState('run-a'), { shipX: 10, shipZ: 20 });
         state = installDefinition(state, plan, 'cot_bed');
         expect(installedCot(state)?.socketId).toBe('ship-sleep-bay');
+        const after = ensureFirstNightBaseState(state, { shipX: 10, shipZ: 20 });
+        expect(ids(after.addedCargo)).toEqual(['hull_patch_panel', 'door_seal_kit']);
+        expect(after.state.worldObjects).toEqual(expect.arrayContaining([
+            expect.objectContaining({ definitionId: 'hull_patch_panel', modelType: 'crash_hull_panels' }),
+            expect.objectContaining({ definitionId: 'door_seal_kit', modelType: 'mod_pressure_seal' })
+        ]));
+    });
+
+    it('becomes sleep-safe only after all three recovered pieces reach compatible sockets', () => {
+        let { state, plan } = ensureFirstNightBaseState(createCarryState('run-a'), { shipX: 10, shipZ: 20 });
+        state = installDefinition(state, plan, 'cot_bed');
         expect(evaluateRoomSealGraph({ modules: state.installed, defaultSafeBubble: null }).isSleepSafe).toBe(false);
+        state = ensureFirstNightBaseState(state, { shipX: 10, shipZ: 20 }).state;
         state = installDefinition(state, plan, 'hull_patch_panel');
         expect(evaluateRoomSealGraph({ modules: state.installed, defaultSafeBubble: null }).isSleepSafe).toBe(false);
         state = installDefinition(state, plan, 'door_seal_kit');
@@ -54,7 +70,7 @@ describe('first-night base recovery', () => {
         const first = ensureFirstNightBaseState(createCarryState('run-a'), { shipX: 0, shipZ: 0 });
         const second = ensureFirstNightBaseState(first.state, { shipX: 0, shipZ: 0 });
         expect(second.addedCargo).toEqual([]);
-        expect(second.state.worldObjects).toHaveLength(3);
+        expect(second.state.worldObjects).toHaveLength(1);
         expect(second.state.installed).toHaveLength(planFirstNightBase().shell.length);
     });
 
@@ -66,37 +82,45 @@ describe('first-night base recovery', () => {
         ];
         const result = ensureFirstNightBaseState(legacy);
         expect(result.state.installed.some(({ instanceId }) => instanceId === 'starter-berth-wall-w')).toBe(false);
-        expect(result.state.worldObjects.map(({ definitionId }) => definitionId)).toEqual([
-            'cot_bed', 'hull_patch_panel', 'door_seal_kit'
-        ]);
+        expect(ids(result.state.worldObjects)).toEqual(['cot_bed']);
     });
 
-    it('stages the unclaimed cot at a camp rack and releases it through one authored handoff', () => {
-        const initial = ensureFirstNightBaseState(createCarryState('run-a'), { shipX: 0, shipZ: 0 });
-        const camp = { id: 'camp_meridian', pos: { x: 40, z: 12 } };
-        const staged = stageFirstNightCotAtCamp(initial.state, camp);
-        expect(staged.staged).toMatchObject({
-            definitionId: 'cot_bed',
-            worldPosition: { x: 37.8, z: 14.6 },
-            sourcePosition: { x: 37.8, z: 14.6 },
-            handoff: { type: 'camp-cot', campId: 'camp_meridian', status: 'reserved' }
-        });
-        expect(getFirstNightCotHandoff(staged.state, camp.id)?.instanceId).toBe(staged.staged.instanceId);
-
-        const released = releaseFirstNightCotHandoff(staged.state, camp.id);
-        expect(released.ok).toBe(true);
-        expect(released.object.handoff.status).toBe('released');
-        expect(getFirstNightCotHandoff(released.state, camp.id)).toBeNull();
-        expect(releaseFirstNightCotHandoff(released.state, camp.id)).toMatchObject({ ok: false, reason: 'missing-handoff' });
+    it('hides untouched seal cargo from saves made before the cot gate', () => {
+        const { state: withCot, plan } = ensureFirstNightBaseState(createCarryState('run-a'), { shipX: 10, shipZ: 20 });
+        const legacy = {
+            ...withCot,
+            worldObjects: [
+                ...withCot.worldObjects,
+                ...plan.recoveryCargo
+                    .filter(({ definitionId }) => definitionId !== 'cot_bed')
+                    .map((cargo, index) => ({
+                        instanceId: `legacy-seal-${index}`,
+                        definitionId: cargo.definitionId,
+                        missionId: cargo.missionId,
+                        modelType: cargo.modelType,
+                        worldPosition: { ...cargo.worldPosition },
+                        sourcePosition: { ...cargo.worldPosition }
+                    }))
+            ]
+        };
+        const result = ensureFirstNightBaseState(legacy, { shipX: 10, shipZ: 20 });
+        expect(ids(result.state.worldObjects)).toEqual(['cot_bed']);
     });
 
-    it('never relocates a cot after the camp has released it', () => {
-        const initial = ensureFirstNightBaseState(createCarryState('run-a'));
-        const firstCamp = { id: 'camp_meridian', pos: { x: 20, z: 20 } };
-        const first = stageFirstNightCotAtCamp(initial.state, firstCamp);
-        const released = releaseFirstNightCotHandoff(first.state, firstCamp.id);
-        const second = stageFirstNightCotAtCamp(released.state, { id: 'camp_tallow', pos: { x: 80, z: 80 } });
-        expect(second.staged).toBeNull();
-        expect(second.state).toBe(released.state);
+    it('returns a cot a camp was holding to its spot beside the wreck', () => {
+        const { state, plan } = ensureFirstNightBaseState(createCarryState('run-a'), { shipX: 10, shipZ: 20 });
+        const atCamp = {
+            ...state,
+            worldObjects: state.worldObjects.map((object) => ({
+                ...object,
+                worldPosition: { x: 130, z: 40 },
+                sourcePosition: { x: 130, z: 40 },
+                handoff: { type: 'camp-cot', campId: 'camp_meridian', status: 'reserved' }
+            }))
+        };
+        const [cot] = ensureFirstNightBaseState(atCamp, { shipX: 10, shipZ: 20 }).state.worldObjects;
+        expect(cot.handoff).toBeUndefined();
+        expect(cot.worldPosition).toEqual(plan.cotSource);
+        expect(cot.sourcePosition).toEqual(plan.cotSource);
     });
 });

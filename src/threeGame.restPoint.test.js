@@ -14,6 +14,8 @@ function stubs() {
 function installedCarryState() {
     let { state, plan } = ensureFirstNightBaseState(createCarryState('run-test'), { shipX: 100, shipZ: 200 });
     for (const definitionId of ['cot_bed', 'hull_patch_panel', 'door_seal_kit']) {
+        // The seal parts only appear once the cot is in.
+        state = ensureFirstNightBaseState(state, { shipX: 100, shipZ: 200 }).state;
         const object = state.worldObjects.find((entry) => entry.definitionId === definitionId);
         state = beginCarry(state, object.instanceId, 'local').state;
         const socket = availableFirstNightSocket(state, plan, state.carried);

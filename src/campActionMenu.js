@@ -10,7 +10,6 @@ export const CAMP_PROMPT_LIMIT = 3;
 // talking to them comes before any service.
 export const CAMP_ACTION_PRIORITY = Object.freeze([
     'talk-resident',
-    'cot-handoff',
     'quest-offer',
     'shore-up',
     'treat-scar',
