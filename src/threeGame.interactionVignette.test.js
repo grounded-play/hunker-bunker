@@ -254,4 +254,92 @@ describe('threeGame interaction vignette gameplay integration', () => {
         expect(game.showBunkerLine).toHaveBeenCalledWith(expect.stringContaining('REVENUE TOKENS RECOVERED'));
         expect(propExperienceMock.setState).toHaveBeenCalledWith('spent');
     });
+
+    it('executes weapon case unlatch vignette: snaps latches, bursts nitrogen seal, articulates lid, and equips weapon', () => {
+        const game = createMockGame();
+        game.player.position.set(2, 0, 0);
+
+        const caseSprite = new THREE.Sprite();
+        caseSprite.position.set(2, 0, 2);
+        caseSprite.userData = { type: 'weapon_flamethrower_case' };
+
+        const nearestInfo = {
+            sprite: caseSprite,
+            spec: {
+                canInteract: true,
+                onInteract: (g) => {
+                    g.showBunkerLine('WEAPON CASE: LID RELEASED — M70 CRADLE ACCESSIBLE.');
+                    return { success: true, state: 'open' };
+                }
+            }
+        };
+
+        const started = interactWithCustomProp(game, nearestInfo);
+        expect(started).toBe(true);
+        expect(game.interactionVignette.isActive()).toBe(true);
+        expect(game.isGameplayInputActive()).toBe(false);
+        expect(game.player3dOverlay.trigger).toHaveBeenCalledWith('case_unlatch', 1.3);
+
+        // Advance 0.25s: cam latches pop
+        game.updatePlayer(0.25);
+        expect(game.spawnPhysicalBurst).toHaveBeenCalledWith(2, 2, expect.objectContaining({ color: 0xaaaaaa }));
+
+        // Advance past 0.70s: seal pop and weapon glint
+        game.updatePlayer(0.50);
+        expect(game.spawnPhysicalBurst).toHaveBeenCalledWith(2, 2, expect.objectContaining({ color: 0xf59e0b }));
+        expect(game.playSound).toHaveBeenCalledWith('vault_open', expect.anything());
+
+        // Complete (1.30s total)
+        game.updatePlayer(0.60);
+        expect(game.interactionVignette.isActive()).toBe(false);
+        expect(game.isGameplayInputActive()).toBe(true);
+        expect(game.showBunkerLine).toHaveBeenCalledWith(expect.stringContaining('M70 CRADLE ACCESSIBLE'));
+    });
+
+    it('executes field cot rest recovery vignette: aligns to cot, heals HP, cleanses fatigue', () => {
+        const game = createMockGame();
+        game.healPlayer = vi.fn((amount) => {
+            if (game.playerVitals) game.playerVitals.hp = Math.min(game.playerVitals.maxHp, game.playerVitals.hp + amount);
+        });
+        game.playerVitals.hp = 60;
+        game.player.position.set(8, 0, 7);
+
+        const cotSprite = new THREE.Sprite();
+        cotSprite.position.set(8, 0, 8);
+        cotSprite.userData = { type: 'base_cot_installed' };
+
+        const nearestInfo = {
+            sprite: cotSprite,
+            spec: {
+                canInteract: true,
+                onInteract: (g) => {
+                    g.healPlayer(25);
+                    g.showBunkerLine('RESTED ON COT: FATIGUE CLEANSED. +25 HP.');
+                    return true;
+                }
+            }
+        };
+
+        const started = interactWithCustomProp(game, nearestInfo);
+        expect(started).toBe(true);
+        expect(game.interactionVignette.isActive()).toBe(true);
+        expect(game.isGameplayInputActive()).toBe(false);
+        expect(game.player3dOverlay.trigger).toHaveBeenCalledWith('rest_recovery', 1.5);
+
+        // Advance 0.30s: green healing aura
+        game.updatePlayer(0.30);
+        expect(game.spawnPhysicalBurst).toHaveBeenCalledWith(8, 8, expect.objectContaining({ color: 0x22c55e }));
+        expect(game.tintPlayerSprites).toHaveBeenCalledWith(0x86efac);
+
+        // Advance past 0.90s: cellular surge
+        game.updatePlayer(0.65);
+        expect(game.spawnPhysicalBurst).toHaveBeenCalledWith(8, 8, expect.objectContaining({ color: 0xffffff }));
+
+        // Complete (1.50s total)
+        game.updatePlayer(0.60);
+        expect(game.interactionVignette.isActive()).toBe(false);
+        expect(game.isGameplayInputActive()).toBe(true);
+        expect(game.healPlayer).toHaveBeenCalled();
+        expect(game.showBunkerLine).toHaveBeenCalledWith(expect.stringContaining('FATIGUE CLEANSED'));
+    });
 });

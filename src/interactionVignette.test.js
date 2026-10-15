@@ -31,6 +31,17 @@ describe('interactionVignette', () => {
             expect(resolveInteractionVignettePreset('custom_screen', { generic: 'terminal' })).toBe(INTERACTION_VIGNETTE_PRESETS.terminal_hack);
         });
 
+        it('resolves case_unlatch preset for weapon cases and hardcases', () => {
+            expect(resolveInteractionVignettePreset('weapon_flamethrower_case')).toBe(INTERACTION_VIGNETTE_PRESETS.case_unlatch);
+            expect(resolveInteractionVignettePreset('heavy_hardcase')).toBe(INTERACTION_VIGNETTE_PRESETS.case_unlatch);
+        });
+
+        it('resolves rest_recovery preset for cots, beds, bunks, and stretchers', () => {
+            expect(resolveInteractionVignettePreset('base_cot_installed')).toBe(INTERACTION_VIGNETTE_PRESETS.rest_recovery);
+            expect(resolveInteractionVignettePreset('carry_field_cot_folded')).toBe(INTERACTION_VIGNETTE_PRESETS.rest_recovery);
+            expect(resolveInteractionVignettePreset('bunker_bunk')).toBe(INTERACTION_VIGNETTE_PRESETS.rest_recovery);
+        });
+
         it('honors explicit spec vignettePreset override', () => {
             const spec = { vignettePreset: 'rummage' };
             expect(resolveInteractionVignettePreset('anything', spec)).toBe(INTERACTION_VIGNETTE_PRESETS.rummage);
@@ -211,6 +222,78 @@ describe('interactionVignette', () => {
 
             // Finish at 1.25s
             controller.update(0.50);
+            expect(controller.isActive()).toBe(false);
+            expect(onComplete).toHaveBeenCalledTimes(1);
+        });
+
+        it('fires case_unlatch dual cam latch release and lid opening milestones', () => {
+            const game = mockGame();
+            game.player.position.set(2, 0, 1);
+            const controller = createInteractionVignetteController(game);
+
+            const sprite = new THREE.Sprite();
+            sprite.position.set(2, 0, 2);
+            sprite.userData = { type: 'weapon_flamethrower_case' };
+
+            const onComplete = vi.fn();
+            controller.startVignette({
+                sprite,
+                onComplete
+            });
+
+            expect(controller.isActive()).toBe(true);
+            expect(game.player3dOverlay.trigger).toHaveBeenCalledWith('case_unlatch', 1.3);
+
+            // Milestone 1 at 0.25s: cam latch snap
+            controller.update(0.25);
+            expect(game.spawnPhysicalBurst).toHaveBeenCalledWith(2, 2, expect.objectContaining({ color: 0xaaaaaa, count: 8 }));
+            expect(game.playSound).toHaveBeenCalledWith('metal_stress', expect.objectContaining({ playbackRate: 2.0 }));
+
+            // Milestone 2 at 0.70s: seal pop, golden glint, lid open
+            controller.update(0.50); // total elapsed: 0.75s
+            expect(game.spawnPhysicalBurst).toHaveBeenCalledWith(2, 2, expect.objectContaining({ color: 0xf59e0b, count: 12 }));
+            expect(game.playSound).toHaveBeenCalledWith('ambient_steam_hiss', expect.anything());
+            expect(game.playSound).toHaveBeenCalledWith('vault_open', expect.anything());
+            expect(game.acknowledgePropExperience).toHaveBeenCalledWith(sprite, { toggleArticulation: true });
+
+            // Complete at 1.30s
+            controller.update(0.60);
+            expect(controller.isActive()).toBe(false);
+            expect(onComplete).toHaveBeenCalledTimes(1);
+        });
+
+        it('fires rest_recovery healing surge milestones on field cot', () => {
+            const game = mockGame();
+            game.healPlayer = vi.fn();
+            game.player.position.set(6, 0, 6);
+            const controller = createInteractionVignetteController(game);
+
+            const sprite = new THREE.Sprite();
+            sprite.position.set(6, 0, 7);
+            sprite.userData = { type: 'base_cot_installed' };
+
+            const onComplete = vi.fn();
+            controller.startVignette({
+                sprite,
+                onComplete
+            });
+
+            expect(controller.isActive()).toBe(true);
+            expect(game.player3dOverlay.trigger).toHaveBeenCalledWith('rest_recovery', 1.5);
+
+            // Milestone 1 at 0.30s: green healing aura & blessing
+            controller.update(0.30);
+            expect(game.spawnPhysicalBurst).toHaveBeenCalledWith(6, 7, expect.objectContaining({ color: 0x22c55e, count: 14 }));
+            expect(game.tintPlayerSprites).toHaveBeenCalledWith(0x86efac);
+            expect(game.playSound).toHaveBeenCalledWith('shrine_blessing', expect.anything());
+
+            // Milestone 2 at 0.90s: cellular recovery burst & heal
+            controller.update(0.65); // total elapsed: 0.95s
+            expect(game.spawnPhysicalBurst).toHaveBeenCalledWith(6, 7, expect.objectContaining({ color: 0xffffff, count: 10 }));
+            expect(game.healPlayer).toHaveBeenCalledWith(20);
+
+            // Complete at 1.50s
+            controller.update(0.60);
             expect(controller.isActive()).toBe(false);
             expect(onComplete).toHaveBeenCalledTimes(1);
         });

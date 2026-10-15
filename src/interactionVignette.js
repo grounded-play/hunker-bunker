@@ -100,6 +100,66 @@ export const INTERACTION_VIGNETTE_PRESETS = Object.freeze({
                 }
             }
         ])
+    }),
+    case_unlatch: Object.freeze({
+        id: 'case_unlatch',
+        animation: 'case_unlatch',
+        duration: 1.3,
+        alignSeconds: 0.25,
+        standoff: 0.70,
+        faceProp: true,
+        sound: 'toolbox_open',
+        interruptibleOnDamage: true,
+        milestones: Object.freeze([
+            {
+                time: 0.25,
+                run(game, v) {
+                    const pos = v.sprite?.position ?? game.player.position;
+                    game.spawnPhysicalBurst?.(pos.x, pos.z, { color: 0xaaaaaa, count: 8, upward: 0.15 });
+                    safePlaySound('metal_stress', { volume: 0.5, playbackRate: 2.0 }, game);
+                }
+            },
+            {
+                time: 0.70,
+                run(game, v) {
+                    const pos = v.sprite?.position ?? game.player.position;
+                    game.spawnPhysicalBurst?.(pos.x, pos.z, { color: 0xf59e0b, count: 12, upward: 0.25 });
+                    safePlaySound('ambient_steam_hiss', { volume: 0.4 }, game);
+                    safePlaySound('vault_open', { volume: 0.5, playbackRate: 1.2 }, game);
+                    game.acknowledgePropExperience?.(v.sprite, { toggleArticulation: true });
+                }
+            }
+        ])
+    }),
+    rest_recovery: Object.freeze({
+        id: 'rest_recovery',
+        animation: 'rest_recovery',
+        duration: 1.5,
+        alignSeconds: 0.30,
+        standoff: 0.35,
+        faceProp: false,
+        sound: 'shrine_blessing',
+        interruptibleOnDamage: true,
+        milestones: Object.freeze([
+            {
+                time: 0.30,
+                run(game, v) {
+                    const pos = v.sprite?.position ?? game.player.position;
+                    game.spawnPhysicalBurst?.(pos.x, pos.z, { color: 0x22c55e, count: 14, upward: 0.2 });
+                    game.tintPlayerSprites?.(0x86efac);
+                    setTimeout(() => game.tintPlayerSprites?.(game._playerPolishHex ?? 0xffffff), 250);
+                    safePlaySound('shrine_blessing', { volume: 0.6 }, game);
+                }
+            },
+            {
+                time: 0.90,
+                run(game, v) {
+                    const pos = v.sprite?.position ?? game.player.position;
+                    game.spawnPhysicalBurst?.(pos.x, pos.z, { color: 0xffffff, count: 10, upward: 0.3 });
+                    game.healPlayer?.(20);
+                }
+            }
+        ])
     })
 });
 
@@ -115,7 +175,16 @@ export function resolveInteractionVignettePreset(type, spec = null) {
     if (propKey === 'prop_exosuit_docking_gantry' || propKey === 'decon_exosuit_scrubber_station') {
         return INTERACTION_VIGNETTE_PRESETS.exosuit_dock;
     }
-    if (spec?.generic === 'search' || isSearchableType(propKey)
+    if (propKey.includes('cot') || propKey.includes('bed') || /(^|_)bunk(_|$)/.test(propKey) || propKey.includes('stretcher')) {
+        return INTERACTION_VIGNETTE_PRESETS.rest_recovery;
+    }
+    if (spec?.generic === 'search') {
+        return INTERACTION_VIGNETTE_PRESETS.rummage;
+    }
+    if (propKey.includes('case') || propKey.includes('hardcase')) {
+        return INTERACTION_VIGNETTE_PRESETS.case_unlatch;
+    }
+    if (isSearchableType(propKey)
         || propKey.includes('crate') || propKey.includes('chest') || propKey.includes('locker')
         || propKey.includes('cart') || propKey.includes('supplies')) {
         return INTERACTION_VIGNETTE_PRESETS.rummage;

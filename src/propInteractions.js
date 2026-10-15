@@ -1192,6 +1192,17 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
         (state) => `WEAPON CASE: ${state === 'open' ? 'LID RELEASED — M70 CRADLE ACCESSIBLE' : 'LID SECURED'}.`,
         { hp: 45, nextState: (_game, prop) => nextBinaryState(prop, 'open', 'closed'), sound: 'toolbox_open' }
     ),
+    base_cot_installed: {
+        hp: 40,
+        canInteract: true,
+        interactPrompt: '[E] REST ON FIELD COT',
+        onInteract: (game) => {
+            game.healPlayer?.(25);
+            game.showBunkerLine?.('RESTED ON COT: FATIGUE CLEANSED. +25 HP.');
+            safePlaySound('shrine_blessing', { volume: 0.6 });
+            return true;
+        }
+    },
     ship_module_navigation_core: statefulInteraction(
         '[E] SPIN UP NAVIGATION GYRO',
         (state) => `NAVIGATION CORE: ${state === 'working' ? 'GYRO HOLDING A STAR FIX' : 'ROTOR BRAKED'}.`,
