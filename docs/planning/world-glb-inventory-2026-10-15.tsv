@@ -1,0 +1,620 @@
+path	file_id	prefix	bytes	sha256_12	meshes	nodes	materials	images	texture_slots	texture_mode	animations	hb_extra_nodes	world_model_keys	interaction	fx	experience	sockets
+public/3d/GG.1.glb	GG.1	GG.1	3025268	081df68ec9ec	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/basic-pile.glb	basic-pile	basic	3898668	3f7769ca3610	1	1	1	3	3	image-textured	0	0	basic_pile	no	no	no	no
+public/3d/runtime/broken-engineer-ship.glb	broken-engineer-ship	broken	3782748	315176722f3b	1	1	1	3	3	image-textured	0	0	broken_engineer_ship	no	no	no	no
+public/3d/runtime/broken-scout-ship.glb	broken-scout-ship	broken	3597088	efea4204c3a1	1	1	1	3	3	image-textured	0	0	broken_scout_ship	no	no	no	no
+public/3d/runtime/broken-tank-ship.glb	broken-tank-ship	broken	3711892	ee9671791c76	1	1	1	3	3	image-textured	0	0	broken_tank_ship	no	no	no	no
+public/3d/runtime/community/eng_abg.glb	eng_abg	eng	15775808	341113c19056	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/eng_afro_crash.glb	eng_afro_crash	eng	12019040	57dc21ecc7bb	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/eng_apex.glb	eng_apex	eng	13260772	6def7b61491f	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/eng_corpo_shadow_runner.glb	eng_corpo_shadow_runner	eng	10747484	7d7660cfb5cb	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/eng_foxhole_shadow.glb	eng_foxhole_shadow	eng	14167104	c194f25eae6f	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/eng_neural_weaver.glb	eng_neural_weaver	eng	15689136	3084d18efbc3	1	51	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/eng_sil.glb	eng_sil	eng	14849192	6d439150de7e	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/eng_soft_manic_architect_gf.glb	eng_soft_manic_architect_gf	eng	16536908	a189cced7f0d	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/eng_swim.glb	eng_swim	eng	15223924	199201ec80c7	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/eng_toxic_apex_chrysalis.glb	eng_toxic_apex_chrysalis	eng	15548620	fd30d656ae38	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/scount_sil.glb	scount_sil	scount	14254988	8845011cdfb0	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/scout_abg.glb	scout_abg	scout	15720008	5ecdfea482c4	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/scout_apex.glb	scout_apex	scout	12928008	687774e99edd	1	59	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/scout_corpo_shadow_runner.glb	scout_corpo_shadow_runner	scout	11052916	660099fc9d44	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/scout_foxhole_shadow.glb	scout_foxhole_shadow	scout	12971484	46678fae7c83	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/scout_soft_manic_infiltrator_gf.glb	scout_soft_manic_infiltrator_gf	scout	14513056	278a62ef4299	1	35	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/scout_swim.glb	scout_swim	scout	13862048	615b075f3f39	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/scout_tank_crash.glb	scout_tank_crash	scout	13074468	6721d8e099be	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/scout_toxic_apex_chrysalis.glb	scout_toxic_apex_chrysalis	scout	15431796	5ff03987de9d	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/scout_xeno_stalker.glb	scout_xeno_stalker	scout	14162624	0275e5d8f3cd	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/tank_abg.glb	tank_abg	tank	13599380	876041cedbdc	1	35	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/tank_afro_crash.glb	tank_afro_crash	tank	13102468	6d49660ebe9b	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/tank_apex.glb	tank_apex	tank	12315124	7846a0da5a18	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/tank_brood_matron.glb	tank_brood_matron	tank	17262580	d81d76e496cb	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/tank_chubby_protective_hacker_gf.glb	tank_chubby_protective_hacker_gf	tank	16040336	18830dcff70c	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/tank_corpo_shadow_runner.glb	tank_corpo_shadow_runner	tank	7764264	ef3f8bb8abe3	1	35	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/tank_foxhole_shadow.glb	tank_foxhole_shadow	tank	13256012	7cc3cae070b1	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/tank_sil.glb	tank_sil	tank	14567536	0023a6c88be6	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/tank_swim.glb	tank_swim	tank	16872668	ad1fc4eebf24	1	35	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/community/tank_toxic_apex_chrysalis.glb	tank_toxic_apex_chrysalis	tank	14826080	2d940a502852	1	35	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/console.glb	console	console	3339624	08c1e2f4b8d0	1	1	1	3	3	image-textured	0	0	base_console	no	yes	yes	no
+public/3d/runtime/cryo-snail-boss.glb	cryo-snail-boss	cryo	3334272	529b8484d58d	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/cyber-snail-boss.glb	cyber-snail-boss	cyber	4212484	a18406828dcd	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/cyber-snail.glb	cyber-snail	cyber	4268396	ffde3795ac74	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/engineer-rigged-gestures.glb	engineer-rigged-gestures	engineer	4964320	982a49a63772	1	43	1	3	3	image-textured	16	0		no	no	no	no
+public/3d/runtime/frozen-tanker.glb	frozen-tanker	frozen	3548028	649ea17c98b0	1	1	1	3	3	image-textured	0	0	frozen_tanker	no	yes	no	no
+public/3d/runtime/fusion-generator.glb	fusion-generator	fusion	3370800	ac5d1c3a253e	1	1	1	3	3	image-textured	0	0	fusion_generator	no	yes	no	no
+public/3d/runtime/hull-matrix.glb	hull-matrix	hull	3589476	a67a9cf9967e	1	1	1	3	3	image-textured	0	0	hull_matrix	no	yes	no	no
+public/3d/runtime/kits/modular-cave-kit/corridor-corner.glb	corridor-corner	corridor	45404	728e49b295f0	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_corridor_corner	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/corridor-end.glb	corridor-end	corridor	83260	14bc7f38fb40	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_corridor_end	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/corridor-intersection.glb	corridor-intersection	corridor	17952	c50139f47dc9	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_corridor_intersection	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/corridor-junction.glb	corridor-junction	corridor	37452	a27bd357417d	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_corridor_junction	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/corridor-transition.glb	corridor-transition	corridor	137540	d16660093254	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_corridor_transition	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/corridor-wide-corner.glb	corridor-wide-corner	corridor	97056	79415edd5d40	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_corridor_wide_corner	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/corridor-wide-end.glb	corridor-wide-end	corridor	144616	48326070dba2	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_corridor_wide_end	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/corridor-wide-intersection.glb	corridor-wide-intersection	corridor	18000	6938cb24e2b3	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_corridor_wide_intersection	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/corridor-wide-junction.glb	corridor-wide-junction	corridor	57904	98671152bee6	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_corridor_wide_junction	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/corridor-wide.glb	corridor-wide	corridor	97640	3c57dc84a0a2	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_corridor_wide	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/corridor.glb	corridor	corridor	57092	fee30c83b209	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_corridor	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/gate-metal-bars.glb	gate-metal-bars	gate	42904	c0a9ce5a306d	2	2	2	0	0	runtime-shared-kit-material	0	0	kit_cave_gate_metal_bars	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/gate-overhang.glb	gate-overhang	gate	8276	4178cf5baa19	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_gate_overhang	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/gate-rock.glb	gate-rock	gate	22292	a80106c8cf9d	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_gate_rock	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/gate.glb	gate	gate	34124	caec185363d6	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_gate	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/ladder.glb	ladder	ladder	10172	0add757c3806	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_ladder	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/room-corner.glb	room-corner	room	225656	42d24f7c75f5	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_room_corner	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/room-large-variation.glb	room-large-variation	room	488612	cd07aded2c89	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_room_large_variation	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/room-large.glb	room-large	room	494232	f00500ee3a5b	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_room_large	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/room-small-variation.glb	room-small-variation	room	241864	1a613c41d3ed	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_room_small_variation	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/room-small.glb	room-small	room	217616	028eb8f30f9a	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_room_small	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/room-wide-variation.glb	room-wide-variation	room	411120	4b364868dd9f	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_room_wide_variation	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/room-wide.glb	room-wide	room	341880	5069e759d8f7	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_room_wide	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/stairs-wide.glb	stairs-wide	stairs	142860	f164a0a98e7d	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_stairs_wide	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/stairs.glb	stairs	stairs	139640	8e8782d2dc86	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_stairs	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/template-corner.glb	template-corner	template	42256	3d2cc22a313c	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_template_corner	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/template-detail.glb	template-detail	template	25068	53d028eafab8	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_template_detail	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/template-floor-big.glb	template-floor-big	template	45540	cf2a084a76a9	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_template_floor_big	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/template-floor-detail-a.glb	template-floor-detail-a	template	18272	c6b1d49775d4	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_template_floor_detail_a	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/template-floor-detail.glb	template-floor-detail	template	18200	c921d740e2e1	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_template_floor_detail	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/template-floor-layer-hole.glb	template-floor-layer-hole	template	24172	59eb98be8575	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_template_floor_layer_hole	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/template-floor-layer-raised.glb	template-floor-layer-raised	template	19596	7d99eed15ada	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_template_floor_layer_raised	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/template-floor-layer.glb	template-floor-layer	template	12744	f71ccfdbfa61	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_template_floor_layer	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/template-floor.glb	template-floor	template	4348	3db6d13621be	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_template_floor	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/template-wall-corner.glb	template-wall-corner	template	7916	9198ed67b09b	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_template_wall_corner	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/template-wall-detail-a.glb	template-wall-detail-a	template	29208	2521a8abffb9	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_template_wall_detail_a	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/template-wall-half.glb	template-wall-half	template	15648	b84be0f2d69c	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_template_wall_half	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/template-wall-stairs.glb	template-wall-stairs	template	9928	8544eb4c308c	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_template_wall_stairs	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/template-wall-top.glb	template-wall-top	template	12156	b0ae9e3f1964	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_template_wall_top	no	no	no	no
+public/3d/runtime/kits/modular-cave-kit/template-wall.glb	template-wall	template	30824	8221295e69d1	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_cave_template_wall	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/cables.glb	cables	cables	32688	085362d9a3da	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_cables	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/corridor-corner.glb	corridor-corner	corridor	56504	7376cbf43352	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_corridor_corner	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/corridor-end.glb	corridor-end	corridor	55260	15c2563ba0da	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_corridor_end	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/corridor-intersection.glb	corridor-intersection	corridor	16056	0b05524e9f4d	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_corridor_intersection	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/corridor-junction.glb	corridor-junction	corridor	27344	a25c8719c55f	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_corridor_junction	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/corridor-transition.glb	corridor-transition	corridor	84992	c1ce72f95d57	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_corridor_transition	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/corridor-wide-corner.glb	corridor-wide-corner	corridor	90824	e4569d8a2c16	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_corridor_wide_corner	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/corridor-wide-end.glb	corridor-wide-end	corridor	161184	5b909066a8f5	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_corridor_wide_end	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/corridor-wide-intersection.glb	corridor-wide-intersection	corridor	16152	cdb636af5b61	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_corridor_wide_intersection	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/corridor-wide-junction.glb	corridor-wide-junction	corridor	62412	1ea2883b9c3f	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_corridor_wide_junction	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/corridor-wide.glb	corridor-wide	corridor	108720	0c13c2e12803	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_corridor_wide	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/corridor.glb	corridor	corridor	38304	50cf7b05c413	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_corridor	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/gate-door-window.glb	gate-door-window	gate	78772	548ab461ff86	2	2	2	0	0	runtime-shared-kit-material	3	0	kit_space_gate_door_window	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/gate-door.glb	gate-door	gate	76012	b4d4bec6750d	2	2	2	0	0	runtime-shared-kit-material	3	0	kit_space_gate_door	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/gate-lasers.glb	gate-lasers	gate	138024	3ac8475885b7	14	14	2	0	0	runtime-shared-kit-material	0	0	kit_space_gate_lasers	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/gate.glb	gate	gate	30664	c3ad53a0be0d	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_gate	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/room-corner.glb	room-corner	room	280892	7579e0c67736	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_room_corner	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/room-large-variation.glb	room-large-variation	room	431216	bb196dae0a55	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_room_large_variation	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/room-large.glb	room-large	room	482812	b34fc39506c9	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_room_large	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/room-small-variation.glb	room-small-variation	room	188640	c93ae4036824	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_room_small_variation	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/room-small.glb	room-small	room	223260	1532316373f1	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_room_small	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/room-wide-variation.glb	room-wide-variation	room	443508	9e515e93d56e	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_room_wide_variation	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/room-wide.glb	room-wide	room	395280	fcb1fbf2bb57	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_room_wide	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/stairs-wide.glb	stairs-wide	stairs	124400	ce981cda5d63	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_stairs_wide	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/stairs.glb	stairs	stairs	124452	be40f4e5f431	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_stairs	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/template-corner.glb	template-corner	template	53736	0f02869951aa	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_template_corner	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/template-detail.glb	template-detail	template	24644	e2a587cb777a	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_template_detail	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/template-floor-big.glb	template-floor-big	template	25004	09f99aaa5c27	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_template_floor_big	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/template-floor-detail-a.glb	template-floor-detail-a	template	4372	e98d60f0fd1e	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_template_floor_detail_a	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/template-floor-detail.glb	template-floor-detail	template	5648	06798803809f	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_template_floor_detail	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/template-floor-layer-hole.glb	template-floor-layer-hole	template	142276	43026f8c54f4	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_template_floor_layer_hole	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/template-floor-layer-raised.glb	template-floor-layer-raised	template	139024	15fd6a64c256	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_template_floor_layer_raised	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/template-floor-layer.glb	template-floor-layer	template	26332	e7bd30cba2f2	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_template_floor_layer	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/template-floor.glb	template-floor	template	4440	8072682d6347	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_template_floor	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/template-wall-corner.glb	template-wall-corner	template	7388	2392ddfbeeae	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_template_wall_corner	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/template-wall-detail-a.glb	template-wall-detail-a	template	50056	0ba478005ad0	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_template_wall_detail_a	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/template-wall-half.glb	template-wall-half	template	8036	f0d5497f1a24	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_template_wall_half	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/template-wall-stairs.glb	template-wall-stairs	template	14736	ec151d8d3431	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_template_wall_stairs	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/template-wall-top.glb	template-wall-top	template	18560	b8a1bdfebffc	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_template_wall_top	no	no	no	no
+public/3d/runtime/kits/modular-space-kit/template-wall.glb	template-wall	template	21748	dffd1f91223b	1	1	2	0	0	runtime-shared-kit-material	0	0	kit_space_template_wall	no	no	no	no
+public/3d/runtime/new3ds/alien_proto_crawler.glb	alien_proto_crawler	alien	3777152	24ad5548e43a	1	9	1	3	3	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/alien_proto_crawler_A.glb	alien_proto_crawler_A	alien	3270908	8038cde71959	1	9	1	3	3	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/alien_proto_spitter.glb	alien_proto_spitter	alien	3488788	79ffda3abae2	2	10	2	4	5	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/arch_bulkhead_frame.glb	arch_bulkhead_frame	arch	2596380	3968d8e03af4	1	1	1	3	3	image-textured	0	0	arch_bulkhead_frame	no	no	no	no
+public/3d/runtime/new3ds/arch_deco_archway_grand_01.glb	arch_deco_archway_grand_01	arch	1897832	c90bd9cc151f	1	1	1	3	3	image-textured	0	0	arch_deco_archway_grand_01	no	no	no	no
+public/3d/runtime/new3ds/arch_deco_archway_grand_02.glb	arch_deco_archway_grand_02	arch	3063028	171ee0ebd5a2	1	1	1	3	3	image-textured	0	0	arch_deco_archway_grand_02	no	no	no	no
+public/3d/runtime/new3ds/arch_deco_archway_grand_03.glb	arch_deco_archway_grand_03	arch	1521480	b4a66da3f869	1	1	1	3	3	image-textured	0	0	arch_deco_archway_grand_03	no	no	no	no
+public/3d/runtime/new3ds/arch_deco_archway_grand_04.glb	arch_deco_archway_grand_04	arch	2063832	7e211b3da86b	1	1	1	3	3	image-textured	0	0	arch_deco_archway_grand_04	no	no	no	no
+public/3d/runtime/new3ds/arch_niche_shrine.glb	arch_niche_shrine	arch	1963080	02e482b25085	1	1	1	3	3	image-textured	0	0	arch_niche_shrine	no	yes	no	no
+public/3d/runtime/new3ds/arch_pillar_buttress_01.glb	arch_pillar_buttress_01	arch	2422408	01a3a109018b	1	1	1	3	3	image-textured	0	0	arch_pillar_buttress_01	no	no	no	no
+public/3d/runtime/new3ds/arch_pillar_buttress_02.glb	arch_pillar_buttress_02	arch	2727864	7f5a6a778e4a	1	1	1	3	3	image-textured	0	0	arch_pillar_buttress_02	no	no	no	no
+public/3d/runtime/new3ds/arch_pillar_buttress_03.glb	arch_pillar_buttress_03	arch	2481992	8e065b3fda9c	1	1	1	3	3	image-textured	0	0	arch_pillar_buttress_03	no	no	no	no
+public/3d/runtime/new3ds/arch_pillar_buttress_04.glb	arch_pillar_buttress_04	arch	3021660	c99b4d52bbcd	1	1	1	3	3	image-textured	0	0	arch_pillar_buttress_04	no	no	no	no
+public/3d/runtime/new3ds/arch_rib_ceiling_vault_01.glb	arch_rib_ceiling_vault_01	arch	2349960	b1151641c49d	1	1	1	3	3	image-textured	0	0	arch_rib_ceiling_vault_01	no	no	no	no
+public/3d/runtime/new3ds/arch_rib_ceiling_vault_02.glb	arch_rib_ceiling_vault_02	arch	2195032	de70ce84709d	1	1	1	3	3	image-textured	0	0	arch_rib_ceiling_vault_02	no	no	no	no
+public/3d/runtime/new3ds/arch_rib_ceiling_vault_03.glb	arch_rib_ceiling_vault_03	arch	2301256	25a5d70e2783	1	1	1	3	3	image-textured	0	0	arch_rib_ceiling_vault_03	no	no	no	no
+public/3d/runtime/new3ds/arch_window_stained.glb	arch_window_stained	arch	3026812	5b3c361107b7	1	1	1	3	3	image-textured	0	0	arch_window_stained	no	no	no	no
+public/3d/runtime/new3ds/barrier_ice_fractured.glb	barrier_ice_fractured	barrier	2458776	3e85fbcba38e	1	2	1	3	3	image-textured	0	1	barrier_ice_fractured	no	yes	yes	no
+public/3d/runtime/new3ds/barrier_ice_intact.glb	barrier_ice_intact	barrier	2544856	16095f598db7	1	2	1	3	3	image-textured	0	1	barrier_ice_intact	no	yes	yes	no
+public/3d/runtime/new3ds/barrier_ice_melting.glb	barrier_ice_melting	barrier	2439976	ff2e03de8ffe	1	3	1	3	3	image-textured	0	2	barrier_ice_melting	no	yes	yes	no
+public/3d/runtime/new3ds/base_cot_installed.glb	base_cot_installed	base	2040732	16eeacc9703f	1	3	1	3	3	image-textured	0	2	base_cot_installed	yes	no	yes	no
+public/3d/runtime/new3ds/base_door_sealable_bulkhead.glb	base_door_sealable_bulkhead	base	2383716	d1d7b6f9ad0c	2	4	1	3	3	image-textured	0	4	base_door_sealable_bulkhead	yes	yes	yes	no
+public/3d/runtime/new3ds/base_o2_atmospheric_regulator.glb	base_o2_atmospheric_regulator	base	1972472	f689b8fe0e0c	1	5	1	3	3	image-textured	0	4	base_o2_atmospheric_regulator	yes	yes	yes	yes
+public/3d/runtime/new3ds/base_o2_overhead_duct.glb	base_o2_overhead_duct	base	2114200	f56bed6f745b	1	4	1	3	3	image-textured	0	3	base_o2_overhead_duct	no	yes	yes	yes
+public/3d/runtime/new3ds/base_power_junction_box.glb	base_power_junction_box	base	1724688	83a0fe051d22	1	5	1	3	3	image-textured	0	4	base_power_junction_box	yes	yes	yes	yes
+public/3d/runtime/new3ds/bay_c_pod_312_rupture.glb	bay_c_pod_312_rupture	bay	2818464	157bac180f64	1	1	1	3	3	image-textured	0	0	bay_c_pod_312_rupture	yes	yes	yes	no
+public/3d/runtime/new3ds/body_empty_exosuit.glb	body_empty_exosuit	body	313732	11fcf3d8309f	1	1	1	3	3	image-textured	0	0	body_empty_exosuit	no	yes	no	no
+public/3d/runtime/new3ds/body_frozen_human.glb	body_frozen_human	body	285020	15ed1570a386	1	1	1	3	3	image-textured	0	0	body_frozen_human	no	yes	no	no
+public/3d/runtime/new3ds/boss_corrupted_briggs.glb	boss_corrupted_briggs	boss	2816804	c64f3affa49d	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/boss_corrupted_engineer.glb	boss_corrupted_engineer	boss	11564396	eebac246e364	1	35	1	3	3	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/boss_corrupted_martha.glb	boss_corrupted_martha	boss	2578884	3d504ced46a3	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/boss_cryosnail_dead.glb	boss_cryosnail_dead	boss	2848004	cfa7a56e1b2d	1	1	1	3	3	image-textured	0	0	boss_cryosnail_dead	no	no	no	no
+public/3d/runtime/new3ds/boss_cybersnail_dead.glb	boss_cybersnail_dead	boss	2546712	0db2d15d8122	1	1	1	3	3	image-textured	0	0	boss_cybersnail_dead	no	no	no	no
+public/3d/runtime/new3ds/bunker_junk_rare.glb	bunker_junk_rare	bunker	3328216	34b972c2d961	1	1	1	3	3	image-textured	0	0	bunker_junk_rare	no	no	no	no
+public/3d/runtime/new3ds/bunker_junk_uncommon.glb	bunker_junk_uncommon	bunker	3007156	5014d0e5b6c6	1	1	1	3	3	image-textured	0	0	bunker_junk_uncommon	no	no	no	no
+public/3d/runtime/new3ds/camp_canvas_tent.glb	camp_canvas_tent	camp	8343688	b679ea0a5477	1	1	1	3	3	image-textured	0	0	camp_canvas_tent	yes	yes	yes	no
+public/3d/runtime/new3ds/camp_water_barrel.glb	camp_water_barrel	camp	10241056	694af35e4335	1	1	1	3	3	image-textured	0	0	camp_water_barrel	yes	yes	yes	no
+public/3d/runtime/new3ds/carapace_chitin_press.glb	carapace_chitin_press	carapace	2764168	25811d39bf3c	1	1	1	3	3	image-textured	0	0	carapace_chitin_press	yes	yes	yes	no
+public/3d/runtime/new3ds/carapace_ossuary_anvil.glb	carapace_ossuary_anvil	carapace	2829500	77adbb6e794b	1	1	1	3	3	image-textured	0	0	carapace_ossuary_anvil	yes	yes	yes	no
+public/3d/runtime/new3ds/carapace_sentry_chrysalis.glb	carapace_sentry_chrysalis	carapace	2587160	3b3a6593cd32	1	1	1	3	3	image-textured	0	0	carapace_sentry_chrysalis	yes	yes	yes	no
+public/3d/runtime/new3ds/carry_field_cot_folded.glb	carry_field_cot_folded	carry	2105560	b43c0544ff7a	1	2	1	3	3	image-textured	0	1	carry_field_cot_folded	no	no	yes	no
+public/3d/runtime/new3ds/charm_amber_bio_flask.glb	charm_amber_bio_flask	charm	1295896	973ae6bb516f	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/charm_bunker404.glb	charm_bunker404	charm	266616	0c805fc9d4a5	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/charm_dark_matter.glb	charm_dark_matter	charm	1107556	f4dbce7399b2	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/charm_deep_frost.glb	charm_deep_frost	charm	265456	04844c29d0f3	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/charm_geodetic_compass.glb	charm_geodetic_compass	charm	3789048	189e363b2e9f	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/charm_glitched_ram.glb	charm_glitched_ram	charm	4009676	69e4bb62a9f1	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/charm_golden_sub_bunker_key.glb	charm_golden_sub_bunker_key	charm	4854232	d5e314cf1908	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/charm_grand_marshal.glb	charm_grand_marshal	charm	341024	ef076f96bf27	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/charm_hive_chitin.glb	charm_hive_chitin	charm	269304	441ec58ab803	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/charm_horizon_corporate.glb	charm_horizon_corporate	charm	252232	4f46a1bb730b	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/charm_mini_cryo_core.glb	charm_mini_cryo_core	charm	3995408	291013f5cced	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/charm_mini_drone_bobble.glb	charm_mini_drone_bobble	charm	3668604	c7c02b358f1e	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/charm_rust_bone.glb	charm_rust_bone	charm	282600	fb4583db72df	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/charm_spent_50cal.glb	charm_spent_50cal	charm	3709720	1601d5bcb9b8	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/charm_sporesnail_pearl.glb	charm_sporesnail_pearl	charm	3604880	8b5606ebf9c0	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/charm_trench_whistle.glb	charm_trench_whistle	charm	3924872	538abcaed6b2	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/chasm_abyss_sounding_mortar.glb	chasm_abyss_sounding_mortar	chasm	2563788	efbdebcf6a5c	1	1	1	3	3	image-textured	0	0	chasm_abyss_sounding_mortar	yes	yes	yes	no
+public/3d/runtime/new3ds/chasm_beacon_post.glb	chasm_beacon_post	chasm	10862580	d5ceaee7bf42	1	1	1	3	3	image-textured	0	0	chasm_beacon_post	yes	yes	yes	no
+public/3d/runtime/new3ds/chasm_broken_catwalk.glb	chasm_broken_catwalk	chasm	12325464	032fa7595b7b	1	1	1	3	3	image-textured	0	0	chasm_broken_catwalk	no	no	no	no
+public/3d/runtime/new3ds/chasm_cable_traversal_winch.glb	chasm_cable_traversal_winch	chasm	3071604	f09d673722a8	1	1	1	3	3	image-textured	0	0	chasm_cable_traversal_winch	yes	yes	yes	no
+public/3d/runtime/new3ds/chasm_dredge_hook_crane.glb	chasm_dredge_hook_crane	chasm	2115352	9d7856701779	1	1	1	3	3	image-textured	0	0	chasm_dredge_hook_crane	yes	yes	yes	no
+public/3d/runtime/new3ds/chasm_geothermal_survey_transit.glb	chasm_geothermal_survey_transit	chasm	2468892	74da523fd6f7	1	1	1	3	3	image-textured	0	0	chasm_geothermal_survey_transit	yes	yes	yes	no
+public/3d/runtime/new3ds/chasm_gondola.glb	chasm_gondola	chasm	9228684	2bfd616c2920	1	1	1	3	3	image-textured	0	0	chasm_gondola	no	no	no	no
+public/3d/runtime/new3ds/chasm_hanging_cage_crane.glb	chasm_hanging_cage_crane	chasm	2864508	9a1bb8ad0356	1	1	1	3	3	image-textured	0	0	chasm_hanging_cage_crane	yes	yes	yes	no
+public/3d/runtime/new3ds/chasm_hanging_elevator.glb	chasm_hanging_elevator	chasm	2110472	cfd18cd8d375	1	1	1	3	3	image-textured	0	0	chasm_hanging_elevator	yes	yes	yes	no
+public/3d/runtime/new3ds/chasm_rappel_anchor.glb	chasm_rappel_anchor	chasm	10201012	489f3f7668e0	1	1	1	3	3	image-textured	0	0	chasm_rappel_anchor	no	no	no	no
+public/3d/runtime/new3ds/chasm_seismic_geophone_station.glb	chasm_seismic_geophone_station	chasm	2404600	86fa78f056b0	1	1	1	3	3	image-textured	0	0	chasm_seismic_geophone_station	yes	yes	yes	no
+public/3d/runtime/new3ds/chasm_steam_whistle_buoy.glb	chasm_steam_whistle_buoy	chasm	2807972	4ee4dfc32869	1	1	1	3	3	image-textured	0	0	chasm_steam_whistle_buoy	yes	yes	yes	no
+public/3d/runtime/new3ds/chasm_suicide_ledge_cross.glb	chasm_suicide_ledge_cross	chasm	2080832	10c323685adb	1	1	1	3	3	image-textured	0	0	chasm_suicide_ledge_cross	yes	yes	yes	no
+public/3d/runtime/new3ds/chassis_bio_synthesizer_medic.glb	chassis_bio_synthesizer_medic	chassis	14493532	d73ba74cf2f2	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_bunker404.glb	chassis_bunker404	chassis	712836	a80f31c11b09	1	67	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_cryo_vanguard_scout.glb	chassis_cryo_vanguard_scout	chassis	2780528	e92b7391310a	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_cyber_spectre_infiltrator.glb	chassis_cyber_spectre_infiltrator	chassis	13472128	485554c94fd0	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_deep_frost.glb	chassis_deep_frost	chassis	693704	7a0022ec9f25	1	67	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_dreadnought_exo_juggernaut.glb	chassis_dreadnought_exo_juggernaut	chassis	12875164	f758ceed8a68	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_engineer_chen_undying.glb	chassis_engineer_chen_undying	chassis	16465816	42e9f8ad1794	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_engineer_exodus_vanguard.glb	chassis_engineer_exodus_vanguard	chassis	15087816	a265cfe22bed	1	51	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_grand_marshal.glb	chassis_grand_marshal	chassis	701816	64b921a55f86	1	67	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_hive_chitin.glb	chassis_hive_chitin	chassis	650808	9c4ab08d9752	1	67	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_hive_lord_symbiote.glb	chassis_hive_lord_symbiote	chassis	12687876	ad3302d994cc	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_horizon_corporate.glb	chassis_horizon_corporate	chassis	703136	9bd514039af9	1	68	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_rust_bone.glb	chassis_rust_bone	chassis	737608	034582a4cf90	1	67	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_scout_cartographer.glb	chassis_scout_cartographer	chassis	14933116	bab92aa280bc	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_scout_ghost_runner.glb	chassis_scout_ghost_runner	chassis	8511356	584dddd3031c	1	67	1	3	3	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_scout_ghost_runner_male.glb	chassis_scout_ghost_runner_male	chassis	10085572	1a94c2653a58	1	67	1	3	3	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_scout_pioneer_courier.glb	chassis_scout_pioneer_courier	chassis	14198552	718059cacaf7	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_subterran_drill_engineer.glb	chassis_subterran_drill_engineer	chassis	3111776	fa841bd7a521	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_tank_colossus_hive.glb	chassis_tank_colossus_hive	chassis	15326364	f8779da4b550	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_tank_gentle_titan.glb	chassis_tank_gentle_titan	chassis	15666940	6f3c9aeec2ea	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_tank_old_iron.glb	chassis_tank_old_iron	chassis	16793200	90e0fb9fef91	1	43	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/chassis_trench_warden_heavy.glb	chassis_trench_warden_heavy	chassis	2748340	50a9ac464acc	1	67	1	1	1	image-textured	1	0	npc_briggs	no	no	no	no
+public/3d/runtime/new3ds/chassis_void_commando_recon.glb	chassis_void_commando_recon	chassis	5471428	856d862de3da	1	67	1	1	1	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/chen_sealed_confession_console.glb	chen_sealed_confession_console	chen	2836424	0a60521e5c4c	1	1	1	3	3	image-textured	0	0	chen_sealed_confession_console	yes	yes	yes	no
+public/3d/runtime/new3ds/corp_asset_incinerator_chute.glb	corp_asset_incinerator_chute	corp	2771520	3415513098b4	1	1	1	3	3	image-textured	0	0	corp_asset_incinerator_chute	yes	yes	yes	no
+public/3d/runtime/new3ds/corp_biometric_collar_chute.glb	corp_biometric_collar_chute	corp	2957300	74cfe50c63d4	1	1	1	3	3	image-textured	0	0	corp_biometric_collar_chute	yes	yes	yes	no
+public/3d/runtime/new3ds/corp_biometric_wall_safe.glb	corp_biometric_wall_safe	corp	2840992	3d59129605a9	1	1	1	3	3	image-textured	0	0	corp_biometric_wall_safe	yes	yes	yes	no
+public/3d/runtime/new3ds/corp_compliance_choker_bench.glb	corp_compliance_choker_bench	corp	2606828	71d042eb1b3b	1	1	1	3	3	image-textured	0	0	corp_compliance_choker_bench	yes	yes	yes	no
+public/3d/runtime/new3ds/corp_cryo_transport_coffin.glb	corp_cryo_transport_coffin	corp	3839960	21c8f7391087	1	1	1	3	3	image-textured	0	0	corp_cryo_transport_coffin	yes	yes	yes	no
+public/3d/runtime/new3ds/corp_debt_severing_kiosk.glb	corp_debt_severing_kiosk	corp	2722916	033379e204d5	1	1	1	3	3	image-textured	0	0	corp_debt_severing_kiosk	yes	yes	yes	no
+public/3d/runtime/new3ds/corp_dissection_gurney.glb	corp_dissection_gurney	corp	2542604	a14b201b7dee	1	1	1	3	3	image-textured	0	0	corp_dissection_gurney	yes	yes	yes	no
+public/3d/runtime/new3ds/corp_executive_sarcophagus.glb	corp_executive_sarcophagus	corp	3167032	19fde19fe720	1	1	1	3	3	image-textured	0	0	corp_executive_sarcophagus	yes	yes	yes	no
+public/3d/runtime/new3ds/corp_executive_whisper_booth.glb	corp_executive_whisper_booth	corp	2644736	30f92089859d	1	1	1	3	3	image-textured	0	0	corp_executive_whisper_booth	yes	yes	yes	no
+public/3d/runtime/new3ds/corp_incinerator_hopper.glb	corp_incinerator_hopper	corp	2377480	2b3706d19e08	1	1	1	3	3	image-textured	0	0	corp_incinerator_hopper	yes	yes	yes	no
+public/3d/runtime/new3ds/corp_interrogation_chair.glb	corp_interrogation_chair	corp	1966580	1c8ca63c8195	1	1	1	3	3	image-textured	0	0	corp_interrogation_chair	yes	yes	yes	no
+public/3d/runtime/new3ds/corp_quantum_ledger_podium.glb	corp_quantum_ledger_podium	corp	2769952	7c01e14f7100	1	1	1	3	3	image-textured	0	0	corp_quantum_ledger_podium	yes	yes	yes	no
+public/3d/runtime/new3ds/corp_suppression_barrier.glb	corp_suppression_barrier	corp	2996368	b2bb427836af	1	1	1	3	3	image-textured	0	0	corp_suppression_barrier	yes	yes	yes	no
+public/3d/runtime/new3ds/crash_cockpit_canopy.glb	crash_cockpit_canopy	crash	2928524	19208f122d3d	1	1	1	3	3	image-textured	0	0	crash_cockpit_canopy	yes	yes	yes	no
+public/3d/runtime/new3ds/crash_drag_chute.glb	crash_drag_chute	crash	8889852	c89ece79bab1	1	1	1	3	3	image-textured	0	0	crash_drag_chute	no	no	no	no
+public/3d/runtime/new3ds/crash_engine_nacelle.glb	crash_engine_nacelle	crash	8613632	b1b5fd40aca4	1	1	1	3	3	image-textured	0	0	crash_engine_nacelle	yes	yes	yes	no
+public/3d/runtime/new3ds/crash_hull_panels.glb	crash_hull_panels	crash	6801204	72128bfbaf96	1	1	1	3	3	image-textured	0	0	crash_hull_panels	yes	no	yes	no
+public/3d/runtime/new3ds/crawler_signal_antenna_rig.glb	crawler_signal_antenna_rig	crawler	2282872	d69c47e218ae	1	1	1	3	3	image-textured	0	0	crawler_signal_antenna_rig	yes	yes	yes	no
+public/3d/runtime/new3ds/cryo_cannibal_butchery_table.glb	cryo_cannibal_butchery_table	cryo	3228596	ab3dffe68e47	1	1	1	3	3	image-textured	0	0	cryo_cannibal_butchery_table	yes	yes	yes	no
+public/3d/runtime/new3ds/cryo_frozen_cascade.glb	cryo_frozen_cascade	cryo	6981308	643b4388b480	1	1	1	3	3	image-textured	0	0	cryo_frozen_cascade	no	yes	no	no
+public/3d/runtime/new3ds/cryo_frozen_shelter_pod.glb	cryo_frozen_shelter_pod	cryo	2489304	0ea18e469767	1	1	1	3	3	image-textured	0	0	cryo_frozen_shelter_pod	yes	yes	yes	no
+public/3d/runtime/new3ds/cryo_heater_station.glb	cryo_heater_station	cryo	10086176	0acf5a4fb535	1	1	1	3	3	image-textured	0	0	cryo_heater_station	yes	yes	yes	no
+public/3d/runtime/new3ds/cryo_ice_blocks.glb	cryo_ice_blocks	cryo	7705104	e2297262538f	1	1	1	3	3	image-textured	0	0	cryo_ice_blocks	yes	yes	yes	no
+public/3d/runtime/new3ds/cryo_ice_core_specimen.glb	cryo_ice_core_specimen	cryo	3148016	76645ddb716c	1	1	1	3	3	image-textured	0	0	cryo_ice_core_specimen	yes	yes	yes	no
+public/3d/runtime/new3ds/cryo_ice_crawler.glb	cryo_ice_crawler	cryo	10091860	52c2a7d30c04	1	1	1	3	3	image-textured	0	0	cryo_ice_crawler	yes	yes	yes	no
+public/3d/runtime/new3ds/cryo_ruptured_pod.glb	cryo_ruptured_pod	cryo	2356500	abb904e23bd5	1	1	1	3	3	image-textured	0	0	cryo_ruptured_pod	yes	yes	yes	no
+public/3d/runtime/new3ds/cryo_snowbound_crates.glb	cryo_snowbound_crates	cryo	8054692	59e0c4643863	1	1	1	3	3	image-textured	0	0	cryo_snowbound_crates	yes	yes	yes	no
+public/3d/runtime/new3ds/cryo_thawing_trough.glb	cryo_thawing_trough	cryo	2518096	fae8007b05f9	1	1	1	3	3	image-textured	0	0	cryo_thawing_trough	yes	yes	yes	no
+public/3d/runtime/new3ds/cryosnail.glb	cryosnail	cryosnail	3360104	367f14b19219	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/cryosnail_dead.glb	cryosnail_dead	cryosnail	3064160	7d21b7314cf6	1	1	1	3	3	image-textured	0	0	cryosnail_dead	no	no	no	no
+public/3d/runtime/new3ds/cybersnail_dead.glb	cybersnail_dead	cybersnail	2858288	af3fa015b612	1	1	1	3	3	image-textured	0	0	cybersnail_dead	no	no	no	no
+public/3d/runtime/new3ds/decon_exosuit_scrubber_station.glb	decon_exosuit_scrubber_station	decon	3441624	966c844281d5	1	1	1	3	3	image-textured	0	0	decon_exosuit_scrubber_station	yes	yes	yes	no
+public/3d/runtime/new3ds/door_arch_guillotine_assembled.glb	door_arch_guillotine_assembled	door	4228144	76c33233bc58	2	5	2	6	6	image-textured	0	5	door_arch_guillotine_assembled	yes	yes	yes	no
+public/3d/runtime/new3ds/door_arch_guillotine_frame.glb	door_arch_guillotine_frame	door	2506920	16c620036be3	1	3	1	3	3	image-textured	0	2	door_arch_guillotine_frame	no	yes	yes	no
+public/3d/runtime/new3ds/door_arch_guillotine_slab.glb	door_arch_guillotine_slab	door	1865604	7aca3b46ea3e	1	2	1	3	3	image-textured	0	1	door_arch_guillotine_slab	no	yes	yes	no
+public/3d/runtime/new3ds/engineer_magnetic_bottle_cell.glb	engineer_magnetic_bottle_cell	engineer	3275056	3287fdb18cb1	1	1	1	3	3	image-textured	0	0	engineer_magnetic_bottle_cell	yes	yes	yes	no
+public/3d/runtime/new3ds/engineer_robotic_welding_arm.glb	engineer_robotic_welding_arm	engineer	2906032	ea76ea14bb51	1	1	1	3	3	image-textured	0	0	engineer_robotic_welding_arm	yes	yes	yes	no
+public/3d/runtime/new3ds/engineer_wave_relay_dynamo.glb	engineer_wave_relay_dynamo	engineer	2197196	4263cce5d3e7	1	1	1	3	3	image-textured	0	0	engineer_wave_relay_dynamo	yes	yes	yes	yes
+public/3d/runtime/new3ds/evac_avionics_gyro_gimbal.glb	evac_avionics_gyro_gimbal	evac	3006048	8cb597ee7a1d	1	1	1	3	3	image-textured	0	0	evac_avionics_gyro_gimbal	yes	yes	yes	no
+public/3d/runtime/new3ds/evac_cabin_co2_scrubber.glb	evac_cabin_co2_scrubber	evac	3194700	4b07dffd4ff4	1	1	1	3	3	image-textured	0	0	evac_cabin_co2_scrubber	yes	yes	yes	no
+public/3d/runtime/new3ds/evac_cargo_ballast_scale.glb	evac_cargo_ballast_scale	evac	3097296	858a052b5993	1	1	1	3	3	image-textured	0	0	evac_cargo_ballast_scale	yes	yes	yes	no
+public/3d/runtime/new3ds/evac_cryo_hypergolic_manifold.glb	evac_cryo_hypergolic_manifold	evac	2988860	b425d2cbd6a1	1	1	1	3	3	image-textured	0	0	evac_cryo_hypergolic_manifold	yes	yes	yes	no
+public/3d/runtime/new3ds/evac_four_seat_cockpit_module.glb	evac_four_seat_cockpit_module	evac	2343072	e12cfcdfe47a	1	1	1	3	3	image-textured	0	0	evac_four_seat_cockpit_module	yes	yes	yes	no
+public/3d/runtime/new3ds/evac_manifest_allocation_terminal.glb	evac_manifest_allocation_terminal	evac	2572284	f50f5a16cbbd	1	1	1	3	3	image-textured	0	0	evac_manifest_allocation_terminal	yes	yes	yes	no
+public/3d/runtime/new3ds/evac_manual_abort_detonator.glb	evac_manual_abort_detonator	evac	2704484	2bc7886f4321	1	1	1	3	3	image-textured	0	0	evac_manual_abort_detonator	yes	yes	yes	no
+public/3d/runtime/new3ds/evac_preflight_fuel_umbilical.glb	evac_preflight_fuel_umbilical	evac	2819932	88a71fd14ff7	1	1	1	3	3	image-textured	0	0	evac_preflight_fuel_umbilical	yes	yes	yes	no
+public/3d/runtime/new3ds/fixture_clock_dead.glb	fixture_clock_dead	fixture	2852168	c1ca571ece95	1	1	1	3	3	image-textured	0	0	fixture_clock_dead	no	no	no	no
+public/3d/runtime/new3ds/fixture_sconce_vine.glb	fixture_sconce_vine	fixture	684212	0132800e80b7	1	1	1	3	3	image-textured	0	0	fixture_sconce_vine	no	yes	no	no
+public/3d/runtime/new3ds/fungal_spore_vent.glb	fungal_spore_vent	fungal	2637524	09f4084f7f26	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/geo_pressure_relief_siren.glb	geo_pressure_relief_siren	geo	2304368	00e07e3224d9	1	1	1	3	3	image-textured	0	0	geo_pressure_relief_siren	yes	yes	yes	no
+public/3d/runtime/new3ds/geo_steam_manifold_actuator.glb	geo_steam_manifold_actuator	geo	2725160	cbc87f2083c1	1	1	1	3	3	image-textured	0	0	geo_steam_manifold_actuator	yes	yes	yes	no
+public/3d/runtime/new3ds/gun_engineer_tesla_lock.glb	gun_engineer_tesla_lock	gun	2649628	e470e1fef6cf	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/gun_scout_talon_c.glb	gun_scout_talon_c	gun	1616300	02bb91bcf609	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/gun_scout_vector9_talon.glb	gun_scout_vector9_talon	gun	2254632	3dcb6582fd94	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/gun_tank_siege_breaker50.glb	gun_tank_siege_breaker50	gun	2441116	3bd6f1ad7b55	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/hive_amniotic_feeder_trough.glb	hive_amniotic_feeder_trough	hive	2220136	e5fbe6cac179	1	1	1	3	3	image-textured	0	0	hive_amniotic_feeder_trough	yes	yes	yes	no
+public/3d/runtime/new3ds/hive_assimilated_generator.glb	hive_assimilated_generator	hive	7870220	106104ea54b7	1	1	1	3	3	image-textured	0	0	hive_assimilated_generator	yes	yes	yes	yes
+public/3d/runtime/new3ds/hive_brood_dome.glb	hive_brood_dome	hive	7709376	de9317e8df14	1	1	1	3	3	image-textured	0	0	hive_brood_dome	yes	yes	yes	no
+public/3d/runtime/new3ds/hive_cocooned_crew.glb	hive_cocooned_crew	hive	7046820	67e24f8fd528	1	1	1	3	3	image-textured	0	0	hive_cocooned_crew	yes	yes	yes	no
+public/3d/runtime/new3ds/hive_gestation_sac.glb	hive_gestation_sac	hive	3117596	8b49b8e19fc0	1	1	1	3	3	image-textured	0	0	hive_gestation_sac	yes	yes	yes	no
+public/3d/runtime/new3ds/hive_pheromone_node.glb	hive_pheromone_node	hive	7140760	a12cc74a5ece	1	1	1	3	3	image-textured	0	0	hive_pheromone_node	yes	yes	yes	no
+public/3d/runtime/new3ds/hive_pulmonary_bellows.glb	hive_pulmonary_bellows	hive	2198396	d993700ceb12	1	1	1	3	3	image-textured	0	0	hive_pulmonary_bellows	yes	yes	yes	no
+public/3d/runtime/new3ds/hive_resin_pillar.glb	hive_resin_pillar	hive	7823888	beb860db51d9	1	1	1	3	3	image-textured	0	0	hive_resin_pillar	yes	yes	yes	no
+public/3d/runtime/new3ds/hive_sphincter_iris.glb	hive_sphincter_iris	hive	2402176	5f5282ea2578	1	1	1	3	3	image-textured	0	0	hive_sphincter_iris	yes	yes	yes	no
+public/3d/runtime/new3ds/hive_tendril_arch.glb	hive_tendril_arch	hive	8240908	bcf2b11d38df	1	1	1	3	3	image-textured	0	0	hive_tendril_arch	no	yes	no	no
+public/3d/runtime/new3ds/hive_visceral_ovipositor.glb	hive_visceral_ovipositor	hive	2735892	a1b06645ffbf	1	1	1	3	3	image-textured	0	0	hive_visceral_ovipositor	yes	yes	yes	no
+public/3d/runtime/new3ds/hive_vivisected_engineer.glb	hive_vivisected_engineer	hive	2464936	67b1cc3d27ea	1	1	1	3	3	image-textured	0	0	hive_vivisected_engineer	yes	yes	yes	no
+public/3d/runtime/new3ds/hydro_mycelial_seed_vault.glb	hydro_mycelial_seed_vault	hydro	2393364	6004a7ee2466	1	1	1	3	3	image-textured	0	0	hydro_mycelial_seed_vault	yes	yes	yes	no
+public/3d/runtime/new3ds/ind_biomass_grinder.glb	ind_biomass_grinder	ind	2470068	fae869b44cb1	1	1	1	3	3	image-textured	0	0	ind_biomass_grinder	yes	yes	yes	no
+public/3d/runtime/new3ds/ind_fuel_rod_cask.glb	ind_fuel_rod_cask	ind	2277776	bf4018060c1d	1	1	1	3	3	image-textured	0	0	ind_fuel_rod_cask	yes	yes	yes	no
+public/3d/runtime/new3ds/ind_hydraulic_manifold.glb	ind_hydraulic_manifold	ind	2658612	b63a5df85f52	1	1	1	3	3	image-textured	0	0	ind_hydraulic_manifold	yes	yes	yes	no
+public/3d/runtime/new3ds/life_acoustic_ear_horn.glb	life_acoustic_ear_horn	life	2990192	c3d00a766b7c	1	1	1	3	3	image-textured	0	0	life_acoustic_ear_horn	no	yes	no	no
+public/3d/runtime/new3ds/life_algae_tank.glb	life_algae_tank	life	10159688	9e3af576d851	1	1	1	3	3	image-textured	0	0	life_algae_tank	yes	yes	yes	no
+public/3d/runtime/new3ds/life_ammo_ovipositor.glb	life_ammo_ovipositor	life	2737512	5a5f686f731a	1	1	1	3	3	image-textured	0	0	life_ammo_ovipositor	no	yes	no	no
+public/3d/runtime/new3ds/life_arcade_cabinet.glb	life_arcade_cabinet	life	11413204	cc35d2fb7fa8	1	1	1	3	3	image-textured	0	0	life_arcade_cabinet	yes	yes	yes	no
+public/3d/runtime/new3ds/life_assimilated_desk.glb	life_assimilated_desk	life	6333844	f71a7e7c7f59	1	1	1	3	3	image-textured	0	0	life_assimilated_desk	yes	yes	yes	no
+public/3d/runtime/new3ds/life_barber_chair.glb	life_barber_chair	life	7810132	225f276910e7	1	1	1	3	3	image-textured	0	0	life_barber_chair	no	no	no	no
+public/3d/runtime/new3ds/life_barrel_heater.glb	life_barrel_heater	life	2419936	b8f67284949f	1	1	1	3	3	image-textured	0	0	life_barrel_heater	no	yes	no	no
+public/3d/runtime/new3ds/life_bone_clamp_rig.glb	life_bone_clamp_rig	life	2703096	69c1a17c692d	1	1	1	3	3	image-textured	0	0	life_bone_clamp_rig	no	yes	no	no
+public/3d/runtime/new3ds/life_brood_comb.glb	life_brood_comb	life	6737672	c3a490d3651b	1	1	1	3	3	image-textured	0	0	life_brood_comb	no	yes	no	no
+public/3d/runtime/new3ds/life_bunk_stack.glb	life_bunk_stack	life	2755664	78f29db6139f	1	1	1	3	3	image-textured	0	0	life_bunk_stack	no	no	no	no
+public/3d/runtime/new3ds/life_card_table.glb	life_card_table	life	2914792	30904f22ed98	1	1	1	3	3	image-textured	0	0	life_card_table	no	no	no	no
+public/3d/runtime/new3ds/life_cargo_pallet_netted.glb	life_cargo_pallet_netted	life	2397516	8a0fbbc3be0a	1	1	1	3	3	image-textured	0	0	life_cargo_pallet_netted	no	no	no	no
+public/3d/runtime/new3ds/life_ceiling_collapse.glb	life_ceiling_collapse	life	9179968	5aa039f4f9d7	1	1	1	3	3	image-textured	0	0	life_ceiling_collapse	no	yes	no	no
+public/3d/runtime/new3ds/life_checkpoint_post.glb	life_checkpoint_post	life	7048148	91b22e18bddc	1	1	1	3	3	image-textured	0	0	life_checkpoint_post	no	yes	no	no
+public/3d/runtime/new3ds/life_cistern_tank.glb	life_cistern_tank	life	7868808	5c1417877f46	1	1	1	3	3	image-textured	0	0	life_cistern_tank	yes	yes	yes	no
+public/3d/runtime/new3ds/life_cochlear_intercom.glb	life_cochlear_intercom	life	7984236	fab4e47602ca	1	1	1	3	3	image-textured	0	0	life_cochlear_intercom	yes	yes	yes	no
+public/3d/runtime/new3ds/life_colossal_limb.glb	life_colossal_limb	life	8918496	4bf62b2365dc	1	1	1	3	3	image-textured	0	0	life_colossal_limb	no	yes	no	no
+public/3d/runtime/new3ds/life_confessional.glb	life_confessional	life	8336228	dedb49067d94	3	3	1	3	3	image-textured	0	3	life_confessional	yes	yes	yes	no
+public/3d/runtime/new3ds/life_conveyor_section.glb	life_conveyor_section	life	9541096	7b1a1804c20d	1	1	1	3	3	image-textured	0	0	life_conveyor_section	yes	yes	yes	no
+public/3d/runtime/new3ds/life_covered_stretcher.glb	life_covered_stretcher	life	2603596	cbe1452cd023	1	1	1	3	3	image-textured	0	0	life_covered_stretcher	no	no	no	no
+public/3d/runtime/new3ds/life_devotion_tree.glb	life_devotion_tree	life	7743640	3b6b12c135f2	1	1	1	3	3	image-textured	0	0	life_devotion_tree	no	yes	no	no
+public/3d/runtime/new3ds/life_drip_buckets.glb	life_drip_buckets	life	6762384	de0da2b71e53	1	1	1	3	3	image-textured	0	0	life_drip_buckets	no	yes	no	no
+public/3d/runtime/new3ds/life_dropped_kit_pile.glb	life_dropped_kit_pile	life	8804696	7278699cd314	1	1	1	3	3	image-textured	0	0	life_dropped_kit_pile	no	no	no	no
+public/3d/runtime/new3ds/life_exosuit_teardown.glb	life_exosuit_teardown	life	9290356	f5f4856729f5	1	1	1	3	3	image-textured	0	0	life_exosuit_teardown	no	yes	no	no
+public/3d/runtime/new3ds/life_fallen_comm_dish.glb	life_fallen_comm_dish	life	8057016	7049604d08d9	1	1	1	3	3	image-textured	0	0	life_fallen_comm_dish	no	yes	no	no
+public/3d/runtime/new3ds/life_filing_cabinets.glb	life_filing_cabinets	life	11472084	a01d72fea44d	1	1	1	3	3	image-textured	0	0	life_filing_cabinets	yes	no	yes	no
+public/3d/runtime/new3ds/life_fire_station.glb	life_fire_station	life	8737780	d90ce4e1373f	1	1	1	3	3	image-textured	0	0	life_fire_station	yes	yes	yes	no
+public/3d/runtime/new3ds/life_flood_lamp_tripod.glb	life_flood_lamp_tripod	life	2468348	30437a787c07	1	1	1	3	3	image-textured	0	0	life_flood_lamp_tripod	no	yes	no	no
+public/3d/runtime/new3ds/life_footlocker_open.glb	life_footlocker_open	life	2997744	40823e44b591	1	1	1	3	3	image-textured	0	0	life_footlocker_open	no	no	no	no
+public/3d/runtime/new3ds/life_forklift.glb	life_forklift	life	7856276	9e147d4809d4	1	1	1	3	3	image-textured	0	0	life_forklift	yes	yes	yes	no
+public/3d/runtime/new3ds/life_fuel_probe_boom.glb	life_fuel_probe_boom	life	2409536	d2f6f4190f8d	1	1	1	3	3	image-textured	0	0	life_fuel_probe_boom	no	yes	no	no
+public/3d/runtime/new3ds/life_fungal_cable_bundle.glb	life_fungal_cable_bundle	life	7469004	a01e3998ec44	1	1	1	3	3	image-textured	0	0	life_fungal_cable_bundle	no	yes	no	no
+public/3d/runtime/new3ds/life_fuse_bypass_panel.glb	life_fuse_bypass_panel	life	8075696	ea8937baf8e4	1	1	1	3	3	image-textured	0	0	life_fuse_bypass_panel	no	yes	no	no
+public/3d/runtime/new3ds/life_galley_hotplate.glb	life_galley_hotplate	life	3105056	3a61280919f6	1	1	1	3	3	image-textured	0	0	life_galley_hotplate	no	yes	no	no
+public/3d/runtime/new3ds/life_guide_rope_stakes.glb	life_guide_rope_stakes	life	11136720	4c466fba68f7	1	1	1	3	3	image-textured	0	0	life_guide_rope_stakes	no	no	no	no
+public/3d/runtime/new3ds/life_hive_dew_funnel.glb	life_hive_dew_funnel	life	6572136	f92a6f151871	1	1	1	3	3	image-textured	0	0	life_hive_dew_funnel	no	yes	no	no
+public/3d/runtime/new3ds/life_hive_feeding_bladder.glb	life_hive_feeding_bladder	life	5581280	d15993fa3a3c	1	1	1	3	3	image-textured	0	0	life_hive_feeding_bladder	no	yes	no	no
+public/3d/runtime/new3ds/life_hydro_rack.glb	life_hydro_rack	life	2114988	cbb3ba83e857	1	1	1	3	3	image-textured	0	0	life_hydro_rack	no	yes	no	no
+public/3d/runtime/new3ds/life_ice_bore_winch.glb	life_ice_bore_winch	life	8420560	67a61771c2b7	2	2	1	3	3	image-textured	0	2	life_ice_bore_winch	yes	yes	yes	no
+public/3d/runtime/new3ds/life_ice_core_rack.glb	life_ice_core_rack	life	7718124	3aae561bb577	1	1	1	3	3	image-textured	0	0	life_ice_core_rack	no	yes	no	no
+public/3d/runtime/new3ds/life_ice_sled.glb	life_ice_sled	life	9869232	1a3f396dca7a	1	1	1	3	3	image-textured	0	0	life_ice_sled	no	yes	no	no
+public/3d/runtime/new3ds/life_infusion_cradle.glb	life_infusion_cradle	life	2401240	f02d42ad70a9	1	1	1	3	3	image-textured	0	0	life_infusion_cradle	no	yes	no	no
+public/3d/runtime/new3ds/life_janitor_cart.glb	life_janitor_cart	life	5247396	2e99604f506b	1	1	1	3	3	image-textured	0	0	life_janitor_cart	no	yes	no	no
+public/3d/runtime/new3ds/life_latrine_stall.glb	life_latrine_stall	life	2523524	246984ffb481	1	1	1	3	3	image-textured	0	0	life_latrine_stall	no	yes	no	no
+public/3d/runtime/new3ds/life_laundry_machines.glb	life_laundry_machines	life	10060936	77726eb4aa02	1	1	1	3	3	image-textured	0	0	life_laundry_machines	yes	yes	yes	no
+public/3d/runtime/new3ds/life_lookout_perch.glb	life_lookout_perch	life	10131944	a788867c40ec	1	1	1	3	3	image-textured	0	0	life_lookout_perch	no	yes	no	no
+public/3d/runtime/new3ds/life_lung_filter_bellows.glb	life_lung_filter_bellows	life	2779752	bfdcea68dff9	1	1	1	3	3	image-textured	0	0	life_lung_filter_bellows	no	yes	no	no
+public/3d/runtime/new3ds/life_mask_rack.glb	life_mask_rack	life	2059920	0c22dd1720ec	1	1	1	3	3	image-textured	0	0	life_mask_rack	no	no	no	no
+public/3d/runtime/new3ds/life_meat_smoking_rack.glb	life_meat_smoking_rack	life	7159832	fe3d5d0613be	1	1	1	3	3	image-textured	0	0	life_meat_smoking_rack	no	yes	no	no
+public/3d/runtime/new3ds/life_memorial_board.glb	life_memorial_board	life	3254424	4696759d68ee	1	1	1	3	3	image-textured	0	0	life_memorial_board	no	yes	no	no
+public/3d/runtime/new3ds/life_mess_table.glb	life_mess_table	life	2976780	b2620de17343	1	1	1	3	3	image-textured	0	0	life_mess_table	no	no	no	no
+public/3d/runtime/new3ds/life_ore_cart.glb	life_ore_cart	life	7587764	6b5abc4c057c	1	1	1	3	3	image-textured	0	0	life_ore_cart	no	no	no	no
+public/3d/runtime/new3ds/life_overseer_desk.glb	life_overseer_desk	life	8296112	8e8c2ab2b53d	1	1	1	3	3	image-textured	0	0	life_overseer_desk	yes	yes	yes	no
+public/3d/runtime/new3ds/life_pallet_racking.glb	life_pallet_racking	life	9940900	0f123fa92bd6	1	1	1	3	3	image-textured	0	0	life_pallet_racking	yes	no	yes	no
+public/3d/runtime/new3ds/life_parka_hooks.glb	life_parka_hooks	life	9284768	ba4b72a7efb0	1	1	1	3	3	image-textured	0	0	life_parka_hooks	no	yes	no	no
+public/3d/runtime/new3ds/life_pelvic_autopsy_trough.glb	life_pelvic_autopsy_trough	life	3246972	20dcadfa4bab	1	1	1	3	3	image-textured	0	0	life_pelvic_autopsy_trough	no	yes	no	no
+public/3d/runtime/new3ds/life_peristaltic_feeder.glb	life_peristaltic_feeder	life	2058604	62d9a2f5f260	1	1	1	3	3	image-textured	0	0	life_peristaltic_feeder	no	yes	no	no
+public/3d/runtime/new3ds/life_pew_segment.glb	life_pew_segment	life	10811296	5776dd29213e	1	1	1	3	3	image-textured	0	0	life_pew_segment	no	no	no	no
+public/3d/runtime/new3ds/life_pheromone_censer.glb	life_pheromone_censer	life	3041748	92fe60d77aa7	1	1	1	3	3	image-textured	0	0	life_pheromone_censer	no	yes	no	no
+public/3d/runtime/new3ds/life_pipe_hammock.glb	life_pipe_hammock	life	2901252	5ff290187cf6	1	1	1	3	3	image-textured	0	0	life_pipe_hammock	no	yes	no	no
+public/3d/runtime/new3ds/life_pipeline_trestle.glb	life_pipeline_trestle	life	11041568	d316a2df3b28	1	1	1	3	3	image-textured	0	0	life_pipeline_trestle	no	yes	no	no
+public/3d/runtime/new3ds/life_planning_board.glb	life_planning_board	life	11750512	675aa106f2b5	1	1	1	3	3	image-textured	0	0	life_planning_board	yes	yes	yes	no
+public/3d/runtime/new3ds/life_pneumatic_tube_node.glb	life_pneumatic_tube_node	life	8243792	1f74910b205d	1	1	1	3	3	image-textured	0	0	life_pneumatic_tube_node	no	yes	no	no
+public/3d/runtime/new3ds/life_pod_seat_row.glb	life_pod_seat_row	life	9388760	da4563d5106e	1	1	1	3	3	image-textured	0	0	life_pod_seat_row	no	yes	no	no
+public/3d/runtime/new3ds/life_reloading_bench.glb	life_reloading_bench	life	2791872	17538580f47f	1	1	1	3	3	image-textured	0	0	life_reloading_bench	no	yes	no	no
+public/3d/runtime/new3ds/life_resin_extractor.glb	life_resin_extractor	life	3324632	6f79d3c248dd	1	1	1	3	3	image-textured	0	0	life_resin_extractor	no	yes	no	no
+public/3d/runtime/new3ds/life_ribcage_rescue_cabinet.glb	life_ribcage_rescue_cabinet	life	9305128	f46d39bf4bbe	2	2	1	3	3	image-textured	0	2	life_ribcage_rescue_cabinet	yes	yes	yes	no
+public/3d/runtime/new3ds/life_rope_anchor_post.glb	life_rope_anchor_post	life	8357932	cab45c4d2db8	1	1	1	3	3	image-textured	0	0	life_rope_anchor_post	no	yes	no	no
+public/3d/runtime/new3ds/life_route_map_table.glb	life_route_map_table	life	3184192	363ce23e2dcf	1	1	1	3	3	image-textured	0	0	life_route_map_table	yes	yes	yes	no
+public/3d/runtime/new3ds/life_sanitation_bidet.glb	life_sanitation_bidet	life	2334596	a3157856e1d1	1	1	1	3	3	image-textured	0	0	life_sanitation_bidet	no	yes	no	no
+public/3d/runtime/new3ds/life_scaffold_tower.glb	life_scaffold_tower	life	11051524	1f11457f99fc	1	1	1	3	3	image-textured	0	0	life_scaffold_tower	yes	yes	yes	no
+public/3d/runtime/new3ds/life_scent_distiller.glb	life_scent_distiller	life	2615068	8acd7b01a6fa	1	1	1	3	3	image-textured	0	0	life_scent_distiller	no	yes	no	no
+public/3d/runtime/new3ds/life_seismic_drill.glb	life_seismic_drill	life	9531584	8c223fec017c	2	2	1	3	3	image-textured	0	2	life_seismic_drill	yes	yes	yes	no
+public/3d/runtime/new3ds/life_sensory_chair.glb	life_sensory_chair	life	3090464	655215d4a224	1	1	1	3	3	image-textured	0	0	life_sensory_chair	no	yes	no	no
+public/3d/runtime/new3ds/life_server_racks.glb	life_server_racks	life	8707100	cc05db89dfc0	1	1	1	3	3	image-textured	0	0	life_server_racks	yes	yes	yes	no
+public/3d/runtime/new3ds/life_shower_stall.glb	life_shower_stall	life	10998468	25b0cfdde9c3	1	1	1	3	3	image-textured	0	0	life_shower_stall	yes	yes	yes	no
+public/3d/runtime/new3ds/life_sink_row.glb	life_sink_row	life	9343776	805a0acc3cd3	1	1	1	3	3	image-textured	0	0	life_sink_row	yes	yes	yes	no
+public/3d/runtime/new3ds/life_sleep_sleeve.glb	life_sleep_sleeve	life	2278536	97980412e562	1	1	1	3	3	image-textured	0	0	life_sleep_sleeve	no	yes	no	no
+public/3d/runtime/new3ds/life_stigmata_inscriber.glb	life_stigmata_inscriber	life	2809524	949aa368a34c	1	1	1	3	3	image-textured	0	0	life_stigmata_inscriber	no	yes	no	no
+public/3d/runtime/new3ds/life_suit_drying_rack.glb	life_suit_drying_rack	life	2978732	4196a29222e6	1	1	1	3	3	image-textured	0	0	life_suit_drying_rack	no	yes	no	no
+public/3d/runtime/new3ds/life_supply_drop_pod.glb	life_supply_drop_pod	life	8135392	898b9a746ce8	2	2	1	3	3	image-textured	0	2	life_supply_drop_pod	yes	yes	yes	no
+public/3d/runtime/new3ds/life_surgical_lamp.glb	life_surgical_lamp	life	9429904	9525f7c5325c	1	1	1	3	3	image-textured	0	0	life_surgical_lamp	yes	yes	yes	no
+public/3d/runtime/new3ds/life_tactile_console.glb	life_tactile_console	life	2938692	9ff515060b37	1	1	1	3	3	image-textured	0	0	life_tactile_console	yes	yes	yes	no
+public/3d/runtime/new3ds/life_tally_bulkhead.glb	life_tally_bulkhead	life	3089744	2736585070cb	1	1	1	3	3	image-textured	0	0	life_tally_bulkhead	no	no	no	no
+public/3d/runtime/new3ds/life_tarp_leanto.glb	life_tarp_leanto	life	8485688	caffeb9abd76	2	2	1	3	3	image-textured	0	1	life_tarp_leanto	no	no	no	no
+public/3d/runtime/new3ds/life_training_dummy.glb	life_training_dummy	life	7949912	8d43d7569d56	1	1	1	3	3	image-textured	0	0	life_training_dummy	no	no	no	no
+public/3d/runtime/new3ds/life_transformer_bank.glb	life_transformer_bank	life	9010392	d7254acf70b9	1	1	1	3	3	image-textured	0	0	life_transformer_bank	yes	yes	yes	yes
+public/3d/runtime/new3ds/life_umbilical_tether.glb	life_umbilical_tether	life	2746848	da3162d0f8f2	1	1	1	3	3	image-textured	0	0	life_umbilical_tether	no	yes	no	no
+public/3d/runtime/new3ds/life_vending_machine.glb	life_vending_machine	life	2535788	16e23c90d749	1	1	1	3	3	image-textured	0	0	life_vending_machine	no	yes	no	no
+public/3d/runtime/new3ds/life_vertebral_restraint_rack.glb	life_vertebral_restraint_rack	life	2554820	42e564d0a4af	1	1	1	3	3	image-textured	0	0	life_vertebral_restraint_rack	no	no	no	no
+public/3d/runtime/new3ds/life_vulval_drain_sump.glb	life_vulval_drain_sump	life	2709892	a21836aff61c	1	1	1	3	3	image-textured	0	0	life_vulval_drain_sump	no	yes	no	no
+public/3d/runtime/new3ds/life_warmth_hearth.glb	life_warmth_hearth	life	2603828	dcb01e324090	1	1	1	3	3	image-textured	0	0	life_warmth_hearth	no	yes	no	no
+public/3d/runtime/new3ds/life_water_still.glb	life_water_still	life	2072044	c7a46f13a8ed	1	1	1	3	3	image-textured	0	0	life_water_still	no	yes	no	no
+public/3d/runtime/new3ds/life_wayfinding_totem.glb	life_wayfinding_totem	life	8677032	6406969232bf	1	1	1	3	3	image-textured	0	0	life_wayfinding_totem	no	yes	no	no
+public/3d/runtime/new3ds/life_weight_bench.glb	life_weight_bench	life	9142364	1d67bbedfeb6	1	1	1	3	3	image-textured	0	0	life_weight_bench	yes	no	yes	no
+public/3d/runtime/new3ds/life_welding_station.glb	life_welding_station	life	9740332	0e1d552357af	1	1	1	3	3	image-textured	0	0	life_welding_station	no	yes	no	no
+public/3d/runtime/new3ds/life_wind_mast.glb	life_wind_mast	life	7439940	92b0dd6079a9	2	2	1	3	3	image-textured	0	1	life_wind_mast	no	yes	no	no
+public/3d/runtime/new3ds/meridian_capacitor_bomb.glb	meridian_capacitor_bomb	meridian	2026468	433a07a53673	1	1	1	3	3	image-textured	0	0	meridian_capacitor_bomb	yes	yes	yes	no
+public/3d/runtime/new3ds/meridian_cyber_graft_bench.glb	meridian_cyber_graft_bench	meridian	2721092	4b2814832246	1	1	1	3	3	image-textured	0	0	meridian_cyber_graft_bench	yes	yes	yes	no
+public/3d/runtime/new3ds/meridian_logic_core_drum.glb	meridian_logic_core_drum	meridian	2875516	369324fbf755	1	1	1	3	3	image-textured	0	0	meridian_logic_core_drum	yes	yes	yes	no
+public/3d/runtime/new3ds/meridian_mainframe_altar.glb	meridian_mainframe_altar	meridian	2991616	257fb3763763	1	1	1	3	3	image-textured	0	0	meridian_mainframe_altar	yes	yes	yes	no
+public/3d/runtime/new3ds/meridian_optic_nerve_patchbay.glb	meridian_optic_nerve_patchbay	meridian	2883124	9c1abf0eb106	1	1	1	3	3	image-textured	0	0	meridian_optic_nerve_patchbay	yes	yes	yes	no
+public/3d/runtime/new3ds/meridian_servitor_dock.glb	meridian_servitor_dock	meridian	2507120	5b0d96f342cc	1	1	1	3	3	image-textured	0	0	meridian_servitor_dock	yes	yes	yes	no
+public/3d/runtime/new3ds/meridian_servitor_recharge_cradle.glb	meridian_servitor_recharge_cradle	meridian	2935680	455acd16de93	1	1	1	3	3	image-textured	0	0	meridian_servitor_recharge_cradle	yes	yes	yes	no
+public/3d/runtime/new3ds/meridian_soldering_hearth.glb	meridian_soldering_hearth	meridian	3143328	6b56fe547e33	1	1	1	3	3	image-textured	0	0	meridian_soldering_hearth	yes	yes	yes	no
+public/3d/runtime/new3ds/mod_archivist_lens.glb	mod_archivist_lens	mod	287296	bb253f1bdab8	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/mod_ballast_plating.glb	mod_ballast_plating	mod	308096	db8261862dc6	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/mod_bio_hazard_filter.glb	mod_bio_hazard_filter	mod	1650012	be4956282779	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/mod_cryo_capacitor.glb	mod_cryo_capacitor	mod	4074440	d8f04be71412	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/mod_deep_anchor.glb	mod_deep_anchor	mod	321568	92e82fcdde31	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/mod_duplicate_refiner.glb	mod_duplicate_refiner	mod	247644	946b0f4c449e	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/mod_echo_location_transceiver.glb	mod_echo_location_transceiver	mod	3163892	71b2fc9022ee	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/mod_kinetic_impact.glb	mod_kinetic_impact	mod	1337304	755f41d3f69e	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/mod_magnetic_scavenger.glb	mod_magnetic_scavenger	mod	4290136	58ccd73fc1cc	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/mod_pressure_seal.glb	mod_pressure_seal	mod	318120	73ac94452f18	1	1	1	3	3	image-textured	0	0	mod_pressure_seal	no	no	no	no
+public/3d/runtime/new3ds/mod_queens_bane.glb	mod_queens_bane	mod	1898876	a5c5057c8ab0	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/mod_scrap_furnace.glb	mod_scrap_furnace	mod	313864	3dac70da5ffd	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/mod_shard_conduit.glb	mod_shard_conduit	mod	336648	20e6401fc66d	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb	mod_symbiotic_adrenaline_pump	mod	3573164	ebe45d816160	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/mod_thermal_heat_exchanger.glb	mod_thermal_heat_exchanger	mod	1733508	8ac168bdf4a8	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/mod_zero_point_flux.glb	mod_zero_point_flux	mod	4432472	b7ab4fc2026a	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/mothership_docking_umbilical_collar.glb	mothership_docking_umbilical_collar	mothership	2736664	47e5cee616da	1	1	1	3	3	image-textured	0	0	mothership_docking_umbilical_collar	yes	yes	yes	no
+public/3d/runtime/new3ds/mycelium_stalker.glb	mycelium_stalker	mycelium	9690812	4e4067d21fc7	1	30	1	3	3	image-textured	3	0		no	no	no	no
+public/3d/runtime/new3ds/npc_alien_rhun.glb	npc_alien_rhun	npc	4031168	78c5a65b6cd8	1	10	1	3	3	image-textured	1	0	npc_alien_rhun	no	no	no	no
+public/3d/runtime/new3ds/npc_alien_vey.glb	npc_alien_vey	npc	3952996	32dbf98de01b	1	10	1	3	3	image-textured	1	0	npc_alien_vey	no	no	no	no
+public/3d/runtime/new3ds/npc_aria.glb	npc_aria	npc	2685640	0facfe78e587	1	43	1	1	1	image-textured	1	0	npc_aria	no	no	no	no
+public/3d/runtime/new3ds/npc_civilian_miner.glb	npc_civilian_miner	npc	3889176	bff2171cdf9e	1	10	1	3	3	image-textured	1	0	npc_civilian_miner	no	no	no	no
+public/3d/runtime/new3ds/npc_civilian_researcher.glb	npc_civilian_researcher	npc	3707668	a5fa5b812a9b	1	10	1	3	3	image-textured	1	0	npc_civilian_researcher	no	no	no	no
+public/3d/runtime/new3ds/npc_kaelen.glb	npc_kaelen	npc	3115492	b5261f248a5a	1	35	1	1	1	image-textured	1	0	npc_kaelen	no	no	no	no
+public/3d/runtime/new3ds/npc_martha.glb	npc_martha	npc	2743240	9560a1503c01	1	43	1	1	1	image-textured	1	0	npc_martha	no	no	no	no
+public/3d/runtime/new3ds/npc_nahl.glb	npc_nahl	npc	2811652	ca421d6823e0	1	35	1	1	1	image-textured	1	0	npc_nahl	no	no	no	no
+public/3d/runtime/new3ds/npc_queen.glb	npc_queen	npc	2679400	384fd009d63d	1	35	1	1	1	image-textured	1	0	npc_queen	no	no	no	no
+public/3d/runtime/new3ds/npc_val.glb	npc_val	npc	3092096	a9ccc1db5a0e	1	51	1	1	1	image-textured	1	0	npc_val	no	no	no	no
+public/3d/runtime/new3ds/prop_ammo_crate_stack.glb	prop_ammo_crate_stack	prop	802236	3e499753a9d1	1	1	1	3	3	image-textured	0	0	prop_ammo_crate_stack	no	no	no	no
+public/3d/runtime/new3ds/prop_autopsy_dissection_slab.glb	prop_autopsy_dissection_slab	prop	2987188	02e18848c8ee	1	1	1	3	3	image-textured	0	0	prop_autopsy_dissection_slab	yes	yes	no	no
+public/3d/runtime/new3ds/prop_base_defense_turret.glb	prop_base_defense_turret	prop	3607520	4f10b3554b83	1	1	1	3	3	image-textured	0	0	prop_base_defense_turret	no	yes	no	no
+public/3d/runtime/new3ds/prop_biomech_arch.glb	prop_biomech_arch	prop	3822704	eec37018e503	1	1	1	3	3	image-textured	0	0	prop_biomech_arch	no	yes	no	no
+public/3d/runtime/new3ds/prop_biomech_flesh_locker.glb	prop_biomech_flesh_locker	prop	776976	9f329c7d5e81	1	1	1	3	3	image-textured	0	0	prop_biomech_flesh_locker	no	yes	no	no
+public/3d/runtime/new3ds/prop_biomech_incubator.glb	prop_biomech_incubator	prop	793648	c01b56e540bf	1	1	1	3	3	image-textured	0	0	prop_biomech_incubator	no	yes	no	yes
+public/3d/runtime/new3ds/prop_biomech_neural_synapse.glb	prop_biomech_neural_synapse	prop	839564	e63b25535f2a	1	1	1	3	3	image-textured	0	0	prop_biomech_neural_synapse	no	yes	no	no
+public/3d/runtime/new3ds/prop_biomech_respirator.glb	prop_biomech_respirator	prop	759348	f0f3ace83322	1	1	1	3	3	image-textured	0	0	prop_biomech_respirator	no	yes	no	no
+public/3d/runtime/new3ds/prop_biomech_sphincter_hatch_vent.glb	prop_biomech_sphincter_hatch_vent	prop	3099684	df32224e7c3c	1	1	1	3	3	image-textured	0	0	prop_biomech_sphincter_hatch_vent	yes	yes	no	no
+public/3d/runtime/new3ds/prop_biomech_sphincter_trap.glb	prop_biomech_sphincter_trap	prop	938340	6d6f18e37aa8	1	1	1	3	3	image-textured	0	0	prop_biomech_sphincter_trap	no	yes	no	no
+public/3d/runtime/new3ds/prop_biomech_spore_umbilical_cable.glb	prop_biomech_spore_umbilical_cable	prop	3014040	a4b69347b695	1	1	1	3	3	image-textured	0	0	prop_biomech_spore_umbilical_cable	no	yes	no	yes
+public/3d/runtime/new3ds/prop_biomech_spore_umbilical_cable_rigged.glb	prop_biomech_spore_umbilical_cable_rigged	prop	3429016	f5028e812a8b	1	13	1	3	3	image-textured	4	0	prop_biomech_spore_umbilical_cable_rigged	no	yes	no	yes
+public/3d/runtime/new3ds/prop_biomech_tracheal_wall_pipe.glb	prop_biomech_tracheal_wall_pipe	prop	2425836	24a16944d528	1	1	1	3	3	image-textured	0	0	prop_biomech_tracheal_wall_pipe	yes	yes	no	yes
+public/3d/runtime/new3ds/prop_biomech_triage_cradle.glb	prop_biomech_triage_cradle	prop	840688	315c0c9b4208	1	1	1	3	3	image-textured	0	0	prop_biomech_triage_cradle	no	yes	no	no
+public/3d/runtime/new3ds/prop_body_empty_exosuit.glb	prop_body_empty_exosuit	prop	3325908	b149881718d1	1	1	1	3	3	image-textured	0	0	prop_body_empty_exosuit	no	yes	no	no
+public/3d/runtime/new3ds/prop_body_human_frozen.glb	prop_body_human_frozen	prop	3163648	9afae336223b	1	1	1	3	3	image-textured	0	0	prop_body_human_frozen	no	yes	no	no
+public/3d/runtime/new3ds/prop_broken_specimen_tank.glb	prop_broken_specimen_tank	prop	3419568	389418af85f9	1	1	1	3	3	image-textured	0	0	prop_broken_specimen_tank	no	yes	no	no
+public/3d/runtime/new3ds/prop_bunker_supplies.glb	prop_bunker_supplies	prop	3585120	c28c0568115d	1	1	1	3	3	image-textured	0	0	prop_bunker_supplies,prop_camp_crates	no	no	no	no
+public/3d/runtime/new3ds/prop_camp_bedrolls.glb	prop_camp_bedrolls	prop	3022940	944f32d2c049	1	1	1	3	3	image-textured	0	0	prop_camp_bedrolls	no	no	no	no
+public/3d/runtime/new3ds/prop_camp_cookfire.glb	prop_camp_cookfire	prop	7972772	3d6837cc2871	22	22	4	13	13	image-textured	0	0	prop_camp_cookfire	no	yes	no	no
+public/3d/runtime/new3ds/prop_camp_cookfire_lit.glb	prop_camp_cookfire_lit	prop	3120276	7f4e8bacb81c	1	1	1	3	3	image-textured	0	0	prop_camp_cookfire_lit	no	yes	no	no
+public/3d/runtime/new3ds/prop_camp_cot.glb	prop_camp_cot	prop	298128	c7938863d0eb	1	1	1	3	3	image-textured	0	0	prop_camp_cot	no	no	no	no
+public/3d/runtime/new3ds/prop_camp_crate.glb	prop_camp_crate	prop	285052	257db4d27f43	1	1	1	3	3	image-textured	0	0	prop_camp_crate	no	no	no	no
+public/3d/runtime/new3ds/prop_camp_laundry.glb	prop_camp_laundry	prop	3095008	d44fba341198	1	1	1	3	3	image-textured	0	0	prop_camp_laundry	no	no	no	no
+public/3d/runtime/new3ds/prop_camp_meridian_radio.glb	prop_camp_meridian_radio	prop	3102056	187921f68e99	1	1	1	3	3	image-textured	0	0	prop_camp_meridian_radio	yes	yes	yes	no
+public/3d/runtime/new3ds/prop_camp_shutter_lockdown.glb	prop_camp_shutter_lockdown	prop	3662216	d6f9f80b2a7c	1	1	1	3	3	image-textured	0	0	prop_camp_shutter_lockdown	no	no	no	no
+public/3d/runtime/new3ds/prop_camp_warning_placard.glb	prop_camp_warning_placard	prop	3249524	a5421d705f03	1	1	1	3	3	image-textured	0	0	prop_camp_warning_placard	no	no	no	no
+public/3d/runtime/new3ds/prop_cave_bones.glb	prop_cave_bones	prop	3358528	d273c15e6e41	1	1	1	3	3	image-textured	0	0	prop_cave_bones	no	no	no	no
+public/3d/runtime/new3ds/prop_cave_eggs_hatched.glb	prop_cave_eggs_hatched	prop	2761368	554944033e45	1	1	1	3	3	image-textured	0	0	prop_cave_eggs_hatched	no	yes	no	no
+public/3d/runtime/new3ds/prop_cave_eggs_intact.glb	prop_cave_eggs_intact	prop	2165096	a7765ca9e76f	1	1	1	3	3	image-textured	0	0	prop_cave_eggs_intact	no	yes	no	no
+public/3d/runtime/new3ds/prop_cave_hive_wounded.glb	prop_cave_hive_wounded	prop	2079088	fa9b210d335b	1	1	1	3	3	image-textured	0	0	prop_cave_hive_wounded	no	yes	no	no
+public/3d/runtime/new3ds/prop_cave_lichen.glb	prop_cave_lichen	prop	3209364	10a0000af443	1	1	1	3	3	image-textured	0	0	prop_cave_lichen	no	yes	no	no
+public/3d/runtime/new3ds/prop_cave_queen_throne.glb	prop_cave_queen_throne	prop	4122792	19b3aecf84c3	1	1	1	3	3	image-textured	0	0	prop_cave_queen_throne	no	yes	no	no
+public/3d/runtime/new3ds/prop_cave_spores.glb	prop_cave_spores	prop	3014676	34520e2e419e	1	1	1	3	3	image-textured	0	0	prop_cave_spores	no	yes	no	no
+public/3d/runtime/new3ds/prop_cave_webs.glb	prop_cave_webs	prop	3033856	bcaa5b5f25e6	1	1	1	3	3	image-textured	0	0	prop_cave_webs	no	no	no	no
+public/3d/runtime/new3ds/prop_ceiling_crane_hoist.glb	prop_ceiling_crane_hoist	prop	3338116	665878585408	1	1	1	3	3	image-textured	0	0	prop_ceiling_crane_hoist	yes	yes	no	no
+public/3d/runtime/new3ds/prop_chair_operator_wrecked.glb	prop_chair_operator_wrecked	prop	1981144	73f20fbf2851	1	1	1	3	3	image-textured	0	0	prop_chair_operator_wrecked	no	yes	no	no
+public/3d/runtime/new3ds/prop_conduit_hub.glb	prop_conduit_hub	prop	3085804	e53768eac2df	1	1	1	3	3	image-textured	0	0	prop_conduit_hub	no	yes	no	no
+public/3d/runtime/new3ds/prop_conduit_junction_box.glb	prop_conduit_junction_box	prop	946728	c23f6e6f81fc	1	1	1	3	3	image-textured	0	0	prop_conduit_junction_box	no	yes	no	yes
+public/3d/runtime/new3ds/prop_coolant_drum_leaking_pool.glb	prop_coolant_drum_leaking_pool	prop	2577412	e6189b526277	1	1	1	3	3	image-textured	0	0	prop_coolant_drum_leaking_pool	yes	yes	no	yes
+public/3d/runtime/new3ds/prop_corporate_saint_reliquary.glb	prop_corporate_saint_reliquary	prop	3421380	87c3271ca928	1	1	1	3	3	image-textured	0	0	prop_corporate_saint_reliquary	yes	yes	no	no
+public/3d/runtime/new3ds/prop_decon_eyewash_shower_station.glb	prop_decon_eyewash_shower_station	prop	3143192	0207f28bb4f7	1	1	1	3	3	image-textured	0	0	prop_decon_eyewash_shower_station	yes	yes	no	no
+public/3d/runtime/new3ds/prop_diagnostic_console.glb	prop_diagnostic_console	prop	3863744	c49bc5aca6cd	1	1	1	3	3	image-textured	0	0	prop_diagnostic_console	yes	yes	yes	yes
+public/3d/runtime/new3ds/prop_exhaust_blower_fan_hood.glb	prop_exhaust_blower_fan_hood	prop	3000812	1f4abf6bb821	1	1	1	3	3	image-textured	0	0	prop_exhaust_blower_fan_hood	yes	yes	no	no
+public/3d/runtime/new3ds/prop_exosuit_docking_gantry.glb	prop_exosuit_docking_gantry	prop	2655308	f0e62bcf6973	1	1	1	3	3	image-textured	0	0	prop_exosuit_docking_gantry	yes	yes	yes	no
+public/3d/runtime/new3ds/prop_fabricator_workstation.glb	prop_fabricator_workstation	prop	919400	f30c562d387b	1	1	1	3	3	image-textured	0	0	prop_fabricator_workstation	yes	yes	yes	no
+public/3d/runtime/new3ds/prop_flesh_steel_coffin.glb	prop_flesh_steel_coffin	prop	2893980	ebe32cc2bf59	1	1	1	3	3	image-textured	0	0	prop_flesh_steel_coffin	no	yes	no	no
+public/3d/runtime/new3ds/prop_flesh_steel_cradle.glb	prop_flesh_steel_cradle	prop	845184	acb2ef423042	1	1	1	3	3	image-textured	0	0	prop_flesh_steel_cradle	no	yes	no	no
+public/3d/runtime/new3ds/prop_flesh_steel_inhaler.glb	prop_flesh_steel_inhaler	prop	2384136	5cd4581ff874	1	1	1	3	3	image-textured	0	0	prop_flesh_steel_inhaler	no	yes	no	no
+public/3d/runtime/new3ds/prop_floor_conduit_bridge.glb	prop_floor_conduit_bridge	prop	2690800	463b0c37eb9a	1	1	1	3	3	image-textured	0	0	prop_floor_conduit_bridge	yes	yes	no	no
+public/3d/runtime/new3ds/prop_floor_drainage_sump_trough.glb	prop_floor_drainage_sump_trough	prop	3062656	bd3adb932b57	1	1	1	3	3	image-textured	0	0	prop_floor_drainage_sump_trough	yes	yes	no	no
+public/3d/runtime/new3ds/prop_fungal_mycelium_loom.glb	prop_fungal_mycelium_loom	prop	2478140	d66747c1f0e7	1	1	1	3	3	image-textured	0	0	prop_fungal_mycelium_loom	no	yes	no	no
+public/3d/runtime/new3ds/prop_fungal_resin_basin.glb	prop_fungal_resin_basin	prop	959796	fe0e6abfb7b8	1	1	1	3	3	image-textured	0	0	prop_fungal_resin_basin	no	yes	no	no
+public/3d/runtime/new3ds/prop_fungal_spore_dispenser.glb	prop_fungal_spore_dispenser	prop	1656268	3c0d8f04645c	1	1	1	3	3	image-textured	0	0	prop_fungal_spore_dispenser	no	yes	no	no
+public/3d/runtime/new3ds/prop_fungal_tendril_altar.glb	prop_fungal_tendril_altar	prop	861960	ede4c0447651	1	1	1	3	3	image-textured	0	0	prop_fungal_tendril_altar	no	yes	no	no
+public/3d/runtime/new3ds/prop_hive_carapace_molt.glb	prop_hive_carapace_molt	prop	3279576	10d6a4ac2f83	1	1	1	3	3	image-textured	0	0	prop_hive_carapace_molt	no	yes	no	no
+public/3d/runtime/new3ds/prop_hive_resin_sac.glb	prop_hive_resin_sac	prop	237664	b40e8bc066bb	1	1	1	3	3	image-textured	0	0	prop_hive_resin_sac	no	yes	no	no
+public/3d/runtime/new3ds/prop_icey_frost_manifold.glb	prop_icey_frost_manifold	prop	2457276	d04aea38992b	1	1	1	3	3	image-textured	0	0	prop_icey_frost_manifold	no	yes	no	yes
+public/3d/runtime/new3ds/prop_icey_frost_vent.glb	prop_icey_frost_vent	prop	2443768	a9d099e16c1d	1	1	1	3	3	image-textured	0	0	prop_icey_frost_vent	no	yes	no	no
+public/3d/runtime/new3ds/prop_icey_thermal_pod.glb	prop_icey_thermal_pod	prop	2569700	73684b658237	1	1	1	3	3	image-textured	0	0	prop_icey_thermal_pod	no	yes	no	no
+public/3d/runtime/new3ds/prop_laser_trap_emitter.glb	prop_laser_trap_emitter	prop	807172	c692f5c12479	1	1	1	3	3	image-textured	0	0	prop_laser_trap_emitter	no	yes	no	no
+public/3d/runtime/new3ds/prop_light_cluster_dripping.glb	prop_light_cluster_dripping	prop	1947652	b6efad1707ba	1	1	1	3	3	image-textured	0	0	prop_light_cluster_dripping	no	yes	no	no
+public/3d/runtime/new3ds/prop_liturgical_terminal_lectern.glb	prop_liturgical_terminal_lectern	prop	3251856	dc995b819c53	1	1	1	3	3	image-textured	0	0	prop_liturgical_terminal_lectern	yes	yes	yes	no
+public/3d/runtime/new3ds/prop_locker_bulged.glb	prop_locker_bulged	prop	2300664	315bc6bcfd64	1	1	1	3	3	image-textured	0	0	prop_locker_bulged	no	no	no	no
+public/3d/runtime/new3ds/prop_maintenance_tool_cart.glb	prop_maintenance_tool_cart	prop	3086148	58acaf223164	1	1	1	3	3	image-textured	0	0	prop_maintenance_tool_cart	yes	yes	no	no
+public/3d/runtime/new3ds/prop_medical_bed.glb	prop_medical_bed	prop	3134444	d87f50ce5c08	1	1	1	3	3	image-textured	0	0	prop_medical_bed	no	yes	no	no
+public/3d/runtime/new3ds/prop_o2_filter_vat.glb	prop_o2_filter_vat	prop	739176	9a9d5c5a6c4d	1	1	1	3	3	image-textured	0	0	prop_o2_filter_vat	no	yes	no	no
+public/3d/runtime/new3ds/prop_overhead_cage_fluorescent.glb	prop_overhead_cage_fluorescent	prop	3619324	8784ad0c1cd4	1	1	1	3	3	image-textured	0	0	prop_overhead_cage_fluorescent	yes	yes	no	yes
+public/3d/runtime/new3ds/prop_oxygen_bottle_cascade_rack.glb	prop_oxygen_bottle_cascade_rack	prop	3196428	079740106bad	1	1	1	3	3	image-textured	0	0	prop_oxygen_bottle_cascade_rack	yes	yes	no	no
+public/3d/runtime/new3ds/prop_pipe_organ_heat_exchanger.glb	prop_pipe_organ_heat_exchanger	prop	2863232	3aeb7671c5f4	1	1	1	3	3	image-textured	0	0	prop_pipe_organ_heat_exchanger	yes	yes	no	no
+public/3d/runtime/new3ds/prop_pipe_rupture.glb	prop_pipe_rupture	prop	776772	45f9551d6ee3	1	1	1	3	3	image-textured	0	0	prop_pipe_rupture	no	yes	no	no
+public/3d/runtime/new3ds/prop_security_barricade.glb	prop_security_barricade	prop	3610196	9c4b1e7cdc24	1	1	1	3	3	image-textured	0	0	prop_security_barricade,prop_camp_sandbags	no	no	no	no
+public/3d/runtime/new3ds/prop_shrine_plinth_broken.glb	prop_shrine_plinth_broken	prop	2673876	e22214c1bb7e	1	1	1	3	3	image-textured	0	0	prop_shrine_plinth_broken	no	yes	no	no
+public/3d/runtime/new3ds/prop_specimen_tank.glb	prop_specimen_tank	prop	3816884	cdd432bb83a0	1	1	1	3	3	image-textured	0	0	prop_specimen_tank	no	yes	no	no
+public/3d/runtime/new3ds/prop_spore_colony.glb	prop_spore_colony	prop	3692888	44954aab49a2	1	1	1	3	3	image-textured	0	0	prop_spore_colony	no	yes	no	no
+public/3d/runtime/new3ds/prop_storage_drum_dented.glb	prop_storage_drum_dented	prop	2309096	c2db2a632806	1	1	1	3	3	image-textured	0	0	prop_storage_drum_dented	no	no	no	no
+public/3d/runtime/new3ds/prop_surgical_cart.glb	prop_surgical_cart	prop	3554328	04bcc3af96bb	1	1	1	3	3	image-textured	0	0	prop_surgical_cart	no	yes	no	no
+public/3d/runtime/new3ds/prop_terminal_ruptured.glb	prop_terminal_ruptured	prop	2389188	092e5cd90499	1	1	1	3	3	image-textured	0	0	prop_terminal_ruptured	yes	yes	yes	no
+public/3d/runtime/new3ds/prop_tesla_coil_node.glb	prop_tesla_coil_node	prop	747720	d6698f1e45e1	1	1	1	3	3	image-textured	0	0	prop_tesla_coil_node	no	yes	no	no
+public/3d/runtime/new3ds/prop_valve_wheel_fused.glb	prop_valve_wheel_fused	prop	2276284	5c87db4f28dd	1	1	1	3	3	image-textured	0	0	prop_valve_wheel_fused	no	yes	no	no
+public/3d/runtime/new3ds/prop_vent_grate_exploded.glb	prop_vent_grate_exploded	prop	1961512	64342faa0bff	1	1	1	3	3	image-textured	0	0	prop_vent_grate_exploded	no	yes	no	no
+public/3d/runtime/new3ds/prop_vertebral_cable_riser.glb	prop_vertebral_cable_riser	prop	2975360	492a68da9073	1	1	1	3	3	image-textured	0	0	prop_vertebral_cable_riser	yes	yes	no	yes
+public/3d/runtime/new3ds/prop_vital_monitor.glb	prop_vital_monitor	prop	734860	7ac8db9c62a7	1	1	1	3	3	image-textured	0	0	prop_vital_monitor	no	yes	no	no
+public/3d/runtime/new3ds/prop_votive_candle_shrine.glb	prop_votive_candle_shrine	prop	2609776	905800ddb4e3	1	1	1	3	3	image-textured	0	0	prop_votive_candle_shrine	yes	yes	no	no
+public/3d/runtime/new3ds/prop_wall_cable_tray_swag.glb	prop_wall_cable_tray_swag	prop	2956960	adc0eb80b3b7	1	1	1	3	3	image-textured	0	0	prop_wall_cable_tray_swag	yes	yes	no	yes
+public/3d/runtime/new3ds/queen_royal_brood_throne.glb	queen_royal_brood_throne	queen	2405324	dc3d06f4b000	1	1	1	3	3	image-textured	0	0	queen_royal_brood_throne	yes	yes	yes	no
+public/3d/runtime/new3ds/relay_acoustic_diaphragm.glb	relay_acoustic_diaphragm	relay	2460804	51a076e51ec6	1	1	1	3	3	image-textured	0	0	relay_acoustic_diaphragm	yes	yes	yes	no
+public/3d/runtime/new3ds/relay_false_beacon_spire.glb	relay_false_beacon_spire	relay	2109028	0be41c3df4c4	1	1	1	3	3	image-textured	0	0	relay_false_beacon_spire	yes	yes	yes	no
+public/3d/runtime/new3ds/relay_harmonic_tuning_fork.glb	relay_harmonic_tuning_fork	relay	3213308	7c66722e340b	1	1	1	3	3	image-textured	0	0	relay_harmonic_tuning_fork	yes	yes	yes	no
+public/3d/runtime/new3ds/royal_egg_clutch_caul.glb	royal_egg_clutch_caul	royal	2536808	649fffea521d	1	1	1	3	3	image-textured	0	0	royal_egg_clutch_caul	yes	yes	yes	no
+public/3d/runtime/new3ds/salvage_tagged_heap.glb	salvage_tagged_heap	salvage	6475476	92f722fc6af7	1	1	1	3	3	image-textured	0	0	salvage_tagged_heap	yes	yes	yes	no
+public/3d/runtime/new3ds/scatter_bolts.glb	scatter_bolts	scatter	313328	8114b832d1c4	1	1	1	3	3	image-textured	0	0	scatter_bolts	no	no	no	no
+public/3d/runtime/new3ds/scatter_cable_coil.glb	scatter_cable_coil	scatter	280452	278cd72adcba	1	1	1	3	3	image-textured	0	0	scatter_cable_coil	no	no	no	no
+public/3d/runtime/new3ds/scatter_hive_eggs.glb	scatter_hive_eggs	scatter	2241032	144629080efa	1	1	1	3	3	image-textured	0	0	scatter_hive_eggs	no	yes	no	no
+public/3d/runtime/new3ds/scout_ejection_pod_chassis.glb	scout_ejection_pod_chassis	scout	3239856	540bfe46235a	1	1	1	3	3	image-textured	0	0	scout_ejection_pod_chassis	yes	yes	yes	no
+public/3d/runtime/new3ds/scout_tachyon_radar_mast.glb	scout_tachyon_radar_mast	scout	2664208	65ab0757f118	1	1	1	3	3	image-textured	0	0	scout_tachyon_radar_mast	yes	yes	yes	no
+public/3d/runtime/new3ds/scout_tracking_beacon_core.glb	scout_tracking_beacon_core	scout	2099408	8e1c02f6386b	1	1	1	3	3	image-textured	0	0	scout_tracking_beacon_core	yes	yes	yes	no
+public/3d/runtime/new3ds/sector_zero_bore_drillhead.glb	sector_zero_bore_drillhead	sector	2528796	250d3f9b0d8b	1	1	1	3	3	image-textured	0	0	sector_zero_bore_drillhead	yes	yes	yes	no
+public/3d/runtime/new3ds/sentinel.glb	sentinel	sentinel	4114304	2fcd2e15f955	1	4	1	3	3	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/sentinel_A.glb	sentinel_A	sentinel	3659700	d5613b18b32d	1	4	1	3	3	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/sentinel_B.glb	sentinel_B	sentinel	4192688	cbb74d47a93e	1	4	1	3	3	image-textured	1	0		no	no	no	no
+public/3d/runtime/new3ds/ship_module_comms_transceiver.glb	ship_module_comms_transceiver	ship	2212244	13eb84e0ee7c	2	4	1	3	3	image-textured	0	4	ship_module_comms_transceiver	yes	yes	yes	no
+public/3d/runtime/new3ds/ship_module_engine_manifold.glb	ship_module_engine_manifold	ship	2533052	58c176bbf19e	1	3	1	3	3	image-textured	0	2	ship_module_engine_manifold	yes	yes	yes	yes
+public/3d/runtime/new3ds/ship_module_life_support_core.glb	ship_module_life_support_core	ship	2232032	f7ad287b974b	1	4	1	3	3	image-textured	0	3	ship_module_life_support_core	yes	yes	yes	yes
+public/3d/runtime/new3ds/ship_module_navigation_core.glb	ship_module_navigation_core	ship	2849364	244fc1010ad0	2	4	1	3	3	image-textured	0	4	ship_module_navigation_core	yes	yes	yes	no
+public/3d/runtime/new3ds/skin_biolume_spore_sprayer.glb	skin_biolume_spore_sprayer	skin	3480336	b72b1e747db6	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_bunker404.glb	skin_bunker404	skin	373032	80aad3e7a81d	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_deep_frost.glb	skin_deep_frost	skin	347736	158a10fb2337	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_engineer_archival_constructor.glb	skin_engineer_archival_constructor	skin	1950792	4dd9f808a480	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_engineer_cryo_plasma.glb	skin_engineer_cryo_plasma	skin	2371632	5949b1edb49a	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_engineer_hive_weaver.glb	skin_engineer_hive_weaver	skin	1782572	6666a336e684	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_glitched_circuit_bolter.glb	skin_glitched_circuit_bolter	skin	3460088	48faacdeca9c	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_grand_marshal.glb	skin_grand_marshal	skin	348252	4af25709be10	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_hazard_stripe_smg.glb	skin_hazard_stripe_smg	skin	3281824	5066d4598d22	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_hive_chitin.glb	skin_hive_chitin	skin	270084	6b73f320ea37	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_horizon_corporate.glb	skin_horizon_corporate	skin	323520	bddf34676fb1	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_obsidian_shard.glb	skin_obsidian_shard	skin	3124000	2389498928fa	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_queen_carapace_carbine.glb	skin_queen_carapace_carbine	skin	14141568	f9bd8a40ce46	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_rust_bone.glb	skin_rust_bone	skin	308204	2269861f6548	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_rust_bone_trench.glb	skin_rust_bone_trench	skin	32455920	643da5bef6d3	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_scout_chrono_drifter.glb	skin_scout_chrono_drifter	skin	1803104	701ee19de38d	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_scout_frostbite.glb	skin_scout_frostbite	skin	2164080	75e44afeabaa	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_solar_flare_antimatter.glb	skin_solar_flare_antimatter	skin	32579692	2cb644f532d6	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_tank_bunker_bastion.glb	skin_tank_bunker_bastion	skin	1961088	7b8ff7124fa1	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_tank_deep_core_melter.glb	skin_tank_deep_core_melter	skin	2161752	ad77a99b0f65	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_tectonic_driller.glb	skin_tectonic_driller	skin	3172960	1586b54452cb	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/skin_void_walker_beam.glb	skin_void_walker_beam	skin	16030020	f800f6ce1d89	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/spore_mortar.glb	spore_mortar	spore	3760900	902a41fe936e	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/sporesnail.glb	sporesnail	sporesnail	3608352	fe227fb82aa7	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/new3ds/sporesnail_dead.glb	sporesnail_dead	sporesnail	2349288	0649f900df43	1	1	1	3	3	image-textured	0	0	sporesnail_dead	no	no	no	no
+public/3d/runtime/new3ds/state_barricade_improvised_1.glb	state_barricade_improvised_1	state	296464	47040c8d45d0	1	1	1	3	3	image-textured	0	0	state_barricade_improvised_1	no	no	no	no
+public/3d/runtime/new3ds/state_barricade_improvised_2.glb	state_barricade_improvised_2	state	267308	3a7be67a1f0a	1	1	1	3	3	image-textured	0	0	state_barricade_improvised_2	no	no	no	no
+public/3d/runtime/new3ds/state_column_shattered.glb	state_column_shattered	state	2410088	5b4d29c1883b	1	1	1	3	3	image-textured	0	0	state_column_shattered	no	no	no	no
+public/3d/runtime/new3ds/state_growth_overrun_1.glb	state_growth_overrun_1	state	294128	3f1948e96d7a	1	1	1	3	3	image-textured	0	0	state_growth_overrun_1	no	yes	no	no
+public/3d/runtime/new3ds/state_growth_overrun_2.glb	state_growth_overrun_2	state	242816	2cc819ce65e4	1	1	1	3	3	image-textured	0	0	state_growth_overrun_2	no	yes	no	no
+public/3d/runtime/new3ds/state_wall_breached_01.glb	state_wall_breached_01	state	2431404	61cd14b5eda5	1	1	1	3	3	image-textured	0	0	state_wall_breached_01	no	no	no	no
+public/3d/runtime/new3ds/state_wall_breached_02.glb	state_wall_breached_02	state	2854292	8303947169f4	1	1	1	3	3	image-textured	0	0	state_wall_breached_02	no	no	no	no
+public/3d/runtime/new3ds/state_wall_breached_03.glb	state_wall_breached_03	state	3282504	4573946f6a93	1	1	1	3	3	image-textured	0	0	state_wall_breached_03	no	no	no	no
+public/3d/runtime/new3ds/substation_breaker_interlock.glb	substation_breaker_interlock	substation	3091040	736388cf82d9	1	1	1	3	3	image-textured	0	0	substation_breaker_interlock	yes	yes	yes	no
+public/3d/runtime/new3ds/substation_stepdown_transformer.glb	substation_stepdown_transformer	substation	2350124	7d732e75d5db	1	1	1	3	3	image-textured	0	0	substation_stepdown_transformer	yes	yes	yes	no
+public/3d/runtime/new3ds/suture_flesh_mending_bath.glb	suture_flesh_mending_bath	suture	2487576	8646c75f20d0	1	1	1	3	3	image-textured	0	0	suture_flesh_mending_bath	yes	yes	yes	no
+public/3d/runtime/new3ds/suture_larval_nursery_urn.glb	suture_larval_nursery_urn	suture	2610940	914e986849f9	1	1	1	3	3	image-textured	0	0	suture_larval_nursery_urn	yes	yes	yes	no
+public/3d/runtime/new3ds/suture_mercy_cocoon_canopy.glb	suture_mercy_cocoon_canopy	suture	2642092	3f6a1d3c09ea	1	1	1	3	3	image-textured	0	0	suture_mercy_cocoon_canopy	yes	yes	yes	no
+public/3d/runtime/new3ds/tallow_apothecary_dryer_rack.glb	tallow_apothecary_dryer_rack	tallow	2207232	af4b5ce561a9	1	1	1	3	3	image-textured	0	0	tallow_apothecary_dryer_rack	yes	yes	yes	no
+public/3d/runtime/new3ds/tallow_compost_fermenter.glb	tallow_compost_fermenter	tallow	2322128	13183b59b868	1	1	1	3	3	image-textured	0	0	tallow_compost_fermenter	yes	yes	yes	no
+public/3d/runtime/new3ds/tallow_flesh_trellis.glb	tallow_flesh_trellis	tallow	2466132	2c70b87b17d1	1	1	1	3	3	image-textured	0	0	tallow_flesh_trellis	yes	yes	yes	no
+public/3d/runtime/new3ds/tallow_irrigation_sluice_gate.glb	tallow_irrigation_sluice_gate	tallow	3038544	00005afcb603	1	1	1	3	3	image-textured	0	0	tallow_irrigation_sluice_gate	yes	yes	yes	no
+public/3d/runtime/new3ds/tallow_sacrificial_altar.glb	tallow_sacrificial_altar	tallow	2584056	5b2abb0b23df	1	1	1	3	3	image-textured	0	0	tallow_sacrificial_altar	yes	yes	yes	no
+public/3d/runtime/new3ds/tallow_spore_cradle.glb	tallow_spore_cradle	tallow	3501308	cd019ea823a0	1	1	1	3	3	image-textured	0	0	tallow_spore_cradle	yes	yes	yes	no
+public/3d/runtime/new3ds/tallow_vaccine_alembic.glb	tallow_vaccine_alembic	tallow	2614100	6eb52b5ff945	1	1	1	3	3	image-textured	0	0	tallow_vaccine_alembic	yes	yes	yes	no
+public/3d/runtime/new3ds/tank_kinetic_ram_breech.glb	tank_kinetic_ram_breech	tank	2862744	b79711c68d8b	1	1	1	3	3	image-textured	0	0	tank_kinetic_ram_breech	yes	yes	yes	no
+public/3d/runtime/new3ds/tank_orbital_siege_cannon.glb	tank_orbital_siege_cannon	tank	3444572	8e69cc1166d6	1	1	1	3	3	image-textured	0	0	tank_orbital_siege_cannon	yes	yes	yes	no
+public/3d/runtime/new3ds/tank_reactive_armor_forge.glb	tank_reactive_armor_forge	tank	2423704	bf539023b8f7	1	1	1	3	3	image-textured	0	0	tank_reactive_armor_forge	yes	yes	yes	no
+public/3d/runtime/new3ds/tina_cosmetic_skin_loom.glb	tina_cosmetic_skin_loom	tina	3009488	f6f66f5e4b25	1	1	1	3	3	image-textured	0	0	tina_cosmetic_skin_loom	yes	yes	yes	no
+public/3d/runtime/new3ds/tina_covert_nursery_chest.glb	tina_covert_nursery_chest	tina	2480332	e3d7499f4c71	1	1	1	3	3	image-textured	0	0	tina_covert_nursery_chest	yes	yes	yes	no
+public/3d/runtime/new3ds/tina_forged_council_ballot_box.glb	tina_forged_council_ballot_box	tina	3053600	4b7afa83c10c	1	1	1	3	3	image-textured	0	0	tina_forged_council_ballot_box	yes	yes	yes	no
+public/3d/runtime/new3ds/tina_mimic_vanity.glb	tina_mimic_vanity	tina	2419940	becd64956adb	1	1	1	3	3	image-textured	0	0	tina_mimic_vanity	yes	yes	yes	no
+public/3d/runtime/new3ds/tina_molted_carapace.glb	tina_molted_carapace	tina	2341608	b81a9a252f57	1	1	1	3	3	image-textured	0	0	tina_molted_carapace	yes	yes	yes	no
+public/3d/runtime/new3ds/tina_secret_distress_beacon.glb	tina_secret_distress_beacon	tina	3052664	87dd9cc3b27f	1	1	1	3	3	image-textured	0	0	tina_secret_distress_beacon	yes	yes	yes	no
+public/3d/runtime/new3ds/tina_shedding_cocoon_niche.glb	tina_shedding_cocoon_niche	tina	2335804	ced9890d6227	1	1	1	3	3	image-textured	0	0	tina_shedding_cocoon_niche	yes	yes	yes	no
+public/3d/runtime/new3ds/tina_trophy_trove.glb	tina_trophy_trove	tina	2037816	f34c31bf255b	1	1	1	3	3	image-textured	0	0	tina_trophy_trove	yes	yes	yes	no
+public/3d/runtime/new3ds/tina_vocal_mimic_synthesizer.glb	tina_vocal_mimic_synthesizer	tina	2361732	21ecb6779333	1	1	1	3	3	image-textured	0	0	tina_vocal_mimic_synthesizer	yes	yes	yes	no
+public/3d/runtime/new3ds/vass_acoustic_resonator_tank.glb	vass_acoustic_resonator_tank	vass	2583168	a2a8c6aee59b	1	1	1	3	3	image-textured	0	0	vass_acoustic_resonator_tank	yes	yes	yes	no
+public/3d/runtime/new3ds/vass_bio_centrifuge_rack.glb	vass_bio_centrifuge_rack	vass	3050712	8d358a3b0184	1	1	1	3	3	image-textured	0	0	vass_bio_centrifuge_rack	yes	yes	yes	no
+public/3d/runtime/new3ds/vass_containment_bell_jar.glb	vass_containment_bell_jar	vass	2141292	da0acc63c668	1	1	1	3	3	image-textured	0	0	vass_containment_bell_jar	yes	yes	yes	no
+public/3d/runtime/new3ds/vass_dissection_stereomicroscope.glb	vass_dissection_stereomicroscope	vass	2467980	bdef01a142f2	1	1	1	3	3	image-textured	0	0	vass_dissection_stereomicroscope	yes	yes	yes	no
+public/3d/runtime/new3ds/vass_hybrid_blood_synthesizer.glb	vass_hybrid_blood_synthesizer	vass	2551224	7b5b92c5517c	1	1	1	3	3	image-textured	0	0	vass_hybrid_blood_synthesizer	yes	yes	yes	no
+public/3d/runtime/new3ds/vass_hybrid_embryo_incubator.glb	vass_hybrid_embryo_incubator	vass	2642752	742e5b064772	1	1	1	3	3	image-textured	0	0	vass_hybrid_embryo_incubator	yes	yes	yes	no
+public/3d/runtime/new3ds/vass_neural_sync_helmet.glb	vass_neural_sync_helmet	vass	2728860	a3b658862a6e	1	1	1	3	3	image-textured	0	0	vass_neural_sync_helmet	yes	yes	yes	no
+public/3d/runtime/new3ds/vass_translation_phonograph.glb	vass_translation_phonograph	vass	2915004	4ea53a177d20	1	1	1	3	3	image-textured	0	0	vass_translation_phonograph	yes	yes	yes	no
+public/3d/runtime/new3ds/vesper_amputation_rig.glb	vesper_amputation_rig	vesper	2512968	57178829af28	1	1	1	3	3	image-textured	0	0	vesper_amputation_rig	yes	yes	yes	no
+public/3d/runtime/new3ds/vesper_autocannon_bipod.glb	vesper_autocannon_bipod	vesper	2973232	a10fc863504f	1	1	1	3	3	image-textured	0	0	vesper_autocannon_bipod	yes	yes	yes	no
+public/3d/runtime/new3ds/vesper_ballistic_chronograph.glb	vesper_ballistic_chronograph	vesper	2661056	3904fbef7fc7	1	1	1	3	3	image-textured	0	0	vesper_ballistic_chronograph	yes	yes	yes	no
+public/3d/runtime/new3ds/vesper_barricade_welding_rig.glb	vesper_barricade_welding_rig	vesper	2630136	3859851907a5	1	1	1	3	3	image-textured	0	0	vesper_barricade_welding_rig	yes	yes	yes	no
+public/3d/runtime/new3ds/vesper_dogtag_retrieval_crypt.glb	vesper_dogtag_retrieval_crypt	vesper	2798800	1c097f43cf7f	1	1	1	3	3	image-textured	0	0	vesper_dogtag_retrieval_crypt	yes	yes	yes	no
+public/3d/runtime/new3ds/vesper_hanging_cage.glb	vesper_hanging_cage	vesper	2799208	643bc057bee5	1	1	1	3	3	image-textured	0	0	vesper_hanging_cage	yes	yes	yes	no
+public/3d/runtime/new3ds/vesper_mortar_loading_cradle.glb	vesper_mortar_loading_cradle	vesper	2496616	3ce2a01ca976	1	1	1	3	3	image-textured	0	0	vesper_mortar_loading_cradle	yes	yes	yes	no
+public/3d/runtime/new3ds/vesper_ordnance_disarm_table.glb	vesper_ordnance_disarm_table	vesper	2510456	84dd5fac9257	1	1	1	3	3	image-textured	0	0	vesper_ordnance_disarm_table	yes	yes	yes	no
+public/3d/runtime/new3ds/vesper_reloading_station.glb	vesper_reloading_station	vesper	2223848	0f92060c1203	1	1	1	3	3	image-textured	0	0	vesper_reloading_station	yes	yes	yes	no
+public/3d/runtime/new3ds/vesper_trench_warning_klaxon.glb	vesper_trench_warning_klaxon	vesper	2107156	cbff9c2bbd32	1	1	1	3	3	image-textured	0	0	vesper_trench_warning_klaxon	yes	yes	yes	no
+public/3d/runtime/new3ds/wall_macro_buttress_3.glb	wall_macro_buttress_3	wall	2622060	c0dd48fb5963	1	3	1	3	3	image-textured	0	2	wall_macro_buttress_3	no	yes	yes	no
+public/3d/runtime/new3ds/wall_macro_straight_4.glb	wall_macro_straight_4	wall	2249320	5b122f410253	1	4	1	3	3	image-textured	0	3	wall_macro_straight_4	no	yes	yes	yes
+public/3d/runtime/new3ds/weapon_flamethrower_case.glb	weapon_flamethrower_case	weapon	1882612	b3527ab40cb5	2	3	1	3	3	image-textured	0	3	weapon_flamethrower_case	yes	no	yes	no
+public/3d/runtime/new3ds/weapon_flamethrower_m70.glb	weapon_flamethrower_m70	weapon	2105724	63ab9115d6f5	1	3	1	3	3	image-textured	0	2	weapon_flamethrower_m70	no	yes	yes	no
+public/3d/runtime/new3ds/weapon_fuel_canister_heavy.glb	weapon_fuel_canister_heavy	weapon	1856052	446794635726	1	3	1	3	3	image-textured	0	2	weapon_fuel_canister_heavy	no	yes	yes	no
+public/3d/runtime/o2-generator.glb	o2-generator	o2	3630932	bf59634ebfe5	1	1	1	3	3	image-textured	0	0	o2_generator	no	yes	yes	no
+public/3d/runtime/parasite.glb	parasite	parasite	3754748	cb2ba4891cb5	1	71	2	4	4	image-textured	1	0		no	no	no	no
+public/3d/runtime/queen.glb	queen	queen	3561168	dffa35ab54bb	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/radar.glb	radar	radar	3535080	18d40141c676	1	1	1	3	3	image-textured	0	0	radar	no	yes	no	no
+public/3d/runtime/secrets/mayor-tina-rigged.glb	mayor-tina-rigged	mayor	4509552	f5b0d78af0a8	1	69	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/secrets/mayor-tina.glb	mayor-tina	mayor	3788268	8d979c210d1d	1	1	1	3	3	image-textured	0	0	secret_mayor_tina	no	no	no	no
+public/3d/runtime/secrets/teacup-roach.glb	teacup-roach	teacup	3848356	2c2b7a906731	1	1	1	3	3	image-textured	0	0	secret_teacup_roach	no	no	no	no
+public/3d/runtime/spore-snail-boss.glb	spore-snail-boss	spore	3922484	37491a23267a	1	1	1	3	3	image-textured	0	0		no	no	no	no
+public/3d/runtime/storage-locker.glb	storage-locker	storage	3686084	3b10942dd150	1	1	1	3	3	image-textured	0	0	storage_locker	no	no	no	no
+public/3d/runtime/structures/structure_reference_49m.collision.glb	structure_reference_49m.collision	structure	1856	2ef75ead9055	1	1	0	0	0	reference-or-collision	0	0		no	no	no	no
+public/3d/runtime/structures/structure_reference_49m.glb	structure_reference_49m	structure	4572	3608a9601d02	3	3	0	0	0	reference-or-collision	0	0		no	no	no	no
+public/3d/runtime/tank-rigged.glb	tank-rigged	tank	4140536	3574889869cd	1	35	1	3	3	image-textured	1	0		no	no	no	no
+public/3d/scouting-scout/Scout.game.glb	Scout.game	Scout.game	6096736	e6f20ce9b3ff	2	68	3	3	3	image-textured	16	0		no	no	no	no
