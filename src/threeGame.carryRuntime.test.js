@@ -132,4 +132,86 @@ describe('physical first-night cargo runtime', () => {
         expect(game.emergencyDropCarriedObject).toHaveBeenCalledWith('damage-stagger');
         expect(game.showBunkerLine).toHaveBeenLastCalledWith('IMPACT STAGGER — HEAVY CARGO DROPPED AT YOUR FEET.');
     });
+
+    it('auto-installs cot bed when dropped directly in or near the bed socket zone', () => {
+        const game = baseGame();
+        ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
+        const cotId = game.carryState.worldObjects[0].instanceId;
+        ThreeGame.prototype.beginCarryObject.call(game, cotId);
+
+        const socket = game.getFirstNightBasePlan().installSocket.transform;
+        game.player.position.x = socket.x;
+        game.player.position.z = socket.z;
+        game.installCurrentCarryObject = vi.fn(ThreeGame.prototype.installCurrentCarryObject.bind(game));
+        game.syncBedInstallSocketVisual = vi.fn();
+
+        expect(ThreeGame.prototype.dropCurrentCarryObject.call(game)).toBe(true);
+        expect(game.installCurrentCarryObject).toHaveBeenCalled();
+        expect(game.carryState.installed).toEqual(expect.arrayContaining([
+            expect.objectContaining({ definitionId: 'cot_bed', socketId: 'ship-sleep-bay' })
+        ]));
+    });
+
+    it('auto-snaps loose cargo into matching socket when sitting inside the socket zone', () => {
+        const game = baseGame();
+        ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
+        const socket = game.getFirstNightBasePlan().installSocket.transform;
+        // Position cot on ground within the socket area
+        game.carryState.worldObjects[0].worldPosition = { x: socket.x, z: socket.z };
+        game.syncBedInstallSocketVisual = vi.fn();
+
+        ThreeGame.prototype.checkLooseCarryObjectSnapToSockets.call(game);
+        expect(game.carryState.installed).toEqual(expect.arrayContaining([
+            expect.objectContaining({ definitionId: 'cot_bed', socketId: 'ship-sleep-bay' })
+        ]));
+        expect(game.showBunkerLine).toHaveBeenCalledWith(expect.stringContaining('INSTALLED IN ZONE — YOU ARE SET!'));
+    });
+
+    it('updates carry and drop interaction prompts based on socket proximity', () => {
+        const game = baseGame();
+        game.isGameplayInputActive = () => true;
+        game.getNearestCarryObject = ThreeGame.prototype.getNearestCarryObject;
+        ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
+
+        // Standing near loose cot
+        game.player.position.x = 5;
+        game.player.position.z = 2;
+        ThreeGame.prototype.updateCarryInteractionPrompt.call(game);
+        expect(game._carryPromptLabel).toBe('[E] LIFT EXPEDITION RECOVERY COT · BOTH HANDS');
+
+        // Carried away from socket
+        ThreeGame.prototype.beginCarryObject.call(game, game.carryState.worldObjects[0].instanceId);
+        ThreeGame.prototype.updateCarryInteractionPrompt.call(game);
+        expect(game._carryPromptLabel).toBe('[E] SET EXPEDITION RECOVERY COT DOWN');
+
+        // Carried near socket
+        const socket = game.getFirstNightBasePlan().installSocket.transform;
+        game.player.position.x = socket.x;
+        game.player.position.z = socket.z;
+        ThreeGame.prototype.updateCarryInteractionPrompt.call(game);
+        expect(game._carryPromptLabel).toBe('[E] PLACE EXPEDITION RECOVERY COT (INSTALL)');
+    });
+
+    it('syncs glowing bed install socket visibility until the bed is installed', () => {
+        const game = baseGame();
+        game.performanceProfile = 'gameplay';
+        game.scene = { add: vi.fn() };
+        game.getTerrainHeightAt = () => 0;
+
+        ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
+        ThreeGame.prototype.setupBedInstallSocketVisual.call(game);
+        expect(game.bedInstallSocketVisual).toBeDefined();
+        expect(game.bedInstallSocketVisual.visible).toBe(true);
+
+        // Now install the cot
+        const cotId = game.carryState.worldObjects[0].instanceId;
+        ThreeGame.prototype.beginCarryObject.call(game, cotId);
+        const socket = game.getFirstNightBasePlan().installSocket.transform;
+        game.player.position.x = socket.x;
+        game.player.position.z = socket.z;
+        ThreeGame.prototype.installCurrentCarryObject.call(game);
+
+        ThreeGame.prototype.syncBedInstallSocketVisual.call(game);
+        expect(game.bedInstallSocketVisual.visible).toBe(false);
+    });
 });

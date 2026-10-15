@@ -227,6 +227,38 @@ export function installCarriedObject(state, socket, { carrierPlayerId = null } =
     };
 }
 
+export function installWorldObject(state, instanceId, socket) {
+    if (!state || !instanceId) return { ok: false, reason: 'missing-object', state };
+    const index = state.worldObjects.findIndex((object) => object.instanceId === instanceId);
+    if (index < 0) return { ok: false, reason: 'missing-object', state };
+    const object = state.worldObjects[index];
+    const accepted = new Set(socket?.acceptsTags ?? []);
+    if (accepted.size && !object.buildTags?.some((tag) => accepted.has(tag))) {
+        return { ok: false, reason: 'incompatible-socket', state };
+    }
+    if (!socket?.id) return { ok: false, reason: 'invalid-socket', state };
+    const installed = {
+        ...object,
+        carrierPlayerId: null,
+        socketId: socket.id,
+        transform: socket.transform ?? null,
+        ...(socket.side ? { side: socket.side } : {}),
+        ...(object.buildTags?.includes('door') ? { isOpen: false } : {}),
+        ...(Number.isFinite(socket.transform?.x) ? { x: socket.transform.x } : {}),
+        ...(Number.isFinite(socket.transform?.z) ? { z: socket.transform.z } : {}),
+        ...(Number.isFinite(socket.transform?.yaw) ? { yaw: socket.transform.yaw } : {})
+    };
+    return {
+        ok: true,
+        installed,
+        state: {
+            ...state,
+            worldObjects: state.worldObjects.filter((_, i) => i !== index),
+            installed: [...state.installed, installed]
+        }
+    };
+}
+
 export function canUseWeaponWhileCarrying(state) {
     return !state?.carried;
 }

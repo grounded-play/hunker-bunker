@@ -35,6 +35,7 @@ import {
     dropCarriedObject,
     getCarryMobilityProfile,
     installCarriedObject,
+    installWorldObject,
     createCarryState,
     recoverStrandedCarryObjects,
     removeMissionCarryObjects,
@@ -58,6 +59,11 @@ import {
     disposeBaseAtmosphereIndicator,
     updateBaseAtmosphereIndicator
 } from './baseAtmospherePresentation.js';
+import {
+    createBedInstallSocketVisual,
+    disposeBedInstallSocketVisual,
+    updateBedInstallSocketVisual
+} from './installSocketPresentation.js';
 import {
     createInstalledBaseModuleVisual,
     disposeInstalledBaseModuleVisual,
@@ -5050,6 +5056,7 @@ export class ThreeGame {
         this.setupBaseDefenseTurret();
         this.setupBunkerCot();
         this.setupBaseAtmosphereIndicator();
+        this.setupBedInstallSocketVisual();
     }
 
     /**
@@ -5121,6 +5128,34 @@ export class ThreeGame {
             root.rotation.y = (installed?.transform?.yaw ?? installed?.yaw ?? 0) + WORLD_3D_FACING_YAW;
             root.visible = shouldShow;
         }
+        this.syncBedInstallSocketVisual?.();
+    }
+
+    setupBedInstallSocketVisual() {
+        if (!this.scene || this.bedInstallSocketVisual) return;
+        const root = createBedInstallSocketVisual();
+        const socket = this.getFirstNightBasePlan?.()?.installSocket?.transform;
+        if (socket) {
+            root.position.set(socket.x, (this.getTerrainHeightAt?.(socket.x, socket.z) ?? 0), socket.z);
+            root.rotation.y = socket.yaw ?? 0;
+        }
+        root.visible = this.performanceProfile === 'gameplay' && !installedCot(this.carryState);
+        this.scene.add(root);
+        this.bedInstallSocketVisual = root;
+    }
+
+    syncBedInstallSocketVisual() {
+        if (!this.bedInstallSocketVisual) {
+            this.setupBedInstallSocketVisual?.();
+            return;
+        }
+        const socket = this.getFirstNightBasePlan?.()?.installSocket?.transform;
+        if (socket) {
+            this.bedInstallSocketVisual.position.set(socket.x, (this.getTerrainHeightAt?.(socket.x, socket.z) ?? 0), socket.z);
+            this.bedInstallSocketVisual.rotation.y = socket.yaw ?? 0;
+        }
+        const installed = Boolean(installedCot(this.carryState));
+        this.bedInstallSocketVisual.visible = this.performanceProfile === 'gameplay' && !installed;
     }
 
     setupBaseAtmosphereIndicator() {
@@ -8735,6 +8770,10 @@ export class ThreeGame {
             }
             if (event.code === 'KeyG') {
                 event.preventDefault();
+                if (this.carryState?.carried) {
+                    this.dropCurrentCarryObject();
+                    return;
+                }
                 if (typeof window !== 'undefined') {
                     if (window.quickCommandRadial?.isOpen?.()) {
                         window.quickCommandRadial.close();
@@ -10357,6 +10396,99 @@ export class ThreeGame {
                 visible
             });
         }
+        if (this.bedInstallSocketVisual) {
+            const installed = installedCot(this.carryState);
+            if (installed || this.performanceProfile !== 'gameplay') {
+                this.bedInstallSocketVisual.visible = false;
+            } else {
+                const socket = this.getFirstNightBasePlan?.()?.installSocket?.transform;
+                const isCarryingCot = this.carryState?.carried?.definitionId === 'cot_bed';
+                const isNear = Boolean(socket && this.player && Math.hypot(this.player.position.x - socket.x, this.player.position.z - socket.z) <= 2.6);
+                this.bedInstallSocketVisual.visible = true;
+                updateBedInstallSocketVisual(this.bedInstallSocketVisual, {
+                    isNear,
+                    isCarryingTarget: isCarryingCot,
+                    elapsedSeconds: now * 0.001,
+                    visible: true
+                });
+            }
+        }
+        this.checkLooseCarryObjectSnapToSockets?.();
+        this.updateCarryInteractionPrompt?.();
+    }
+
+    checkLooseCarryObjectSnapToSockets() {
+        if (!this.carryState?.worldObjects?.length) return;
+        const plan = this.getFirstNightBasePlan?.();
+        for (const object of [...this.carryState.worldObjects]) {
+            if (object.handoff?.status === 'reserved') continue;
+            const socket = availableFirstNightSocket(this.carryState, plan, object)
+                ?? this.getAvailableCarryInstallSocket?.(object);
+            if (!socket?.transform) continue;
+            const dist = Math.hypot(object.worldPosition.x - socket.transform.x, object.worldPosition.z - socket.transform.z);
+            if (dist <= 2.2) {
+                const installResult = installWorldObject(this.carryState, object.instanceId, socket);
+                if (installResult.ok) {
+                    this.carryState = installResult.state;
+                    saveInstalledBaseModules(this.carryState.installed);
+                    const visual = this.carryObjectVisuals.get(object.instanceId);
+                    if (visual) {
+                        this.disposeWorld3dPropFx?.(visual);
+                        this.disposeWorld3dPropExperience?.(visual);
+                        disposeCarryObjectVisual(visual);
+                        this.carryObjectVisuals.delete(object.instanceId);
+                    }
+                    this.reconcileInstalledBaseModuleVisuals?.();
+                    this.syncBunkerCot?.();
+                    this.syncBedInstallSocketVisual?.();
+                    const label = getBaseModuleDefinition(object.definitionId)?.label ?? 'MODULE';
+                    this.showBunkerLine?.(`${label} INSTALLED IN ZONE — YOU ARE SET!`);
+                    this.spawnPhysicalBurst?.(socket.transform.x, socket.transform.z, { color: 0x66e6ff, count: 14, upward: 0.2 });
+                    this.triggerCameraShake?.(0.08, 0.18);
+                    window.AudioManager?.play?.('ui_confirm', { volume: 0.72, playbackRate: 0.86 });
+                    window.dispatchEvent(new CustomEvent('base-module-installed', { detail: { installed: installResult.installed } }));
+                }
+            }
+        }
+    }
+
+    updateCarryInteractionPrompt() {
+        if (!this.isGameplayInputActive?.() || !this.player || this.isPlayerDead) {
+            if (this._carryPromptLabel) {
+                this._carryPromptLabel = null;
+                if (!this._campPromptLabel && !this._hivePromptLabel) {
+                    window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+                }
+            }
+            return;
+        }
+
+        let label = null;
+        const carried = this.carryState?.carried;
+        if (carried) {
+            const socket = this.getAvailableCarryInstallSocket?.(carried)
+                ?? availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan?.(), carried);
+            const defLabel = getBaseModuleDefinition(carried.definitionId)?.label ?? 'CARGO';
+            if (socket && Math.hypot(this.player.position.x - socket.transform.x, this.player.position.z - socket.transform.z) <= 2.6) {
+                label = `[E] PLACE ${defLabel.toUpperCase()} (INSTALL)`;
+            } else {
+                label = `[E] SET ${defLabel.toUpperCase()} DOWN`;
+            }
+        } else {
+            const nearest = this.getNearestCarryObject?.();
+            if (nearest) {
+                const defLabel = getBaseModuleDefinition(nearest.object.definitionId)?.label ?? 'CARGO';
+                label = `[E] LIFT ${defLabel.toUpperCase()} · BOTH HANDS`;
+            }
+        }
+
+        if (label === this._carryPromptLabel) return;
+        this._carryPromptLabel = label;
+        if (label) {
+            window.dispatchEvent(new CustomEvent('camp-prompt-nearby', { detail: { label } }));
+        } else if (!this._campPromptLabel && !this._hivePromptLabel && !this._packagePromptLabel) {
+            window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+        }
     }
 
     getMissionCargoDelivery(carried = this.carryState?.carried) {
@@ -10820,10 +10952,25 @@ export class ThreeGame {
 
     dropCurrentCarryObject() {
         if (!this.carryState?.carried) return false;
+        const carried = this.carryState.carried;
+        const socket = this.getAvailableCarryInstallSocket?.(carried)
+            ?? availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan?.(), carried);
+        if (socket && this.player) {
+            const socketDistance = Math.hypot(this.player.position.x - socket.transform.x, this.player.position.z - socket.transform.z);
+            if (socketDistance <= 2.6) {
+                return this.installCurrentCarryObject();
+            }
+        }
         const position = this.findSafeCarryDropPosition();
         if (!position) {
             this.showBunkerLine?.('NO CLEAR SPACE TO SET CARGO DOWN.');
             return false;
+        }
+        if (socket) {
+            const dropDistance = Math.hypot(position.x - socket.transform.x, position.z - socket.transform.z);
+            if (dropDistance <= 2.0) {
+                return this.installCurrentCarryObject();
+            }
         }
         const result = dropCarriedObject(this.carryState, position, {
             carrierPlayerId: this.multiplayerLocalPlayerId ?? 'local'
@@ -47296,6 +47443,8 @@ export class ThreeGame {
         this.clearInstalledBaseModuleVisuals?.();
         disposeBaseAtmosphereIndicator(this.baseAtmosphereIndicator);
         this.baseAtmosphereIndicator = null;
+        disposeBedInstallSocketVisual(this.bedInstallSocketVisual);
+        this.bedInstallSocketVisual = null;
         this.renderer.domElement.removeEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.removeEventListener('contextmenu', this.handleCanvasContextMenu);
         this.renderer.domElement.removeEventListener('pointermove', this.handleCanvasPointerMove);

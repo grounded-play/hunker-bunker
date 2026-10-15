@@ -12,6 +12,7 @@ import {
     getCarryMobilityProfile,
     getCarrierTacticalStance,
     installCarriedObject,
+    installWorldObject,
     recoverStrandedCarryObjects,
     removeMissionCarryObjects,
     resetCarryRunState,
@@ -92,6 +93,18 @@ describe('two-handed carry state', () => {
         expect(resetCarryRunState('run-b', result.state.installed)).toMatchObject({
             runId: 'run-b', carried: null, worldObjects: [], installed: [{ instanceId: 'bed-1', socketId: 'sleep-bay' }]
         });
+
+        // installWorldObject installs directly from loose world cargo
+        const worldState = addCarryObject(createCarryState('run-a'), bed()).state;
+        const worldResult = installWorldObject(worldState, 'bed-1', {
+            id: 'sleep-bay',
+            acceptsTags: ['bed'],
+            transform: { x: 5, z: 6, yaw: 0 }
+        });
+        expect(worldResult.ok).toBe(true);
+        expect(worldResult.installed).toMatchObject({ instanceId: 'bed-1', socketId: 'sleep-bay' });
+        expect(worldResult.state.worldObjects).toHaveLength(0);
+        expect(worldResult.state.installed).toHaveLength(1);
     });
 
     it('triggers companion cover-carrier tactical stance when carrier has hands full', () => {
