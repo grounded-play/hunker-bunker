@@ -37,12 +37,17 @@ describe('ThreeGame.setupMultiplayerNetwork world-seed sync', () => {
 
     it('pins fixedRunEntropy and derives globalSeedOffset from the match seed when the session has one', () => {
         const fake = buildFakeGameInstance();
+        fake._chunkLandformCache = new Map([['1,1', 'canyon']]);
+        fake.radialMazePlan = { old: true };
         const session = { mode: 'coop', roomCode: 'SECTOR-7', seed: 'SECTOR-7', isHost: true };
 
         ThreeGame.prototype.setupMultiplayerNetwork.call(fake, session);
 
         expect(fake.fixedRunEntropy).toBe(true);
+        expect(fake.runEntropy).toBe(0);
         expect(fake.globalSeedOffset).toBe(hashSeed('SECTOR-7') | 0);
+        expect(fake._chunkLandformCache.size).toBe(0);
+        expect(fake.radialMazePlan).toBeNull();
     });
 
     it('two sessions with the same seed produce the identical globalSeedOffset (the whole point)', () => {

@@ -9786,8 +9786,6 @@ function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapsho
             splash?.classList.add('hidden');
             menu?.classList.add('hidden');
             setAppPhase('gameplay');
-            window.game?.setPerformanceProfile?.('gameplay');
-            window.game?.updatePlayerType?.(playerType, { poof: false, emitWorldEvents: false });
             resetRunToStartingState({
                 resetBank,
                 skipEffects: true,
@@ -9795,6 +9793,8 @@ function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapsho
                 purgeSnails: false,
                 deferChunkMount: true
             });
+            window.game?.setPerformanceProfile?.('gameplay');
+            window.game?.updatePlayerType?.(playerType, { poof: false, emitWorldEvents: false });
             document.getElementById('ui')?.classList.remove('hidden');
             syncHudCompassVisibility();
 

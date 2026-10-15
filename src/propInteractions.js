@@ -1678,13 +1678,25 @@ export function executeCustomPropInteraction(game, nearestInfo) {
         if (result.state == null) game.acknowledgePropExperience?.(nearestInfo.sprite);
         else game.acknowledgePropExperience?.(nearestInfo.sprite, { toggleArticulation: false });
         nearestInfo.sprite.userData.hasBeenInteracted = result.spent ?? !nearestInfo.spec.repeatable;
-        const key = nearestInfo.sprite.userData.scatterKey;
+        const key = nearestInfo.sprite.userData?.scatterKey || nearestInfo.sprite.userData?.dressingStableId;
         if (key && (result.state != null || result.fxMode != null || typeof result.solid === 'boolean')) {
             (game.propInteractionStates ??= new Map()).set(key, {
                 state: result.state,
                 fxMode: result.fxMode,
                 solid: result.solid
             });
+            if (game.isMultiplayer) {
+                game.broadcastSharedWorldEvent?.('prop-interacted', {
+                    key,
+                    state: result.state,
+                    fxMode: result.fxMode,
+                    solid: result.solid,
+                    x: nearestInfo.sprite.position?.x,
+                    y: nearestInfo.sprite.position?.y,
+                    z: nearestInfo.sprite.position?.z,
+                    rotY: nearestInfo.sprite.rotation?.y
+                });
+            }
         }
         if (!nearestInfo.spec.repeatable && !nearestInfo.sprite.userData.interactionSpec && key) {
             (game.spentPropScatterKeys ??= new Set()).add(key);

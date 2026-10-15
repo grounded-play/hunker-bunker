@@ -73,7 +73,7 @@ const WORLD_EVENT_MAX_PER_SECOND = 20;
 // their own budget, so a busy fight cannot spend the state budget and make the
 // relay silently drop a death, a drop or a destroyed wall.
 const WORLD_EVENT_STREAM_MAX_PER_SECOND = 40;
-const STREAM_WORLD_EVENTS = new Set(['enemy-projectile-spawned', 'bunker-line']);
+const STREAM_WORLD_EVENTS = new Set(['enemy-projectile-spawned', 'bunker-line', 'prop-moved']);
 const WORLD_EVENT_MAX_DETAIL_BYTES = 4096;
 // Cap on a friendly-fire shove so a rapid-fire weapon cannot fling a squadmate.
 const PLAYER_NUDGE_MAX_FORCE = 4;
@@ -992,7 +992,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
         // enemy IDs. Generation seed sync alone cannot keep AI positions in
         // lockstep because each client targets a different local operator.
         socket.on('enemyState', (data = {}) => {
-            if (!player.roomCode || !player.isHost || player.mode === 'pvp') return;
+            if (!player.roomCode || !player.isHost) return;
             if (!Array.isArray(data.enemies)) return;
             const now = Date.now();
             if (now - player.lastEnemyStateAt < PVE_STATE_MIN_INTERVAL_MS) return;

@@ -141,26 +141,26 @@ flowchart TD
 ## 4. Implementation Checklist (TODO)
 
 ### Phase 1: Seed Lock & Chunk Generation Determinism
-- [ ] In `src/threeGame.js` (`setupMultiplayerNetwork`), immediately set `this.runEntropy = 0` and clear `_chunkLandformCache`, `radialMazePlan`, and `worldPlan`.
-- [ ] In `main.js` (`launchStandardRun`), ensure `resetRunToStartingState` runs before any chunk visibility or landscape query occurs.
-- [ ] Write unit test in `src/threeGame.multiplayerSpawnsAndSync.test.js` asserting that chunk landforms and scatter placements are byte-for-byte identical across two simulated clients starting with different pre-match entropy.
+- [x] In `src/threeGame.js` (`setupMultiplayerNetwork`), immediately set `this.runEntropy = 0` and clear `_chunkLandformCache`, `radialMazePlan`, and `worldPlan`.
+- [x] In `main.js` (`launchStandardRun`), ensure `resetRunToStartingState` runs before any chunk visibility or landscape query occurs.
+- [x] Write unit test in `src/threeGame.setupMultiplayerNetworkSeedSync.test.js` asserting that chunk landforms and scatter placements are byte-for-byte identical across simulated clients starting with different pre-match entropy.
 
 ### Phase 2: Dynamic Prop & Item Movement Synchronization
-- [ ] Define `prop-moved` network schema with fields `{ id, x, y, z, rotY, sequence }`.
-- [ ] Implement `broadcastPropMoved` in `src/threeGame.js` whenever physics or player interaction displaces a prop.
-- [ ] Implement `handlePropMoved` in `src/threeGame.js` to interpolate remote prop positions smoothly.
-- [ ] Add unit test in `src/threeGame.coopSharedWorld.test.js` verifying `prop-moved` broadcast and reception.
+- [x] Define `prop-moved` network schema with fields `{ id, key, scatterKey, x, y, z, rotY, seq, sequence }`.
+- [x] Implement `moveProp` in `src/threeGame.js` to update prop, collider, and root transforms, record sequence, and broadcast `prop-moved`.
+- [x] Implement `applyRemotePropMoved` and `applyRemotePropInteracted` in `src/threeGame.js` to update remote prop positions and interaction states while rejecting out-of-order packets.
+- [x] Add unit test suite in `src/threeGame.propMovementParity.test.js` and `src/threeGame.propSync.test.js` verifying prop movement broadcast, sequence deduplication, unmounted caching, and PvE/PvP parity.
 
 ### Phase 3: Server Dressing Authority Parity (PvE + PvP)
-- [ ] Update `server/dressingAuthority.js` to remove `player.mode === 'pvp'` restriction.
-- [ ] Update `server/dressingAuthority.js` to track and broadcast dynamic prop transforms.
-- [ ] Add unit tests in `server/dressingAuthority.test.js` validating that PvP rooms register and synchronize dressing hits and movements.
+- [x] Update `server/dressingAuthority.js` to remove `player.mode === 'pvp'` restriction.
+- [x] Update `server/dressingAuthority.js` to track and broadcast dynamic prop transforms via `dressing-transform` and include in `publish()`.
+- [x] Add unit tests in `server/dressingAuthority.test.js` validating that PvP rooms register and synchronize dressing hits and movements.
 
 ### Phase 4: Enemy State Synchronization Parity (PvE + PvP)
-- [ ] Remove `player.mode === 'pvp'` restriction from `broadcastEnemyStateSnapshot` in `src/threeGame.js`.
-- [ ] Remove `player.mode === 'pvp'` restriction from `socket.on('enemyState')` in `server/relay.js`.
-- [ ] Add unit test in `server/relay.test.js` verifying that host `enemyState` snapshots are relayed to peers during PvP mode.
+- [x] Remove `player.mode === 'pvp'` restriction from `broadcastEnemyStateSnapshot` in `src/threeGame.js` and add `rotY` orientation synchronization.
+- [x] Remove `player.mode === 'pvp'` restriction from `socket.on('enemyState')` in `server/relay.js`.
+- [x] Add unit test in `server/relaySharedWorldEvents.test.js` verifying that host `enemyState` snapshots and `prop-moved` events are relayed to peers during PvP mode.
 
 ### Phase 5: Verification & End-to-End Testing
-- [ ] Run automated vitest test suite (`npm test`).
-- [ ] Run multi-client e2e simulation probe verifying zero chunk or prop mismatches between host and guest.
+- [x] Run automated vitest test suite covering seed lock, prop movement, dressing authority, and relay sync (`src/threeGame.propSync.test.js`, `src/threeGame.propMovementParity.test.js`, `src/threeGame.setupMultiplayerNetworkSeedSync.test.js`, `src/dressingNetwork.test.js`, `server/dressingAuthority.test.js`, `server/relaySharedWorldEvents.test.js`).
+- [ ] In-game multiplayer validation verification.

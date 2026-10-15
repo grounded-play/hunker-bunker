@@ -7,14 +7,15 @@ export function createDressingAuthority() {
     return {
         clear: room => rooms.delete(room),
         handle(player, event, detail, send) {
-            if (!['dressing-register', 'dressing-hit', 'dressing-state'].includes(event)) return false;
-            if (!player?.roomCode || player.mode === 'pvp' || !detail || detail.version !== 1) return true;
+            if (!['dressing-register', 'dressing-hit', 'dressing-state', 'dressing-transform'].includes(event)) return false;
+            if (!player?.roomCode || !detail || detail.version !== 1) return true;
             if (event === 'dressing-state') return true; // Only the relay emits state.
             let room = rooms.get(player.roomCode);
             if (!room) rooms.set(player.roomCode, room = { props: new Map(), peers: new Map(), sequence: new Map() });
             const publish = (id, record) => {
                 for (const [peerId, known] of room.peers) if (known.has(id)) send(peerId, {
-                    version: 1, id, hp: record.hp, revision: record.revision
+                    version: 1, id, hp: record.hp, revision: record.revision,
+                    x: record.x, z: record.z, rotY: record.rotY ?? 0
                 });
             };
             if (event === 'dressing-register') {
@@ -27,12 +28,29 @@ export function createDressingAuthority() {
                     if (known.size >= 8192 && !known.has(item.id)) continue;
                     known.add(item.id);
                     if (!room.props.has(item.id) && player.isHost && room.props.size < 8192) {
-                        room.props.set(item.id, { x: item.x, z: item.z,
-                            hp: Number.isInteger(item.hp) && item.hp >= 0 && item.hp <= 3 ? item.hp : 3, revision: 0 });
+                        room.props.set(item.id, {
+                            x: item.x, z: item.z,
+                            rotY: Number.isFinite(item.rotY) ? item.rotY : 0,
+                            hp: Number.isInteger(item.hp) && item.hp >= 0 && item.hp <= 3 ? item.hp : 3,
+                            revision: 0
+                        });
                     }
                     const record = room.props.get(item.id);
                     if (record) publish(item.id, record);
                 }
+                return true;
+            }
+            if (event === 'dressing-transform') {
+                const record = room.props.get(detail.id);
+                if (!record || !room.peers.get(player.id)?.has(detail.id)
+                    || !Number.isSafeInteger(detail.sequence) || detail.sequence <= (room.sequence.get(player.id) ?? 0)
+                    || !Number.isFinite(detail.x) || !Number.isFinite(detail.z)) return true;
+                room.sequence.set(player.id, detail.sequence);
+                record.x = detail.x;
+                record.z = detail.z;
+                if (Number.isFinite(detail.rotY)) record.rotY = detail.rotY;
+                record.revision += 1;
+                publish(detail.id, record);
                 return true;
             }
             const record = room.props.get(detail.id);

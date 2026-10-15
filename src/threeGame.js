@@ -6561,9 +6561,14 @@ export class ThreeGame {
         // attempted in this pass.
         if (session.seed != null) {
             this.fixedRunEntropy = true;
+            this.runEntropy = 0;
             this.globalSeedOffset = hashSeed(session.seed) | 0;
             this._descentIndex = 0;
             this._descentBaseOffset = null;
+            this._chunkLandformCache?.clear();
+            this.radialMazePlan = null;
+            this.worldPlan = null;
+            this._worldPlanInjected = false;
         }
 
         const crashParticipants = partitionCrashPlanPlayers(
@@ -7296,7 +7301,7 @@ export class ThreeGame {
     }
 
     broadcastEnemyStateSnapshot(now = Date.now()) {
-        if (!this.netSocket || !this.isMultiplayerHost || this.multiplayerMode === 'pvp') return false;
+        if (!this.netSocket || !this.isMultiplayerHost) return false;
         if (now - (this.lastEnemyStateBroadcastTime ?? 0) < 100) return false;
         this.lastEnemyStateBroadcastTime = now;
         const enemies = [];
@@ -7307,6 +7312,7 @@ export class ThreeGame {
                 enemyType: sprite.userData.type,
                 x: sprite.position.x,
                 z: sprite.position.z,
+                rotY: Number.isFinite(sprite.rotation?.y) ? sprite.rotation.y : (Number.isFinite(sprite.userData?.rotY) ? sprite.userData.rotY : 0),
                 hp: Number.isFinite(sprite.userData.hp) ? sprite.userData.hp : null,
                 burstTriggered: Boolean(sprite.userData.burstTriggered),
                 isBoss: Boolean(sprite.userData.isBoss),
@@ -7477,9 +7483,9 @@ export class ThreeGame {
             dedupeKey = `${event}:${detail.wallKey ?? `${detail.worldX},${detail.worldZ}`}`;
         } else if (event === 'fragile-ledge-state') {
             dedupeKey = `${event}:${detail.key}:${detail.state}`;
-        } else if (event === 'bunker-door-toggled' || event === 'procedural-door-toggled' || event === 'bunker-line' || event === 'enemy-projectile-spawned' || event === 'squad-progress' || event === 'mystery-boxes-sync') {
+        } else if (event === 'bunker-door-toggled' || event === 'procedural-door-toggled' || event === 'bunker-line' || event === 'enemy-projectile-spawned' || event === 'squad-progress' || event === 'mystery-boxes-sync' || event === 'prop-moved') {
             // Door toggles are stateful transitions guarded by their respective states below;
-            // bunker-line and enemy-projectile-spawned stream continuously without static dedupe blocking.
+            // bunker-line, enemy-projectile-spawned, and prop-moved stream continuously without static dedupe blocking.
         } else if (event === 'pickup-collected') {
             dedupeKey = `${event}:${detail.pickupId ?? `${Math.round(detail.x)},${Math.round(detail.z)}`}`;
         } else if (event === 'maze-access-granted') {
@@ -7492,6 +7498,8 @@ export class ThreeGame {
             dedupeKey = `${event}:${detail.dropId}`;
         } else if (event === 'prop-broken') {
             dedupeKey = `${event}:${detail.scatterKey ?? `${Math.round(detail.x)},${Math.round(detail.z)}`}`;
+        } else if (event === 'prop-interacted') {
+            dedupeKey = `${event}:${detail.key ?? ''}:${detail.state ?? ''}:${detail.fxMode ?? ''}`;
         } else if (event === 'lore-terminal-read') {
             dedupeKey = `${event}:${detail.loreKey}`;
         } else if (event === 'mystery-box-opened') {
@@ -7634,6 +7642,10 @@ export class ThreeGame {
             this.removeLootDrop(detail.dropId);
         } else if (event === 'prop-broken') {
             this.applyRemotePropBroken(detail);
+        } else if (event === 'prop-moved') {
+            this.applyRemotePropMoved(detail);
+        } else if (event === 'prop-interacted') {
+            this.applyRemotePropInteracted(detail);
         } else if (event === 'mystery-box-opened') {
             this.applyRemoteMysteryBoxOpened(detail);
         } else if (event === 'mystery-boxes-sync') {
@@ -7780,7 +7792,7 @@ export class ThreeGame {
     }
 
     handleEnemyStateSnapshot(data) {
-        if (this.isMultiplayerHost || this.multiplayerMode === 'pvp') return false;
+        if (this.isMultiplayerHost) return false;
         if (!Array.isArray(data?.enemies) && !Array.isArray(data?.companions)) return false;
         let applied = 0;
         let materialized = 0;
@@ -7807,6 +7819,9 @@ export class ThreeGame {
                         sprite.position.z = state.z;
                     }
                     sprite.userData.lastNetUpdate = Date.now();
+                }
+                if (Number.isFinite(state.rotY) && sprite.rotation) {
+                    sprite.rotation.y = state.rotY;
                 }
                 if ('targetId' in state) {
                     sprite.userData.netAggroTargetId = state.targetId ?? null;
@@ -27032,6 +27047,10 @@ export class ThreeGame {
         this._fragileLedgeVisuals?.clear();
         this._dressingManifest = new Map();
         this._dressingHp = new Map();
+        this.propInteractionStates?.clear();
+        this.propTransformStates?.clear();
+        this._remotePropMoveSequences?.clear();
+        this._propMoveSequence = 0;
         this._wallInstanceIndex?.clear();
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys.clear();
@@ -34003,6 +34022,10 @@ export class ThreeGame {
             item.collider = collider;
             applyPropInteractionState(collider, this.propInteractionStates?.get(item.id)
                 ?? this.propInteractionStates?.get(item.stableId));
+            const initialTransform = this.propTransformStates?.get(item.stableId) ?? this.propTransformStates?.get(item.id);
+            if (initialTransform) {
+                this.moveProp(collider, { ...initialTransform, emit: false });
+            }
             group.add(collider);
             this.scatterSprites.push(collider);
             if (item.practicalLight) {
@@ -34038,6 +34061,10 @@ export class ThreeGame {
                 this.registerWorld3dPropExperience?.(item.dynamicRoot);
                 applyPropInteractionState(item.collider, this.propInteractionStates?.get(item.id)
                     ?? this.propInteractionStates?.get(item.stableId));
+                const dynamicTransform = this.propTransformStates?.get(item.stableId) ?? this.propTransformStates?.get(item.id);
+                if (dynamicTransform) {
+                    this.moveProp(item.collider, { ...dynamicTransform, emit: false });
+                }
                 if (item.dynamicRoot.userData?.mixer) {
                     this.world3dMixers ??= new Set();
                     this.world3dMixers.add(item.dynamicRoot.userData.mixer);
@@ -40015,6 +40042,183 @@ export class ThreeGame {
         if (!sprite) return false;
         sprite.userData.propHp = 0;
         return this.breakScatterProp(sprite, { plannedDrops: Array.isArray(detail.drops) ? detail.drops : [], fromRemote: true, crushed: detail.crushed === true });
+    }
+
+    findPropSprite(key, fallbackCoord = {}) {
+        if (key && this.scatteredProps?.has?.(key)) {
+            return this.scatteredProps.get(key);
+        }
+        const candidates = this.scatterSprites ?? [];
+        if (key) {
+            const found = candidates.find((candidate) => (
+                candidate.userData?.dressingStableId === key
+                || candidate.userData?.scatterKey === key
+                || candidate.userData?.key === key
+                || candidate.name === key
+                || candidate.userData?.id === key
+            ));
+            if (found) return found;
+        }
+        if (Number.isFinite(fallbackCoord?.x) && Number.isFinite(fallbackCoord?.z)) {
+            return candidates.find((candidate) => (
+                !candidate.userData?.burstTriggered
+                && Math.hypot(candidate.position.x - fallbackCoord.x, candidate.position.z - fallbackCoord.z) <= 0.6
+            ));
+        }
+        return null;
+    }
+
+    moveProp(propOrKey, { x, y, z, rotY, emit = true } = {}) {
+        let prop = null;
+        let key = null;
+        if (typeof propOrKey === 'string') {
+            key = propOrKey;
+            prop = this.findPropSprite(key);
+        } else if (propOrKey && typeof propOrKey === 'object') {
+            prop = propOrKey;
+            key = prop.userData?.dressingStableId || prop.userData?.scatterKey || prop.userData?.key || prop.name || null;
+        }
+
+        const targetX = Number.isFinite(x) ? x : prop?.position?.x;
+        const targetY = Number.isFinite(y) ? y : prop?.position?.y;
+        const targetZ = Number.isFinite(z) ? z : prop?.position?.z;
+        const targetRotY = Number.isFinite(rotY) ? rotY : prop?.rotation?.y;
+
+        if (key && (Number.isFinite(targetX) || Number.isFinite(targetZ))) {
+            (this.propTransformStates ??= new Map()).set(key, {
+                x: targetX,
+                y: targetY,
+                z: targetZ,
+                rotY: targetRotY
+            });
+        }
+
+        if (prop?.position) {
+            if (Number.isFinite(targetX)) prop.position.x = targetX;
+            if (Number.isFinite(targetY)) prop.position.y = targetY;
+            if (Number.isFinite(targetZ)) prop.position.z = targetZ;
+            if (Number.isFinite(targetRotY)) prop.rotation.y = targetRotY;
+
+            if (prop.userData?.collider?.position && prop.userData.collider !== prop) {
+                if (Number.isFinite(targetX)) prop.userData.collider.position.x = targetX;
+                if (Number.isFinite(targetY)) prop.userData.collider.position.y = targetY;
+                if (Number.isFinite(targetZ)) prop.userData.collider.position.z = targetZ;
+            }
+            if (prop.userData?.root?.position && prop.userData.root !== prop) {
+                if (Number.isFinite(targetX)) prop.userData.root.position.x = targetX;
+                if (Number.isFinite(targetY)) prop.userData.root.position.y = targetY;
+                if (Number.isFinite(targetZ)) prop.userData.root.position.z = targetZ;
+                if (Number.isFinite(targetRotY)) prop.userData.root.rotation.y = targetRotY;
+            }
+        }
+
+        if (emit && this.isMultiplayer && (Number.isFinite(targetX) && Number.isFinite(targetZ))) {
+            const seq = (this._propMoveSequence = (this._propMoveSequence ?? 0) + 1);
+            if (key) {
+                (this.propTransformStates ??= new Map()).set(key, {
+                    x: targetX,
+                    y: targetY,
+                    z: targetZ,
+                    rotY: targetRotY ?? 0,
+                    seq
+                });
+                if (typeof key === 'string' && key.includes(':dressing:v2:') && this._dressingProtocolEnabled) {
+                    this.broadcastSharedWorldEvent?.('dressing-transform', {
+                        version: 1,
+                        id: key,
+                        x: targetX,
+                        z: targetZ,
+                        rotY: targetRotY ?? 0,
+                        sequence: seq
+                    });
+                }
+                this.broadcastSharedWorldEvent?.('prop-moved', {
+                    id: key,
+                    key,
+                    scatterKey: key,
+                    x: targetX,
+                    y: targetY,
+                    z: targetZ,
+                    rotY: targetRotY ?? 0,
+                    sequence: seq,
+                    seq
+                });
+            }
+        } else if (key) {
+            (this.propTransformStates ??= new Map()).set(key, {
+                x: targetX,
+                y: targetY,
+                z: targetZ,
+                rotY: targetRotY ?? 0,
+                seq: this._propMoveSequence
+            });
+        }
+
+        return prop != null;
+    }
+
+    applyRemotePropMoved(detail = {}) {
+        const key = detail.id || detail.key || detail.scatterKey;
+        if (!key && (!Number.isFinite(detail.x) || !Number.isFinite(detail.z))) return false;
+
+        this._remotePropMoveSequences ??= new Map();
+        const seq = detail.sequence ?? detail.seq;
+        if (key && Number.isSafeInteger(seq)) {
+            const lastSeq = this._remotePropMoveSequences.get(key) ?? -1;
+            if (seq <= lastSeq) return false;
+            this._remotePropMoveSequences.set(key, seq);
+        }
+
+        if (key) {
+            (this.propTransformStates ??= new Map()).set(key, {
+                x: detail.x,
+                y: detail.y,
+                z: detail.z,
+                rotY: detail.rotY,
+                seq
+            });
+        }
+
+        const target = this.findPropSprite(key, detail);
+        if (target) {
+            this.moveProp(target, {
+                x: detail.x,
+                y: detail.y,
+                z: detail.z,
+                rotY: detail.rotY,
+                emit: false
+            });
+        }
+        return true;
+    }
+
+    applyRemotePropInteracted(detail = {}) {
+        if (!detail || !detail.key) return false;
+        const stateRecord = {
+            state: detail.state,
+            fxMode: detail.fxMode,
+            solid: detail.solid
+        };
+        if (detail.collision !== undefined) stateRecord.collision = detail.collision;
+        if (Number.isFinite(detail.x)) stateRecord.x = detail.x;
+        if (Number.isFinite(detail.z)) stateRecord.z = detail.z;
+        if (Number.isFinite(detail.rotY)) stateRecord.rotY = detail.rotY;
+        (this.propInteractionStates ??= new Map()).set(detail.key, stateRecord);
+        const target = this.findPropSprite(detail.key, detail);
+        if (target) {
+            applyPropInteractionState(target, detail);
+            if (Number.isFinite(detail.x) && Number.isFinite(detail.z)) {
+                this.moveProp(target, {
+                    x: detail.x,
+                    y: detail.y,
+                    z: detail.z,
+                    rotY: detail.rotY,
+                    emit: false
+                });
+            }
+            return true;
+        }
+        return true;
     }
 
     spawnDestructiblePropDrops(sprite, plannedDrops = null) {
