@@ -5,9 +5,9 @@ and worklogs are evidence or history; they do not override this file. Update a
 row when its implementation or acceptance state changes and link to evidence
 instead of duplicating it here.
 
-Current implementation branch: `dev/sprint-49` (merged as `v2.4.14-beta`), package `2.4.16-beta` (Sprint 50, `dev/sprint-50`), opened from
-`95ff7285` on 2026-10-01. [Sprint 49](docs/planning/sprint-49.md) and its
-[handoff](docs/planning/sprint-49-implementation-handoff.md) own current work.
+Current implementation branch: `dev/sprint-52`, package `2.4.17-beta` (Sprint 52), from `v2.4.16-beta`
+(`920f2406`) on `mothership`. [Sprint 52](docs/planning/sprint-52-playthrough-2026-10-07.md) owns current work;
+release notes: [`v2.4.17-beta`](docs/releases/v2.4.17-beta.md).
 
 Last release reconciliation: 2026-10-06 · `v2.4.14-beta` is released on `mothership` (`1030cbc5`, PR #100, [release](https://github.com/grounded-play/hunker-bunker/releases/tag/v2.4.14-beta)) and runs on the Steam `beta` branch. The trusted backend runs `970f17af` (deployed 2026-10-06). `2.4.15-beta` is dependency maintenance on `deps/2026-10-06-security-and-minor`.
 

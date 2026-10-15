@@ -37,7 +37,7 @@
 >   - 8 prompts across 4 variants (`_a`, `_b`, `_c`, `_d`) chroma-keyed from magenta with despill.
 >   - Route strips (cart ruts, drag marks, walkway borders, drain gutters, sled tracks, hive veins) and high-traffic door wear aprons and junction turn arcs.
 >
-> See [`docs/planning/world-completion-assets-and-path-layers-2026-10-11.md`](docs/planning/world-completion-assets-and-path-layers-2026-10-11.md) and [`world_completion_assets_and_texture_blending_plan.md`](file:///home/caveman/.gemini/antigravity-ide/brain/9873b1bc-55b8-4901-bcbf-260e25799862/world_completion_assets_and_texture_blending_plan.md).
+> See [`docs/planning/world-completion-assets-and-path-layers-2026-10-11.md`](docs/planning/world-completion-assets-and-path-layers-2026-10-11.md).
 >
 > Prior releases (`v2.4.14-beta` / Sprint 49):
 > - **Filtered player chat** in co-op and PvP, with mute, block and report.

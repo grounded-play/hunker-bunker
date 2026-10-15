@@ -1,10 +1,10 @@
 ## 🌟 Summary: Sprint 51 World Completion
 
-This pull request completes **Sprint 51 (World Completion)**, fulfilling the asset, surface, path-layer, and gameplay dressing requirements specified in [`docs/planning/world-completion-assets-and-path-layers-2026-10-11.md`](docs/planning/world-completion-assets-and-path-layers-2026-10-11.md).
+This pull request completes **Sprint 51 (World Completion)**, fulfilling the asset, surface, path-layer, and gameplay dressing requirements specified in [`docs/planning/world-completion-assets-and-path-layers-2026-10-11.md`](../planning/world-completion-assets-and-path-layers-2026-10-11.md).
 
 It introduces **39 high-detail game-ready 3D models** (zero-faceting 25k triangle budget with meshopt and KTX2 compression), **80 interchangeable PBR texture variants** (48 dual-array floor surfaces and 32 chroma-keyed route/decal strips), organic **multi-layer floor texture blending**, and enforces the **mandatory gameplay pairing rule** for life support water stations (`camp_water_barrel` paired with `life_cistern_tank` near sinks and showers).
 
-> **PR-wide scope note:** this branch contains 171 commits beyond `mothership`, not only the final world-completion delivery. The complete asset delta is **118 new GLBs** and **777 standalone KTX2 textures**. All 118 GLBs appear in [`steam/referenced-assets.json`](steam/referenced-assets.json), and `src/runtimeTextureCoverage.test.js` enforces an exact file-to-loader-manifest match for all 777 KTX2 files.
+> **PR-wide scope note:** this branch contains 171 commits beyond `mothership`, not only the final world-completion delivery. The complete asset delta is **118 new GLBs** and **777 standalone KTX2 textures**. All 118 GLBs appear in [`steam/referenced-assets.json`](../../steam/referenced-assets.json), and `src/runtimeTextureCoverage.test.js` enforces an exact file-to-loader-manifest match for all 777 KTX2 files.
 
 ### Complete asset inventory
 

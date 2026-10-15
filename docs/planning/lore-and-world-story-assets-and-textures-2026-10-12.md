@@ -480,7 +480,7 @@ Queen oviposition landing pool: a top-down floor decal for a game, to be chroma-
 
 ## 7. Gameplay Pairing Rules & Vignette Layouts
 
-To maintain narrative coherence and avoid random scattering, these mature assets are assigned to specific thematic vignette pairings in [src/roomDressingKits.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/roomDressingKits.js):
+To maintain narrative coherence and avoid random scattering, these mature assets are assigned to specific thematic vignette pairings in [src/roomDressingKits.js](../../src/roomDressingKits.js):
 
 1. **The Corporate Interrogation Vignette** (`security`, `executive-crypt`):
    - Anchor: `corp_interrogation_chair`
