@@ -41,6 +41,20 @@ Status: implemented; integration pending.
 - Kept the module independent of rendering and `ThreeGame`; player-facing payload
   application arrives in Slice 2B.
 
+### 2026-10-15 — Slice 2B: live prop runtime and payload adapter
+
+Status: implemented for the pipe/manifold vertical slice.
+
+- Added a bounded 10 Hz runtime that discovers mounted prop sources, advances the
+  pure state machine, shares the visible outlet transform with capsule exposure,
+  and keeps simulation cadence independent of render delta.
+- Routed damage, healing, infection, cleanse, and poison through one guarded
+  `ThreeGame` adapter.
+- Interaction state now enables/disables the matching emitter, and prop
+  destruction retires emitter state before visual teardown.
+- Fungal spore vents deliberately remain on their established enemy eruption and
+  projectile path until that path can be migrated without double-triggering.
+
 ## Decision summary
 
 Build one data-driven `WorldEmitterSystem` for prop-attached emissions and liquid

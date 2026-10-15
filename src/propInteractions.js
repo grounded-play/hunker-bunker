@@ -1670,6 +1670,7 @@ export function executeCustomPropInteraction(game, nearestInfo) {
     const success = Boolean(result.success);
     if (success) {
         applyPropInteractionState(nearestInfo.sprite, result);
+        game.worldEmitterRuntime?.applyMode?.(nearestInfo.sprite, result.fxMode ?? result.state);
         if (result.state == null) game.acknowledgePropExperience?.(nearestInfo.sprite);
         else game.acknowledgePropExperience?.(nearestInfo.sprite, { toggleArticulation: false });
         nearestInfo.sprite.userData.hasBeenInteracted = result.spent ?? !nearestInfo.spec.repeatable;

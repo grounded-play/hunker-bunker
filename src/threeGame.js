@@ -108,6 +108,7 @@ import { CombatSignal } from './combatSignal.js';
 import { PickupMagnet, PickupComboTracker } from './lootJuice.js';
 import { BiomeAtmosphereSystem } from './ambientDrift.js';
 import { AmbientVentSystem, FloorFogSystem } from './ambientVentsAndFog.js';
+import { WorldEmitterRuntime } from './worldEmitterRuntime.js';
 import { buildCliffPathGlowBatch } from './cliffPathGlow.js';
 import { cameraFrustum, stepMixer } from './mixerCulling.js';
 import { KillstreakFeedbackSystem } from './gameplayTactileVfx.js';
@@ -2610,6 +2611,7 @@ export class ThreeGame {
         this.pickupComboTracker = new PickupComboTracker();
         this.biomeAtmosphere = null;
         this.ambientVentSystem = null;
+        this.worldEmitterRuntime = new WorldEmitterRuntime();
         this.floorFogSystem = null;
         this.lastDayBlend = 1.0;
         this.visitedChunks = new Set();
@@ -13765,6 +13767,7 @@ export class ThreeGame {
             fp.measure('updateBiomeEnvironment', () => this.updateBiomeEnvironment({ delta }));
             fp.measure('updateBiomeAtmosphere', () => this.biomeAtmosphere?.update(delta, this.player ? this.player.position : { x: 0, y: 0, z: 0 }));
             fp.measure('updateAmbientVents', () => this.ambientVentSystem?.update(delta, now, this.player ? this.player.position : null, this, this.lastDayBlend ?? 1.0));
+            fp.measure('updateWorldEmitters', () => this.worldEmitterRuntime?.update(delta, this));
             fp.measure('updateFloorFog', () => this.floorFogSystem?.update(delta, now, this.lastDayBlend ?? 1.0));
             fp.measure('updateWeather', () => this.updateWeather(delta));
             fp.measure('updateDayNightCycle', () => this.updateDayNightCycle(delta));
@@ -25628,6 +25631,37 @@ export class ThreeGame {
                 maxHp: this.playerVitals.maxHp
             }
         }));
+    }
+
+    applyWorldEmitterPayload(payload, _entry, sourcePosition = null) {
+        if (!payload || this.isPlayerDead || this.isPlayerDowned) return false;
+        const sourceX = sourcePosition?.x ?? null;
+        const sourceZ = sourcePosition?.z ?? null;
+        if (payload.kind === 'damage') {
+            return this.takeDamage(payload.amount ?? 1, payload.reason ?? 'world-emitter', sourceX, sourceZ) !== false;
+        }
+        if (payload.kind === 'heal') {
+            const before = this.playerVitals?.hp;
+            this.healPlayer(payload.amount ?? 1);
+            return this.playerVitals?.hp !== before;
+        }
+        if (payload.kind === 'infect') {
+            if (!this.act2 || !this.isAct2Active?.()) return false;
+            const before = this.act2.getState?.()?.infectionLoad;
+            this.act2.addInfection?.(payload.amount ?? 1);
+            return this.act2.getState?.()?.infectionLoad !== before;
+        }
+        if (payload.kind === 'cleanse') {
+            if (!this.act2 || !this.isAct2Active?.()) return false;
+            const before = this.act2.getState?.()?.infectionLoad;
+            this.act2.adjustInfectionLoad?.(-Math.abs(payload.amount ?? 1));
+            return this.act2.getState?.()?.infectionLoad !== before;
+        }
+        if (payload.kind === 'poison') {
+            this.playerPoisonTimer = Math.max(this.playerPoisonTimer ?? 0, payload.duration ?? 3);
+            return true;
+        }
+        return false;
     }
 
     resolveFallDamage() {
@@ -39918,6 +39952,7 @@ export class ThreeGame {
             if (attackerIndex >= 0) this.umbilicalAttackers.splice(attackerIndex, 1);
         }
         const world3dRoot = sprite.userData.world3dRoot;
+        this.worldEmitterRuntime?.destroySource?.(sprite);
         if (world3dRoot) {
             this.disposeWorld3dPropFx?.(world3dRoot);
             this.disposeWorld3dPropExperience?.(world3dRoot);
