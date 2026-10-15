@@ -4,6 +4,16 @@ import { t } from './i18n.js';
 const DIALOGUE_CHAR_INTERVAL_MS = 18;
 const DIALOGUE_LINE_GAP_MS = 150;
 
+const safeRaf = (fn) => {
+    if (typeof requestAnimationFrame === 'function') {
+        return requestAnimationFrame(fn);
+    }
+    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+        return window.requestAnimationFrame(fn);
+    }
+    return setTimeout(fn, 0);
+};
+
 const CLASS_COLORS = {
     SCOUT: { glow: '#7dff5a', rgb: '125, 255, 90' },
     TANK: { glow: '#ffb700', rgb: '255, 183, 0' },
@@ -18,6 +28,15 @@ const MOTHERSHIP_LINES = [
     { text: 'MOTHERSHIP: SALVAGE CONSOLE IS NEAR YOUR WRECKAGE. BANK SALVAGE THERE AND REBUILD YOUR SHIP, SYSTEM BY SYSTEM.' },
     { text: 'MOTHERSHIP: RESTORE EVERY SYSTEM AND WE CAN PULL YOU OFF THIS ROCK, AGENT.' },
     { text: 'MOTHERSHIP: AWAITING YOUR RESPONSE, AGENT.' }
+];
+
+export const MOTHERSHIP_VERBATIM_TIMED_LINES = [
+    { text: "MOTHERSHIP: AGENT. YOU'RE ALIVE.", pauseMs: 300, targetDurationMs: 1800 },
+    { text: "MOTHERSHIP: YOUR SHIP TOOK A HYPERSONIC STRIKE ON DESCENT —", pauseMs: 400, targetDurationMs: 2400 },
+    { text: "MOTHERSHIP: BUT THE SALVAGE CONSOLE REMAINS OPERATIONAL.", pauseMs: 600, targetDurationMs: 3000 },
+    { text: "MOTHERSHIP: BANK WHAT YOU RECOVER AND REBUILD THE VESSEL —", pauseMs: 300, targetDurationMs: 2600 },
+    { text: "MOTHERSHIP: SYSTEM BY SYSTEM.", pauseMs: 200, targetDurationMs: 1600 },
+    { text: "MOTHERSHIP: AWAITING CHOICE.", pauseMs: 100, targetDurationMs: 400 }
 ];
 
 const CLASS_BRIEFING_LINES = {
@@ -298,6 +317,71 @@ export class DialogueManager {
         const runId = ++this.dialogueRunId;
         this.activeDialogueRunId = runId;
 
+        const voicePackId = resolveEffectiveVoicePackId();
+        const isDefaultVoice = !voicePackId || voicePackId === 0;
+        const introStyle = (typeof window !== 'undefined' && window.state?.settings?.introStyle) ||
+            (typeof localStorage !== 'undefined' && localStorage.getItem('hb_intro_style')) ||
+            'tactical_terminal';
+
+        // Alternative Style A: Fullscreen Tactical Terminal Cutscene (verbatim & timed to voice)
+        if (isDefaultVoice && introStyle === 'tactical_terminal' && typeof window !== 'undefined' && typeof window.playCutsceneVideo === 'function') {
+            try {
+                await window.playCutsceneVideo('intro-mothership-briefing', { allowSkip: true });
+            } catch (err) {
+                console.warn('[Dialogue] Tactical terminal cutscene playback error, falling back to terminal:', err);
+            }
+            if (!this.isDialogueRunActive(runId) || (typeof window !== 'undefined' && window.skipAllIntro)) {
+                return 'skip';
+            }
+
+            // Immediately reveal the choice prompt and buttons
+            this.applyClassTheme(playerType);
+            this.bodyEl.replaceChildren();
+            this.choicesEl.classList.add('hidden');
+            this.choicesEl.classList.remove('is-visible');
+
+            this.dialogEl.classList.remove('hidden');
+            this.dialogEl.classList.remove('is-revealed');
+            this.dialogEl.setAttribute('aria-hidden', 'false');
+            this.panelEl.classList.remove('is-closing');
+            this.panelEl.classList.add('is-open');
+            this.dialogEl.classList.add('is-revealed');
+            this.setInputEnabled?.(false);
+            this.initDialogueListeners();
+
+            await this.typeLine(runId, "MOTHERSHIP: AWAITING CHOICE.", { charDelay: 15, syncAudio: false });
+            if (!this.isDialogueRunActive(runId)) return 'skip';
+
+            this.choicesEl.classList.remove('hidden');
+            safeRaf(() => {
+                if (!this.isDialogueRunActive(runId)) return;
+                this.choicesEl.classList.add('is-visible');
+                if (this.skipBtn && !this.skipBtn.classList.contains('hidden')) {
+                    this.skipBtn.focus();
+                    this.skipBtn.classList.add('selected');
+                    this.tutorialBtn?.classList.remove('selected');
+                } else if (this.tutorialBtn && !this.tutorialBtn.classList.contains('hidden')) {
+                    this.tutorialBtn.focus();
+                    this.tutorialBtn.classList.add('selected');
+                }
+                this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
+            });
+            window.AudioManager?.play('class_lock', { volume: 0.4 });
+
+            const choice = await new Promise((resolve) => {
+                this.activeChoiceResolver = resolve;
+            });
+            if (!this.isDialogueRunActive(runId)) return 'skip';
+
+            window.AudioManager?.play('ui_click', { volume: 0.6 });
+            await this.typeLine(runId, CHOICE_REPLY[choice] ?? CHOICE_REPLY.skip);
+            await this.sleep(runId, 260);
+
+            await this.closeDialogue(runId);
+            return choice;
+        }
+
+        // Standard terminal modal opening
         this.applyClassTheme(playerType);
         this.bodyEl.replaceChildren();
         this.choicesEl.classList.add('hidden');
@@ -308,7 +392,7 @@ export class DialogueManager {
         this.dialogEl.setAttribute('aria-hidden', 'false');
         this.panelEl.classList.remove('is-closing');
 
-        requestAnimationFrame(() => {
+        safeRaf(() => {
             if (this.activeDialogueRunId !== runId) return;
             this.panelEl.classList.add('is-open');
             window.setTimeout(() => {
@@ -321,40 +405,57 @@ export class DialogueManager {
         window.AudioManager?.play('door_slide_horiz', { volume: 0.5 });
         this.initDialogueListeners();
 
-        const voicePackId = resolveEffectiveVoicePackId();
+        // Alternative Style B: Verbatim Timed Terminal Dialogue
+        if (isDefaultVoice && introStyle === 'timed_verbatim') {
+            const linesToRun = MOTHERSHIP_VERBATIM_TIMED_LINES;
+            this.determineSpeakerSetup(linesToRun);
 
-        let allLines = [...MOTHERSHIP_LINES];
-        let classBriefing = CLASS_BRIEFING_LINES[playerType];
-        let choiceReplies = CHOICE_REPLY;
+            for (let i = 0; i < linesToRun.length; i++) {
+                const line = linesToRun[i];
+                const resolvedLine = line.text.replace('{CLASS}', playerType);
+                const speaker = this.getDialogueSpeaker(resolvedLine);
+                const charCount = Math.max(1, speaker.cleanText.length);
+                const charDelay = Math.max(12, Math.round((line.targetDurationMs || 1500) / charCount));
 
-        if (voicePackId === 4148) {
-            allLines = [...COMMANDER_CRASH_LINES];
-            classBriefing = COMMANDER_CLASS_BRIEFING_LINES[playerType];
-            choiceReplies = COMMANDER_CHOICE_REPLY;
-        } else if (voicePackId === 4149) {
-            allLines = [...AURA_CRASH_LINES];
-            classBriefing = AURA_CLASS_BRIEFING_LINES[playerType];
-            choiceReplies = AURA_CHOICE_REPLY;
-        }
+                await this.typeLine(runId, resolvedLine, { charDelay, syncAudio: (i === 0) });
+                if (!this.isDialogueRunActive(runId)) return 'skip';
 
-        if (classBriefing) {
-            allLines.splice(allLines.length - 1, 0, classBriefing);
-        }
+                const pauseMs = line.pauseMs ?? DIALOGUE_LINE_GAP_MS;
+                await this.sleep(runId, pauseMs);
+                if (!this.isDialogueRunActive(runId)) return 'skip';
+            }
+        } else {
+            // Classic Typewriter Style (or alternate voice packs)
+            let allLines = [...MOTHERSHIP_LINES];
+            let classBriefing = CLASS_BRIEFING_LINES[playerType];
 
-        this.determineSpeakerSetup(allLines);
+            if (voicePackId === 4148) {
+                allLines = [...COMMANDER_CRASH_LINES];
+                classBriefing = COMMANDER_CLASS_BRIEFING_LINES[playerType];
+            } else if (voicePackId === 4149) {
+                allLines = [...AURA_CRASH_LINES];
+                classBriefing = AURA_CLASS_BRIEFING_LINES[playerType];
+            }
 
-        for (const line of allLines) {
-            const resolvedLine = line.text.replace('{CLASS}', playerType);
-            await this.typeLine(runId, resolvedLine);
-            if (!this.isDialogueRunActive(runId)) return 'skip';
+            if (classBriefing) {
+                allLines.splice(allLines.length - 1, 0, classBriefing);
+            }
 
-            const pauseMs = line.pauseMs ?? DIALOGUE_LINE_GAP_MS;
-            await this.sleep(runId, pauseMs);
-            if (!this.isDialogueRunActive(runId)) return 'skip';
+            this.determineSpeakerSetup(allLines);
+
+            for (const line of allLines) {
+                const resolvedLine = line.text.replace('{CLASS}', playerType);
+                await this.typeLine(runId, resolvedLine);
+                if (!this.isDialogueRunActive(runId)) return 'skip';
+
+                const pauseMs = line.pauseMs ?? DIALOGUE_LINE_GAP_MS;
+                await this.sleep(runId, pauseMs);
+                if (!this.isDialogueRunActive(runId)) return 'skip';
+            }
         }
 
         this.choicesEl.classList.remove('hidden');
-        requestAnimationFrame(() => {
+        safeRaf(() => {
             if (!this.isDialogueRunActive(runId)) return;
             this.choicesEl.classList.add('is-visible');
             if (this.skipBtn && !this.skipBtn.classList.contains('hidden')) {
@@ -378,6 +479,10 @@ export class DialogueManager {
             this.activeChoiceResolver = resolve;
         });
         if (!this.isDialogueRunActive(runId)) return 'skip';
+
+        let choiceReplies = CHOICE_REPLY;
+        if (voicePackId === 4148) choiceReplies = COMMANDER_CHOICE_REPLY;
+        else if (voicePackId === 4149) choiceReplies = AURA_CHOICE_REPLY;
 
         window.AudioManager?.play('ui_click', { volume: 0.6 });
         await this.typeLine(runId, choiceReplies[choice] ?? choiceReplies.skip);
@@ -750,7 +855,7 @@ export class DialogueManager {
         this.cancelDialogue();
     }
 
-    async typeLine(runId, line) {
+    async typeLine(runId, line, { charDelay = null, syncAudio = true } = {}) {
         if (!this.isDialogueRunActive(runId)) return;
 
         const speaker = this.getDialogueSpeaker(line);
@@ -812,7 +917,7 @@ export class DialogueManager {
                 break;
             }
 
-            if (index === 0) {
+            if (index === 0 && syncAudio) {
                 window.AudioManager?.playVoiceForMessage(speaker, textToType);
             }
 
@@ -821,19 +926,19 @@ export class DialogueManager {
             this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
             const isSpace = (textToType[index] === ' ');
             const playChance = (isSpace || (Math.random() < 0.22)) && index > 0;
-            if (playChance && !window.AudioManager?.isVoiceSpeaking?.()) {
+            if (playChance && !window.AudioManager?.isVoiceSpeaking?.() && syncAudio) {
                 window.AudioManager?.playVoiceForMessage(speaker, textToType.slice(index, index + 3), { isChirp: true });
             }
             
-            let charDelay = DIALOGUE_CHAR_INTERVAL_MS;
-            if (typeof window !== 'undefined' && window.state?.settings?.textSpeed) {
+            let appliedCharDelay = charDelay ?? DIALOGUE_CHAR_INTERVAL_MS;
+            if (charDelay === null && typeof window !== 'undefined' && window.state?.settings?.textSpeed) {
                 const speed = window.state.settings.textSpeed;
-                if (speed === 'fast') charDelay = 10;
-                else if (speed === 'instant') charDelay = 0;
+                if (speed === 'fast') appliedCharDelay = 10;
+                else if (speed === 'instant') appliedCharDelay = 0;
             }
 
-            if (charDelay > 0) {
-                await this.sleep(runId, charDelay);
+            if (appliedCharDelay > 0) {
+                await this.sleep(runId, appliedCharDelay);
             }
         }
 

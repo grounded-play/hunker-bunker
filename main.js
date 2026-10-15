@@ -2874,6 +2874,9 @@ const state = {
         textFloor: [16, 18, 20, 22, 24].includes(Number(localStorage.getItem('hb_text_floor')))
             ? Number(localStorage.getItem('hb_text_floor'))
             : 18,
+        introStyle: ['tactical_terminal', 'timed_verbatim', 'classic'].includes(localStorage.getItem('hb_intro_style'))
+            ? localStorage.getItem('hb_intro_style')
+            : 'tactical_terminal',
         cameraMode: localStorage.getItem('hb_camera_mode') === 'third-person' ? 'third-person' : 'isometric',
         cameraDistance: ['close', 'standard', 'wide'].includes(localStorage.getItem('hb_camera_distance'))
             ? localStorage.getItem('hb_camera_distance')
@@ -11170,6 +11173,7 @@ function organizeSettingsPanels() {
         ['setting-ui-scale', 'accessibility'],
         ['setting-text-floor', 'accessibility'],
         ['setting-text-speed', 'accessibility'],
+        ['setting-intro-style', 'session'],
         ['setting-colorblind-toggle', 'accessibility'],
         ['setting-subtitle-size', 'accessibility'],
         ['setting-subtitle-backdrop', 'accessibility'],
@@ -11411,6 +11415,9 @@ function openSettingsModal() {
 
     const txtSpeedSelect = document.getElementById('setting-text-speed');
     if (txtSpeedSelect) txtSpeedSelect.value = state.settings.textSpeed || 'normal';
+
+    const introStyleSelect = document.getElementById('setting-intro-style');
+    if (introStyleSelect) introStyleSelect.value = state.settings.introStyle || 'tactical_terminal';
 
     const cbToggle = document.getElementById('setting-colorblind-toggle');
     if (cbToggle) cbToggle.checked = !!state.settings.colorblindAssist;
@@ -16676,6 +16683,15 @@ whenDocumentParsed(async () => {
         settingTextSpeed.addEventListener('change', (e) => {
             state.settings.textSpeed = e.target.value;
             localStorage.setItem('hunker_text_speed', state.settings.textSpeed);
+        });
+    }
+
+    const settingIntroStyle = document.getElementById('setting-intro-style');
+    if (settingIntroStyle) {
+        settingIntroStyle.value = state.settings.introStyle;
+        settingIntroStyle.addEventListener('change', (e) => {
+            state.settings.introStyle = e.target.value;
+            localStorage.setItem('hb_intro_style', state.settings.introStyle);
         });
     }
 

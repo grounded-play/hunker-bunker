@@ -164,6 +164,10 @@ PRESETS = {
     },
     "intro": {
         "output_base": "intro-boot",
+        "scene_frames": 15,
+        "type_end": 8,
+        "lock_at": 9,
+        "lock_frames": 2,
         "scenes": """pub const SCENE_LIST: [SceneDef; SCENES] = [
     SceneDef {
         kind: Kind::Cursor,
@@ -296,13 +300,158 @@ PRESETS = {
     "  ready   lock confirms drop zone",
     "› execute drop now",
 ];"""
+    },
+    "mothership_briefing": {
+        "output_base": "intro-mothership-briefing",
+        "scene_frames": 33,
+        "type_end": 20,
+        "lock_at": 22,
+        "lock_frames": 4,
+        "voice_track": HUNKER_ROOT / "public/audio/voice/mothership/voice_mothership_01_alive.mp3",
+        "scenes": """pub const SCENE_LIST: [SceneDef; SCENES] = [
+    SceneDef {
+        kind: Kind::Cursor,
+        text: "›",
+        palette: Palette::Paper,
+        cam: cam(0.18, 0.62, -0.05, 3.3, 3.7, 10.0, 0.0, 1.1),
+        hero: (720.0, 560.0),
+        size: 120.0,
+    },
+    SceneDef {
+        kind: Kind::Typing,
+        text: "Agent.",
+        palette: Palette::Mono,
+        cam: cam(0.38, -0.22, 0.04, 2.6, 2.8, 50.0, 0.0, 1.2),
+        hero: (560.0, 540.0),
+        size: 110.0,
+    },
+    SceneDef {
+        kind: Kind::Typing,
+        text: "You're alive.",
+        palette: Palette::Phosphor,
+        cam: cam(0.12, -0.55, 0.06, 2.3, 2.4, 60.0, -10.0, 1.0),
+        hero: (380.0, 600.0),
+        size: 96.0,
+    },
+    SceneDef {
+        kind: Kind::Typing,
+        text: "Your ship took a",
+        palette: Palette::Mono,
+        cam: cam(-0.12, 0.5, -0.03, 2.5, 2.6, 0.0, 0.0, 1.6),
+        hero: (340.0, 480.0),
+        size: 88.0,
+    },
+    SceneDef {
+        kind: Kind::Typing,
+        text: "hypersonic strike",
+        palette: Palette::Thermal,
+        cam: cam(0.78, 0.1, -0.12, 2.2, 2.4, 30.0, 0.0, 1.2),
+        hero: (300.0, 560.0),
+        size: 88.0,
+    },
+    SceneDef {
+        kind: Kind::Typing,
+        text: "on descent —",
+        palette: Palette::Navy,
+        cam: cam(0.26, -0.36, 0.0, 2.4, 2.7, 0.0, 0.0, 1.0),
+        hero: (420.0, 540.0),
+        size: 92.0,
+    },
+    SceneDef {
+        kind: Kind::Typing,
+        text: "salvage console",
+        palette: Palette::Phosphor,
+        cam: cam(0.2, 0.32, 0.05, 2.3, 2.4, -120.0, 0.0, 1.1),
+        hero: (340.0, 520.0),
+        size: 86.0,
+    },
+    SceneDef {
+        kind: Kind::Typing,
+        text: "remains operational.",
+        palette: Palette::Amber,
+        cam: cam(0.32, -0.26, -0.02, 2.2, 2.1, 0.0, 0.0, 1.3),
+        hero: (260.0, 560.0),
+        size: 80.0,
+    },
+    SceneDef {
+        kind: Kind::Typing,
+        text: "Bank what you recover",
+        palette: Palette::Mono,
+        cam: Cam {
+            tilt_x: 0.15,
+            tilt_y: -0.16,
+            roll: 0.0,
+            zoom: (2.05, 2.1),
+            pan: (0.0, 0.0),
+            blur: 0.8,
+            shake: 3.5,
+        },
+        hero: (240.0, 520.0),
+        size: 78.0,
+    },
+    SceneDef {
+        kind: Kind::Typing,
+        text: "rebuild the vessel —",
+        palette: Palette::Thermal,
+        cam: cam(0.22, 0.58, -0.08, 2.0, 2.3, 10.0, 0.0, 1.2),
+        hero: (240.0, 560.0),
+        size: 78.0,
+    },
+    SceneDef {
+        kind: Kind::Typing,
+        text: "system by system.",
+        palette: Palette::Phosphor,
+        cam: cam(0.3, 0.2, 0.03, 2.2, 2.5, 0.0, 0.0, 1.0),
+        hero: (320.0, 540.0),
+        size: 86.0,
+    },
+    SceneDef {
+        kind: Kind::Done,
+        text: "AWAITING CHOICE",
+        palette: Palette::Neon,
+        cam: cam(0.46, -0.32, 0.06, 2.8, 1.9, 0.0, 0.0, 1.2),
+        hero: (960.0, 540.0),
+        size: 76.0,
+    },
+];""",
+        "log": """pub const LOG: [&str; 24] = [
+    "› transmission  mothership_channel_01  open",
+    "  carrier       sub-carrier signal 142.8 MHz",
+    "  biometrics    heartbeat detected: operator",
+    "  exosuit       vitals: stable  o2: 78%",
+    "› collision     hypersonic strike logged",
+    "  impact_site   sector_09_cryo_perimeter",
+    "  telemetry     chassis_integrity 42%",
+    "  beacon        salvage_console_foundry online",
+    "› directives    orders transmitted to HUD",
+    "  primary       bank_recovered_scrap",
+    "  secondary     rebuild_hull_bulkhead",
+    "  tertiary      re-engage_jump_drive",
+    "  warning       unidentified_signal_detected",
+    "  quarantine    protocol_09_override",
+    "› awaiting     choice_response_from_agent",
+    "  comms         channel_active",
+    "  status        ready_for_selection",
+    "  link          encrypted_burst_sync",
+    "  hash          verified_authenticity_ok",
+    "  sub-net       tactical_command_online",
+    "  response      prompt_operator_choice",
+    "  cursor        hold_for_input",
+    "  terminal      awaiting_choice_selection",
+    "› end_of_burst  packet_complete",
+];"""
     }
 }
 
 
-def patch_hud_lib(scenes_block: str, log_block: str):
+def patch_hud_lib(scenes_block: str, log_block: str, scene_frames: int = 15, type_end: int = 8, lock_at: int = 9, lock_frames: int = 2):
     hud_lib = FF_ROOT / "hud" / "src" / "lib.rs"
     content = hud_lib.read_text(encoding="utf-8")
+
+    content = re.sub(r"pub const SCENE_FRAMES: usize = \d+;", f"pub const SCENE_FRAMES: usize = {scene_frames};", content)
+    content = re.sub(r"pub const TYPE_END: usize = \d+;", f"pub const TYPE_END: usize = {type_end};", content)
+    content = re.sub(r"pub const LOCK_AT: usize = \d+;", f"pub const LOCK_AT: usize = {lock_at};", content)
+    content = re.sub(r"pub const LOCK_FRAMES: usize = \d+;", f"pub const LOCK_FRAMES: usize = {lock_frames};", content)
 
     # Replace SCENE_LIST
     scene_pattern = re.compile(r"pub const SCENE_LIST: \[SceneDef; SCENES\] = \[.*?\];", re.DOTALL)
@@ -329,7 +478,7 @@ def run_cmd(cmd, cwd=None, env=None):
         raise RuntimeError(f"Command failed with code {res.returncode}")
 
 
-def build_and_render(output_base: str):
+def build_and_render(output_base: str, voice_track: Path = None):
     env = {
         "BINDGEN_EXTRA_CLANG_ARGS": "-I/usr/lib/gcc/x86_64-linux-gnu/13/include",
         "RUSTFLAGS": "-L /home/caveman/.local/lib",
@@ -359,6 +508,34 @@ def build_and_render(output_base: str):
     # 5. Synthesize Procedural Audio
     print("\n--> Step 5: Synthesizing procedural audio with tools/sfx.py...")
     run_cmd(["python3", "tools/sfx.py"], cwd=str(FF_ROOT))
+
+    # 5b. Blend Voice Track if configured
+    if voice_track and Path(voice_track).exists():
+        print(f"\n--> Step 5b: Blending voice track {voice_track} into procedural audio...")
+        sfx_path = FF_ROOT / "out" / "pass" / "sfx.wav"
+        temp_vox = Path("/tmp/voice_blend_48k.wav")
+        run_cmd(["ffmpeg", "-y", "-i", str(voice_track), "-ar", "48000", "-ac", "2", str(temp_vox)])
+        
+        import numpy as np
+        from scipy.io import wavfile
+        sr_sfx, sfx_data = wavfile.read(sfx_path)
+        sr_vox, vox_data = wavfile.read(temp_vox)
+        
+        sfx_f = sfx_data.astype(np.float32) / 32768.0
+        vox_f = vox_data.astype(np.float32) / 32768.0
+        
+        if len(vox_f) < len(sfx_f):
+            vox_f = np.pad(vox_f, ((0, len(sfx_f) - len(vox_f)), (0, 0)))
+        else:
+            vox_f = vox_f[:len(sfx_f)]
+            
+        mixed = sfx_f * 0.35 + vox_f * 0.95
+        peak = np.max(np.abs(mixed))
+        if peak > 0.98:
+            mixed = mixed * (0.95 / peak)
+            
+        wavfile.write(sfx_path, 48000, (mixed * 32767).astype(np.int16))
+        print("  - Successfully blended verbatim voice track with procedural SFX")
 
     # 6. Render Lens Pass 2
     print("\n--> Step 6: Rendering Lens Pass 2 (1920x1080 SkSL Vulkan)...")
@@ -421,8 +598,18 @@ def main():
         shutil.copy2(hud_lib, backup)
 
     try:
-        patch_hud_lib(preset_data["scenes"], preset_data["log"])
-        build_and_render(preset_data["output_base"])
+        patch_hud_lib(
+            preset_data["scenes"],
+            preset_data["log"],
+            scene_frames=preset_data.get("scene_frames", 15),
+            type_end=preset_data.get("type_end", 8),
+            lock_at=preset_data.get("lock_at", 9),
+            lock_frames=preset_data.get("lock_frames", 2),
+        )
+        build_and_render(
+            preset_data["output_base"],
+            voice_track=preset_data.get("voice_track"),
+        )
     finally:
         # Keep original backup available
         pass
