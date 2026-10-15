@@ -61,8 +61,8 @@ jobs:
           HB_BUILD_TIMESTAMP: ${{ github.event.head_commit.timestamp }}
       - run: npm run steam:config
         env:
-          HB_STEAM_BACKEND_URL: ${{ vars.HB_STEAM_BACKEND_URL }}
-          HB_STEAM_APPID: ${{ vars.STEAM_APPID }}
+          HB_STEAM_BACKEND_URL: ${{ vars.HB_STEAM_BACKEND_URL || 'https://steam.tuesdaycinema.club' }}
+          HB_STEAM_APPID: ${{ vars.STEAM_APPID || '4957040' }}
           HB_STEAM_CONFIG_REQUIRE_REMOTE: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
       - run: npx electron-builder --dir
       - run: npm run audit:retail-assets:package

@@ -145,6 +145,15 @@
     "3d/runtime/new3ds/arch_rib_ceiling_vault_02.glb",
     "3d/runtime/new3ds/arch_rib_ceiling_vault_03.glb",
     "3d/runtime/new3ds/arch_window_stained.glb",
+    "3d/runtime/new3ds/barrier_ice_fractured.glb",
+    "3d/runtime/new3ds/barrier_ice_intact.glb",
+    "3d/runtime/new3ds/barrier_ice_melting.glb",
+    "3d/runtime/new3ds/base_cot_installed.glb",
+    "3d/runtime/new3ds/base_door_sealable_bulkhead.glb",
+    "3d/runtime/new3ds/base_o2_atmospheric_regulator.glb",
+    "3d/runtime/new3ds/base_o2_overhead_duct.glb",
+    "3d/runtime/new3ds/base_power_junction_box.glb",
+    "3d/runtime/new3ds/bay_c_pod_312_rupture.glb",
     "3d/runtime/new3ds/body_empty_exosuit.glb",
     "3d/runtime/new3ds/body_frozen_human.glb",
     "3d/runtime/new3ds/boss_corrupted_briggs.glb",
@@ -156,6 +165,10 @@
     "3d/runtime/new3ds/bunker_junk_uncommon.glb",
     "3d/runtime/new3ds/camp_canvas_tent.glb",
     "3d/runtime/new3ds/camp_water_barrel.glb",
+    "3d/runtime/new3ds/carapace_chitin_press.glb",
+    "3d/runtime/new3ds/carapace_ossuary_anvil.glb",
+    "3d/runtime/new3ds/carapace_sentry_chrysalis.glb",
+    "3d/runtime/new3ds/carry_field_cot_folded.glb",
     "3d/runtime/new3ds/charm_amber_bio_flask.glb",
     "3d/runtime/new3ds/charm_bunker404.glb",
     "3d/runtime/new3ds/charm_dark_matter.glb",
@@ -172,10 +185,19 @@
     "3d/runtime/new3ds/charm_spent_50cal.glb",
     "3d/runtime/new3ds/charm_sporesnail_pearl.glb",
     "3d/runtime/new3ds/charm_trench_whistle.glb",
+    "3d/runtime/new3ds/chasm_abyss_sounding_mortar.glb",
     "3d/runtime/new3ds/chasm_beacon_post.glb",
     "3d/runtime/new3ds/chasm_broken_catwalk.glb",
+    "3d/runtime/new3ds/chasm_cable_traversal_winch.glb",
+    "3d/runtime/new3ds/chasm_dredge_hook_crane.glb",
+    "3d/runtime/new3ds/chasm_geothermal_survey_transit.glb",
     "3d/runtime/new3ds/chasm_gondola.glb",
+    "3d/runtime/new3ds/chasm_hanging_cage_crane.glb",
+    "3d/runtime/new3ds/chasm_hanging_elevator.glb",
     "3d/runtime/new3ds/chasm_rappel_anchor.glb",
+    "3d/runtime/new3ds/chasm_seismic_geophone_station.glb",
+    "3d/runtime/new3ds/chasm_steam_whistle_buoy.glb",
+    "3d/runtime/new3ds/chasm_suicide_ledge_cross.glb",
     "3d/runtime/new3ds/chassis_bio_synthesizer_medic.glb",
     "3d/runtime/new3ds/chassis_bunker404.glb",
     "3d/runtime/new3ds/chassis_cryo_vanguard_scout.glb",
@@ -199,30 +221,78 @@
     "3d/runtime/new3ds/chassis_tank_old_iron.glb",
     "3d/runtime/new3ds/chassis_trench_warden_heavy.glb",
     "3d/runtime/new3ds/chassis_void_commando_recon.glb",
+    "3d/runtime/new3ds/chen_sealed_confession_console.glb",
+    "3d/runtime/new3ds/corp_asset_incinerator_chute.glb",
+    "3d/runtime/new3ds/corp_biometric_collar_chute.glb",
+    "3d/runtime/new3ds/corp_biometric_wall_safe.glb",
+    "3d/runtime/new3ds/corp_compliance_choker_bench.glb",
+    "3d/runtime/new3ds/corp_cryo_transport_coffin.glb",
+    "3d/runtime/new3ds/corp_debt_severing_kiosk.glb",
+    "3d/runtime/new3ds/corp_dissection_gurney.glb",
+    "3d/runtime/new3ds/corp_executive_sarcophagus.glb",
+    "3d/runtime/new3ds/corp_executive_whisper_booth.glb",
+    "3d/runtime/new3ds/corp_incinerator_hopper.glb",
+    "3d/runtime/new3ds/corp_interrogation_chair.glb",
+    "3d/runtime/new3ds/corp_quantum_ledger_podium.glb",
+    "3d/runtime/new3ds/corp_suppression_barrier.glb",
+    "3d/runtime/new3ds/crash_cockpit_canopy.glb",
     "3d/runtime/new3ds/crash_drag_chute.glb",
     "3d/runtime/new3ds/crash_engine_nacelle.glb",
     "3d/runtime/new3ds/crash_hull_panels.glb",
+    "3d/runtime/new3ds/crawler_signal_antenna_rig.glb",
+    "3d/runtime/new3ds/cryo_cannibal_butchery_table.glb",
     "3d/runtime/new3ds/cryo_frozen_cascade.glb",
+    "3d/runtime/new3ds/cryo_frozen_shelter_pod.glb",
     "3d/runtime/new3ds/cryo_heater_station.glb",
     "3d/runtime/new3ds/cryo_ice_blocks.glb",
+    "3d/runtime/new3ds/cryo_ice_core_specimen.glb",
     "3d/runtime/new3ds/cryo_ice_crawler.glb",
+    "3d/runtime/new3ds/cryo_ruptured_pod.glb",
     "3d/runtime/new3ds/cryo_snowbound_crates.glb",
+    "3d/runtime/new3ds/cryo_thawing_trough.glb",
     "3d/runtime/new3ds/cryosnail.glb",
     "3d/runtime/new3ds/cryosnail_dead.glb",
     "3d/runtime/new3ds/cybersnail_dead.glb",
+    "3d/runtime/new3ds/decon_exosuit_scrubber_station.glb",
+    "3d/runtime/new3ds/door_arch_guillotine_assembled.glb",
+    "3d/runtime/new3ds/door_arch_guillotine_frame.glb",
+    "3d/runtime/new3ds/door_arch_guillotine_slab.glb",
+    "3d/runtime/new3ds/engineer_magnetic_bottle_cell.glb",
+    "3d/runtime/new3ds/engineer_robotic_welding_arm.glb",
+    "3d/runtime/new3ds/engineer_wave_relay_dynamo.glb",
+    "3d/runtime/new3ds/evac_avionics_gyro_gimbal.glb",
+    "3d/runtime/new3ds/evac_cabin_co2_scrubber.glb",
+    "3d/runtime/new3ds/evac_cargo_ballast_scale.glb",
+    "3d/runtime/new3ds/evac_cryo_hypergolic_manifold.glb",
+    "3d/runtime/new3ds/evac_four_seat_cockpit_module.glb",
+    "3d/runtime/new3ds/evac_manifest_allocation_terminal.glb",
+    "3d/runtime/new3ds/evac_manual_abort_detonator.glb",
+    "3d/runtime/new3ds/evac_preflight_fuel_umbilical.glb",
     "3d/runtime/new3ds/fixture_clock_dead.glb",
     "3d/runtime/new3ds/fixture_sconce_vine.glb",
     "3d/runtime/new3ds/fungal_spore_vent.glb",
+    "3d/runtime/new3ds/geo_pressure_relief_siren.glb",
+    "3d/runtime/new3ds/geo_steam_manifold_actuator.glb",
     "3d/runtime/new3ds/gun_engineer_tesla_lock.glb",
     "3d/runtime/new3ds/gun_scout_talon_c.glb",
     "3d/runtime/new3ds/gun_scout_vector9_talon.glb",
     "3d/runtime/new3ds/gun_tank_siege_breaker50.glb",
+    "3d/runtime/new3ds/hive_amniotic_feeder_trough.glb",
     "3d/runtime/new3ds/hive_assimilated_generator.glb",
     "3d/runtime/new3ds/hive_brood_dome.glb",
     "3d/runtime/new3ds/hive_cocooned_crew.glb",
+    "3d/runtime/new3ds/hive_gestation_sac.glb",
     "3d/runtime/new3ds/hive_pheromone_node.glb",
+    "3d/runtime/new3ds/hive_pulmonary_bellows.glb",
     "3d/runtime/new3ds/hive_resin_pillar.glb",
+    "3d/runtime/new3ds/hive_sphincter_iris.glb",
     "3d/runtime/new3ds/hive_tendril_arch.glb",
+    "3d/runtime/new3ds/hive_visceral_ovipositor.glb",
+    "3d/runtime/new3ds/hive_vivisected_engineer.glb",
+    "3d/runtime/new3ds/hydro_mycelial_seed_vault.glb",
+    "3d/runtime/new3ds/ind_biomass_grinder.glb",
+    "3d/runtime/new3ds/ind_fuel_rod_cask.glb",
+    "3d/runtime/new3ds/ind_hydraulic_manifold.glb",
     "3d/runtime/new3ds/life_acoustic_ear_horn.glb",
     "3d/runtime/new3ds/life_algae_tank.glb",
     "3d/runtime/new3ds/life_ammo_ovipositor.glb",
@@ -320,6 +390,14 @@
     "3d/runtime/new3ds/life_weight_bench.glb",
     "3d/runtime/new3ds/life_welding_station.glb",
     "3d/runtime/new3ds/life_wind_mast.glb",
+    "3d/runtime/new3ds/meridian_capacitor_bomb.glb",
+    "3d/runtime/new3ds/meridian_cyber_graft_bench.glb",
+    "3d/runtime/new3ds/meridian_logic_core_drum.glb",
+    "3d/runtime/new3ds/meridian_mainframe_altar.glb",
+    "3d/runtime/new3ds/meridian_optic_nerve_patchbay.glb",
+    "3d/runtime/new3ds/meridian_servitor_dock.glb",
+    "3d/runtime/new3ds/meridian_servitor_recharge_cradle.glb",
+    "3d/runtime/new3ds/meridian_soldering_hearth.glb",
     "3d/runtime/new3ds/mod_archivist_lens.glb",
     "3d/runtime/new3ds/mod_ballast_plating.glb",
     "3d/runtime/new3ds/mod_bio_hazard_filter.glb",
@@ -336,6 +414,7 @@
     "3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb",
     "3d/runtime/new3ds/mod_thermal_heat_exchanger.glb",
     "3d/runtime/new3ds/mod_zero_point_flux.glb",
+    "3d/runtime/new3ds/mothership_docking_umbilical_collar.glb",
     "3d/runtime/new3ds/mycelium_stalker.glb",
     "3d/runtime/new3ds/npc_alien_rhun.glb",
     "3d/runtime/new3ds/npc_alien_vey.glb",
@@ -432,13 +511,26 @@
     "3d/runtime/new3ds/prop_vital_monitor.glb",
     "3d/runtime/new3ds/prop_votive_candle_shrine.glb",
     "3d/runtime/new3ds/prop_wall_cable_tray_swag.glb",
+    "3d/runtime/new3ds/queen_royal_brood_throne.glb",
+    "3d/runtime/new3ds/relay_acoustic_diaphragm.glb",
+    "3d/runtime/new3ds/relay_false_beacon_spire.glb",
+    "3d/runtime/new3ds/relay_harmonic_tuning_fork.glb",
+    "3d/runtime/new3ds/royal_egg_clutch_caul.glb",
     "3d/runtime/new3ds/salvage_tagged_heap.glb",
     "3d/runtime/new3ds/scatter_bolts.glb",
     "3d/runtime/new3ds/scatter_cable_coil.glb",
     "3d/runtime/new3ds/scatter_hive_eggs.glb",
+    "3d/runtime/new3ds/scout_ejection_pod_chassis.glb",
+    "3d/runtime/new3ds/scout_tachyon_radar_mast.glb",
+    "3d/runtime/new3ds/scout_tracking_beacon_core.glb",
+    "3d/runtime/new3ds/sector_zero_bore_drillhead.glb",
     "3d/runtime/new3ds/sentinel.glb",
     "3d/runtime/new3ds/sentinel_A.glb",
     "3d/runtime/new3ds/sentinel_B.glb",
+    "3d/runtime/new3ds/ship_module_comms_transceiver.glb",
+    "3d/runtime/new3ds/ship_module_engine_manifold.glb",
+    "3d/runtime/new3ds/ship_module_life_support_core.glb",
+    "3d/runtime/new3ds/ship_module_navigation_core.glb",
     "3d/runtime/new3ds/skin_biolume_spore_sprayer.glb",
     "3d/runtime/new3ds/skin_bunker404.glb",
     "3d/runtime/new3ds/skin_deep_frost.glb",
@@ -472,6 +564,53 @@
     "3d/runtime/new3ds/state_wall_breached_01.glb",
     "3d/runtime/new3ds/state_wall_breached_02.glb",
     "3d/runtime/new3ds/state_wall_breached_03.glb",
+    "3d/runtime/new3ds/substation_breaker_interlock.glb",
+    "3d/runtime/new3ds/substation_stepdown_transformer.glb",
+    "3d/runtime/new3ds/suture_flesh_mending_bath.glb",
+    "3d/runtime/new3ds/suture_larval_nursery_urn.glb",
+    "3d/runtime/new3ds/suture_mercy_cocoon_canopy.glb",
+    "3d/runtime/new3ds/tallow_apothecary_dryer_rack.glb",
+    "3d/runtime/new3ds/tallow_compost_fermenter.glb",
+    "3d/runtime/new3ds/tallow_flesh_trellis.glb",
+    "3d/runtime/new3ds/tallow_irrigation_sluice_gate.glb",
+    "3d/runtime/new3ds/tallow_sacrificial_altar.glb",
+    "3d/runtime/new3ds/tallow_spore_cradle.glb",
+    "3d/runtime/new3ds/tallow_vaccine_alembic.glb",
+    "3d/runtime/new3ds/tank_kinetic_ram_breech.glb",
+    "3d/runtime/new3ds/tank_orbital_siege_cannon.glb",
+    "3d/runtime/new3ds/tank_reactive_armor_forge.glb",
+    "3d/runtime/new3ds/tina_cosmetic_skin_loom.glb",
+    "3d/runtime/new3ds/tina_covert_nursery_chest.glb",
+    "3d/runtime/new3ds/tina_forged_council_ballot_box.glb",
+    "3d/runtime/new3ds/tina_mimic_vanity.glb",
+    "3d/runtime/new3ds/tina_molted_carapace.glb",
+    "3d/runtime/new3ds/tina_secret_distress_beacon.glb",
+    "3d/runtime/new3ds/tina_shedding_cocoon_niche.glb",
+    "3d/runtime/new3ds/tina_trophy_trove.glb",
+    "3d/runtime/new3ds/tina_vocal_mimic_synthesizer.glb",
+    "3d/runtime/new3ds/vass_acoustic_resonator_tank.glb",
+    "3d/runtime/new3ds/vass_bio_centrifuge_rack.glb",
+    "3d/runtime/new3ds/vass_containment_bell_jar.glb",
+    "3d/runtime/new3ds/vass_dissection_stereomicroscope.glb",
+    "3d/runtime/new3ds/vass_hybrid_blood_synthesizer.glb",
+    "3d/runtime/new3ds/vass_hybrid_embryo_incubator.glb",
+    "3d/runtime/new3ds/vass_neural_sync_helmet.glb",
+    "3d/runtime/new3ds/vass_translation_phonograph.glb",
+    "3d/runtime/new3ds/vesper_amputation_rig.glb",
+    "3d/runtime/new3ds/vesper_autocannon_bipod.glb",
+    "3d/runtime/new3ds/vesper_ballistic_chronograph.glb",
+    "3d/runtime/new3ds/vesper_barricade_welding_rig.glb",
+    "3d/runtime/new3ds/vesper_dogtag_retrieval_crypt.glb",
+    "3d/runtime/new3ds/vesper_hanging_cage.glb",
+    "3d/runtime/new3ds/vesper_mortar_loading_cradle.glb",
+    "3d/runtime/new3ds/vesper_ordnance_disarm_table.glb",
+    "3d/runtime/new3ds/vesper_reloading_station.glb",
+    "3d/runtime/new3ds/vesper_trench_warning_klaxon.glb",
+    "3d/runtime/new3ds/wall_macro_buttress_3.glb",
+    "3d/runtime/new3ds/wall_macro_straight_4.glb",
+    "3d/runtime/new3ds/weapon_flamethrower_case.glb",
+    "3d/runtime/new3ds/weapon_flamethrower_m70.glb",
+    "3d/runtime/new3ds/weapon_fuel_canister_heavy.glb",
     "3d/runtime/o2-generator.glb",
     "3d/runtime/parasite.glb",
     "3d/runtime/queen.glb",
@@ -489,12 +628,10 @@
     "DoorIntro.mp4",
     "DoorIntro.webm",
     "Eng.Full_v2.png",
-    "Eng.Full_v2.webp",
     "Eng.walk_v4.webp",
     "Scout.full_v2.png",
     "Scout.full_v2.webp",
     "Tank.full_v2.png",
-    "Tank.full_v2.webp",
     "Tank.walk_v4.webp",
     "ach_archivist.png",
     "ach_ending_alien_exodus.jpg",
@@ -521,6 +658,26 @@
     "art-remaster/enemy-v5/snails/final/cybersnail-walk-v5.png",
     "art-remaster/enemy-v5/snails/final/sporesnail-walk-v5.png",
     "audio/ambient/amb_camp_rain_loop.wav",
+    "audio/ambient/points/amb_point_hive_sac.ogg",
+    "audio/ambient/points/amb_point_hive_sac.wav",
+    "audio/ambient/points/amb_point_meridian_chimes.ogg",
+    "audio/ambient/points/amb_point_meridian_chimes.wav",
+    "audio/ambient/points/amb_point_tallow_forge.ogg",
+    "audio/ambient/points/amb_point_tallow_forge.wav",
+    "audio/ambient/points/amb_point_vesper_generator.ogg",
+    "audio/ambient/points/amb_point_vesper_generator.wav",
+    "audio/ambient/room_tone_bio_hive.ogg",
+    "audio/ambient/room_tone_bio_hive.wav",
+    "audio/ambient/room_tone_cathedral_crypt.ogg",
+    "audio/ambient/room_tone_cathedral_crypt.wav",
+    "audio/ambient/room_tone_cryo_subzero.ogg",
+    "audio/ambient/room_tone_cryo_subzero.wav",
+    "audio/ambient/room_tone_exterior_wind.ogg",
+    "audio/ambient/room_tone_exterior_wind.wav",
+    "audio/ambient/room_tone_interior_bunker.ogg",
+    "audio/ambient/room_tone_interior_bunker.wav",
+    "audio/ambient/room_tone_safe_ship.ogg",
+    "audio/ambient/room_tone_safe_ship.wav",
     "audio/cc0-derived/engines/ship_engine_low_01.ogg",
     "audio/cc0-derived/hive/resin_shift_01.ogg",
     "audio/cc0-derived/hive/resin_shift_02.ogg",
@@ -530,6 +687,17 @@
     "audio/enemies/creak1.ogg",
     "audio/enemies/creak2.ogg",
     "audio/enemies/creak3.ogg",
+    "audio/enemies/enemy_alert_boss_000.ogg",
+    "audio/enemies/enemy_alert_boss_001.ogg",
+    "audio/enemies/enemy_alert_crawler_000.ogg",
+    "audio/enemies/enemy_alert_crawler_001.ogg",
+    "audio/enemies/enemy_alert_crawler_002.ogg",
+    "audio/enemies/enemy_alert_snail_000.ogg",
+    "audio/enemies/enemy_alert_snail_001.ogg",
+    "audio/enemies/enemy_alert_snail_002.ogg",
+    "audio/enemies/enemy_idle_boss_000.ogg",
+    "audio/enemies/enemy_idle_boss_001.ogg",
+    "audio/enemies/enemy_idle_boss_002.ogg",
     "audio/enemies/impactSoft_heavy_000.ogg",
     "audio/enemies/impactSoft_heavy_001.ogg",
     "audio/enemies/impactSoft_heavy_002.ogg",
@@ -545,6 +713,21 @@
     "audio/foley/bunker/foley_bunker_facility_room_loop.wav",
     "audio/foley/bunker/foley_bunker_nav_corruption.wav",
     "audio/foley/bunker/foley_bunker_welcome_mech_steps.wav",
+    "audio/foley/casings/shell_drop_metal_000.ogg",
+    "audio/foley/casings/shell_drop_metal_001.ogg",
+    "audio/foley/casings/shell_drop_metal_002.ogg",
+    "audio/foley/casings/shell_drop_slime_000.ogg",
+    "audio/foley/casings/shell_drop_slime_001.ogg",
+    "audio/foley/casings/shell_drop_slime_002.ogg",
+    "audio/foley/casings/shell_drop_snow_000.ogg",
+    "audio/foley/casings/shell_drop_snow_001.ogg",
+    "audio/foley/casings/shell_drop_snow_002.ogg",
+    "audio/foley/casings/shell_drop_stone_000.ogg",
+    "audio/foley/casings/shell_drop_stone_001.ogg",
+    "audio/foley/casings/shell_drop_stone_002.ogg",
+    "audio/foley/casings/shell_drop_wood_000.ogg",
+    "audio/foley/casings/shell_drop_wood_001.ogg",
+    "audio/foley/casings/shell_drop_wood_002.ogg",
     "audio/foley/mothership/foley_mothership_carrier_term.wav",
     "audio/foley/mothership/foley_mothership_link_acquire_1.wav",
     "audio/foley/mothership/foley_mothership_link_acquire_2.wav",
@@ -566,12 +749,52 @@
     "audio/generated/camp_worker_fleeing.wav",
     "audio/generated/camp_worker_infected.wav",
     "audio/generated/camp_worker_panicked.wav",
+    "audio/generated/chem_siphon_000.ogg",
+    "audio/generated/chem_siphon_001.ogg",
+    "audio/generated/chem_siphon_002.ogg",
+    "audio/generated/chen_sealed_confession_console_000.ogg",
+    "audio/generated/chen_sealed_confession_console_001.ogg",
+    "audio/generated/crane_motor_000.ogg",
+    "audio/generated/crane_motor_001.ogg",
+    "audio/generated/crane_motor_002.ogg",
+    "audio/generated/evac_manifest_allocation_terminal_000.ogg",
+    "audio/generated/evac_manifest_allocation_terminal_001.ogg",
+    "audio/generated/exosuit_charge_000.ogg",
+    "audio/generated/exosuit_charge_001.ogg",
+    "audio/generated/exosuit_charge_002.ogg",
+    "audio/generated/fan_wind_000.ogg",
+    "audio/generated/fan_wind_001.ogg",
+    "audio/generated/flesh_seal_000.ogg",
+    "audio/generated/flesh_seal_001.ogg",
+    "audio/generated/flesh_seal_002.ogg",
+    "audio/generated/flesh_squish_000.ogg",
+    "audio/generated/flesh_squish_001.ogg",
+    "audio/generated/flesh_squish_002.ogg",
+    "audio/generated/generator_complete_000.ogg",
+    "audio/generated/generator_complete_001.ogg",
+    "audio/generated/hive_visceral_ovipositor_000.ogg",
+    "audio/generated/hive_visceral_ovipositor_001.ogg",
+    "audio/generated/ind_biomass_grinder_000.ogg",
+    "audio/generated/ind_biomass_grinder_001.ogg",
+    "audio/generated/item_pickup_000.ogg",
+    "audio/generated/item_pickup_001.ogg",
+    "audio/generated/item_pickup_002.ogg",
+    "audio/generated/neural_tap_000.ogg",
+    "audio/generated/neural_tap_001.ogg",
+    "audio/generated/neural_tap_002.ogg",
+    "audio/generated/power_hum_000.ogg",
+    "audio/generated/power_hum_001.ogg",
+    "audio/generated/power_hum_002.ogg",
+    "audio/generated/relay_false_beacon_spire_000.ogg",
+    "audio/generated/relay_false_beacon_spire_001.ogg",
     "audio/generated/reward_reveal_charm.wav",
     "audio/generated/reward_reveal_chassis.wav",
     "audio/generated/reward_reveal_decal.wav",
     "audio/generated/reward_reveal_generic.wav",
     "audio/generated/reward_reveal_module.wav",
     "audio/generated/reward_reveal_weapon.wav",
+    "audio/generated/scout_tracking_beacon_core_000.ogg",
+    "audio/generated/scout_tracking_beacon_core_001.ogg",
     "audio/generated/sfx_charm_clink_heavy.wav",
     "audio/generated/sfx_charm_clink_light.wav",
     "audio/generated/sfx_overclock_hum_cryo.wav",
@@ -579,12 +802,48 @@
     "audio/generated/sfx_overclock_socket.wav",
     "audio/generated/sfx_smelt_forge_burst.wav",
     "audio/generated/sfx_trade_shard_dispense.wav",
+    "audio/generated/steam_burst_000.ogg",
+    "audio/generated/steam_burst_001.ogg",
+    "audio/generated/steam_burst_002.ogg",
+    "audio/generated/terminal_beep_000.ogg",
+    "audio/generated/terminal_beep_001.ogg",
+    "audio/generated/terminal_beep_002.ogg",
+    "audio/generated/terminal_deny_000.ogg",
+    "audio/generated/terminal_deny_001.ogg",
+    "audio/generated/terminal_deny_002.ogg",
+    "audio/generated/toolbox_open_000.ogg",
+    "audio/generated/toolbox_open_001.ogg",
+    "audio/generated/toolbox_open_002.ogg",
     "audio/generated/ui_reward_burst.wav",
     "audio/generated/ui_reward_dismiss.wav",
+    "audio/generated/vault_open_000.ogg",
+    "audio/generated/vault_open_001.ogg",
+    "audio/generated/vault_open_002.ogg",
+    "audio/generated/water_shower_000.ogg",
+    "audio/generated/water_shower_001.ogg",
+    "audio/generated/water_shower_002.ogg",
+    "audio/generated/water_slosh_000.ogg",
+    "audio/generated/water_slosh_001.ogg",
+    "audio/generated/water_slosh_002.ogg",
     "audio/generated/weapon_dry_fire.wav",
     "audio/generated/xp_bonus.wav",
     "audio/generated/xp_levelup.wav",
     "audio/generated/xp_tick.wav",
+    "audio/impacts/crystal_shatter_000.ogg",
+    "audio/impacts/crystal_shatter_001.ogg",
+    "audio/impacts/crystal_shatter_002.ogg",
+    "audio/impacts/enemy_break_wall_000.ogg",
+    "audio/impacts/enemy_break_wall_001.ogg",
+    "audio/impacts/enemy_break_wall_002.ogg",
+    "audio/tracers/tracer_flyby_ballistic_000.ogg",
+    "audio/tracers/tracer_flyby_ballistic_001.ogg",
+    "audio/tracers/tracer_flyby_ballistic_002.ogg",
+    "audio/tracers/tracer_flyby_chitin_000.ogg",
+    "audio/tracers/tracer_flyby_chitin_001.ogg",
+    "audio/tracers/tracer_flyby_frost_000.ogg",
+    "audio/tracers/tracer_flyby_frost_001.ogg",
+    "audio/tracers/tracer_flyby_heavy_000.ogg",
+    "audio/tracers/tracer_flyby_heavy_001.ogg",
     "audio/vg2/amb_bunker_loop.wav",
     "audio/vg2/amb_drip1.wav",
     "audio/vg2/amb_drip2.wav",
@@ -690,6 +949,24 @@
     "audio/voice/vey/voice_vey_01_signal_recognized.mp3",
     "audio/voice/vey/voice_vey_02_gaps_where_mined.mp3",
     "audio/voice/vey/voice_vey_03_forge_mothership.mp3",
+    "audio/weapons/weapon_fire_carbine_000.ogg",
+    "audio/weapons/weapon_fire_carbine_001.ogg",
+    "audio/weapons/weapon_fire_carbine_002.ogg",
+    "audio/weapons/weapon_fire_cryo_000.ogg",
+    "audio/weapons/weapon_fire_cryo_001.ogg",
+    "audio/weapons/weapon_fire_cryo_002.ogg",
+    "audio/weapons/weapon_fire_railgun_000.ogg",
+    "audio/weapons/weapon_fire_railgun_001.ogg",
+    "audio/weapons/weapon_fire_railgun_002.ogg",
+    "audio/weapons/weapon_fire_shotgun_000.ogg",
+    "audio/weapons/weapon_fire_shotgun_001.ogg",
+    "audio/weapons/weapon_fire_shotgun_002.ogg",
+    "audio/weapons/weapon_fire_smg_000.ogg",
+    "audio/weapons/weapon_fire_smg_001.ogg",
+    "audio/weapons/weapon_fire_smg_002.ogg",
+    "audio/weapons/weapon_fire_tesla_000.ogg",
+    "audio/weapons/weapon_fire_tesla_001.ogg",
+    "audio/weapons/weapon_fire_tesla_002.ogg",
     "bg.webp",
     "bio_base_growth.png",
     "bio_charger.png",
@@ -740,6 +1017,8 @@
     "cutscenes/event-boss-encounter-cybersnail-poster.jpg",
     "cutscenes/event-boss-encounter-sporesnail-poster.jpg",
     "cutscenes/event-o2-generator-upgraded-poster.jpg",
+    "cutscenes/intro-mothership-briefing.mp4",
+    "cutscenes/intro-mothership-briefing.webm",
     "cutscenes/poster-art/death-abyss.png",
     "cutscenes/poster-art/death-biohazard.png",
     "cutscenes/poster-art/death-combat.png",
@@ -1179,6 +1458,7 @@
     "fungal_spore_vent.png",
     "fx_spark_burst.svg",
     "fx_steam_puff.svg",
+    "hex_decal_cracks.png",
     "ice_base_rock.png",
     "ice_wall_glacier.png",
     "icon-192.png",
@@ -1393,15 +1673,25 @@
     "tank_ship_broken.png",
     "tank_ship_healed.png",
     "title_key_art_v2.webp",
+    "ui/dock/engineer-arms-glass.webp",
     "ui/dock/engineer-arms.webp",
+    "ui/dock/engineer-map-glass.webp",
     "ui/dock/engineer-map.webp",
+    "ui/dock/engineer-status-glass.webp",
     "ui/dock/engineer-status.webp",
+    "ui/dock/scout-arms-glass.webp",
     "ui/dock/scout-arms.webp",
+    "ui/dock/scout-map-glass.webp",
     "ui/dock/scout-map.webp",
+    "ui/dock/scout-status-glass.webp",
     "ui/dock/scout-status.webp",
+    "ui/dock/tank-arms-glass.webp",
     "ui/dock/tank-arms.webp",
+    "ui/dock/tank-map-glass.webp",
     "ui/dock/tank-map.webp",
-    "ui/dock/tank-status.webp"
+    "ui/dock/tank-status-glass.webp",
+    "ui/dock/tank-status.webp",
+    "ui/hud/unified-console-frame.svg"
   ],
   "assets": [
     {
@@ -1605,6 +1895,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/decal_alien_embryo_crown.png",
+      "bytes": 1887537,
+      "classification": "unknown"
+    },
+    {
       "path": "3d/runtime/decals/decal_alien_tracks_a_albedo.ktx2",
       "bytes": 341597,
       "classification": "runtime-required"
@@ -1643,6 +1938,11 @@
       "path": "3d/runtime/decals/decal_alien_tracks_d_detail.ktx2",
       "bytes": 324037,
       "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_amputation_arterial_spray.png",
+      "bytes": 974613,
+      "classification": "unknown"
     },
     {
       "path": "3d/runtime/decals/decal_blend_cracked_seam_a_albedo.ktx2",
@@ -1885,6 +2185,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/decal_chasm_shear_fault_line.png",
+      "bytes": 1758939,
+      "classification": "unknown"
+    },
+    {
       "path": "3d/runtime/decals/decal_contact_grime_a_albedo.ktx2",
       "bytes": 434264,
       "classification": "runtime-required"
@@ -1923,6 +2228,16 @@
       "path": "3d/runtime/decals/decal_contact_grime_d_detail.ktx2",
       "bytes": 384145,
       "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_corp_confidential_seal.png",
+      "bytes": 1786784,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_crash_drag_skid_trench.png",
+      "bytes": 1374238,
+      "classification": "unknown"
     },
     {
       "path": "3d/runtime/decals/decal_edge_dust_drift_a_albedo.ktx2",
@@ -2085,6 +2400,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/decal_evac_seat_assignment_stencil.png",
+      "bytes": 1124512,
+      "classification": "unknown"
+    },
+    {
       "path": "3d/runtime/decals/decal_floor_lane_chevrons_a_albedo.ktx2",
       "bytes": 590489,
       "classification": "runtime-required"
@@ -2163,6 +2483,21 @@
       "path": "3d/runtime/decals/decal_floor_taped_cables_d_detail.ktx2",
       "bytes": 391546,
       "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_geothermal_steam_scorch.png",
+      "bytes": 1498720,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_hive_symbiont_trail.png",
+      "bytes": 1186892,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_meridian_binary_litany.png",
+      "bytes": 1286083,
+      "classification": "unknown"
     },
     {
       "path": "3d/runtime/decals/decal_paper_scatter_a_albedo.ktx2",
@@ -2283,6 +2618,21 @@
       "path": "3d/runtime/decals/decal_spilled_rations_d_detail.ktx2",
       "bytes": 358796,
       "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_tina_dermis_shed_residue.png",
+      "bytes": 1021913,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_vass_neural_diagram.png",
+      "bytes": 1237867,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_vesper_kill_tally.png",
+      "bytes": 649085,
+      "classification": "unknown"
     },
     {
       "path": "3d/runtime/decals/decal_wall_home_mural_a_albedo.ktx2",
@@ -2642,6 +2992,56 @@
     {
       "path": "3d/runtime/decals/legacy/decal_evac_treads_detail.ktx2",
       "bytes": 260702,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_execution_wall_splatter_a_albedo.ktx2",
+      "bytes": 165903,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_execution_wall_splatter_a_detail.ktx2",
+      "bytes": 119809,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_execution_wall_splatter_albedo.ktx2",
+      "bytes": 165903,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_execution_wall_splatter_b_albedo.ktx2",
+      "bytes": 161490,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_execution_wall_splatter_b_detail.ktx2",
+      "bytes": 115986,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_execution_wall_splatter_c_albedo.ktx2",
+      "bytes": 185660,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_execution_wall_splatter_c_detail.ktx2",
+      "bytes": 134258,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_execution_wall_splatter_d_albedo.ktx2",
+      "bytes": 158282,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_execution_wall_splatter_d_detail.ktx2",
+      "bytes": 116038,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_execution_wall_splatter_detail.ktx2",
+      "bytes": 119809,
       "classification": "runtime-required"
     },
     {
@@ -3025,6 +3425,56 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_pod_312_rupture_splatter_a_albedo.ktx2",
+      "bytes": 199010,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_pod_312_rupture_splatter_a_detail.ktx2",
+      "bytes": 161072,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_pod_312_rupture_splatter_albedo.ktx2",
+      "bytes": 199010,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_pod_312_rupture_splatter_b_albedo.ktx2",
+      "bytes": 235911,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_pod_312_rupture_splatter_b_detail.ktx2",
+      "bytes": 186624,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_pod_312_rupture_splatter_c_albedo.ktx2",
+      "bytes": 182887,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_pod_312_rupture_splatter_c_detail.ktx2",
+      "bytes": 147718,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_pod_312_rupture_splatter_d_albedo.ktx2",
+      "bytes": 184374,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_pod_312_rupture_splatter_d_detail.ktx2",
+      "bytes": 146371,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_pod_312_rupture_splatter_detail.ktx2",
+      "bytes": 161072,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_puddle_slick_albedo.ktx2",
       "bytes": 192380,
       "classification": "runtime-required"
@@ -3032,6 +3482,56 @@
     {
       "path": "3d/runtime/decals/legacy/decal_puddle_slick_detail.ktx2",
       "bytes": 133882,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_queen_oviposition_pool_a_albedo.ktx2",
+      "bytes": 261489,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_queen_oviposition_pool_a_detail.ktx2",
+      "bytes": 201008,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_queen_oviposition_pool_albedo.ktx2",
+      "bytes": 261489,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_queen_oviposition_pool_b_albedo.ktx2",
+      "bytes": 275351,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_queen_oviposition_pool_b_detail.ktx2",
+      "bytes": 201166,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_queen_oviposition_pool_c_albedo.ktx2",
+      "bytes": 255211,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_queen_oviposition_pool_c_detail.ktx2",
+      "bytes": 186813,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_queen_oviposition_pool_d_albedo.ktx2",
+      "bytes": 261210,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_queen_oviposition_pool_d_detail.ktx2",
+      "bytes": 188516,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_queen_oviposition_pool_detail.ktx2",
+      "bytes": 201008,
       "classification": "runtime-required"
     },
     {
@@ -3155,6 +3655,106 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_strip_acid_trench_a_albedo.ktx2",
+      "bytes": 160655,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_acid_trench_a_detail.ktx2",
+      "bytes": 119436,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_acid_trench_albedo.ktx2",
+      "bytes": 160655,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_acid_trench_b_albedo.ktx2",
+      "bytes": 128295,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_acid_trench_b_detail.ktx2",
+      "bytes": 90737,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_acid_trench_c_albedo.ktx2",
+      "bytes": 182772,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_acid_trench_c_detail.ktx2",
+      "bytes": 150808,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_acid_trench_d_albedo.ktx2",
+      "bytes": 86335,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_acid_trench_d_detail.ktx2",
+      "bytes": 50042,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_acid_trench_detail.ktx2",
+      "bytes": 119436,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_arterial_spray_a_albedo.ktx2",
+      "bytes": 79338,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_arterial_spray_a_detail.ktx2",
+      "bytes": 48215,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_arterial_spray_albedo.ktx2",
+      "bytes": 79338,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_arterial_spray_b_albedo.ktx2",
+      "bytes": 155217,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_arterial_spray_b_detail.ktx2",
+      "bytes": 107779,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_arterial_spray_c_albedo.ktx2",
+      "bytes": 97481,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_arterial_spray_c_detail.ktx2",
+      "bytes": 57995,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_arterial_spray_d_albedo.ktx2",
+      "bytes": 186524,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_arterial_spray_d_detail.ktx2",
+      "bytes": 137265,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_arterial_spray_detail.ktx2",
+      "bytes": 48215,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_strip_cart_ruts_albedo.ktx2",
       "bytes": 80033,
       "classification": "runtime-required"
@@ -3192,6 +3792,56 @@
     {
       "path": "3d/runtime/decals/legacy/decal_strip_cart_ruts_detail.ktx2",
       "bytes": 61622,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_crawler_acid_a_albedo.ktx2",
+      "bytes": 239778,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_crawler_acid_a_detail.ktx2",
+      "bytes": 185174,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_crawler_acid_albedo.ktx2",
+      "bytes": 239778,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_crawler_acid_b_albedo.ktx2",
+      "bytes": 225936,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_crawler_acid_b_detail.ktx2",
+      "bytes": 172267,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_crawler_acid_c_albedo.ktx2",
+      "bytes": 222281,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_crawler_acid_c_detail.ktx2",
+      "bytes": 169714,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_crawler_acid_d_albedo.ktx2",
+      "bytes": 232323,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_crawler_acid_d_detail.ktx2",
+      "bytes": 174183,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_crawler_acid_detail.ktx2",
+      "bytes": 185174,
       "classification": "runtime-required"
     },
     {
@@ -3275,6 +3925,156 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_strip_exosuit_coolant_a_albedo.ktx2",
+      "bytes": 279989,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_exosuit_coolant_a_detail.ktx2",
+      "bytes": 220106,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_exosuit_coolant_albedo.ktx2",
+      "bytes": 279989,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_exosuit_coolant_b_albedo.ktx2",
+      "bytes": 250912,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_exosuit_coolant_b_detail.ktx2",
+      "bytes": 200763,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_exosuit_coolant_c_albedo.ktx2",
+      "bytes": 249029,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_exosuit_coolant_c_detail.ktx2",
+      "bytes": 195925,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_exosuit_coolant_d_albedo.ktx2",
+      "bytes": 257310,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_exosuit_coolant_d_detail.ktx2",
+      "bytes": 200803,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_exosuit_coolant_detail.ktx2",
+      "bytes": 220106,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_frost_heave_a_albedo.ktx2",
+      "bytes": 153187,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_frost_heave_a_detail.ktx2",
+      "bytes": 112455,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_frost_heave_albedo.ktx2",
+      "bytes": 153187,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_frost_heave_b_albedo.ktx2",
+      "bytes": 155308,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_frost_heave_b_detail.ktx2",
+      "bytes": 117446,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_frost_heave_c_albedo.ktx2",
+      "bytes": 142203,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_frost_heave_c_detail.ktx2",
+      "bytes": 100411,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_frost_heave_d_albedo.ktx2",
+      "bytes": 97909,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_frost_heave_d_detail.ktx2",
+      "bytes": 78808,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_frost_heave_detail.ktx2",
+      "bytes": 112455,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_high_voltage_scorch_a_albedo.ktx2",
+      "bytes": 115675,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_high_voltage_scorch_a_detail.ktx2",
+      "bytes": 83877,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_high_voltage_scorch_albedo.ktx2",
+      "bytes": 115675,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_high_voltage_scorch_b_albedo.ktx2",
+      "bytes": 120832,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_high_voltage_scorch_b_detail.ktx2",
+      "bytes": 80525,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_high_voltage_scorch_c_albedo.ktx2",
+      "bytes": 101286,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_high_voltage_scorch_c_detail.ktx2",
+      "bytes": 73158,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_high_voltage_scorch_d_albedo.ktx2",
+      "bytes": 99965,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_high_voltage_scorch_d_detail.ktx2",
+      "bytes": 69331,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_high_voltage_scorch_detail.ktx2",
+      "bytes": 83877,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_strip_hive_veins_albedo.ktx2",
       "bytes": 107452,
       "classification": "runtime-required"
@@ -3315,6 +4115,106 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_strip_umbilical_veins_a_albedo.ktx2",
+      "bytes": 133877,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_umbilical_veins_a_detail.ktx2",
+      "bytes": 86907,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_umbilical_veins_albedo.ktx2",
+      "bytes": 133877,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_umbilical_veins_b_albedo.ktx2",
+      "bytes": 107270,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_umbilical_veins_b_detail.ktx2",
+      "bytes": 70649,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_umbilical_veins_c_albedo.ktx2",
+      "bytes": 137836,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_umbilical_veins_c_detail.ktx2",
+      "bytes": 101988,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_umbilical_veins_d_albedo.ktx2",
+      "bytes": 144039,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_umbilical_veins_d_detail.ktx2",
+      "bytes": 110199,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_umbilical_veins_detail.ktx2",
+      "bytes": 86907,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_viscera_drag_a_albedo.ktx2",
+      "bytes": 123928,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_viscera_drag_a_detail.ktx2",
+      "bytes": 85501,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_viscera_drag_albedo.ktx2",
+      "bytes": 123928,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_viscera_drag_b_albedo.ktx2",
+      "bytes": 169175,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_viscera_drag_b_detail.ktx2",
+      "bytes": 126585,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_viscera_drag_c_albedo.ktx2",
+      "bytes": 145690,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_viscera_drag_c_detail.ktx2",
+      "bytes": 102576,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_viscera_drag_d_albedo.ktx2",
+      "bytes": 157154,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_viscera_drag_d_detail.ktx2",
+      "bytes": 114866,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_viscera_drag_detail.ktx2",
+      "bytes": 85501,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_substation_stencil_albedo.ktx2",
       "bytes": 328584,
       "classification": "runtime-required"
@@ -3332,6 +4232,56 @@
     {
       "path": "3d/runtime/decals/legacy/decal_tallow_symbol_detail.ktx2",
       "bytes": 111876,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_vass_acoustic_diagram_a_albedo.ktx2",
+      "bytes": 260823,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_vass_acoustic_diagram_a_detail.ktx2",
+      "bytes": 196831,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_vass_acoustic_diagram_albedo.ktx2",
+      "bytes": 260823,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_vass_acoustic_diagram_b_albedo.ktx2",
+      "bytes": 178232,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_vass_acoustic_diagram_b_detail.ktx2",
+      "bytes": 131294,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_vass_acoustic_diagram_c_albedo.ktx2",
+      "bytes": 182818,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_vass_acoustic_diagram_c_detail.ktx2",
+      "bytes": 133821,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_vass_acoustic_diagram_d_albedo.ktx2",
+      "bytes": 277682,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_vass_acoustic_diagram_d_detail.ktx2",
+      "bytes": 220647,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_vass_acoustic_diagram_detail.ktx2",
+      "bytes": 196831,
       "classification": "runtime-required"
     },
     {
@@ -4550,6 +5500,366 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/kits/textures/tex_pbr_chasm_permafrost_bedrock_baseColor.webp",
+      "bytes": 514128,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_chasm_permafrost_bedrock_color.webp",
+      "bytes": 514128,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_chasm_permafrost_bedrock_emissive.webp",
+      "bytes": 62830,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_chasm_permafrost_bedrock_normal.webp",
+      "bytes": 864192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_chasm_permafrost_bedrock_orm.webp",
+      "bytes": 329946,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_chasm_permafrost_bedrock_rough.webp",
+      "bytes": 350970,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_corp_sublevel_linoleum_baseColor.webp",
+      "bytes": 452014,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_corp_sublevel_linoleum_color.webp",
+      "bytes": 452014,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_corp_sublevel_linoleum_emissive.webp",
+      "bytes": 1926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_corp_sublevel_linoleum_normal.webp",
+      "bytes": 785108,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_corp_sublevel_linoleum_orm.webp",
+      "bytes": 417464,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_corp_sublevel_linoleum_rough.webp",
+      "bytes": 63294,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_crash_hull_ablative_tile_baseColor.webp",
+      "bytes": 466882,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_crash_hull_ablative_tile_color.webp",
+      "bytes": 466882,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_crash_hull_ablative_tile_emissive.webp",
+      "bytes": 1926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_crash_hull_ablative_tile_normal.webp",
+      "bytes": 794676,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_crash_hull_ablative_tile_orm.webp",
+      "bytes": 298712,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_crash_hull_ablative_tile_rough.webp",
+      "bytes": 231668,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_evac_gantry_corrugated_deck_baseColor.webp",
+      "bytes": 497918,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_evac_gantry_corrugated_deck_color.webp",
+      "bytes": 497918,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_evac_gantry_corrugated_deck_emissive.webp",
+      "bytes": 1926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_evac_gantry_corrugated_deck_normal.webp",
+      "bytes": 807606,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_evac_gantry_corrugated_deck_orm.webp",
+      "bytes": 373002,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_evac_gantry_corrugated_deck_rough.webp",
+      "bytes": 142018,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_geothermal_trench_grate_baseColor.webp",
+      "bytes": 400648,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_geothermal_trench_grate_color.webp",
+      "bytes": 400648,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_geothermal_trench_grate_emissive.webp",
+      "bytes": 71354,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_geothermal_trench_grate_normal.webp",
+      "bytes": 757036,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_geothermal_trench_grate_orm.webp",
+      "bytes": 268640,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_geothermal_trench_grate_rough.webp",
+      "bytes": 172028,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hive_chitin_plates_baseColor.webp",
+      "bytes": 322090,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hive_chitin_plates_color.webp",
+      "bytes": 322090,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hive_chitin_plates_emissive.webp",
+      "bytes": 1926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hive_chitin_plates_normal.webp",
+      "bytes": 684646,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hive_chitin_plates_orm.webp",
+      "bytes": 223116,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hive_chitin_plates_rough.webp",
+      "bytes": 31592,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hive_suture_amniotic_resin_baseColor.webp",
+      "bytes": 289480,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hive_suture_amniotic_resin_color.webp",
+      "bytes": 289480,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hive_suture_amniotic_resin_emissive.webp",
+      "bytes": 133142,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hive_suture_amniotic_resin_normal.webp",
+      "bytes": 604488,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hive_suture_amniotic_resin_orm.webp",
+      "bytes": 214004,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hive_suture_amniotic_resin_rough.webp",
+      "bytes": 30224,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hydro_fermenter_sludge_baseColor.webp",
+      "bytes": 464940,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hydro_fermenter_sludge_color.webp",
+      "bytes": 464940,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hydro_fermenter_sludge_emissive.webp",
+      "bytes": 122390,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hydro_fermenter_sludge_normal.webp",
+      "bytes": 795528,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hydro_fermenter_sludge_orm.webp",
+      "bytes": 355552,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_hydro_fermenter_sludge_rough.webp",
+      "bytes": 136668,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_meridian_cable_conduit_deck_baseColor.webp",
+      "bytes": 427012,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_meridian_cable_conduit_deck_color.webp",
+      "bytes": 427012,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_meridian_cable_conduit_deck_emissive.webp",
+      "bytes": 2350,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_meridian_cable_conduit_deck_normal.webp",
+      "bytes": 761982,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_meridian_cable_conduit_deck_orm.webp",
+      "bytes": 276558,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_meridian_cable_conduit_deck_rough.webp",
+      "bytes": 170918,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_obsidian_cathedral_flagstone_baseColor.webp",
+      "bytes": 355908,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_obsidian_cathedral_flagstone_color.webp",
+      "bytes": 355908,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_obsidian_cathedral_flagstone_emissive.webp",
+      "bytes": 8640,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_obsidian_cathedral_flagstone_normal.webp",
+      "bytes": 657772,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_obsidian_cathedral_flagstone_orm.webp",
+      "bytes": 280862,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_obsidian_cathedral_flagstone_rough.webp",
+      "bytes": 36466,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_vass_cleanroom_poly_baseColor.webp",
+      "bytes": 174458,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_vass_cleanroom_poly_color.webp",
+      "bytes": 174458,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_vass_cleanroom_poly_emissive.webp",
+      "bytes": 12446,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_vass_cleanroom_poly_normal.webp",
+      "bytes": 498918,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_vass_cleanroom_poly_orm.webp",
+      "bytes": 70484,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_vass_cleanroom_poly_rough.webp",
+      "bytes": 12804,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_vesper_trench_treadplate_baseColor.webp",
+      "bytes": 470660,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_vesper_trench_treadplate_color.webp",
+      "bytes": 470660,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_vesper_trench_treadplate_emissive.webp",
+      "bytes": 1926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_vesper_trench_treadplate_normal.webp",
+      "bytes": 827340,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_vesper_trench_treadplate_orm.webp",
+      "bytes": 364950,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_pbr_vesper_trench_treadplate_rough.webp",
+      "bytes": 102062,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/kits/textures/toxic_sump_floor_color.webp",
       "bytes": 223852,
       "classification": "runtime-required"
@@ -4675,6 +5985,51 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/barrier_ice_fractured.glb",
+      "bytes": 2458776,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/barrier_ice_intact.glb",
+      "bytes": 2544856,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/barrier_ice_melting.glb",
+      "bytes": 2439976,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/base_cot_installed.glb",
+      "bytes": 2040732,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/base_door_sealable_bulkhead.glb",
+      "bytes": 2383232,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/base_o2_atmospheric_regulator.glb",
+      "bytes": 1972472,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/base_o2_overhead_duct.glb",
+      "bytes": 2114200,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/base_power_junction_box.glb",
+      "bytes": 1724688,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/bay_c_pod_312_rupture.glb",
+      "bytes": 2818464,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/body_empty_exosuit.glb",
       "bytes": 313732,
       "classification": "runtime-required"
@@ -4727,6 +6082,26 @@
     {
       "path": "3d/runtime/new3ds/camp_water_barrel.glb",
       "bytes": 10241056,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/carapace_chitin_press.glb",
+      "bytes": 2764168,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/carapace_ossuary_anvil.glb",
+      "bytes": 2829500,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/carapace_sentry_chrysalis.glb",
+      "bytes": 2587160,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/carry_field_cot_folded.glb",
+      "bytes": 2105560,
       "classification": "runtime-required"
     },
     {
@@ -4810,6 +6185,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/chasm_abyss_sounding_mortar.glb",
+      "bytes": 2563788,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/chasm_beacon_post.glb",
       "bytes": 10862580,
       "classification": "runtime-required"
@@ -4820,13 +6200,53 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/chasm_cable_traversal_winch.glb",
+      "bytes": 3071604,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chasm_dredge_hook_crane.glb",
+      "bytes": 2115352,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chasm_geothermal_survey_transit.glb",
+      "bytes": 2468892,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/chasm_gondola.glb",
       "bytes": 9228684,
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/chasm_hanging_cage_crane.glb",
+      "bytes": 2864508,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chasm_hanging_elevator.glb",
+      "bytes": 2110472,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/chasm_rappel_anchor.glb",
       "bytes": 10201012,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chasm_seismic_geophone_station.glb",
+      "bytes": 2404600,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chasm_steam_whistle_buoy.glb",
+      "bytes": 2807972,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chasm_suicide_ledge_cross.glb",
+      "bytes": 2080832,
       "classification": "runtime-required"
     },
     {
@@ -4945,6 +6365,81 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/chen_sealed_confession_console.glb",
+      "bytes": 2836424,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/corp_asset_incinerator_chute.glb",
+      "bytes": 2771520,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/corp_biometric_collar_chute.glb",
+      "bytes": 2957300,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/corp_biometric_wall_safe.glb",
+      "bytes": 2840992,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/corp_compliance_choker_bench.glb",
+      "bytes": 2606828,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/corp_cryo_transport_coffin.glb",
+      "bytes": 3839960,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/corp_debt_severing_kiosk.glb",
+      "bytes": 2722916,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/corp_dissection_gurney.glb",
+      "bytes": 2542604,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/corp_executive_sarcophagus.glb",
+      "bytes": 3167032,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/corp_executive_whisper_booth.glb",
+      "bytes": 2644736,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/corp_incinerator_hopper.glb",
+      "bytes": 2377480,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/corp_interrogation_chair.glb",
+      "bytes": 1966580,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/corp_quantum_ledger_podium.glb",
+      "bytes": 2769952,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/corp_suppression_barrier.glb",
+      "bytes": 2996368,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/crash_cockpit_canopy.glb",
+      "bytes": 2928524,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/crash_drag_chute.glb",
       "bytes": 8889852,
       "classification": "runtime-required"
@@ -4960,8 +6455,23 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/crawler_signal_antenna_rig.glb",
+      "bytes": 2282872,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/cryo_cannibal_butchery_table.glb",
+      "bytes": 3228596,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/cryo_frozen_cascade.glb",
       "bytes": 6981308,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/cryo_frozen_shelter_pod.glb",
+      "bytes": 2489304,
       "classification": "runtime-required"
     },
     {
@@ -4975,13 +6485,28 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/cryo_ice_core_specimen.glb",
+      "bytes": 3148016,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/cryo_ice_crawler.glb",
       "bytes": 10091860,
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/cryo_ruptured_pod.glb",
+      "bytes": 2356500,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/cryo_snowbound_crates.glb",
       "bytes": 8054692,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/cryo_thawing_trough.glb",
+      "bytes": 2518096,
       "classification": "runtime-required"
     },
     {
@@ -5000,6 +6525,81 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/decon_exosuit_scrubber_station.glb",
+      "bytes": 3441624,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/door_arch_guillotine_assembled.glb",
+      "bytes": 4228144,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/door_arch_guillotine_frame.glb",
+      "bytes": 2506920,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/door_arch_guillotine_slab.glb",
+      "bytes": 1865604,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/engineer_magnetic_bottle_cell.glb",
+      "bytes": 3275056,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/engineer_robotic_welding_arm.glb",
+      "bytes": 2906032,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/engineer_wave_relay_dynamo.glb",
+      "bytes": 2197196,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/evac_avionics_gyro_gimbal.glb",
+      "bytes": 3006048,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/evac_cabin_co2_scrubber.glb",
+      "bytes": 3194700,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/evac_cargo_ballast_scale.glb",
+      "bytes": 3097296,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/evac_cryo_hypergolic_manifold.glb",
+      "bytes": 2988860,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/evac_four_seat_cockpit_module.glb",
+      "bytes": 2343072,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/evac_manifest_allocation_terminal.glb",
+      "bytes": 2572284,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/evac_manual_abort_detonator.glb",
+      "bytes": 2704484,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/evac_preflight_fuel_umbilical.glb",
+      "bytes": 2819932,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/fixture_clock_dead.glb",
       "bytes": 2852168,
       "classification": "runtime-required"
@@ -5012,6 +6612,16 @@
     {
       "path": "3d/runtime/new3ds/fungal_spore_vent.glb",
       "bytes": 2637524,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/geo_pressure_relief_siren.glb",
+      "bytes": 2304368,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/geo_steam_manifold_actuator.glb",
+      "bytes": 2725160,
       "classification": "runtime-required"
     },
     {
@@ -5035,6 +6645,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/hive_amniotic_feeder_trough.glb",
+      "bytes": 2220136,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/hive_assimilated_generator.glb",
       "bytes": 7870220,
       "classification": "runtime-required"
@@ -5050,8 +6665,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/hive_gestation_sac.glb",
+      "bytes": 3117596,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/hive_pheromone_node.glb",
       "bytes": 7140760,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/hive_pulmonary_bellows.glb",
+      "bytes": 2198396,
       "classification": "runtime-required"
     },
     {
@@ -5060,8 +6685,43 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/hive_sphincter_iris.glb",
+      "bytes": 2402176,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/hive_tendril_arch.glb",
       "bytes": 8240908,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/hive_visceral_ovipositor.glb",
+      "bytes": 2735892,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/hive_vivisected_engineer.glb",
+      "bytes": 2464936,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/hydro_mycelial_seed_vault.glb",
+      "bytes": 2393364,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/ind_biomass_grinder.glb",
+      "bytes": 2470068,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/ind_fuel_rod_cask.glb",
+      "bytes": 2277776,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/ind_hydraulic_manifold.glb",
+      "bytes": 2658612,
       "classification": "runtime-required"
     },
     {
@@ -5550,6 +7210,46 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/meridian_capacitor_bomb.glb",
+      "bytes": 2026468,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/meridian_cyber_graft_bench.glb",
+      "bytes": 2721092,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/meridian_logic_core_drum.glb",
+      "bytes": 2875516,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/meridian_mainframe_altar.glb",
+      "bytes": 2991616,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/meridian_optic_nerve_patchbay.glb",
+      "bytes": 2883124,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/meridian_servitor_dock.glb",
+      "bytes": 2507120,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/meridian_servitor_recharge_cradle.glb",
+      "bytes": 2935680,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/meridian_soldering_hearth.glb",
+      "bytes": 3143328,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/mod_archivist_lens.glb",
       "bytes": 287296,
       "classification": "runtime-required"
@@ -5627,6 +7327,11 @@
     {
       "path": "3d/runtime/new3ds/mod_zero_point_flux.glb",
       "bytes": 4432472,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/mothership_docking_umbilical_collar.glb",
+      "bytes": 2736664,
       "classification": "runtime-required"
     },
     {
@@ -6110,6 +7815,31 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/queen_royal_brood_throne.glb",
+      "bytes": 2405324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/relay_acoustic_diaphragm.glb",
+      "bytes": 2460804,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/relay_false_beacon_spire.glb",
+      "bytes": 2109028,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/relay_harmonic_tuning_fork.glb",
+      "bytes": 3213308,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/royal_egg_clutch_caul.glb",
+      "bytes": 2536808,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/salvage_tagged_heap.glb",
       "bytes": 6475476,
       "classification": "runtime-required"
@@ -6130,6 +7860,26 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/scout_ejection_pod_chassis.glb",
+      "bytes": 3239856,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/scout_tachyon_radar_mast.glb",
+      "bytes": 2664208,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/scout_tracking_beacon_core.glb",
+      "bytes": 2099408,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/sector_zero_bore_drillhead.glb",
+      "bytes": 2528796,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/sentinel.glb",
       "bytes": 4114304,
       "classification": "runtime-required"
@@ -6142,6 +7892,26 @@
     {
       "path": "3d/runtime/new3ds/sentinel_B.glb",
       "bytes": 4192688,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/ship_module_comms_transceiver.glb",
+      "bytes": 2212244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/ship_module_engine_manifold.glb",
+      "bytes": 2533052,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/ship_module_life_support_core.glb",
+      "bytes": 2232032,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/ship_module_navigation_core.glb",
+      "bytes": 2849364,
       "classification": "runtime-required"
     },
     {
@@ -6307,6 +8077,241 @@
     {
       "path": "3d/runtime/new3ds/state_wall_breached_03.glb",
       "bytes": 3282504,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/substation_breaker_interlock.glb",
+      "bytes": 3091040,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/substation_stepdown_transformer.glb",
+      "bytes": 2350124,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/suture_flesh_mending_bath.glb",
+      "bytes": 2487576,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/suture_larval_nursery_urn.glb",
+      "bytes": 2610940,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/suture_mercy_cocoon_canopy.glb",
+      "bytes": 2642092,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tallow_apothecary_dryer_rack.glb",
+      "bytes": 2207232,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tallow_compost_fermenter.glb",
+      "bytes": 2322128,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tallow_flesh_trellis.glb",
+      "bytes": 2466132,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tallow_irrigation_sluice_gate.glb",
+      "bytes": 3038544,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tallow_sacrificial_altar.glb",
+      "bytes": 2584056,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tallow_spore_cradle.glb",
+      "bytes": 3501308,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tallow_vaccine_alembic.glb",
+      "bytes": 2614100,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tank_kinetic_ram_breech.glb",
+      "bytes": 2862744,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tank_orbital_siege_cannon.glb",
+      "bytes": 3444572,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tank_reactive_armor_forge.glb",
+      "bytes": 2423704,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tina_cosmetic_skin_loom.glb",
+      "bytes": 3009488,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tina_covert_nursery_chest.glb",
+      "bytes": 2480332,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tina_forged_council_ballot_box.glb",
+      "bytes": 3053600,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tina_mimic_vanity.glb",
+      "bytes": 2419940,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tina_molted_carapace.glb",
+      "bytes": 2341608,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tina_secret_distress_beacon.glb",
+      "bytes": 3052664,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tina_shedding_cocoon_niche.glb",
+      "bytes": 2335804,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tina_trophy_trove.glb",
+      "bytes": 2037816,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/tina_vocal_mimic_synthesizer.glb",
+      "bytes": 2361732,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vass_acoustic_resonator_tank.glb",
+      "bytes": 2583168,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vass_bio_centrifuge_rack.glb",
+      "bytes": 3050712,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vass_containment_bell_jar.glb",
+      "bytes": 2141292,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vass_dissection_stereomicroscope.glb",
+      "bytes": 2467980,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vass_hybrid_blood_synthesizer.glb",
+      "bytes": 2551224,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vass_hybrid_embryo_incubator.glb",
+      "bytes": 2642752,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vass_neural_sync_helmet.glb",
+      "bytes": 2728860,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vass_translation_phonograph.glb",
+      "bytes": 2915004,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vesper_amputation_rig.glb",
+      "bytes": 2512968,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vesper_autocannon_bipod.glb",
+      "bytes": 2973232,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vesper_ballistic_chronograph.glb",
+      "bytes": 2661056,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vesper_barricade_welding_rig.glb",
+      "bytes": 2630136,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vesper_dogtag_retrieval_crypt.glb",
+      "bytes": 2798800,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vesper_hanging_cage.glb",
+      "bytes": 2799208,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vesper_mortar_loading_cradle.glb",
+      "bytes": 2496616,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vesper_ordnance_disarm_table.glb",
+      "bytes": 2510456,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vesper_reloading_station.glb",
+      "bytes": 2223848,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/vesper_trench_warning_klaxon.glb",
+      "bytes": 2107156,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/wall_macro_buttress_3.glb",
+      "bytes": 2622060,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/wall_macro_straight_4.glb",
+      "bytes": 2249320,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/weapon_flamethrower_case.glb",
+      "bytes": 1882612,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/weapon_flamethrower_m70.glb",
+      "bytes": 2105724,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/weapon_fuel_canister_heavy.glb",
+      "bytes": 1856052,
       "classification": "runtime-required"
     },
     {
@@ -7430,6 +9435,126 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/surfaces/tex_floor_amniotic_slime_crust_a_albedo.ktx2",
+      "bytes": 1001618,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_amniotic_slime_crust_a_detail.ktx2",
+      "bytes": 1099553,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_amniotic_slime_crust_b_albedo.ktx2",
+      "bytes": 1011580,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_amniotic_slime_crust_b_detail.ktx2",
+      "bytes": 1103766,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_amniotic_slime_crust_c_albedo.ktx2",
+      "bytes": 1025701,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_amniotic_slime_crust_c_detail.ktx2",
+      "bytes": 1124387,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_amniotic_slime_crust_d_albedo.ktx2",
+      "bytes": 999002,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_amniotic_slime_crust_d_detail.ktx2",
+      "bytes": 1111654,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_battery_acid_corrosion_a_albedo.ktx2",
+      "bytes": 1091310,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_battery_acid_corrosion_a_detail.ktx2",
+      "bytes": 1161729,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_battery_acid_corrosion_b_albedo.ktx2",
+      "bytes": 1106158,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_battery_acid_corrosion_b_detail.ktx2",
+      "bytes": 1156841,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_battery_acid_corrosion_c_albedo.ktx2",
+      "bytes": 1021388,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_battery_acid_corrosion_c_detail.ktx2",
+      "bytes": 1098220,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_battery_acid_corrosion_d_albedo.ktx2",
+      "bytes": 1063316,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_battery_acid_corrosion_d_detail.ktx2",
+      "bytes": 1149440,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_blood_drain_grate_a_albedo.ktx2",
+      "bytes": 1030339,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_blood_drain_grate_a_detail.ktx2",
+      "bytes": 1133546,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_blood_drain_grate_b_albedo.ktx2",
+      "bytes": 998350,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_blood_drain_grate_b_detail.ktx2",
+      "bytes": 1070568,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_blood_drain_grate_c_albedo.ktx2",
+      "bytes": 1039971,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_blood_drain_grate_c_detail.ktx2",
+      "bytes": 1113701,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_blood_drain_grate_d_albedo.ktx2",
+      "bytes": 1094686,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_blood_drain_grate_d_detail.ktx2",
+      "bytes": 1150667,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/surfaces/tex_floor_bone_terrazzo_a_albedo.ktx2",
       "bytes": 1055683,
       "classification": "runtime-required"
@@ -7510,6 +9635,86 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/surfaces/tex_floor_cannibal_butchery_planks_a_albedo.ktx2",
+      "bytes": 999476,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_cannibal_butchery_planks_a_detail.ktx2",
+      "bytes": 1185189,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_cannibal_butchery_planks_b_albedo.ktx2",
+      "bytes": 1005575,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_cannibal_butchery_planks_b_detail.ktx2",
+      "bytes": 1204718,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_cannibal_butchery_planks_c_albedo.ktx2",
+      "bytes": 992951,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_cannibal_butchery_planks_c_detail.ktx2",
+      "bytes": 1180073,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_cannibal_butchery_planks_d_albedo.ktx2",
+      "bytes": 1001448,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_cannibal_butchery_planks_d_detail.ktx2",
+      "bytes": 1207332,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_charred_crematorium_a_albedo.ktx2",
+      "bytes": 998570,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_charred_crematorium_a_detail.ktx2",
+      "bytes": 1134016,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_charred_crematorium_b_albedo.ktx2",
+      "bytes": 966224,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_charred_crematorium_b_detail.ktx2",
+      "bytes": 1200026,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_charred_crematorium_c_albedo.ktx2",
+      "bytes": 999678,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_charred_crematorium_c_detail.ktx2",
+      "bytes": 1201693,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_charred_crematorium_d_albedo.ktx2",
+      "bytes": 980840,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_charred_crematorium_d_detail.ktx2",
+      "bytes": 1165633,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/surfaces/tex_floor_chitin_resin_a_albedo.ktx2",
       "bytes": 1017306,
       "classification": "runtime-required"
@@ -7547,6 +9752,46 @@
     {
       "path": "3d/runtime/surfaces/tex_floor_chitin_resin_d_detail.ktx2",
       "bytes": 1123274,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_chitinous_eggshell_drift_a_albedo.ktx2",
+      "bytes": 1018401,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_chitinous_eggshell_drift_a_detail.ktx2",
+      "bytes": 1212572,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_chitinous_eggshell_drift_b_albedo.ktx2",
+      "bytes": 998513,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_chitinous_eggshell_drift_b_detail.ktx2",
+      "bytes": 1148728,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_chitinous_eggshell_drift_c_albedo.ktx2",
+      "bytes": 990205,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_chitinous_eggshell_drift_c_detail.ktx2",
+      "bytes": 1155731,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_chitinous_eggshell_drift_d_albedo.ktx2",
+      "bytes": 947787,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_chitinous_eggshell_drift_d_detail.ktx2",
+      "bytes": 1076284,
       "classification": "runtime-required"
     },
     {
@@ -7630,6 +9875,86 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/surfaces/tex_floor_corporate_decon_foam_a_albedo.ktx2",
+      "bytes": 1026653,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_corporate_decon_foam_a_detail.ktx2",
+      "bytes": 1164821,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_corporate_decon_foam_b_albedo.ktx2",
+      "bytes": 1003595,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_corporate_decon_foam_b_detail.ktx2",
+      "bytes": 1132906,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_corporate_decon_foam_c_albedo.ktx2",
+      "bytes": 1063441,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_corporate_decon_foam_c_detail.ktx2",
+      "bytes": 1243366,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_corporate_decon_foam_d_albedo.ktx2",
+      "bytes": 1022526,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_corporate_decon_foam_d_detail.ktx2",
+      "bytes": 1204638,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_cryo_shattered_permafrost_a_albedo.ktx2",
+      "bytes": 1099454,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_cryo_shattered_permafrost_a_detail.ktx2",
+      "bytes": 1226400,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_cryo_shattered_permafrost_b_albedo.ktx2",
+      "bytes": 1089076,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_cryo_shattered_permafrost_b_detail.ktx2",
+      "bytes": 1213343,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_cryo_shattered_permafrost_c_albedo.ktx2",
+      "bytes": 1060580,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_cryo_shattered_permafrost_c_detail.ktx2",
+      "bytes": 1176632,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_cryo_shattered_permafrost_d_albedo.ktx2",
+      "bytes": 1070651,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_cryo_shattered_permafrost_d_detail.ktx2",
+      "bytes": 1185217,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/surfaces/tex_floor_deck_drain_a_albedo.ktx2",
       "bytes": 1039561,
       "classification": "runtime-required"
@@ -7667,6 +9992,46 @@
     {
       "path": "3d/runtime/surfaces/tex_floor_deck_drain_d_detail.ktx2",
       "bytes": 1134214,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_frostbitten_trench_a_albedo.ktx2",
+      "bytes": 992882,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_frostbitten_trench_a_detail.ktx2",
+      "bytes": 1185388,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_frostbitten_trench_b_albedo.ktx2",
+      "bytes": 999714,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_frostbitten_trench_b_detail.ktx2",
+      "bytes": 1181829,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_frostbitten_trench_c_albedo.ktx2",
+      "bytes": 992557,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_frostbitten_trench_c_detail.ktx2",
+      "bytes": 1157615,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_frostbitten_trench_d_albedo.ktx2",
+      "bytes": 989267,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_frostbitten_trench_d_detail.ktx2",
+      "bytes": 1166199,
       "classification": "runtime-required"
     },
     {
@@ -7710,6 +10075,46 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/surfaces/tex_floor_hydraulic_oil_slick_a_albedo.ktx2",
+      "bytes": 1075969,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_hydraulic_oil_slick_a_detail.ktx2",
+      "bytes": 1213778,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_hydraulic_oil_slick_b_albedo.ktx2",
+      "bytes": 1032045,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_hydraulic_oil_slick_b_detail.ktx2",
+      "bytes": 1174953,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_hydraulic_oil_slick_c_albedo.ktx2",
+      "bytes": 1038809,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_hydraulic_oil_slick_c_detail.ktx2",
+      "bytes": 1113929,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_hydraulic_oil_slick_d_albedo.ktx2",
+      "bytes": 1039842,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_hydraulic_oil_slick_d_detail.ktx2",
+      "bytes": 1204629,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/surfaces/tex_floor_latex_mat_a_albedo.ktx2",
       "bytes": 938978,
       "classification": "runtime-required"
@@ -7750,6 +10155,166 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/surfaces/tex_floor_necrotic_bio_sludge_a_albedo.ktx2",
+      "bytes": 985815,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_necrotic_bio_sludge_a_detail.ktx2",
+      "bytes": 1174672,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_necrotic_bio_sludge_b_albedo.ktx2",
+      "bytes": 988892,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_necrotic_bio_sludge_b_detail.ktx2",
+      "bytes": 1186019,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_necrotic_bio_sludge_c_albedo.ktx2",
+      "bytes": 960977,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_necrotic_bio_sludge_c_detail.ktx2",
+      "bytes": 1146202,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_necrotic_bio_sludge_d_albedo.ktx2",
+      "bytes": 971358,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_necrotic_bio_sludge_d_detail.ktx2",
+      "bytes": 1183875,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_royal_jelly_calcification_a_albedo.ktx2",
+      "bytes": 1047003,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_royal_jelly_calcification_a_detail.ktx2",
+      "bytes": 1209977,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_royal_jelly_calcification_b_albedo.ktx2",
+      "bytes": 1029529,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_royal_jelly_calcification_b_detail.ktx2",
+      "bytes": 1109838,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_royal_jelly_calcification_c_albedo.ktx2",
+      "bytes": 1001365,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_royal_jelly_calcification_c_detail.ktx2",
+      "bytes": 1104477,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_royal_jelly_calcification_d_albedo.ktx2",
+      "bytes": 1037084,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_royal_jelly_calcification_d_detail.ktx2",
+      "bytes": 1134285,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_scorched_plasma_crater_a_albedo.ktx2",
+      "bytes": 1066448,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_scorched_plasma_crater_a_detail.ktx2",
+      "bytes": 1170381,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_scorched_plasma_crater_b_albedo.ktx2",
+      "bytes": 1061654,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_scorched_plasma_crater_b_detail.ktx2",
+      "bytes": 1105521,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_scorched_plasma_crater_c_albedo.ktx2",
+      "bytes": 1069230,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_scorched_plasma_crater_c_detail.ktx2",
+      "bytes": 1184028,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_scorched_plasma_crater_d_albedo.ktx2",
+      "bytes": 1050249,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_scorched_plasma_crater_d_detail.ktx2",
+      "bytes": 1136338,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_shattered_safety_glass_a_albedo.ktx2",
+      "bytes": 1070066,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_shattered_safety_glass_a_detail.ktx2",
+      "bytes": 1195839,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_shattered_safety_glass_b_albedo.ktx2",
+      "bytes": 1011651,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_shattered_safety_glass_b_detail.ktx2",
+      "bytes": 1161201,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_shattered_safety_glass_c_albedo.ktx2",
+      "bytes": 1020098,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_shattered_safety_glass_c_detail.ktx2",
+      "bytes": 1158727,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_shattered_safety_glass_d_albedo.ktx2",
+      "bytes": 1067755,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_shattered_safety_glass_d_detail.ktx2",
+      "bytes": 1187259,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/surfaces/tex_floor_slush_ice_a_albedo.ktx2",
       "bytes": 1017151,
       "classification": "runtime-required"
@@ -7787,6 +10352,86 @@
     {
       "path": "3d/runtime/surfaces/tex_floor_slush_ice_d_detail.ktx2",
       "bytes": 1218974,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_spent_casings_drift_a_albedo.ktx2",
+      "bytes": 1057096,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_spent_casings_drift_a_detail.ktx2",
+      "bytes": 1147496,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_spent_casings_drift_b_albedo.ktx2",
+      "bytes": 990368,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_spent_casings_drift_b_detail.ktx2",
+      "bytes": 1064859,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_spent_casings_drift_c_albedo.ktx2",
+      "bytes": 1040443,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_spent_casings_drift_c_detail.ktx2",
+      "bytes": 1163174,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_spent_casings_drift_d_albedo.ktx2",
+      "bytes": 1006150,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_spent_casings_drift_d_detail.ktx2",
+      "bytes": 1092757,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_tallow_spore_fungus_a_albedo.ktx2",
+      "bytes": 959118,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_tallow_spore_fungus_a_detail.ktx2",
+      "bytes": 1117393,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_tallow_spore_fungus_b_albedo.ktx2",
+      "bytes": 970234,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_tallow_spore_fungus_b_detail.ktx2",
+      "bytes": 1170709,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_tallow_spore_fungus_c_albedo.ktx2",
+      "bytes": 993479,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_tallow_spore_fungus_c_detail.ktx2",
+      "bytes": 1171292,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_tallow_spore_fungus_d_albedo.ktx2",
+      "bytes": 971599,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_tallow_spore_fungus_d_detail.ktx2",
+      "bytes": 1126186,
       "classification": "runtime-required"
     },
     {
@@ -8250,6 +10895,366 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/surfaces/tex_pbr_chasm_permafrost_bedrock_baseColor.webp",
+      "bytes": 514128,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_chasm_permafrost_bedrock_color.webp",
+      "bytes": 514128,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_chasm_permafrost_bedrock_emissive.webp",
+      "bytes": 62830,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_chasm_permafrost_bedrock_normal.webp",
+      "bytes": 864192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_chasm_permafrost_bedrock_orm.webp",
+      "bytes": 329946,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_chasm_permafrost_bedrock_rough.webp",
+      "bytes": 350970,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_corp_sublevel_linoleum_baseColor.webp",
+      "bytes": 452014,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_corp_sublevel_linoleum_color.webp",
+      "bytes": 452014,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_corp_sublevel_linoleum_emissive.webp",
+      "bytes": 1926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_corp_sublevel_linoleum_normal.webp",
+      "bytes": 785108,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_corp_sublevel_linoleum_orm.webp",
+      "bytes": 417464,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_corp_sublevel_linoleum_rough.webp",
+      "bytes": 63294,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_crash_hull_ablative_tile_baseColor.webp",
+      "bytes": 466882,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_crash_hull_ablative_tile_color.webp",
+      "bytes": 466882,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_crash_hull_ablative_tile_emissive.webp",
+      "bytes": 1926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_crash_hull_ablative_tile_normal.webp",
+      "bytes": 794676,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_crash_hull_ablative_tile_orm.webp",
+      "bytes": 298712,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_crash_hull_ablative_tile_rough.webp",
+      "bytes": 231668,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_evac_gantry_corrugated_deck_baseColor.webp",
+      "bytes": 497918,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_evac_gantry_corrugated_deck_color.webp",
+      "bytes": 497918,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_evac_gantry_corrugated_deck_emissive.webp",
+      "bytes": 1926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_evac_gantry_corrugated_deck_normal.webp",
+      "bytes": 807606,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_evac_gantry_corrugated_deck_orm.webp",
+      "bytes": 373002,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_evac_gantry_corrugated_deck_rough.webp",
+      "bytes": 142018,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_geothermal_trench_grate_baseColor.webp",
+      "bytes": 400648,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_geothermal_trench_grate_color.webp",
+      "bytes": 400648,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_geothermal_trench_grate_emissive.webp",
+      "bytes": 71354,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_geothermal_trench_grate_normal.webp",
+      "bytes": 757036,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_geothermal_trench_grate_orm.webp",
+      "bytes": 268640,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_geothermal_trench_grate_rough.webp",
+      "bytes": 172028,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hive_chitin_plates_baseColor.webp",
+      "bytes": 322090,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hive_chitin_plates_color.webp",
+      "bytes": 322090,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hive_chitin_plates_emissive.webp",
+      "bytes": 1926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hive_chitin_plates_normal.webp",
+      "bytes": 684646,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hive_chitin_plates_orm.webp",
+      "bytes": 223116,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hive_chitin_plates_rough.webp",
+      "bytes": 31592,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hive_suture_amniotic_resin_baseColor.webp",
+      "bytes": 289480,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hive_suture_amniotic_resin_color.webp",
+      "bytes": 289480,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hive_suture_amniotic_resin_emissive.webp",
+      "bytes": 133142,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hive_suture_amniotic_resin_normal.webp",
+      "bytes": 604488,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hive_suture_amniotic_resin_orm.webp",
+      "bytes": 214004,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hive_suture_amniotic_resin_rough.webp",
+      "bytes": 30224,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hydro_fermenter_sludge_baseColor.webp",
+      "bytes": 464940,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hydro_fermenter_sludge_color.webp",
+      "bytes": 464940,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hydro_fermenter_sludge_emissive.webp",
+      "bytes": 122390,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hydro_fermenter_sludge_normal.webp",
+      "bytes": 795528,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hydro_fermenter_sludge_orm.webp",
+      "bytes": 355552,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_hydro_fermenter_sludge_rough.webp",
+      "bytes": 136668,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_meridian_cable_conduit_deck_baseColor.webp",
+      "bytes": 427012,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_meridian_cable_conduit_deck_color.webp",
+      "bytes": 427012,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_meridian_cable_conduit_deck_emissive.webp",
+      "bytes": 2350,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_meridian_cable_conduit_deck_normal.webp",
+      "bytes": 761982,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_meridian_cable_conduit_deck_orm.webp",
+      "bytes": 276558,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_meridian_cable_conduit_deck_rough.webp",
+      "bytes": 170918,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_obsidian_cathedral_flagstone_baseColor.webp",
+      "bytes": 355908,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_obsidian_cathedral_flagstone_color.webp",
+      "bytes": 355908,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_obsidian_cathedral_flagstone_emissive.webp",
+      "bytes": 8640,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_obsidian_cathedral_flagstone_normal.webp",
+      "bytes": 657772,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_obsidian_cathedral_flagstone_orm.webp",
+      "bytes": 280862,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_obsidian_cathedral_flagstone_rough.webp",
+      "bytes": 36466,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_vass_cleanroom_poly_baseColor.webp",
+      "bytes": 174458,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_vass_cleanroom_poly_color.webp",
+      "bytes": 174458,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_vass_cleanroom_poly_emissive.webp",
+      "bytes": 12446,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_vass_cleanroom_poly_normal.webp",
+      "bytes": 498918,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_vass_cleanroom_poly_orm.webp",
+      "bytes": 70484,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_vass_cleanroom_poly_rough.webp",
+      "bytes": 12804,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_vesper_trench_treadplate_baseColor.webp",
+      "bytes": 470660,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_vesper_trench_treadplate_color.webp",
+      "bytes": 470660,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_vesper_trench_treadplate_emissive.webp",
+      "bytes": 1926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_vesper_trench_treadplate_normal.webp",
+      "bytes": 827340,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_vesper_trench_treadplate_orm.webp",
+      "bytes": 364950,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_pbr_vesper_trench_treadplate_rough.webp",
+      "bytes": 102062,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/surfaces/tex_shoulder_ice_crust_a_albedo.ktx2",
       "bytes": 836573,
       "classification": "runtime-required"
@@ -8412,7 +11417,7 @@
     {
       "path": "Eng.Full_v2.webp",
       "bytes": 338638,
-      "classification": "runtime-required"
+      "classification": "unknown"
     },
     {
       "path": "Eng.walk_v4.png",
@@ -8452,7 +11457,7 @@
     {
       "path": "Tank.full_v2.webp",
       "bytes": 438502,
-      "classification": "runtime-required"
+      "classification": "unknown"
     },
     {
       "path": "Tank.walk_v4.png",
@@ -9030,6 +12035,146 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/ambient/points/amb_point_hive_sac.ogg",
+      "bytes": 118231,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/points/amb_point_hive_sac.wav",
+      "bytes": 768044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/points/amb_point_hive_sac_000.ogg",
+      "bytes": 118231,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/points/amb_point_hive_sac_000.wav",
+      "bytes": 768044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/points/amb_point_meridian_chimes.ogg",
+      "bytes": 126705,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/points/amb_point_meridian_chimes.wav",
+      "bytes": 960044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/points/amb_point_meridian_chimes_000.ogg",
+      "bytes": 126705,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/points/amb_point_meridian_chimes_000.wav",
+      "bytes": 960044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/points/amb_point_tallow_forge.ogg",
+      "bytes": 163864,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/points/amb_point_tallow_forge.wav",
+      "bytes": 960044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/points/amb_point_tallow_forge_000.ogg",
+      "bytes": 163864,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/points/amb_point_tallow_forge_000.wav",
+      "bytes": 960044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/points/amb_point_vesper_generator.ogg",
+      "bytes": 146572,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/points/amb_point_vesper_generator.wav",
+      "bytes": 960044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/points/amb_point_vesper_generator_000.ogg",
+      "bytes": 146572,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/points/amb_point_vesper_generator_000.wav",
+      "bytes": 960044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/room_tone_bio_hive.ogg",
+      "bytes": 241878,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/room_tone_bio_hive.wav",
+      "bytes": 2016044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/room_tone_cathedral_crypt.ogg",
+      "bytes": 239849,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/room_tone_cathedral_crypt.wav",
+      "bytes": 2016044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/room_tone_cryo_subzero.ogg",
+      "bytes": 280233,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/room_tone_cryo_subzero.wav",
+      "bytes": 2016044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/room_tone_exterior_wind.ogg",
+      "bytes": 276875,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/room_tone_exterior_wind.wav",
+      "bytes": 2016044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/room_tone_interior_bunker.ogg",
+      "bytes": 262162,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/room_tone_interior_bunker.wav",
+      "bytes": 2016044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/room_tone_safe_ship.ogg",
+      "bytes": 247287,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ambient/room_tone_safe_ship.wav",
+      "bytes": 2016044,
+      "classification": "runtime-required"
+    },
+    {
       "path": "audio/cc0-derived/engines/ship_engine_low_01.ogg",
       "bytes": 43081,
       "classification": "runtime-required"
@@ -9077,6 +12222,116 @@
     {
       "path": "audio/enemies/creak3.ogg",
       "bytes": 10408,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_alert_boss_000.ogg",
+      "bytes": 11927,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_alert_boss_000.wav",
+      "bytes": 70444,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_alert_boss_001.ogg",
+      "bytes": 14305,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_alert_boss_001.wav",
+      "bytes": 70444,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_alert_crawler_000.ogg",
+      "bytes": 8083,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_alert_crawler_000.wav",
+      "bytes": 32044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_alert_crawler_001.ogg",
+      "bytes": 10378,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_alert_crawler_001.wav",
+      "bytes": 32044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_alert_crawler_002.ogg",
+      "bytes": 9645,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_alert_crawler_002.wav",
+      "bytes": 32044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_alert_snail_000.ogg",
+      "bytes": 10636,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_alert_snail_000.wav",
+      "bytes": 38444,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_alert_snail_001.ogg",
+      "bytes": 9939,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_alert_snail_001.wav",
+      "bytes": 38444,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_alert_snail_002.ogg",
+      "bytes": 9990,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_alert_snail_002.wav",
+      "bytes": 38444,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_idle_boss_000.ogg",
+      "bytes": 17445,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_idle_boss_000.wav",
+      "bytes": 80044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_idle_boss_001.ogg",
+      "bytes": 22072,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_idle_boss_001.wav",
+      "bytes": 80044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_idle_boss_002.ogg",
+      "bytes": 17696,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/enemy_idle_boss_002.wav",
+      "bytes": 80044,
       "classification": "runtime-required"
     },
     {
@@ -9155,6 +12410,156 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/foley/casings/shell_drop_metal_000.ogg",
+      "bytes": 7399,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_metal_000.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_metal_001.ogg",
+      "bytes": 9191,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_metal_001.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_metal_002.ogg",
+      "bytes": 6425,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_metal_002.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_slime_000.ogg",
+      "bytes": 11607,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_slime_000.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_slime_001.ogg",
+      "bytes": 9355,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_slime_001.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_slime_002.ogg",
+      "bytes": 10197,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_slime_002.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_snow_000.ogg",
+      "bytes": 10707,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_snow_000.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_snow_001.ogg",
+      "bytes": 9963,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_snow_001.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_snow_002.ogg",
+      "bytes": 7999,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_snow_002.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_stone_000.ogg",
+      "bytes": 10135,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_stone_000.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_stone_001.ogg",
+      "bytes": 10833,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_stone_001.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_stone_002.ogg",
+      "bytes": 8775,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_stone_002.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_wood_000.ogg",
+      "bytes": 9182,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_wood_000.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_wood_001.ogg",
+      "bytes": 9267,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_wood_001.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_wood_002.ogg",
+      "bytes": 8040,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/casings/shell_drop_wood_002.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
       "path": "audio/foley/mothership/foley_mothership_carrier_term.wav",
       "bytes": 192078,
       "classification": "runtime-required"
@@ -9220,6 +12625,56 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/footsteps/footstep_bone_terrazzo_000.ogg",
+      "bytes": 6941,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_bone_terrazzo_000.wav",
+      "bytes": 19244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_bone_terrazzo_001.ogg",
+      "bytes": 7946,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_bone_terrazzo_001.wav",
+      "bytes": 19244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_bone_terrazzo_002.ogg",
+      "bytes": 6843,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_bone_terrazzo_002.wav",
+      "bytes": 19244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_bone_terrazzo_003.ogg",
+      "bytes": 6547,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_bone_terrazzo_003.wav",
+      "bytes": 19244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_bone_terrazzo_004.ogg",
+      "bytes": 6683,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_bone_terrazzo_004.wav",
+      "bytes": 19244,
+      "classification": "runtime-required"
+    },
+    {
       "path": "audio/footsteps/footstep_concrete_000.ogg",
       "bytes": 5808,
       "classification": "runtime-required"
@@ -9245,6 +12700,256 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/footsteps/footstep_deep_snow_000.ogg",
+      "bytes": 6606,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_deep_snow_000.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_deep_snow_001.ogg",
+      "bytes": 7886,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_deep_snow_001.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_deep_snow_002.ogg",
+      "bytes": 7902,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_deep_snow_002.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_deep_snow_003.ogg",
+      "bytes": 6888,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_deep_snow_003.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_deep_snow_004.ogg",
+      "bytes": 6709,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_deep_snow_004.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_hive_slime_000.ogg",
+      "bytes": 8311,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_hive_slime_000.wav",
+      "bytes": 19244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_hive_slime_001.ogg",
+      "bytes": 8489,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_hive_slime_001.wav",
+      "bytes": 19244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_hive_slime_002.ogg",
+      "bytes": 8476,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_hive_slime_002.wav",
+      "bytes": 19244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_hive_slime_003.ogg",
+      "bytes": 8387,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_hive_slime_003.wav",
+      "bytes": 19244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_hive_slime_004.ogg",
+      "bytes": 8401,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_hive_slime_004.wav",
+      "bytes": 19244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_ice_crunch_000.ogg",
+      "bytes": 7826,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_ice_crunch_000.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_ice_crunch_001.ogg",
+      "bytes": 7691,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_ice_crunch_001.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_ice_crunch_002.ogg",
+      "bytes": 8076,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_ice_crunch_002.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_ice_crunch_003.ogg",
+      "bytes": 8161,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_ice_crunch_003.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_ice_crunch_004.ogg",
+      "bytes": 8241,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_ice_crunch_004.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_metal_grate_000.ogg",
+      "bytes": 6807,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_metal_grate_000.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_metal_grate_001.ogg",
+      "bytes": 6409,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_metal_grate_001.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_metal_grate_002.ogg",
+      "bytes": 7035,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_metal_grate_002.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_metal_grate_003.ogg",
+      "bytes": 6186,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_metal_grate_003.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_metal_grate_004.ogg",
+      "bytes": 6889,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_metal_grate_004.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_shell_casings_000.ogg",
+      "bytes": 7349,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_shell_casings_000.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_shell_casings_001.ogg",
+      "bytes": 7430,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_shell_casings_001.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_shell_casings_002.ogg",
+      "bytes": 7476,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_shell_casings_002.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_shell_casings_003.ogg",
+      "bytes": 7605,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_shell_casings_003.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_shell_casings_004.ogg",
+      "bytes": 6325,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_shell_casings_004.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
       "path": "audio/footsteps/footstep_snow_000.ogg",
       "bytes": 7880,
       "classification": "runtime-required"
@@ -9267,6 +12972,106 @@
     {
       "path": "audio/footsteps/footstep_snow_004.ogg",
       "bytes": 7630,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wet_puddle_000.ogg",
+      "bytes": 6344,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wet_puddle_000.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wet_puddle_001.ogg",
+      "bytes": 6598,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wet_puddle_001.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wet_puddle_002.ogg",
+      "bytes": 6496,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wet_puddle_002.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wet_puddle_003.ogg",
+      "bytes": 7308,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wet_puddle_003.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wet_puddle_004.ogg",
+      "bytes": 7798,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wet_puddle_004.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wood_plank_000.ogg",
+      "bytes": 6695,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wood_plank_000.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wood_plank_001.ogg",
+      "bytes": 6877,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wood_plank_001.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wood_plank_002.ogg",
+      "bytes": 6235,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wood_plank_002.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wood_plank_003.ogg",
+      "bytes": 6216,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wood_plank_003.wav",
+      "bytes": 17324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wood_plank_004.ogg",
+      "bytes": 7371,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/footsteps/footstep_wood_plank_004.wav",
+      "bytes": 17324,
       "classification": "runtime-required"
     },
     {
@@ -9310,6 +13115,386 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/generated/chem_siphon_000.ogg",
+      "bytes": 14062,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/chem_siphon_000.wav",
+      "bytes": 64044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/chem_siphon_001.ogg",
+      "bytes": 12865,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/chem_siphon_001.wav",
+      "bytes": 64044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/chem_siphon_002.ogg",
+      "bytes": 13876,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/chem_siphon_002.wav",
+      "bytes": 64044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/chen_sealed_confession_console_000.ogg",
+      "bytes": 9928,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/chen_sealed_confession_console_000.wav",
+      "bytes": 64044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/chen_sealed_confession_console_001.ogg",
+      "bytes": 7695,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/chen_sealed_confession_console_001.wav",
+      "bytes": 64044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/crane_motor_000.ogg",
+      "bytes": 20267,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/crane_motor_000.wav",
+      "bytes": 80044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/crane_motor_001.ogg",
+      "bytes": 16991,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/crane_motor_001.wav",
+      "bytes": 80044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/crane_motor_002.ogg",
+      "bytes": 11991,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/crane_motor_002.wav",
+      "bytes": 80044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/evac_manifest_allocation_terminal_000.ogg",
+      "bytes": 13735,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/evac_manifest_allocation_terminal_000.wav",
+      "bytes": 57644,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/evac_manifest_allocation_terminal_001.ogg",
+      "bytes": 13392,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/evac_manifest_allocation_terminal_001.wav",
+      "bytes": 57644,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/exosuit_charge_000.ogg",
+      "bytes": 13655,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/exosuit_charge_000.wav",
+      "bytes": 57644,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/exosuit_charge_001.ogg",
+      "bytes": 9593,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/exosuit_charge_001.wav",
+      "bytes": 57644,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/exosuit_charge_002.ogg",
+      "bytes": 13786,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/exosuit_charge_002.wav",
+      "bytes": 57644,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/fan_wind_000.ogg",
+      "bytes": 15924,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/fan_wind_000.wav",
+      "bytes": 80044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/fan_wind_001.ogg",
+      "bytes": 15989,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/fan_wind_001.wav",
+      "bytes": 80044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/flesh_seal_000.ogg",
+      "bytes": 8490,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/flesh_seal_000.wav",
+      "bytes": 35244,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/flesh_seal_001.ogg",
+      "bytes": 9305,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/flesh_seal_001.wav",
+      "bytes": 35244,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/flesh_seal_002.ogg",
+      "bytes": 8754,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/flesh_seal_002.wav",
+      "bytes": 35244,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/flesh_squish_000.ogg",
+      "bytes": 10732,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/flesh_squish_000.wav",
+      "bytes": 28844,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/flesh_squish_001.ogg",
+      "bytes": 10336,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/flesh_squish_001.wav",
+      "bytes": 28844,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/flesh_squish_002.ogg",
+      "bytes": 10575,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/flesh_squish_002.wav",
+      "bytes": 28844,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/generator_complete_000.ogg",
+      "bytes": 17453,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/generator_complete_000.wav",
+      "bytes": 89644,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/generator_complete_001.ogg",
+      "bytes": 17714,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/generator_complete_001.wav",
+      "bytes": 89644,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/hive_visceral_ovipositor_000.ogg",
+      "bytes": 15289,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/hive_visceral_ovipositor_000.wav",
+      "bytes": 70444,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/hive_visceral_ovipositor_001.ogg",
+      "bytes": 19762,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/hive_visceral_ovipositor_001.wav",
+      "bytes": 70444,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/ind_biomass_grinder_000.ogg",
+      "bytes": 16779,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/ind_biomass_grinder_000.wav",
+      "bytes": 80044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/ind_biomass_grinder_001.ogg",
+      "bytes": 18750,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/ind_biomass_grinder_001.wav",
+      "bytes": 80044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/item_pickup_000.ogg",
+      "bytes": 6124,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/item_pickup_000.wav",
+      "bytes": 12844,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/item_pickup_001.ogg",
+      "bytes": 6145,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/item_pickup_001.wav",
+      "bytes": 12844,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/item_pickup_002.ogg",
+      "bytes": 5738,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/item_pickup_002.wav",
+      "bytes": 12844,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/neural_tap_000.ogg",
+      "bytes": 9712,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/neural_tap_000.wav",
+      "bytes": 38444,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/neural_tap_001.ogg",
+      "bytes": 10212,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/neural_tap_001.wav",
+      "bytes": 38444,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/neural_tap_002.ogg",
+      "bytes": 10379,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/neural_tap_002.wav",
+      "bytes": 38444,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/power_hum_000.ogg",
+      "bytes": 17836,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/power_hum_000.wav",
+      "bytes": 96044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/power_hum_001.ogg",
+      "bytes": 16869,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/power_hum_001.wav",
+      "bytes": 96044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/power_hum_002.ogg",
+      "bytes": 19304,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/power_hum_002.wav",
+      "bytes": 96044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/relay_false_beacon_spire_000.ogg",
+      "bytes": 16999,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/relay_false_beacon_spire_000.wav",
+      "bytes": 89644,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/relay_false_beacon_spire_001.ogg",
+      "bytes": 17371,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/relay_false_beacon_spire_001.wav",
+      "bytes": 89644,
+      "classification": "generated-intermediate"
+    },
+    {
       "path": "audio/generated/reward_reveal_charm.wav",
       "bytes": 48554,
       "classification": "runtime-required"
@@ -9338,6 +13523,26 @@
       "path": "audio/generated/reward_reveal_weapon.wav",
       "bytes": 75014,
       "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/scout_tracking_beacon_core_000.ogg",
+      "bytes": 13709,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/scout_tracking_beacon_core_000.wav",
+      "bytes": 48044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/scout_tracking_beacon_core_001.ogg",
+      "bytes": 11057,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/scout_tracking_beacon_core_001.wav",
+      "bytes": 48044,
+      "classification": "generated-intermediate"
     },
     {
       "path": "audio/generated/sfx_charm_clink_heavy.wav",
@@ -9375,6 +13580,126 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/generated/steam_burst_000.ogg",
+      "bytes": 9920,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/steam_burst_000.wav",
+      "bytes": 38444,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/steam_burst_001.ogg",
+      "bytes": 9922,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/steam_burst_001.wav",
+      "bytes": 38444,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/steam_burst_002.ogg",
+      "bytes": 9974,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/steam_burst_002.wav",
+      "bytes": 38444,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/terminal_beep_000.ogg",
+      "bytes": 6328,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/terminal_beep_000.wav",
+      "bytes": 19244,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/terminal_beep_001.ogg",
+      "bytes": 8149,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/terminal_beep_001.wav",
+      "bytes": 19244,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/terminal_beep_002.ogg",
+      "bytes": 7286,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/terminal_beep_002.wav",
+      "bytes": 19244,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/terminal_deny_000.ogg",
+      "bytes": 8336,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/terminal_deny_000.wav",
+      "bytes": 26924,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/terminal_deny_001.ogg",
+      "bytes": 8762,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/terminal_deny_001.wav",
+      "bytes": 26924,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/terminal_deny_002.ogg",
+      "bytes": 8304,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/terminal_deny_002.wav",
+      "bytes": 26924,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/toolbox_open_000.ogg",
+      "bytes": 10007,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/toolbox_open_000.wav",
+      "bytes": 35244,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/toolbox_open_001.ogg",
+      "bytes": 10462,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/toolbox_open_001.wav",
+      "bytes": 35244,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/toolbox_open_002.ogg",
+      "bytes": 10288,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/toolbox_open_002.wav",
+      "bytes": 35244,
+      "classification": "generated-intermediate"
+    },
+    {
       "path": "audio/generated/ui_reward_burst.wav",
       "bytes": 57374,
       "classification": "runtime-required"
@@ -9383,6 +13708,36 @@
       "path": "audio/generated/ui_reward_dismiss.wav",
       "bytes": 35324,
       "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/vault_open_000.ogg",
+      "bytes": 14065,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/vault_open_000.wav",
+      "bytes": 70444,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/vault_open_001.ogg",
+      "bytes": 13589,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/vault_open_001.wav",
+      "bytes": 70444,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/vault_open_002.ogg",
+      "bytes": 14565,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/vault_open_002.wav",
+      "bytes": 70444,
+      "classification": "generated-intermediate"
     },
     {
       "path": "audio/generated/voice_aura_ammo_empty.wav",
@@ -10425,6 +14780,66 @@
       "classification": "generated-intermediate"
     },
     {
+      "path": "audio/generated/water_shower_000.ogg",
+      "bytes": 16285,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/water_shower_000.wav",
+      "bytes": 80044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/water_shower_001.ogg",
+      "bytes": 16536,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/water_shower_001.wav",
+      "bytes": 80044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/water_shower_002.ogg",
+      "bytes": 16391,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/water_shower_002.wav",
+      "bytes": 80044,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/water_slosh_000.ogg",
+      "bytes": 10624,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/water_slosh_000.wav",
+      "bytes": 41644,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/water_slosh_001.ogg",
+      "bytes": 12417,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/water_slosh_001.wav",
+      "bytes": 41644,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/water_slosh_002.ogg",
+      "bytes": 11465,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/water_slosh_002.wav",
+      "bytes": 41644,
+      "classification": "generated-intermediate"
+    },
+    {
       "path": "audio/generated/weapon_dry_fire.wav",
       "bytes": 15920,
       "classification": "runtime-required"
@@ -10442,6 +14857,66 @@
     {
       "path": "audio/generated/xp_tick.wav",
       "bytes": 10628,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/impacts/crystal_shatter_000.ogg",
+      "bytes": 9773,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/impacts/crystal_shatter_000.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/impacts/crystal_shatter_001.ogg",
+      "bytes": 10310,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/impacts/crystal_shatter_001.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/impacts/crystal_shatter_002.ogg",
+      "bytes": 9947,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/impacts/crystal_shatter_002.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/impacts/enemy_break_wall_000.ogg",
+      "bytes": 10804,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/impacts/enemy_break_wall_000.wav",
+      "bytes": 51244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/impacts/enemy_break_wall_001.ogg",
+      "bytes": 11419,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/impacts/enemy_break_wall_001.wav",
+      "bytes": 51244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/impacts/enemy_break_wall_002.ogg",
+      "bytes": 10049,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/impacts/enemy_break_wall_002.wav",
+      "bytes": 51244,
       "classification": "runtime-required"
     },
     {
@@ -10702,6 +15177,96 @@
     {
       "path": "audio/soundtrack-config.json",
       "bytes": 8219,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_ballistic_000.ogg",
+      "bytes": 8029,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_ballistic_000.wav",
+      "bytes": 22444,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_ballistic_001.ogg",
+      "bytes": 7752,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_ballistic_001.wav",
+      "bytes": 22444,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_ballistic_002.ogg",
+      "bytes": 9177,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_ballistic_002.wav",
+      "bytes": 22444,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_chitin_000.ogg",
+      "bytes": 8008,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_chitin_000.wav",
+      "bytes": 25644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_chitin_001.ogg",
+      "bytes": 8081,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_chitin_001.wav",
+      "bytes": 25644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_frost_000.ogg",
+      "bytes": 9115,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_frost_000.wav",
+      "bytes": 25644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_frost_001.ogg",
+      "bytes": 9795,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_frost_001.wav",
+      "bytes": 25644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_heavy_000.ogg",
+      "bytes": 8560,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_heavy_000.wav",
+      "bytes": 25644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_heavy_001.ogg",
+      "bytes": 7846,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/tracers/tracer_flyby_heavy_001.wav",
+      "bytes": 25644,
       "classification": "runtime-required"
     },
     {
@@ -22025,6 +26590,186 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/weapons/weapon_fire_carbine_000.ogg",
+      "bytes": 7896,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_carbine_000.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_carbine_001.ogg",
+      "bytes": 8881,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_carbine_001.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_carbine_002.ogg",
+      "bytes": 8369,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_carbine_002.wav",
+      "bytes": 35244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_cryo_000.ogg",
+      "bytes": 11673,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_cryo_000.wav",
+      "bytes": 41644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_cryo_001.ogg",
+      "bytes": 12671,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_cryo_001.wav",
+      "bytes": 41644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_cryo_002.ogg",
+      "bytes": 11133,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_cryo_002.wav",
+      "bytes": 41644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_railgun_000.ogg",
+      "bytes": 12288,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_railgun_000.wav",
+      "bytes": 48044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_railgun_001.ogg",
+      "bytes": 9419,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_railgun_001.wav",
+      "bytes": 48044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_railgun_002.ogg",
+      "bytes": 13427,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_railgun_002.wav",
+      "bytes": 48044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_shotgun_000.ogg",
+      "bytes": 9930,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_shotgun_000.wav",
+      "bytes": 41644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_shotgun_001.ogg",
+      "bytes": 9422,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_shotgun_001.wav",
+      "bytes": 41644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_shotgun_002.ogg",
+      "bytes": 9939,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_shotgun_002.wav",
+      "bytes": 41644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_smg_000.ogg",
+      "bytes": 9610,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_smg_000.wav",
+      "bytes": 28844,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_smg_001.ogg",
+      "bytes": 8607,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_smg_001.wav",
+      "bytes": 28844,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_smg_002.ogg",
+      "bytes": 9304,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_smg_002.wav",
+      "bytes": 28844,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_tesla_000.ogg",
+      "bytes": 10312,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_tesla_000.wav",
+      "bytes": 41644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_tesla_001.ogg",
+      "bytes": 10377,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_tesla_001.wav",
+      "bytes": 41644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_tesla_002.ogg",
+      "bytes": 10818,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/weapons/weapon_fire_tesla_002.wav",
+      "bytes": 41644,
+      "classification": "runtime-required"
+    },
+    {
       "path": "basis/basis_transcoder.js",
       "bytes": 57529,
       "classification": "unknown"
@@ -22321,7 +27066,7 @@
     },
     {
       "path": "cutscenes/README.md",
-      "bytes": 2170,
+      "bytes": 2623,
       "classification": "runtime-required"
     },
     {
@@ -22342,6 +27087,21 @@
     {
       "path": "cutscenes/cave-reveal.webm",
       "bytes": 3109320,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/credits-terminal-poster.jpg",
+      "bytes": 70206,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/credits-terminal.mp4",
+      "bytes": 9953501,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/credits-terminal.webm",
+      "bytes": 9111111,
       "classification": "runtime-required"
     },
     {
@@ -22615,6 +27375,36 @@
       "classification": "runtime-required"
     },
     {
+      "path": "cutscenes/intro-boot-poster.jpg",
+      "bytes": 64605,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/intro-boot.mp4",
+      "bytes": 11294931,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/intro-boot.webm",
+      "bytes": 10330549,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/intro-mothership-briefing-poster.jpg",
+      "bytes": 133722,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/intro-mothership-briefing.mp4",
+      "bytes": 24475343,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/intro-mothership-briefing.webm",
+      "bytes": 22546762,
+      "classification": "runtime-required"
+    },
+    {
       "path": "cutscenes/poster-art/death-abyss.png",
       "bytes": 2622478,
       "classification": "runtime-required"
@@ -22880,6 +27670,31 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_execution_wall_splatter.png",
+      "bytes": 1837181,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_execution_wall_splatter_a.png",
+      "bytes": 1837181,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_execution_wall_splatter_b.png",
+      "bytes": 1737820,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_execution_wall_splatter_c.png",
+      "bytes": 1784775,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_execution_wall_splatter_d.png",
+      "bytes": 1851719,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_failed_decon_kit.png",
       "bytes": 554588,
       "classification": "runtime-required"
@@ -23070,8 +27885,58 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_pod_312_rupture_splatter.png",
+      "bytes": 1844181,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_pod_312_rupture_splatter_a.png",
+      "bytes": 1844181,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_pod_312_rupture_splatter_b.png",
+      "bytes": 1939390,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_pod_312_rupture_splatter_c.png",
+      "bytes": 1593795,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_pod_312_rupture_splatter_d.png",
+      "bytes": 1688807,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_puddle_slick.png",
       "bytes": 1480339,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_queen_oviposition_pool.png",
+      "bytes": 1787637,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_queen_oviposition_pool_a.png",
+      "bytes": 1787637,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_queen_oviposition_pool_b.png",
+      "bytes": 1705542,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_queen_oviposition_pool_c.png",
+      "bytes": 1643561,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_queen_oviposition_pool_d.png",
+      "bytes": 1695501,
       "classification": "runtime-required"
     },
     {
@@ -23135,6 +28000,56 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_strip_acid_trench.png",
+      "bytes": 1523022,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_acid_trench_a.png",
+      "bytes": 1523022,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_acid_trench_b.png",
+      "bytes": 1176909,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_acid_trench_c.png",
+      "bytes": 1695612,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_acid_trench_d.png",
+      "bytes": 1124248,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_arterial_spray.png",
+      "bytes": 1158294,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_arterial_spray_a.png",
+      "bytes": 1158294,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_arterial_spray_b.png",
+      "bytes": 1638193,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_arterial_spray_c.png",
+      "bytes": 1258346,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_arterial_spray_d.png",
+      "bytes": 1656267,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_strip_cart_ruts.png",
       "bytes": 1176088,
       "classification": "runtime-required"
@@ -23152,6 +28067,31 @@
     {
       "path": "decal_strip_cart_ruts_d.png",
       "bytes": 1409550,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_crawler_acid.png",
+      "bytes": 2111822,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_crawler_acid_a.png",
+      "bytes": 2111822,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_crawler_acid_b.png",
+      "bytes": 1808162,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_crawler_acid_c.png",
+      "bytes": 1819097,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_crawler_acid_d.png",
+      "bytes": 1802875,
       "classification": "runtime-required"
     },
     {
@@ -23195,6 +28135,81 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_strip_exosuit_coolant.png",
+      "bytes": 1937930,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_exosuit_coolant_a.png",
+      "bytes": 1937930,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_exosuit_coolant_b.png",
+      "bytes": 1861287,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_exosuit_coolant_c.png",
+      "bytes": 1844173,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_exosuit_coolant_d.png",
+      "bytes": 1717019,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_frost_heave.png",
+      "bytes": 1387341,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_frost_heave_a.png",
+      "bytes": 1387341,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_frost_heave_b.png",
+      "bytes": 1570096,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_frost_heave_c.png",
+      "bytes": 1244095,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_frost_heave_d.png",
+      "bytes": 1245659,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_high_voltage_scorch.png",
+      "bytes": 1365098,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_high_voltage_scorch_a.png",
+      "bytes": 1365098,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_high_voltage_scorch_b.png",
+      "bytes": 1320673,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_high_voltage_scorch_c.png",
+      "bytes": 1344612,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_high_voltage_scorch_d.png",
+      "bytes": 1252564,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_strip_hive_veins.png",
       "bytes": 1189317,
       "classification": "runtime-required"
@@ -23215,6 +28230,56 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_strip_umbilical_veins.png",
+      "bytes": 1221384,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_umbilical_veins_a.png",
+      "bytes": 1221384,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_umbilical_veins_b.png",
+      "bytes": 1226249,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_umbilical_veins_c.png",
+      "bytes": 1394746,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_umbilical_veins_d.png",
+      "bytes": 1305666,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_viscera_drag.png",
+      "bytes": 1398459,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_viscera_drag_a.png",
+      "bytes": 1398459,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_viscera_drag_b.png",
+      "bytes": 1703103,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_viscera_drag_c.png",
+      "bytes": 1559858,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_viscera_drag_d.png",
+      "bytes": 1637561,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_substation_stencil.png",
       "bytes": 595444,
       "classification": "runtime-required"
@@ -23222,6 +28287,31 @@
     {
       "path": "decal_tallow_symbol.png",
       "bytes": 199998,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_vass_acoustic_diagram.png",
+      "bytes": 2190106,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_vass_acoustic_diagram_a.png",
+      "bytes": 2190106,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_vass_acoustic_diagram_b.png",
+      "bytes": 1488163,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_vass_acoustic_diagram_c.png",
+      "bytes": 1582657,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_vass_acoustic_diagram_d.png",
+      "bytes": 2098661,
       "classification": "runtime-required"
     },
     {
@@ -25342,7 +30432,7 @@
     {
       "path": "hex_decal_cracks.png",
       "bytes": 1610570,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "hex_decal_infestation.png",
@@ -27895,6 +32985,206 @@
       "classification": "runtime-required"
     },
     {
+      "path": "strip_acid_trench_burn.png",
+      "bytes": 1523022,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_acid_trench_burn_a.png",
+      "bytes": 1523022,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_acid_trench_burn_b.png",
+      "bytes": 1176909,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_acid_trench_burn_c.png",
+      "bytes": 1695612,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_acid_trench_burn_d.png",
+      "bytes": 1124248,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_arterial_spray_trail.png",
+      "bytes": 1158294,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_arterial_spray_trail_a.png",
+      "bytes": 1158294,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_arterial_spray_trail_b.png",
+      "bytes": 1638193,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_arterial_spray_trail_c.png",
+      "bytes": 1258346,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_arterial_spray_trail_d.png",
+      "bytes": 1656267,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_crawler_acid_scuttle.png",
+      "bytes": 2111822,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_crawler_acid_scuttle_a.png",
+      "bytes": 2111822,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_crawler_acid_scuttle_b.png",
+      "bytes": 1808162,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_crawler_acid_scuttle_c.png",
+      "bytes": 1819097,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_crawler_acid_scuttle_d.png",
+      "bytes": 1802875,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_exosuit_fuel_coolant_trail.png",
+      "bytes": 1937930,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_exosuit_fuel_coolant_trail_a.png",
+      "bytes": 1937930,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_exosuit_fuel_coolant_trail_b.png",
+      "bytes": 1861287,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_exosuit_fuel_coolant_trail_c.png",
+      "bytes": 1844173,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_exosuit_fuel_coolant_trail_d.png",
+      "bytes": 1717019,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_frost_heave_split.png",
+      "bytes": 1387341,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_frost_heave_split_a.png",
+      "bytes": 1387341,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_frost_heave_split_b.png",
+      "bytes": 1570096,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_frost_heave_split_c.png",
+      "bytes": 1244095,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_frost_heave_split_d.png",
+      "bytes": 1245659,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_high_voltage_scorch.png",
+      "bytes": 1365098,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_high_voltage_scorch_a.png",
+      "bytes": 1365098,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_high_voltage_scorch_b.png",
+      "bytes": 1320673,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_high_voltage_scorch_c.png",
+      "bytes": 1344612,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_high_voltage_scorch_d.png",
+      "bytes": 1252564,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_umbilical_vein_bundle.png",
+      "bytes": 1221384,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_umbilical_vein_bundle_a.png",
+      "bytes": 1221384,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_umbilical_vein_bundle_b.png",
+      "bytes": 1226249,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_umbilical_vein_bundle_c.png",
+      "bytes": 1394746,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_umbilical_vein_bundle_d.png",
+      "bytes": 1305666,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_viscera_drag_chute.png",
+      "bytes": 1398459,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_viscera_drag_chute_a.png",
+      "bytes": 1398459,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_viscera_drag_chute_b.png",
+      "bytes": 1703103,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_viscera_drag_chute_c.png",
+      "bytes": 1559858,
+      "classification": "unknown"
+    },
+    {
+      "path": "strip_viscera_drag_chute_d.png",
+      "bytes": 1637561,
+      "classification": "unknown"
+    },
+    {
       "path": "survivor_vessel.png",
       "bytes": 441016,
       "classification": "unknown"
@@ -27962,7 +33252,7 @@
     {
       "path": "ui/dock/engineer-arms-glass.webp",
       "bytes": 1824,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ui/dock/engineer-arms.webp",
@@ -27972,7 +33262,7 @@
     {
       "path": "ui/dock/engineer-map-glass.webp",
       "bytes": 2222,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ui/dock/engineer-map.webp",
@@ -27982,7 +33272,7 @@
     {
       "path": "ui/dock/engineer-status-glass.webp",
       "bytes": 1598,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ui/dock/engineer-status.webp",
@@ -27997,7 +33287,7 @@
     {
       "path": "ui/dock/scout-arms-glass.webp",
       "bytes": 1360,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ui/dock/scout-arms.webp",
@@ -28007,7 +33297,7 @@
     {
       "path": "ui/dock/scout-map-glass.webp",
       "bytes": 4084,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ui/dock/scout-map.webp",
@@ -28017,7 +33307,7 @@
     {
       "path": "ui/dock/scout-status-glass.webp",
       "bytes": 4250,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ui/dock/scout-status.webp",
@@ -28027,7 +33317,7 @@
     {
       "path": "ui/dock/tank-arms-glass.webp",
       "bytes": 1662,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ui/dock/tank-arms.webp",
@@ -28037,7 +33327,7 @@
     {
       "path": "ui/dock/tank-map-glass.webp",
       "bytes": 4560,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ui/dock/tank-map.webp",
@@ -28047,11 +33337,16 @@
     {
       "path": "ui/dock/tank-status-glass.webp",
       "bytes": 2606,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ui/dock/tank-status.webp",
       "bytes": 39424,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ui/hud/unified-console-frame.svg",
+      "bytes": 2746,
       "classification": "runtime-required"
     }
   ]

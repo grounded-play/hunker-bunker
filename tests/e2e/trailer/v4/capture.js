@@ -265,7 +265,6 @@ export async function captureShot(page, {
             timing.input += t1 - t0;
             const state = await page.evaluate(([dt, probeSrc]) => {
                 const ms = window.__hbVClock.step(dt);
-                // eslint-disable-next-line no-new-func
                 const extra = probeSrc ? new Function(`return (${probeSrc})()`)() : null;
                 return { ms, extra };
             }, [1000 / fps, probe ? String(probe) : null]);

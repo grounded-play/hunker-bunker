@@ -132,7 +132,7 @@ export function installVirtualClockShim() {
         const original = manager.play;
         manager.play = function play(key, options = {}) {
             depth += 1;
-            let result = null;
+            let result;
             try {
                 result = original.call(this, key, options);
             } finally {

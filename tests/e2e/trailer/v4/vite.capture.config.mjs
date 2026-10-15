@@ -18,7 +18,7 @@ export default {
     server: {
         ...(resolved.server || {}),
         hmr: false,
-        watch: { ignored: (p) => /[\/](art|public|scratch|docs|tests|dist|trailer|\.git|node_modules|electron|steam|test-results|playwright-report|\.remember)([\/]|$)/.test(p) },
+        watch: { ignored: (p) => /[/\\](art|public|scratch|docs|tests|dist|trailer|\.git|node_modules|electron|steam|test-results|playwright-report|\.remember)([/\\]|$)/.test(p) },
         port,
         strictPort: true
     }

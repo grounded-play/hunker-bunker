@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
-import { AudioManager, audioCtx } from './audio.js';
+import { AudioManager } from './audio.js';
 
 describe('Room Tone and Ambient Bed System', () => {
     beforeEach(() => {
