@@ -139,6 +139,7 @@ import {
     isSearchableType,
     PROP_INTERACTION_SPECS
 } from './propInteractions.js';
+import { createInteractionVignetteController } from './interactionVignette.js';
 import { resolvePropVariant } from './propVariants.js';
 import { isDynamicPropExperienceType } from './propExperience.js';
 import { applyPropFxQuality, createPropFx, getPropFxProfile, setPropFxQuality, setPropFxViewportHeight } from './propFx.js';
@@ -2460,6 +2461,7 @@ export class ThreeGame {
         this.killedEnemyScatterKeys = new Set();
         this.brokenPropScatterKeys = new Set();
         this.spentPropScatterKeys = new Set();
+        this.interactionVignette = createInteractionVignetteController(this);
         // docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #1 --
         // "environmental" PointLights (terminal/status/beacon/O2-safe/lore-terminal
         // lights, etc, registered via registerEnvLight below) accumulate as the
@@ -11617,7 +11619,8 @@ export class ThreeGame {
             && this.inputEnabled
             && !this.isPlayerDead
             && !this.loadingPaused
-            && !this.hasBlockingGameplayOverlay();
+            && !this.hasBlockingGameplayOverlay()
+            && !this.interactionVignette?.isActive();
     }
 
     hasBlockingGameplayOverlay() {
@@ -26675,6 +26678,9 @@ export class ThreeGame {
                 Math.random
             )
         );
+        if (this.interactionVignette?.isActive()) {
+            this.interactionVignette.interrupt('damage');
+        }
         this.player3dOverlay?.trigger('hit');
         this.markCombatActivity?.('player-damaged');
 
@@ -26939,6 +26945,7 @@ export class ThreeGame {
         this.destroyedWallKeys.clear();
         this.brokenPropScatterKeys = new Set();
         this.spentPropScatterKeys = new Set();
+        this.interactionVignette = createInteractionVignetteController(this);
         this.destroyedExteriorWallKeys?.clear();
         this.fragileLedgeStates?.clear();
         this._activeFragileLedgeKey = null;
@@ -28481,6 +28488,24 @@ export class ThreeGame {
     updatePlayer(delta) {
         if (this.isPlayerDead) {
             this.isMoving = false;
+            return;
+        }
+
+        // Handle active interaction vignette
+        if (this.interactionVignette?.isActive()) {
+            this.isMoving = false;
+            this.interactionVignette.update(delta);
+            this.player3dOverlay?.update(delta, {
+                isFalling: false,
+                isMoving: false,
+                idleActionName: 'idle',
+                isInjured: this.isPlayerInjured(),
+                hasAim: false,
+                moveX: 0,
+                moveZ: 0,
+                aimX: 0,
+                aimZ: 0
+            });
             return;
         }
 

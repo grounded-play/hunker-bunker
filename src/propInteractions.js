@@ -4,6 +4,7 @@
  */
 
 import { applyChitinVulnerability, STATUS_DEFAULTS } from './statusEffects.js';
+import { resolveInteractionVignettePreset } from './interactionVignette.js';
 
 export const BIOMECH_SYNERGY_TUNING = Object.freeze({
     cryoStunRadius: 5.0,
@@ -1648,7 +1649,7 @@ export function findNearestInteractableProp(game, maxDist = 2.5) {
 /**
  * Executes interaction on a prop.
  */
-export function interactWithCustomProp(game, nearestInfo) {
+export function executeCustomPropInteraction(game, nearestInfo) {
     if (!nearestInfo || !nearestInfo.spec || typeof nearestInfo.spec.onInteract !== 'function') {
         return false;
     }
@@ -1673,6 +1674,25 @@ export function interactWithCustomProp(game, nearestInfo) {
         }
     }
     return success;
+}
+
+export function interactWithCustomProp(game, nearestInfo) {
+    if (!nearestInfo || !nearestInfo.spec || typeof nearestInfo.spec.onInteract !== 'function') {
+        return false;
+    }
+    const propType = nearestInfo.sprite?.userData?.type ?? nearestInfo.sprite?.userData?.world3dModelType;
+    const preset = resolveInteractionVignettePreset(propType, nearestInfo.spec);
+    if (game?.interactionVignette && preset && !game.interactionVignette.isActive()) {
+        return game.interactionVignette.startVignette({
+            sprite: nearestInfo.sprite,
+            spec: nearestInfo.spec,
+            preset,
+            onComplete: () => {
+                executeCustomPropInteraction(game, nearestInfo);
+            }
+        });
+    }
+    return executeCustomPropInteraction(game, nearestInfo);
 }
 
 /** Applies the visual/collision portion of a local or replicated interaction. */
