@@ -123,8 +123,8 @@ export class WorldEmitterRuntime {
             ...child,
             origin: transform.position.clone(),
             direction: transform.direction.clone(),
-            volume: entry.profile.volume,
-            payload: entry.profile.payload
+            volume: child.volume ?? entry.profile.volume,
+            payload: child.payload ?? entry.profile.payload
         }));
         for (const child of children) {
             if (child.kind !== 'jet') continue;
@@ -255,12 +255,14 @@ export class WorldEmitterRuntime {
         let geometry;
         if (volume.shape === 'sphere') {
             geometry = new THREE.SphereGeometry(volume.radius, 12, 8);
+        } else if (volume.shape === 'pool') {
+            geometry = new THREE.CylinderGeometry(volume.radius, volume.radius, 0.04, 16);
         } else {
             geometry = new THREE.CapsuleGeometry(volume.radius, Math.max(0.01, volume.length ?? 0.01), 4, 8);
         }
         const volumeMesh = new THREE.Mesh(geometry, material);
         volumeMesh.name = 'world-emitter-debug-volume';
-        if (volume.shape !== 'sphere') volumeMesh.position.y = (volume.length ?? 0) * 0.5;
+        if (!['sphere', 'pool'].includes(volume.shape)) volumeMesh.position.y = (volume.length ?? 0) * 0.5;
         volumeMesh.renderOrder = 1000;
         root.add(volumeMesh);
 

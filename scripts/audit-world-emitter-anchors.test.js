@@ -23,7 +23,7 @@ describe('world emitter anchor audit', () => {
 
     it('keeps every gameplay emitter asset safe through an anchor or explicit fallback', () => {
         const results = auditWorldEmitterAnchors();
-        expect(results).toHaveLength(4);
+        expect(results).toHaveLength(5);
         expect(results.filter((result) => ['missing-profile', 'missing-asset', 'unsafe'].includes(result.status))).toEqual([]);
         expect(results.every((result) => result.status === 'authored' || result.fallback)).toBe(true);
     });

@@ -32,16 +32,23 @@ describe('ThreeGame world emitter payload adapter', () => {
             spawnTextureBurstEffect: vi.fn(),
             spawnPhysicalBurst: vi.fn(),
             spawnToxicSporePuddle: vi.fn(),
+            spawnWorldEmitterPool: vi.fn(() => ({})),
             materializeWorldEmitterDestruction: ThreeGame.prototype.materializeWorldEmitterDestruction
         });
         const count = subject.materializeWorldEmitterDestruction([
             { kind: 'jet', duration: 1.5, origin: { x: 2, z: 3 } },
-            { kind: 'pool', substance: 'bio_slime', radius: 0.8, origin: { x: 4, z: 5 } }
+            { kind: 'pool', substance: 'bio_slime', radius: 0.8, origin: { x: 4, z: 5 } },
+            { kind: 'pool', substance: 'coolant', radius: 1.2, origin: { x: 6, z: 7 } }
         ]);
-        expect(count).toBe(2);
+        expect(count).toBe(3);
         expect(subject.spawnTextureBurstEffect).toHaveBeenCalled();
         expect(subject.spawnPhysicalBurst).toHaveBeenCalledWith(2, 3, expect.any(Object));
         expect(subject.spawnToxicSporePuddle).toHaveBeenCalledWith(4, 5, false);
+        expect(subject.spawnWorldEmitterPool).toHaveBeenCalledWith(
+            expect.objectContaining({ substance: 'coolant', radius: 1.2 }),
+            6,
+            7
+        );
     });
 
     it('presents distinct fungal telegraph and active phases', () => {

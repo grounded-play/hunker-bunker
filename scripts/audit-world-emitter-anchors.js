@@ -14,6 +14,7 @@ export const EMITTER_ASSET_CANDIDATES = Object.freeze([
     { type: 'prop_pipe_rupture', asset: 'public/3d/runtime/new3ds/prop_pipe_rupture.glb' },
     { type: 'geo_steam_manifold_actuator', asset: 'public/3d/runtime/new3ds/geo_steam_manifold_actuator.glb' },
     { type: 'decon_exosuit_scrubber_station', asset: 'public/3d/runtime/new3ds/decon_exosuit_scrubber_station.glb' },
+    { type: 'prop_coolant_drum_leaking_pool', asset: 'public/3d/runtime/new3ds/prop_coolant_drum_leaking_pool.glb' },
     { type: 'fungal_spore_vent', asset: 'public/3d/runtime/new3ds/fungal_spore_vent.glb' }
 ]);
 

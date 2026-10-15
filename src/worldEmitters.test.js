@@ -106,5 +106,15 @@ describe('world emitter profiles and state', () => {
         expect(destroyWorldEmitterState(spore)).toEqual([
             expect.objectContaining({ id: 'spore:c:destroyed:pool:0', kind: 'pool', substance: 'bio_slime' })
         ]);
+
+        const coolant = createWorldEmitterState(getWorldEmitterProfile('prop_coolant_drum_leaking_pool'), { id: 'coolant:c' });
+        expect(destroyWorldEmitterState(coolant)).toEqual([
+            expect.objectContaining({
+                id: 'coolant:c:destroyed:pool:0',
+                kind: 'pool',
+                substance: 'coolant',
+                radius: 1.2
+            })
+        ]);
     });
 });

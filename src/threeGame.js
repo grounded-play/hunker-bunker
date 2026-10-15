@@ -25718,6 +25718,8 @@ export class ThreeGame {
             } else if (child.kind === 'pool' && child.substance === 'bio_slime') {
                 this.spawnToxicSporePuddle?.(x, z, (child.radius ?? 0) > 1);
                 created += 1;
+            } else if (child.kind === 'pool') {
+                if (this.spawnWorldEmitterPool?.(child, x, z)) created += 1;
             }
         }
         return created;
@@ -43203,6 +43205,55 @@ export class ThreeGame {
                 mat.dispose();
             }
         });
+    }
+
+    spawnWorldEmitterPool(descriptor, x, z) {
+        if (!descriptor?.id || !descriptor?.substance) return null;
+        const duration = Math.max(0.1, Number(descriptor.duration) || 4);
+        const radius = Math.max(0.1, Number(descriptor.radius) || 0.5);
+        const nowSeconds = performance.now() / 1000;
+        const trackSurface = descriptor.trackSurface
+            ?? (descriptor.substance === 'bio_slime' ? 'slime' : 'water');
+        const pool = this.worldPoolSystem?.add({
+            id: descriptor.id,
+            sourceId: descriptor.sourceId ?? null,
+            substance: descriptor.substance,
+            x,
+            y: 0.065,
+            z,
+            radius,
+            payload: descriptor.payload ?? [],
+            tickInterval: descriptor.tickInterval ?? descriptor.volume?.tickInterval ?? 0.75,
+            trackSurface,
+            createdAt: nowSeconds,
+            expiresAt: nowSeconds + duration
+        }, { merge: false });
+        if (!pool) return null;
+
+        const baseMaterial = this.scatterMaterials?.scatter_slime_puddle;
+        if (!baseMaterial?.clone || !this.scene?.add) return pool;
+        const colors = { coolant: 0x58c8ff, water: 0x67d7ef, decon_foam: 0xb6fff0, fuel: 0xf59e0b };
+        const material = baseMaterial.clone();
+        material.color.setHex(colors[descriptor.substance] ?? 0x8dd5ad);
+        material.opacity = 0.78;
+        const sprite = new THREE.Sprite(material);
+        sprite.center.set(0.5, 0.5);
+        sprite.position.set(x, 0.065, z);
+        sprite.scale.set(radius * 2, radius * 2, 1);
+        this.scene.add(sprite);
+        registerTransientEffect(this, {
+            mesh: sprite,
+            age: 0,
+            duration,
+            update: (_dt, age) => {
+                material.opacity = 0.78 * (1 - age / duration);
+            },
+            dispose: () => {
+                this.worldPoolSystem?.remove(pool);
+                material.dispose();
+            }
+        });
+        return pool;
     }
 
     // Snail slime, tinted by type; bosses leave a wider, longer wake. Pooled

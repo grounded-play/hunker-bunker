@@ -57,6 +57,21 @@ export const PROP_EMITTER_PROFILES = Object.freeze({
         ],
         onDestroy: { kind: 'stop' }
     }),
+    prop_coolant_drum_leaking_pool: profile({
+        substance: 'coolant',
+        source: { anchor: 'FX_EMITTER_00', fallbackDirection: [0, 1, 0] },
+        trigger: { kind: EMITTER_TRIGGER.AMBIENT, startsEnabled: true },
+        volume: { shape: 'pool', radius: 0.8, tickInterval: 1.2 },
+        payload: [{ kind: 'damage', amount: 1, reason: 'cryo-spill' }],
+        onDestroy: {
+            kind: 'spill',
+            substance: 'coolant',
+            radius: 1.2,
+            duration: 6,
+            tickInterval: 1.2,
+            payload: [{ kind: 'damage', amount: 1, reason: 'cryo-spill' }]
+        }
+    }),
     fungal_spore_vent: profile({
         substance: 'spores',
         source: { fallbackDirection: [0, 1, 0] },

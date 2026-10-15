@@ -85,7 +85,7 @@ Status: green on `dev/sprint-53`.
 
 Open work retained from the plan:
 
-1. author `FX_EMITTER_00` transforms in the four proof assets currently covered
+1. author `FX_EMITTER_00` transforms in the five proof assets currently covered
    by explicit fallback directions;
 2. add spent-state destruction variants and broaden destruction transfers beyond
    the initial steam rupture and bio-spill paths;
@@ -176,6 +176,25 @@ Status: implemented for registered dynamic pools.
   the legacy slime fallback used by older tests/callers.
 - Focused verification: 4 files passed, 24 tests passed; focused ESLint and
   `git diff --check` passed.
+
+### 2026-10-15 — Slices 3B/4C: coolant source and transferred spill
+
+Status: implemented for the leaking coolant drum.
+
+- `prop_coolant_drum_leaking_pool` is now an ambient pool-shaped source that
+  applies bounded cryo damage through the same emitter payload path as steam.
+- Destroying the drum snapshots a stable child ID and transfers its declared
+  coolant payload into a larger six-second world pool after the prop hierarchy
+  is removed; the existing one-shot freeze burst/enemy reaction remains intact.
+- Added generic non-bio pool materialization with substance color, declared
+  footprint surface, expiry, fade/disposal, and stable registry identity.
+- Pool destruction descriptors can override their source payload and cadence,
+  which keeps future clean water, fuel, and med-fluid spills data-driven.
+- Added coolant to the outlet audit; all five catalog sources are safe through
+  explicit fallbacks, while strict mode continues to identify missing authored
+  anchors.
+- Focused verification: 6 files passed, 33 tests passed; asset audit, focused
+  ESLint, and `git diff --check` passed.
 
 ## Decision summary
 
