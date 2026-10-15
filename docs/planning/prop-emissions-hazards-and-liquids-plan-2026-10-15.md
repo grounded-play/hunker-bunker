@@ -58,6 +58,17 @@ Status: implemented for the pipe/manifold vertical slice.
   tests cover damage routing, HP-independent infection, healing, poison, cleanse,
   and inactive-Act-2 guards.
 
+### 2026-10-15 — Slice 4A: bounded world-pool registry
+
+Status: implemented with compatibility adapters.
+
+- Added stable pool IDs, duplicate suppression, compatible-pool merging, bounded
+  growth, capacity eviction, TTL expiry, containment queries, and teardown.
+- Existing toxic spore puddles now register through `WorldPoolSystem`; the stable
+  `dynamicPuddles` array remains as a compatibility view for track and relic code.
+- Visual lifetime still owns the current toxic-puddle fade, and unregisters the
+  matching gameplay pool on disposal.
+
 ## Decision summary
 
 Build one data-driven `WorldEmitterSystem` for prop-attached emissions and liquid

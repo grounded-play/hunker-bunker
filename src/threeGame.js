@@ -109,6 +109,7 @@ import { PickupMagnet, PickupComboTracker } from './lootJuice.js';
 import { BiomeAtmosphereSystem } from './ambientDrift.js';
 import { AmbientVentSystem, FloorFogSystem } from './ambientVentsAndFog.js';
 import { WorldEmitterRuntime } from './worldEmitterRuntime.js';
+import { WorldPoolSystem } from './worldPools.js';
 import { buildCliffPathGlowBatch } from './cliffPathGlow.js';
 import { cameraFrustum, stepMixer } from './mixerCulling.js';
 import { KillstreakFeedbackSystem } from './gameplayTactileVfx.js';
@@ -2512,7 +2513,9 @@ export class ThreeGame {
             puddleTimer: 0.35,
             activeRainPuddles: 0
         };
-        this.dynamicPuddles = [];
+        this.worldPoolSystem = new WorldPoolSystem();
+        // Compatibility view for track/relic systems while pool callers migrate.
+        this.dynamicPuddles = this.worldPoolSystem.pools;
         this.isMoving = false;
         this.playerForwardDir = new THREE.Vector2(0, 1);
         this._playerForwardDirTarget = new THREE.Vector2(0, 1);
@@ -27079,6 +27082,7 @@ export class ThreeGame {
         if (resetRunState) this.resetRunDrops();
         this.ambientVentSystem?.clear();
         this.worldEmitterRuntime?.clear();
+        this.worldPoolSystem?.clear();
         this.floorFogSystem?.clear();
         this.resetVitalsForRun({ emit: false });
         this.resetWeaponState({ emit: false });
@@ -43073,8 +43077,19 @@ export class ThreeGame {
         mat.color.setHex(0x55ff55); // neon toxic green
         mat.opacity = 0.85;
         const damageRadius = isLarge ? 1.1 : 0.45;
-        const footprintZone = { x, z, radius: damageRadius, active: true };
-        this.dynamicPuddles.push(footprintZone);
+        const footprintZone = this.worldPoolSystem?.add({
+            id: `toxic-spore:${x.toFixed(2)}:${z.toFixed(2)}:${performance.now().toFixed(1)}`,
+            sourceId: null,
+            substance: 'bio_slime',
+            x,
+            y: 0.06,
+            z,
+            radius: damageRadius,
+            payload: [{ kind: 'poison', duration: 3 }],
+            trackSurface: 'slime',
+            createdAt: performance.now() / 1000
+        }, { merge: false }) ?? { x, z, radius: damageRadius, active: true };
+        if (!this.worldPoolSystem && !this.dynamicPuddles.includes(footprintZone)) this.dynamicPuddles.push(footprintZone);
         globalThis.window?.AudioManager?.play?.('enemy_attack_sporesnail', (this.audioAt?.(x, z, { volume: isLarge ? 0.26 : 0.16, playbackRate: isLarge ? 0.8 : 1.1 }) ?? { volume: isLarge ? 0.26 : 0.16 }));
         
         const sprite = new THREE.Sprite(mat);
@@ -43110,9 +43125,11 @@ export class ThreeGame {
                 }
             },
             dispose: () => {
-                footprintZone.active = false;
-                const idx = this.dynamicPuddles.indexOf(footprintZone);
-                if (idx !== -1) this.dynamicPuddles.splice(idx, 1);
+                if (!this.worldPoolSystem?.remove(footprintZone)) {
+                    footprintZone.active = false;
+                    const idx = this.dynamicPuddles.indexOf(footprintZone);
+                    if (idx !== -1) this.dynamicPuddles.splice(idx, 1);
+                }
                 mat.dispose();
             }
         });
@@ -47602,6 +47619,8 @@ export class ThreeGame {
         this.ambientVentSystem = null;
         this.worldEmitterRuntime?.clear();
         this.worldEmitterRuntime = null;
+        this.worldPoolSystem?.clear();
+        this.worldPoolSystem = null;
         this.floorFogSystem?.dispose();
         this.floorFogSystem = null;
         this.pointAudioEmitters?.dispose?.();
