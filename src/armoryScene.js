@@ -251,6 +251,11 @@ export async function createArmoryScene(canvas) {
 
     let currentOverlay = null;
     let activeClass = 'SCOUT';
+    // The class most recently asked for. activeClass changes only when a load
+    // finishes, so reloads for a new weapon or charm used to ask for the class
+    // still on screen and cancel a newer class load: Scout -> Armory -> back ->
+    // Tank -> Armory showed the Scout holding the Tank's gun (S53-03).
+    let requestedClass = 'SCOUT';
     let loadGen = 0;
 
     // Operator Polish (colorway) and the shoulder-patch decal are both real,
@@ -284,6 +289,7 @@ export async function createArmoryScene(canvas) {
         const normalized = ['SCOUT', 'TANK', 'ENGINEER'].includes(String(classType).toUpperCase())
             ? String(classType).toUpperCase()
             : 'SCOUT';
+        requestedClass = normalized;
         const activeArch = currentArchetypeId || DEFAULT_CLASS_ARCHETYPES[normalized.toLowerCase()] || 'talon';
         const configs = {
             SCOUT: {
@@ -754,7 +760,7 @@ export async function createArmoryScene(canvas) {
             await loadOperatorModel(classType, chassisSkinId);
             // updateFromLoadout owns weapon selection; a late operator load must not reset it.
         },
-        async setChassisSkin(chassisSkinId, classType = activeClass) {
+        async setChassisSkin(chassisSkinId, classType = requestedClass) {
             await loadOperatorModel(classType, chassisSkinId);
         },
         async setWeapon(archetypeId, skinItemdefId) {
@@ -762,14 +768,14 @@ export async function createArmoryScene(canvas) {
             currentSkinItemdefId = skinItemdefId;
             await loadWeaponAsset(archetypeId, skinItemdefId);
             if (currentOverlay) {
-                await loadOperatorModel(activeClass, currentChassisSkinId);
+                await loadOperatorModel(requestedClass, currentChassisSkinId);
             }
         },
         async setCharm(charmItemdefId) {
             currentCharmId = charmItemdefId;
             await loadCharmAsset(charmItemdefId);
             if (currentOverlay) {
-                await loadOperatorModel(activeClass, currentChassisSkinId);
+                await loadOperatorModel(requestedClass, currentChassisSkinId);
             }
         },
         async setRigModule(slot, modItemdefId) {
@@ -811,6 +817,10 @@ export async function createArmoryScene(canvas) {
         },
         getOperatorRoot() {
             return currentOverlay?.root ?? null;
+        },
+        // Tooling: the class of the operator on screen, and the one asked for.
+        getOperatorClass() {
+            return { shown: activeClass, requested: requestedClass };
         },
         updateFromLoadout(loadoutManager, classType = activeClass) {
             const cls = String(classType).toLowerCase();

@@ -9643,6 +9643,8 @@ function ensureArmoryInitialized() {
             const hudContainer = document.getElementById('armory-hud-overlay');
             const { createArmoryScene } = await import('./src/armoryScene.js');
             armorySceneInstance = await createArmoryScene(canvas);
+            // Tooling and probes read the bench like window.game / window.loadout.
+            window.armoryScene = armorySceneInstance;
             // setOperatorPolish/setDecal are already wired to the in-run
             // player and (polish only) the title-screen hero preview -- the
             // Armory's own operator preview just never got the same calls
@@ -9699,6 +9701,7 @@ function closeArmoryScreen({ embark }) {
             // menu kept a hidden canvas rendering and retained its textures/geometry.
             armorySceneInstance?.dispose?.();
             armorySceneInstance = null;
+            window.armoryScene = null;
             armoryUiInstance = null;
             armoryInitPromise = null;
             if (embark) {
