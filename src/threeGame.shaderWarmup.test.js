@@ -36,7 +36,12 @@ describe('shader warm-up', () => {
         expect(calls).toContain('composer.render');
     });
 
-    it('prewarms direct no-shadow fallback before restoring normal gameplay', async () => {
+    // QA 2026-10-15: compiling a direct, shadowless variant of every material
+    // first doubled the warm-up (about 130 programs nothing draws, ~0.45 s each
+    // on Windows/D3D11). Adaptive quality never bypasses the composer or turns
+    // shadows off (owner, 2026-08-26 and 2026-09-25), so only the variant
+    // gameplay draws is compiled.
+    it('compiles only the composer variant with the configured shadows', async () => {
         const { game, calls } = makeHarness('gameplay');
         game.renderer.compile = () => calls.push(`compile:${game.renderer.shadowMap.enabled}`);
         game.renderer.render = () => calls.push(`renderer.render:${game.renderer.shadowMap.enabled}`);
@@ -45,8 +50,6 @@ describe('shader warm-up', () => {
         await game.warmUpShaderPrograms();
 
         expect(calls).toEqual([
-            'compile:false',
-            'renderer.render:false',
             'compile:true',
             'composer.render:true',
             'composer.render:true'
@@ -115,7 +118,7 @@ describe('shader warm-up', () => {
         game.renderer.setRenderTarget = (target) => { currentTarget = target; };
         game.renderer.compileAsync = vi.fn(async () => { targets.push(currentTarget); });
         await game.warmUpShaderPrograms();
-        expect(targets).toEqual([null, composerTarget]);
+        expect(targets).toEqual([composerTarget]);
         expect(currentTarget).toBe(initialTarget);
         expect(game.renderer.shadowMap.enabled).toBe(true);
     });

@@ -209,3 +209,59 @@ describe('env light budget', () => {
         expect(game.world3dPropExperiences.size).toBe(0);
     });
 });
+
+// QA 2026-10-15 (docs/planning/qa-2026-10-15-pve-coop-session.md): 32-38 s
+// Windows freezes. The startup warm-up compiled every material for 25 point
+// lights; then three camp beacons, the bed install socket light and the O2
+// indicator light (all added straight to the scene, outside the pool) took the
+// count to 29, and every material in view recompiled. A retry dipped to 26 and
+// back. These sources now go through the pool, so the count never moves.
+describe('scene lights outside the pool', () => {
+    let game;
+    beforeEach(() => {
+        game = makeGame();
+        Object.assign(game, {
+            performanceProfile: 'gameplay',
+            carryState: { installed: [] },
+            getFirstNightBasePlan: () => ({ installSocket: { transform: { x: 2, z: 3, yaw: 0 } } }),
+            getTerrainHeightAt: () => 0,
+            updateBaseAtmosphere: () => {},
+            registerCampLights: ThreeGame.prototype.registerCampLights
+        });
+        game._ensureEnvLightPool();
+    });
+
+    const directLights = (scene) => {
+        const lights = [];
+        scene.traverseVisible((o) => { if (o.isLight && !o.userData?.isEnvLightSlot) lights.push(o); });
+        return lights;
+    };
+
+    it('registers a light once however often it is offered', () => {
+        const light = new THREE.PointLight(0xffffff, 1, 4);
+        game.scene.add(light);
+        game.registerEnvLight(light);
+        game.registerEnvLight(light);
+        expect(game.envDynamicLights.filter((l) => l === light)).toHaveLength(1);
+    });
+
+    it('lights the bed install socket and the O2 indicator through the pool', () => {
+        ThreeGame.prototype.setupBedInstallSocketVisual.call(game);
+        ThreeGame.prototype.setupBaseAtmosphereIndicator.call(game);
+        expect(game.bedInstallSocketVisual.visible).toBe(true);
+        expect(game.baseAtmosphereIndicator.visible).toBe(true);
+        expect(directLights(game.scene)).toEqual([]);
+        expect(game.envDynamicLights).toContain(game.bedInstallSocketVisual.userData.light);
+        expect(game.envDynamicLights).toContain(game.baseAtmosphereIndicator.userData.statusLight);
+    });
+
+    it('lights camp beacons through the pool', async () => {
+        const { SurvivorCamp } = await import('./camp.js');
+        const camp = new SurvivorCamp(game.scene, { id: 'camp_a', label: 'CAMP', playerType: 'SCOUT' });
+        camp.reveal(4, 4, 0);
+        game.registerCampLights(camp);
+        expect(camp.beacon).toBeTruthy();
+        expect(directLights(game.scene)).toEqual([]);
+        expect(game.envDynamicLights).toContain(camp.beacon);
+    });
+});

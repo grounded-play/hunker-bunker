@@ -5141,6 +5141,10 @@ export class ThreeGame {
         }
         root.visible = this.performanceProfile === 'gameplay' && !installedCot(this.carryState);
         this.scene.add(root);
+        // Through the fixed pool: lit straight into the scene, the socket's
+        // light changed the point-light count every lit shader is compiled for
+        // (QA 2026-10-15, 32-38 s freezes on Windows).
+        this.registerEnvLight?.(root.userData.light);
         this.bedInstallSocketVisual = root;
     }
 
@@ -5166,6 +5170,7 @@ export class ThreeGame {
         root.rotation.y = socket.yaw ?? 0;
         root.visible = this.performanceProfile === 'gameplay';
         this.scene.add(root);
+        this.registerEnvLight?.(root.userData.statusLight);
         this.baseAtmosphereIndicator = root;
         this.updateBaseAtmosphere?.(0, performance.now());
     }
@@ -7121,6 +7126,13 @@ export class ThreeGame {
         // PvP removes the rival; co-op keeps the downed body beside the box.
         if (!keepBody) remote.mesh.visible = false;
         return marker;
+    }
+
+    // Camp beacons light through the fixed pool, like every world light: added
+    // straight to the scene they arrived after the startup warm-up and left
+    // again on a retry, recompiling every lit material both times.
+    registerCampLights(camp) {
+        if (camp?.beacon) this.registerEnvLight?.(camp.beacon);
     }
 
     clearRemotePlayerDeathMarker(remote) {
@@ -20659,6 +20671,7 @@ export class ThreeGame {
             // not, reanchorUnanchoredCamps() fixes it once the chunk arrives.
             const ground = this.sampleTerrainHeight?.(x, z) ?? { height: 0, anchored: false };
             camp.reveal(x, z, ground.height);
+            this.registerCampLights(camp);
             camp._groundAnchored = ground.anchored;
             camp.setPerimeterAnchor?.(this.getTerritoryRoomCenter?.(record.id, 'perimeter'));
             camp.setLevel(record.level);
@@ -43655,27 +43668,22 @@ export class ThreeGame {
         };
 
         try {
-            // Prewarm the exact variant selected later by adaptive mode. Both
-            // shadowMapEnabled and canvas-vs-composer output are shader cache
-            // keys; doing this behind the loader prevents the quality drop from
-            // compiling every visible material on an already-slow frame.
-            if (shadowMap) shadowMap.enabled = false;
-            await prepare('direct-compile', () => compile());
-            await prepare('direct-render', () => this.renderer.render(this.scene, this.camera));
-
+            // Compile only the variant gameplay draws: shadowMapEnabled and
+            // canvas-vs-composer output are both program cache keys. Adaptive
+            // quality never bypasses the composer or turns shadows off (owner,
+            // 2026-08-26 and 2026-09-25), so a direct, shadowless pass here
+            // compiled about 130 programs nothing draws -- half of every
+            // warm-up, ~0.45 s each on Windows/D3D11 (QA 2026-10-15).
+            if (shadowMap) shadowMap.enabled = configuredShadows;
             if (configuredPostprocessing) {
-                if (shadowMap) shadowMap.enabled = configuredShadows;
                 await prepare('composer-compile', () => compile(this.composer.readBuffer ?? null));
                 // Twice: the composer ping-pongs between two render targets, so
                 // one pass can leave its second target's variants cold.
                 await prepare('composer-render-1', () => this.composer.render());
                 await prepare('composer-render-2', () => this.composer.render());
-            } else if (configuredShadows) {
-                // A direct-render gameplay profile with shadows is distinct
-                // from the adaptive direct/no-shadow variant too.
-                if (shadowMap) shadowMap.enabled = true;
-                await prepare('shadow-compile', () => compile());
-                await prepare('shadow-render', () => this.renderer.render(this.scene, this.camera));
+            } else {
+                await prepare('direct-compile', () => compile());
+                await prepare('direct-render', () => this.renderer.render(this.scene, this.camera));
             }
         } finally {
             if (shadowMap) {
@@ -43695,6 +43703,7 @@ export class ThreeGame {
     // copied into a fixed-size pool of real lights each budget tick. See
     // _ensureEnvLightPool() for why the pool has to be fixed-size.
     registerEnvLight(light) {
+        if (!light || this.envDynamicLights.includes(light)) return light;
         this.envDynamicLights.push(light);
         light.userData.envLightEnabled = light.visible !== false;
         light.visible = false;
