@@ -38585,8 +38585,12 @@ export class ThreeGame {
 
         // Architectural kit entries are GLB-only: they intentionally have no
         // scatter material. This lightweight scene anchor lets the normal
-        // chunk lifecycle own them while the registered model loads.
-        if (isWorld3dOnlyPlacementType(placement.type)) {
+        // chunk lifecycle own them while the registered model loads. So does
+        // any other registered model that ships without a 2D sprite: room
+        // population picked those (vaccine alembic, ossuary anvil, armor
+        // forge, ...) and every one was silently dropped (2026-10-15 walk).
+        if (isWorld3dOnlyPlacementType(placement.type)
+            || (!this.scatterMaterials?.[placement.type] && hasWorld3dModel(world3dModelTypeFor(placement.type)))) {
             const anchor = new THREE.Object3D();
             const isDestructibleProp = placement.type.startsWith('prop_');
             const propBehavior = getPropBehavior(placement.type);

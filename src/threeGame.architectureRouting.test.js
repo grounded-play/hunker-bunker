@@ -31,6 +31,41 @@ describe('ThreeGame architectural placement routing', () => {
         }
     );
 
+    // 2026-10-15 walk: room population asked for these story models and every
+    // one was dropped, because they ship as GLBs with no 2D sprite.
+    it.each(['tallow_vaccine_alembic', 'carapace_ossuary_anvil', 'tank_reactive_armor_forge', 'vass_translation_phonograph'])(
+        'places the registered model %s in 3D even though it has no sprite',
+        (type) => {
+            const fakeGame = { scatterMaterials: {}, scatterTextures: {}, deferWorld3dReplacement: vi.fn() };
+            const anchor = ThreeGame.prototype.createScatterInstance.call(fakeGame, {
+                type, x: 4, z: 6, scale: 1, rotation: 0, elevation: 0, scatterKey: `test:${type}`
+            });
+            expect(anchor).not.toBeNull();
+            expect(anchor.userData.isWorld3dOnly).toBe(true);
+            expect(fakeGame.deferWorld3dReplacement).toHaveBeenCalledWith(anchor, type);
+        }
+    );
+
+    it('keeps the sprite path for a model that has its own sprite, and still drops unknown types', () => {
+        const spriteMaterial = { clone: () => ({}) };
+        const fakeGame = {
+            scatterMaterials: { prop_bunker_supplies: spriteMaterial },
+            scatterTextures: {},
+            hashTile: () => 1,
+            isCrawler: () => false,
+            isSentinel: () => false,
+            isEnemyType: () => false,
+            deferWorld3dReplacement: vi.fn()
+        };
+        const sprite = ThreeGame.prototype.createScatterInstance.call(fakeGame, {
+            type: 'prop_bunker_supplies', x: 1, z: 1, scale: 1, rotation: 0, elevation: 0, scatterKey: 'test:supplies'
+        });
+        expect(sprite?.isSprite).toBe(true);
+        expect(ThreeGame.prototype.createScatterInstance.call(fakeGame, {
+            type: 'not_a_registered_model', x: 1, z: 1, scale: 1, rotation: 0, elevation: 0, scatterKey: 'test:none'
+        })).toBeNull();
+    });
+
     it('creates an in-world 3D anchor when room generation places an architectural piece', async () => {
         const { planRoomPopulation } = await import('./roomPopulation.js');
         const grid = Array.from({ length: 7 }, () => Array(7).fill('.'));

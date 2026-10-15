@@ -106,7 +106,7 @@ describe('CATHEDRAL_ROOM_BLUEPRINTS', () => {
         expect(computeApproachPoint(stasis)).toEqual({ x: 2, y: 4 });
         expect(stasis.signatureAnchorId).toBe('chrysalis_pod_console');
         expect(stasis.interactionAnchors).toContainEqual(expect.objectContaining({
-            id: 'chrysalis_pod_console', type: 'prop_icey_thermal_pod', x: 7, y: 2
+            id: 'chrysalis_pod_console', type: 'corp_cryo_transport_coffin', x: 7, y: 2
         }));
         expect(stasis.structuralAnchors.every((anchor) => stasis.pattern[anchor.y][anchor.x] === '#')).toBe(true);
         expect(stasis.rewardAnchors[0]).toMatchObject({ x: 11, y: 6 });
@@ -145,7 +145,7 @@ describe('CATHEDRAL_ROOM_BLUEPRINTS', () => {
         expect(ward.signatureAnchorId).toBe('surgical_slab_controls');
         expect(ward.structuralAnchors.every((anchor) => ward.pattern[anchor.y][anchor.x] === '#')).toBe(true);
         expect(ward.interactionAnchors).toContainEqual(expect.objectContaining({
-            id: 'surgical_slab_controls', type: 'prop_medical_bed', x: 5, y: 5
+            id: 'surgical_slab_controls', type: 'corp_dissection_gurney', x: 5, y: 5
         }));
         expect(ward.interactionAnchors).toContainEqual(expect.objectContaining({
             id: 'fabricator_ward_terminal', type: 'prop_fabricator_workstation', x: 14, y: 5

@@ -131,7 +131,7 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
             { id: 'weapon_rack_a', type: 'prop_security_locker', x: 5, y: 2 },
             { id: 'weapon_rack_b', type: 'prop_security_locker', x: 5, y: 6 }
         ],
-        interactionAnchors: [{ id: 'armory_lock', type: 'base_console', x: 3, y: 3 }],
+        interactionAnchors: [{ id: 'armory_lock', type: 'vesper_ordnance_disarm_table', x: 3, y: 3 }],
         signatureAnchorId: 'ammo_crate',
         compassAnchors: { approach: 'entry', objective: 'armory_lock' },
         coverZones: [{ x: 5, y: 2, w: 1, h: 5 }, { x: 5, y: 4, w: 6, h: 1 }],
@@ -174,7 +174,7 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         tierEligibility: [1, 2, 3],
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['objective', 'shipGoalObjective'],
-        structuralAnchors: [{ id: 'scrubber_column', type: 'prop_conduit_hub', x: 6, y: 3 }],
+        structuralAnchors: [{ id: 'scrubber_column', type: 'evac_cabin_co2_scrubber', x: 6, y: 3 }],
         // 'o2_control' matches src/ringManifest.js's MANDATORY_SHIP_GOALS
         // objectiveAnchorId for the o2Bubble goal exactly — this is the
         // ship-critical objective the manifest layer resolves by that id.
@@ -232,7 +232,7 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         tierEligibility: [1, 2, 3, 4],
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['support', 'questDestination'],
-        structuralAnchors: [{ id: 'fabricator_bench', type: 'prop_engineering_bench', x: 7, y: 4 }],
+        structuralAnchors: [{ id: 'fabricator_bench', type: 'engineer_robotic_welding_arm', x: 7, y: 4 }],
         // prop_fabricator_workstation: dedicated signature sprite,
         // replacing the placeholder 'console' type that resolved to no
         // texture.
@@ -290,10 +290,10 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         roles: ['challenge', 'questDestination'],
         structuralAnchors: [],
         interactionAnchors: [
-            { id: 'routing_node_a', type: 'prop_cyber_junction', x: 4, y: 5 },
-            { id: 'routing_node_b', type: 'prop_cyber_junction', x: 13, y: 5 },
-            { id: 'routing_node_c', type: 'prop_cyber_junction', x: 8, y: 2 },
-            { id: 'routing_node_d', type: 'prop_cyber_junction', x: 8, y: 8 }
+            { id: 'routing_node_a', type: 'life_transformer_bank', x: 4, y: 5 },
+            { id: 'routing_node_b', type: 'life_transformer_bank', x: 13, y: 5 },
+            { id: 'routing_node_c', type: 'life_transformer_bank', x: 8, y: 2 },
+            { id: 'routing_node_d', type: 'life_transformer_bank', x: 8, y: 8 }
         ],
         signatureAnchorId: 'routing_node_a',
         compassAnchors: { approach: 'entry', objective: 'routing_node_a' },
@@ -573,12 +573,10 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['ringCrossing'],
         structuralAnchors: [{ id: 'flank_pillar_a', type: 'prop_biomech_pillar_left', x: 4, y: 5 }, { id: 'flank_pillar_b', type: 'prop_biomech_pillar_right', x: 13, y: 5 }],
-        // 'base_console' is a real connected 3D GLB
-        // (public/3d/runtime/console.glb); the placeholder 'console' type
-        // resolved to no texture. No dedicated gate-control sprite exists
-        // yet — a natural next asset (e.g. prop_hydraulic_piston_actuator
-        // per docs/sprint-23-room-juice-and-dressing-assets.md).
-        interactionAnchors: [{ id: 'gate_control', type: 'base_console', x: 8, y: 7 }],
+        // The hydraulic manifold works the gate. 'base_console' never drew
+        // here (no sprite, so the placement was dropped) and would now read
+        // as the ship's shop console (2026-10-15 activation pass).
+        interactionAnchors: [{ id: 'gate_control', type: 'ind_hydraulic_manifold', x: 8, y: 7 }],
         signatureAnchorId: 'gate_control',
         compassAnchors: { approach: 'approach', objective: 'gate_control' },
         coverZones: [{ x: 3, y: 4, w: 2, h: 3 }, { x: 12, y: 4, w: 2, h: 3 }],
@@ -639,11 +637,11 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         biomeEligibility: ['active', 'cryo'],
         roles: ['questDestination', 'objective'],
         structuralAnchors: [
-            { id: 'vent_stack_a', type: 'prop_conduit_hub', x: 8, y: 3 },
-            { id: 'vent_stack_b', type: 'prop_conduit_hub', x: 8, y: 7 }
+            { id: 'vent_stack_a', type: 'geo_pressure_relief_siren', x: 8, y: 3 },
+            { id: 'vent_stack_b', type: 'prop_exhaust_blower_fan_hood', x: 8, y: 7 }
         ],
         interactionAnchors: [
-            { id: 'reactor_vent_control', type: 'prop_valve_wheel_fused', x: 4, y: 5 }
+            { id: 'reactor_vent_control', type: 'geo_steam_manifold_actuator', x: 4, y: 5 }
         ],
         signatureAnchorId: 'reactor_vent_control',
         compassAnchors: { approach: 'entry', objective: 'reactor_vent_control' },
@@ -698,13 +696,13 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         biomeEligibility: ['active', 'cryo'],
         roles: ['objective', 'questDestination'],
         structuralAnchors: [
-            { id: 'hull_press_a', type: 'prop_hydraulic_piston_actuator', x: 3, y: 5 },
+            { id: 'hull_press_a', type: 'tank_reactive_armor_forge', x: 3, y: 5 },
             { id: 'hull_press_b', type: 'prop_hydraulic_piston_actuator', x: 5, y: 2 }
         ],
         // MANDATORY_SHIP_GOALS hullExpansion -> objectiveAnchorId, exactly.
         interactionAnchors: [
             { id: 'hull_fabrication_console', type: 'prop_fabricator_workstation', x: 13, y: 6 },
-            { id: 'hull_bench', type: 'prop_engineering_bench', x: 14, y: 3 }
+            { id: 'hull_bench', type: 'life_welding_station', x: 14, y: 3 }
         ],
         signatureAnchorId: 'hull_fabrication_console',
         compassAnchors: { approach: 'entry', objective: 'hull_fabrication_console' },
@@ -766,11 +764,11 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         ],
         structuralAnchors: [
             { id: 'post_locker', type: 'prop_security_locker', x: 11, y: 3 },
-            { id: 'calibration_bank', type: 'prop_cyber_junction', x: 10, y: 9 }
+            { id: 'calibration_bank', type: 'chasm_seismic_geophone_station', x: 10, y: 9 }
         ],
         // MANDATORY_SHIP_GOALS radarNode -> objectiveAnchorId, exactly.
         interactionAnchors: [
-            { id: 'radar_alignment_console', type: 'prop_diagnostic_console', x: 13, y: 10 },
+            { id: 'radar_alignment_console', type: 'evac_avionics_gyro_gimbal', x: 13, y: 10 },
             { id: 'post_terminal', type: 'prop_terminal_ruptured', x: 10, y: 2 }
         ],
         signatureAnchorId: 'mast_base',
@@ -829,8 +827,8 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         biomeEligibility: ['cryo', 'bio'],
         roles: ['objective', 'defense'],
         structuralAnchors: [
-            { id: 'compressor_housing', type: 'prop_conduit_hub', x: 8, y: 6 },
-            { id: 'coolant_manifold', type: 'prop_conduit_hub', x: 14, y: 6 }
+            { id: 'compressor_housing', type: 'substation_stepdown_transformer', x: 8, y: 6 },
+            { id: 'coolant_manifold', type: 'prop_icey_frost_manifold', x: 14, y: 6 }
         ],
         // A visible hero prop in the housing recess. It is presentation data,
         // not an interaction/objective anchor, so it does not invent a second
@@ -841,7 +839,7 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         // MANDATORY_SHIP_GOALS reactorCompressor -> objectiveAnchorId, exactly.
         interactionAnchors: [
             { id: 'compressor_control', type: 'prop_valve_wheel_fused', x: 12, y: 3 },
-            { id: 'coolant_bench', type: 'prop_engineering_bench', x: 2, y: 6 }
+            { id: 'coolant_bench', type: 'engineer_magnetic_bottle_cell', x: 2, y: 6 }
         ],
         signatureAnchorId: 'compressor_drive',
         compassAnchors: { approach: 'entry', objective: 'compressor_control' },

@@ -46,7 +46,7 @@ export const RING_CROSSING_SPATIAL_PROOF = Object.freeze({
         Object.freeze({ id: 'flank_pillar_b', type: 'prop_biomech_pillar_right', x: 11, y: 5 })
     ]),
     interactionAnchors: Object.freeze([
-        Object.freeze({ id: 'gate_control', type: 'base_console', x: 8, y: 5 })
+        Object.freeze({ id: 'gate_control', type: 'ind_hydraulic_manifold', x: 8, y: 5 })
     ]),
     signatureAnchorId: 'gate_control',
     compassAnchors: Object.freeze({ approach: 'approach', objective: 'gate_control' }),
