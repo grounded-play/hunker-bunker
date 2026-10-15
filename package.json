@@ -70,6 +70,7 @@
     "audit:soundtrack": "node scripts/build-soundtrack-metadata.js --check && node scripts/package-soundtrack.js --check",
     "package-soundtrack": "node scripts/build-soundtrack-metadata.js && node scripts/package-soundtrack.js",
     "cinematics:stills": "node scripts/build-cinematic-still-videos.js",
+    "cinematics:tactical": "python3 scripts/generate-tactical-videos.py",
     "trailer:capture": "playwright test --config=tests/e2e/trailer/trailer.playwright.config.js",
     "trailer:build": "node scripts/build-trailer.js",
     "logs:fetch": "node scripts/fetch-session-logs.mjs",
