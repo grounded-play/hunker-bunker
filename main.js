@@ -5846,7 +5846,7 @@ function resetRunToStartingState({
         if (resetBank) {
             bankManager.reset();
             fabricator.reset();
-            loadout.reset();
+            loadout.resetRunGear();
             stopFabTicker();
             refreshFabAccess();
             syncEquippedWeaponLabel();

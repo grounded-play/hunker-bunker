@@ -514,4 +514,15 @@ export class LoadoutManager {
         this.state = createDefaultLoadoutState();
         this.save();
     }
+
+    // A new run wipes the Fabricator, so a fabricated weapon cannot carry
+    // over. Everything else here was picked in the Armory just before launch
+    // (chassis skin, gun, finish, charm, decal, modules) and is gated by
+    // ownership, not by the run.
+    resetRunGear() {
+        for (const cls of ['scout', 'tank', 'engineer']) {
+            this.state.perClass[cls].craftedWeaponId = null;
+        }
+        this.save();
+    }
 }
