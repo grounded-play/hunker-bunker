@@ -172,6 +172,16 @@ Current coordination rules:
   phases, top-level filters, in-game link plan, and image-generation
   prompts for the item store background/logo/detail images. The
   in-game-item-icon counterpart to the capsule-art doc below.
+- **[`planning/steam-store-page-v2-copy-and-images-2026-10-14.md`](./planning/steam-store-page-v2-copy-and-images-2026-10-14.md)**
+  — **current** store page proposal (2026-10-14): live-page audit (no
+  screenshots or trailer, wrapped About text split into fragments,
+  PvP/Co-op/IAP/Timeline overclaims), new short description and About
+  BBCode, tag set, capsule briefs, and the gameplay screenshot set in
+  `steam/store/screenshots-v2/`. Supersedes the copy sections of
+  `steam-portal-copy.md` and `steam-store-assets-plan.md`.
+- **[`planning/trailer-v4-capture-edit-and-sound-plan-2026-10-14.md`](./planning/trailer-v4-capture-edit-and-sound-plan-2026-10-14.md)**
+  — gameplay trailer v4 plan: v3 audit, VO-driven beat sheet, virtual-time
+  GPU capture, beat grid, synthesized FX kit, five-bus mix.
 - **[`steam-store-placeholder-assets-and-prompts.md`](./steam-store-placeholder-assets-and-prompts.md)**
   — audit of the store *capsule* art specifically (found the placeholder
   capsules were cropped from a mislabeled source image with a different
