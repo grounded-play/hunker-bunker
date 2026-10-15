@@ -94,6 +94,18 @@ Open work retained from the plan:
 5. expand the catalog to cryo, decon, healing, specimen, fuel, sluice, and
    severed-spline families after the first manual playtest/balance pass.
 
+### 2026-10-15 — Slice 1B: asset outlet audit
+
+Status: implemented.
+
+- Added `npm run audit:world-emitters`, which reads GLB JSON chunks directly and
+  reports authored, fallback, unsafe, missing-profile, and missing-asset states.
+- Default mode fails only unsafe/missing entries so current explicit fallbacks are
+  release-safe; `--strict` also fails fallback-only assets for the art-authoring
+  queue.
+- The initial three assets are guarded by a test requiring either a recognized
+  outlet transform or an explicit three-axis fallback direction.
+
 ## Decision summary
 
 Build one data-driven `WorldEmitterSystem` for prop-attached emissions and liquid
