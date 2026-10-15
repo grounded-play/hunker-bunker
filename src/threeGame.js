@@ -109,6 +109,7 @@ import { PickupMagnet, PickupComboTracker } from './lootJuice.js';
 import { BiomeAtmosphereSystem } from './ambientDrift.js';
 import { AmbientVentSystem, FloorFogSystem } from './ambientVentsAndFog.js';
 import { buildCliffPathGlowBatch } from './cliffPathGlow.js';
+import { cameraFrustum, stepMixer } from './mixerCulling.js';
 import { KillstreakFeedbackSystem } from './gameplayTactileVfx.js';
 import { CHUNK_SIZE, TILE_SIZE } from './tileCatalog.js';
 import { getControllerGlyphLabel } from './inputGlyphs.js';
@@ -19713,8 +19714,13 @@ export class ThreeGame {
         setClothFlutterTime(this._splineSwayTime);
         setVoidDepthTime(this._splineSwayTime);
         this.updatePaperSkitter?.(delta);
-        for (const mixer of this.world3dMixers ?? []) {
-            mixer.update(delta);
+        // Off-screen props past shadow reach bank their time (src/mixerCulling.js).
+        if (this.world3dMixers?.size) {
+            const context = {
+                frustum: cameraFrustum(this.camera, this._mixerCullFrustum ??= new THREE.Frustum()),
+                playerPosition: this.player?.position ?? null
+            };
+            for (const mixer of this.world3dMixers) stepMixer(mixer, delta, context);
         }
         for (const propFx of this.world3dPropEffects ?? []) {
             propFx.update?.(delta, this.camera?.position);
