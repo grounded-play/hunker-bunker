@@ -2,7 +2,10 @@
 
 Date: 2026-10-14. Branch: `dev/sprint-52`. Status: **phases 0–3 and 5 built
 the same day, phase 4 (owner watch-through) and phase 6 (upload) open. See
-§10 for what was built, how to rerun it, and what differs from this plan.**
+§10 for what was built, how to rerun it, and what differs from this plan.
+§11 (2026-10-15) revises the cut: in-game films and interstitials, VO lines
+paired with word-synced text clips, a class showcase with skins, and an
+arsenal sequence. It supersedes §4 where they differ.**
 The store page that this trailer goes on is planned in
 [steam-store-page-v2-copy-and-images-2026-10-14.md](steam-store-page-v2-copy-and-images-2026-10-14.md).
 
@@ -529,4 +532,235 @@ the recipes were scouted.
 - To check on a watch-through: the mix balance (I verified levels and
   waveform shape, not by ear), whether the weaker takes (welcome committee,
   SMG, camp siege) should be re-staged, and the grid against the music.
+
+---
+
+## 11. Revision (2026-10-15): films, VO-synced text, classes, skins and guns
+
+Owner request: use the interstitial movies and the new tactical text videos,
+lay each VO line over a text clip that spells it for emphasis, show all three
+classes each doing their own thing, and show several skins and gun types.
+
+### 11.1 What exists to use
+
+All paths under `public/`. "Film" means an in-game cinematic: every one of
+these plays somewhere in the game, so showing it is honest, but it is still
+not gameplay and counts against the budget in §11.2.
+
+| Source | Size, length | Content | Use in the cut |
+| --- | --- | --- | --- |
+| `cutscenes/intro-boot.mp4` | 1920×1080, 6.0 s, audio | Glitch-typed terminal words over scrolling code: SECURE BUNKER 07, BIO-BREACH DETECTED, QUARANTINE FAILED, exosuit/weapons/deploy readouts, DIRECTIVE: DEEP RUN, ✓ ALL SYSTEMS GO, DEPLOY | Act 0 overlay words; its glitch audio as SFX |
+| `cutscenes/intro-mothership-briefing.mp4` | 1920×1080, 13.21 s, VO mixed in | The `voice_mothership_01_alive` line spelled verbatim in time with the voice: "Agent. / You're alive. / … / Bank what you recover / rebuild the vessel — system by system. / AWAITING CHOICE" | Act 1 text over gameplay, cut on the same in/out points as the VO (§11.4) |
+| `cutscenes/credits-terminal.mp4` | 1920×1080, 6.0 s, audio | HUNKER BUNKER, TUESDAY CINEMA CLUB, THANK YOU FOR DEPLOYING | Act 5 end card words |
+| `interstitials/int_NN_*_key_v1.mp4` (32) | 1280×720, 6.04 s, audio | Animated key art, one per song (`int_01` Someone Is Still Alive … `int_32` Black Box Stain); `interstitials/motion/*_motion_v1.webm` twins | Short cut-ins on matching beats: `int_01` (You're alive), `int_13` A Snail Blocks the Hallway (welcome committee), `int_09` Mothership Customer Support (the purge, its smile turns to red warnings), `int_11` Her Voice Inside Your Helmet and `int_12` The Queen Makes a Reasonable Offer (Queen), `int_25` Gigawatt Goliath (boss) |
+| `cutscenes/cave-reveal.webm` | 1920×1080, 7.4 s | Hive interior, eggs, green veins | Act 4 opener |
+| `cutscenes/ending-*.webm` (10) | 1920×1080, about 6–7 s | The ten endings | "10 ENDINGS" flash sequence |
+| `cutscenes/event-boss-encounter-{cybersnail,cryosnail,sporesnail}.webm`, `event-queen-encounter.webm` | 1280×800, 3.6 s | Boss and Queen encounter cards | One beat before each boss/Queen gameplay shot |
+| `cutscenes/death-oxygen.mp4` | 1280×720, 8 s | Suit failing, red O2 light | 6–10 frames inside the O2-critical beat |
+| `cutscenes/{scout,tank,engineer}-class-intro.mp4` | 480×270, 8 s | Class intros | Not used: too low resolution (store plan §5.2 retires them too) |
+
+720p and 1280×800 sources are scaled to 1080p with Lanczos, cropped to 16:9,
+given the act grade and a little grain, and kept short, so the softness does
+not read next to the 1.35x gameplay captures.
+
+### 11.2 Rules for the revised cut
+
+1. **Gameplay at least 75% of runtime.** Films and text clips are cut-ins and
+   overlays: no film insert longer than 1.5 s except the Act 4 opener and the
+   title. Budget for the cut below: about 14 s of film in 88 s (16%).
+2. **Text clips ride over gameplay, not black.** The text videos have dark
+   backgrounds; they composite with `screen` blending (or an alpha render,
+   §11.5) at 70–100% so the words sit on top of the action.
+3. **One voice source.** VO comes from the dialogue bus (§6.4) with its radio,
+   PA or Queen chain; a film's own audio track is muted unless the EDL turns
+   it on (the boot clip's glitch hits are used as SFX).
+4. **Each class reads as itself:** its own skin, its signature gun, its
+   ability, and a class chip (SCOUT / TANK / ENGINEER) the first time it
+   appears. No shot mixes two classes unless it is labelled as a split.
+5. **Skins and finishes are shown, never sold:** no prices, rarity labels,
+   store UI or "free" claims (claim checklist). Names may appear as kinetic
+   text only if the owner wants them (§11.10).
+6. **Spoilers:** ending flashes run 4 frames each, too fast to read story
+   details; the Queen and purge lines were already approved in §9 defaults.
+
+### 11.3 Revised beat sheet (target 1:28, drop still at 0:42)
+
+`b` = beat (0.637 s at 94.19 BPM); beat times come from the grid, so the cut
+moves with the music.
+
+**Act 0, cold open (0:00–0:06.3), no music**
+
+| T | Picture | Text clip (word-synced) | Sound |
+| --- | --- | --- | --- |
+| 0:00 | Tank firefight, night grade (gameplay, unchanged) | — | Game SFX, sub hit |
+| 0:01.6 | same | `intro-boot` "BIO-BREACH DETECTED", screen blend, 0.6 s | Boot clip glitch hit |
+| 0:03.0 | Crawler lunge, 120 fps ramp | `intro-boot` "QUARANTINE FAILED", 0.6 s | Boot clip glitch hit |
+| 0:05.4 | Black | — | Mothership VO "Agent." (radio) |
+
+**Act 1, the job and the crew (0:06.3–0:21.6), music low-passed, opening up**
+
+| T | Picture | Text clip | Sound |
+| --- | --- | --- | --- |
+| 0:06.3 | `int_01` Someone Is Still Alive, 1.0 s, then the wreck at dawn | `intro-mothership-briefing` "You're alive." in time with the VO | VO "You're alive." |
+| 0:10.2 | **Class showcase**, 12 beats (§11.6): SCOUT 4b, TANK 4b, ENGINEER 4b. Each class flips through its skins on the beat in the same move | Kinetic class chip on each class's first beat | Each class's ability SFX on its action frame (`fx_scout_sprint`, `fx_tank_shockwave`, `fx_engineer_turret`) |
+| 0:17.8 | Salvage and bank: corpse pickup, counters ticking | `intro-mothership-briefing` "Bank what you recover / rebuild the vessel —" | VO "Bank what you recover and rebuild the vessel" |
+
+**Act 2, the bunker resents you (0:21.6–0:42), breakdown and riser**
+
+| T | Picture | Text clip | Sound |
+| --- | --- | --- | --- |
+| 0:21.6 | Lights-out corridor (real event + night + flicker) | New clip `vo-bunker-lights` (§11.5): "LOCAL LIGHTING" on "Local", "SUSPENDED" on "suspended", then "PLEASE ENJOY THE DARKNESS RESPONSIBLY" typed under the second sentence | VO Bunker 01 (PA) |
+| 0:27.4 | Welcome committee (cathedral, crawlers pour in); `int_13` A Snail Blocks the Hallway cut in for 1b on "welcome committee" | `vo-bunker-committee`: "WELCOME COMMITTEE" slam on "welcome" | VO Bunker 02 |
+| 0:32.4 | Biome chain: bunker / cryo / bio walk, 2b each | Kinetic "3 BIOMES" on the bio cut | Whooshes, room tones |
+| 0:36.3 | O2 critical push-in; `death-oxygen` 8 frames on the riser's last bar | `vo-bunker-depth`: "DEPTH NOTED" on "depth", "DISAPPROVES" on "disapproves" | VO Bunker 03, heartbeat, riser |
+| 0:40.7 | Black | — | 0.5 s silence |
+
+**Act 3, the drop (0:42–1:02.4), 32 beats**
+
+| Beats | Picture | Text | Notes |
+| --- | --- | --- | --- |
+| 0–8 | **Arsenal** (§11.7): one gun per beat, nine guns, each with its in-game name slammed in game font | Weapon names | Hard cut on each beat; muzzle-flash frame on the beat |
+| 9–12 | Class abilities back to back: Scout dash, Tank smash, Engineer turret | — | Freeze 6 frames on the smash impact |
+| 13–20 | Camp siege, hive pulse, cryo lance shatter (240 fps), rail freeze | "THE SURVIVORS OR THE SWARM" across 4b | Same line as the store About heading (store doc §4) |
+| 21–24 | `event-boss-encounter-cybersnail` 1b, boss charge 2b, `int_25` Gigawatt Goliath 1b | "BOSSES" | Letterbox slides in on beat 21 |
+| 25–28 | Queen fight (HP bar dropping) | — | |
+| 29–32 | **Ending flashes:** 10 endings, 4 frames each (0.67 s), then 2b of the last one | "10 ENDINGS" | White flash between flashes |
+
+**Act 4, the turn (1:02.4–1:16), music cut by tape stop**
+
+| T | Picture | Text clip | Sound |
+| --- | --- | --- | --- |
+| 1:02.4 | `cave-reveal` 2.5 s, sick grade | — | Drone, room tone |
+| 1:04.9 | `int_09` Mothership Customer Support: the smile, then the red warning panels on "abandoned" | `vo-mothership-purge`: "CORRECTION" / "RECOVERY ABANDONED" / "ORBITAL EXTERMINATION AUTHORIZED", red variant | VO Mothership 03 (radio), glitch on "abandoned" |
+| 1:10.5 | Queen emergence beside the player (gameplay) | — | Heartbeat |
+| 1:12.6 | `int_11` Her Voice Inside Your Helmet 1.0 s, then the Queen two-shot | `vo-queen-heartbeats`: "TWO HEARTBEATS." then "ONE PURPOSE." on the words, organic gold variant | VO Queen 01, braam on "purpose" |
+
+**Act 5, title and CTA (1:16–1:28)**
+
+| T | Picture | Text clip | Sound |
+| --- | --- | --- | --- |
+| 1:16 | Title art (menu hidden) with logo, push-in | `credits-terminal` "HUNKER BUNKER" glitch-in over the logo area | Impact, reverse swell |
+| 1:21 | Same art | CTA "WISHLIST ON STEAM"; small `credits-terminal` "TUESDAY CINEMA CLUB" | VO Bunker "Your curiosity continues to exceed your clearance." |
+
+Film time: about 1.0 + 0.64 + 0.13 + 0.64 + 0.64 + 1.3 + 2.5 + 5.6 + 1.0 s plus
+the title, about 14 s of 88 (16%), inside rule 1.
+
+### 11.4 VO lines and their text cues
+
+Word starts from whisper (`trailer/raw/vo-words/*.json`), checked against
+silencedetect (§6). Times are seconds into the source file; the overlay word
+lands 2 frames before the spoken word so the eye leads the ear.
+
+| VO file (trim) | Text clip | Words on screen, at source time |
+| --- | --- | --- |
+| `mothership_01_alive` (0.00–2.50) | briefing, same in/out | "Agent." 0.00, "You're alive." 1.64 |
+| `mothership_01_alive` (8.73–11.20) | briefing, same in/out | "Bank what you recover" 8.76, "rebuild the vessel —" 10.14 |
+| `bunker_01_enjoy_darkness` (3.78–9.60) | `vo-bunker-lights` | "LOCAL LIGHTING" 3.80, "SUSPENDED" 5.06, "PLEASE ENJOY THE DARKNESS RESPONSIBLY" 6.86 (typed to 9.14) |
+| `bunker_02_welcome_committee` (2.50–6.10) | `vo-bunker-committee` | "FACILITIES" 2.46, "WELCOME COMMITTEE" 4.20, "TO YOUR POSITION" 4.94 |
+| `bunker_03_depth_disapproves` (9.25–13.25) | `vo-bunker-depth` | "THE STRUCTURE NOTES YOUR DEPTH" 9.32 (typed), "DISAPPROVES" 11.86 (slam) |
+| `mothership_03_orbital_purge` (1.25–7.75) | `vo-mothership-purge` | "CORRECTION" 1.29, "RECOVERY ABANDONED" 3.42, "ORBITAL EXTERMINATION" 5.02, "AUTHORIZED" 6.68 |
+| `queen_01_two_heartbeats` (0.18–4.10) | `vo-queen-heartbeats` | "TWO HEARTBEATS." 0.18, "ONE PURPOSE." 2.80 |
+| `bunker_02_welcome_committee` (7.00–10.40) | `credits-terminal` style, CTA | "YOUR CURIOSITY" 7.16, "EXCEEDS YOUR CLEARANCE" 9.04 |
+
+### 11.5 New text clips
+
+The briefing is the only VO line with a text video today. The other five come
+from `scripts/generate-tactical-videos.py`, which already renders the
+briefing from a word list timed to a `voice_track`:
+
+- One preset per row of §11.4 (`vo-bunker-lights`, `vo-bunker-committee`,
+  `vo-bunker-depth`, `vo-mothership-purge`, `vo-queen-heartbeats`), words and
+  times taken from the table so the render lands on the spoken words.
+- Palette per speaker: Bunker PA amber, Mothership radio cyan turning red
+  for the purge, Queen organic gold (matches `int_11` and `int_12`).
+- Add an alpha output (VP9 with alpha in WebM, or ProRes 4444) beside the
+  MP4, so the words can sit over gameplay without the terminal background.
+  Until then the assembler uses `screen` blending on the dark-background MP4.
+- Render at the trailer's 60 fps and 1920×1080 so the words stay sharp.
+
+### 11.6 Class showcase: each class its own, several skins each
+
+Each class gets one choreography, captured once per skin with the same seed
+and input track, so cutting between takes on the beat reads as a skin flip
+mid-move. Skins are equipped through the game's own loadout API before the
+run starts (`window.loadout.equipChassisSkin(id)`, `setArchetype`,
+`equipWeaponSkin`), after `reconcileOwnership()` has run so an unowned
+cosmetic is not stripped (verify in the capture spike).
+
+| Class | Move (4 beats) | Skins, cut on the beat | Gun and finish | Place |
+| --- | --- | --- | --- | --- |
+| **Scout** | Sprint into a pack, dash through the gap, burst | 4113 Cryo-Vanguard Scout → 4115 Void Commando Recon → 4118 Cyber-Spectre Infiltrator | `talon` with 4100 Sub-Zero Frostbite Sidearm, then 4110 Queen's Carapace Carbine | Cryo engineering |
+| **Tank** | Wade in, SMASH, Bulwark block, scatter blast | 4114 Trench Warden Heavy → 4117 Dreadnought Exo-Juggernaut → 4119 Hive-Lord Symbiote Exosuit | `siege_breaker` | Bio nest |
+| **Engineer** | Deploy turret, turret holds the line, tesla arc | 4112 Sub-Terran Drill Engineer → 4116 Bio-Synthesizer Harness | `tesla_lock` with 4103 Cryo-Plasma Arc Driver | Bunker medical |
+
+The class chip and the act grade stay the same across skin flips, so the
+flip reads as "same operator, different suit".
+
+New recipes: `class-scout-skin-{4113,4115,4118}`,
+`class-tank-skin-{4114,4117,4119}`, `class-engineer-skin-{4112,4116}`.
+The runner boots once per (class, skin), about 8 boots, and each take is
+about 3 s at 60 fps.
+
+### 11.7 Arsenal: nine guns, one beat each
+
+| Beat | Gun (in-game name) | Class | Recipe |
+| --- | --- | --- | --- |
+| 1 | MARK-I SIDEARM | any | `arsenal-sidearm` |
+| 2 | PULSE CARBINE | Engineer | `arsenal-pulse` |
+| 3 | SCATTER REPEATER | Tank | `arsenal-scatter` |
+| 4 | NEON SMG | Scout | `arsenal-smg` |
+| 5 | RAIL MARKSMAN | Scout | `arsenal-rail` (240 fps, freeze on the line) |
+| 6 | CRYO LANCE | Scout | `arsenal-cryo` (240 fps, shatter) |
+| 7 | M-70 FLAMETHROWER | Tank | `arsenal-flame` |
+| 8 | TALON / SIEGE BREAKER / TESLA LOCK | each class | three panels, the class guns side by side |
+| 9 | (impact) | — | white flash into beat 10 |
+
+Each take frames the muzzle and the target in one shot (enemy 3–4 m away,
+zoom 1.45), fire starts on frame 2, and the beat cut lands on the first muzzle
+flash. Names are the labels in `src/fieldWeapon.js` and the class archetypes
+in `src/data/classArsenal.js`; recheck them before rendering.
+
+### 11.8 Assembler and capture changes
+
+- **EDL `film` clips:** external media with `in`, `dur`, fit or crop to 16:9,
+  Lanczos upscale, grade, grain and optional speed; audio muted unless
+  `audio: true`.
+- **EDL `textClip` overlay track:** a text video placed at a trailer time,
+  trimmed to a source window, blended `screen` (or alpha), with opacity and
+  scale. A `syncTo` field ties its in-point to a dialogue entry, so the text
+  and the VO always share in/out points.
+- **Split panels with chips:** the triptych and the class-gun panel take a
+  `chip` per panel.
+- **Capture:** `bootForCapture({ chassisSkin, archetype, weaponSkin })`
+  equips through the loadout API before `startRunAndSkipIntro`; one boot per
+  (class, skin).
+- **QA:** report film share and fail the build above 25%; check every text
+  clip's in-point against its VO word time (±2 frames).
+
+### 11.9 Cutdowns
+
+- **30 s:** cold open with the two boot words, class showcase 6 beats (2 per
+  class, one skin flip each), arsenal 6 beats, Queen line with its text clip,
+  title and CTA.
+- **15 s:** cold open, arsenal 6 beats, title.
+- **6 s:** the cold-open gib, "QUARANTINE FAILED", logo.
+- **Vertical 30:** as the 30 s, with text clips centred and scaled to the 9:16
+  frame.
+
+### 11.10 Owner decisions added
+
+1. Show skin and gun names as kinetic text, or show the guns only?
+2. Ending flashes: 4 frames each (unreadable) or skip endings entirely?
+3. Premium skins (4115, 4116, 4119) in the trailer: fine, or free-track skins
+   only (4112, 4113, 4114, 4117, 4118)?
+4. Use the boot clip's own glitch audio, or only the kit FX?
+
+### 11.11 Work order
+
+1. Text clip presets and alpha output (§11.5).
+2. Capture: loadout equip in `bootForCapture`, class-skin and arsenal recipes
+   (§11.6, §11.7).
+3. Assembler: `film`, `textClip` and chips (§11.8).
+4. EDL v4.1 for the gameplay trailer and the cutdowns, then build, QA and
+   owner watch-through.
 
