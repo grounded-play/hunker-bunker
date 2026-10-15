@@ -69,7 +69,7 @@ const ONE_SHOTS = new Set(['fire', 'reload', 'hit', 'land', 'melee', ...ENGINEER
 export const GESTURE_FALLBACKS = Object.freeze({
     rummaging: Object.freeze(['reload', 'heroIdle', 'idle']),
     exosuit_dock: Object.freeze(['floatingTrance', 'heroIdle', 'idle']),
-    terminal_hack: Object.freeze(['reload', 'heroIdle', 'idle'])
+    terminal_hack: Object.freeze(['pointingForward', 'idleCartographer', 'engineerThoughtful', 'reload', 'heroIdle', 'idle'])
 });
 const BLENDABLE_ACTIONS = ['idle', 'walk', 'run', 'backward', 'strafeLeft', 'strafeRight', 'fall'];
 // Below INJURED_HP_RATIO, idle/walk/run cross-fade to their limping

@@ -22,10 +22,13 @@ describe('interactionVignette', () => {
             expect(resolveInteractionVignettePreset('decon_exosuit_scrubber_station')).toBe(INTERACTION_VIGNETTE_PRESETS.exosuit_dock);
         });
 
-        it('resolves terminal_hack preset for consoles and biometric safes', () => {
+        it('resolves terminal_hack preset for consoles, terminals, biometric safes, and podiums', () => {
             expect(resolveInteractionVignettePreset('corp_biometric_wall_safe')).toBe(INTERACTION_VIGNETTE_PRESETS.terminal_hack);
+            expect(resolveInteractionVignettePreset('chen_sealed_confession_console')).toBe(INTERACTION_VIGNETTE_PRESETS.terminal_hack);
             expect(resolveInteractionVignettePreset('base_console')).toBe(INTERACTION_VIGNETTE_PRESETS.terminal_hack);
             expect(resolveInteractionVignettePreset('lore_terminal')).toBe(INTERACTION_VIGNETTE_PRESETS.terminal_hack);
+            expect(resolveInteractionVignettePreset('corp_quantum_ledger_podium')).toBe(INTERACTION_VIGNETTE_PRESETS.terminal_hack);
+            expect(resolveInteractionVignettePreset('custom_screen', { generic: 'terminal' })).toBe(INTERACTION_VIGNETTE_PRESETS.terminal_hack);
         });
 
         it('honors explicit spec vignettePreset override', () => {
@@ -100,7 +103,7 @@ describe('interactionVignette', () => {
             expect(started).toBe(true);
             expect(controller.isActive()).toBe(true);
             expect(game.player3dOverlay.trigger).toHaveBeenCalledWith('rummaging', 1.4);
-            expect(game.acknowledgePropExperience).toHaveBeenCalledWith(sprite);
+            expect(game.acknowledgePropExperience).toHaveBeenCalledWith(sprite, { toggleArticulation: false });
 
             // Update partway (alignment phase)
             controller.update(0.2);
@@ -164,6 +167,50 @@ describe('interactionVignette', () => {
 
             // Complete vignette (duration: 1.8s)
             controller.update(0.8);
+            expect(controller.isActive()).toBe(false);
+            expect(onComplete).toHaveBeenCalledTimes(1);
+        });
+
+        it('fires terminal_hack scan and decrypt milestones for biometric wall safe', () => {
+            const game = mockGame();
+            game.player.position.set(4, 0, 4);
+            const controller = createInteractionVignetteController(game);
+
+            const sprite = new THREE.Sprite();
+            sprite.position.set(4, 0, 5);
+            sprite.userData = {
+                type: 'corp_biometric_wall_safe',
+                wallNormal: { x: 0, z: -1 }
+            };
+
+            const onComplete = vi.fn();
+            controller.startVignette({
+                sprite,
+                onComplete
+            });
+
+            expect(controller.isActive()).toBe(true);
+            expect(game.player3dOverlay.trigger).toHaveBeenCalledWith('terminal_hack', 1.25);
+            expect(game.acknowledgePropExperience).toHaveBeenCalledWith(sprite, { toggleArticulation: false });
+
+            // Milestone 1 at 0.20s: amber scan spark
+            controller.update(0.20);
+            expect(game.spawnPhysicalBurst).toHaveBeenCalledWith(4, 5, expect.objectContaining({
+                color: 0xf59e0b,
+                count: 8
+            }));
+            expect(game.playSound).toHaveBeenCalledWith('terminal_beep', { volume: 0.5 });
+
+            // Milestone 2 at 0.75s: emerald authorization success & safe unlatch
+            controller.update(0.60); // total elapsed: 0.80s
+            expect(game.spawnPhysicalBurst).toHaveBeenCalledWith(4, 5, expect.objectContaining({
+                color: 0x22c55e,
+                count: 10
+            }));
+            expect(game.playSound).toHaveBeenCalledWith('vault_open', expect.objectContaining({ volume: 0.6 }));
+
+            // Finish at 1.25s
+            controller.update(0.50);
             expect(controller.isActive()).toBe(false);
             expect(onComplete).toHaveBeenCalledTimes(1);
         });

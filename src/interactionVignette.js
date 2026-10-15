@@ -68,8 +68,8 @@ export const INTERACTION_VIGNETTE_PRESETS = Object.freeze({
     terminal_hack: Object.freeze({
         id: 'terminal_hack',
         animation: 'terminal_hack',
-        duration: 1.2,
-        alignSeconds: 0.2,
+        duration: 1.25,
+        alignSeconds: 0.20,
         standoff: 0.60,
         faceProp: true,
         sound: 'terminal_beep',
@@ -79,8 +79,24 @@ export const INTERACTION_VIGNETTE_PRESETS = Object.freeze({
                 time: 0.20,
                 run(game, v) {
                     const pos = v.sprite?.position ?? game.player.position;
-                    game.spawnPhysicalBurst?.(pos.x, pos.z, { color: 0x38bdf8, count: 8, upward: 0.2 });
+                    const propKey = String(v.sprite?.userData?.type ?? v.sprite?.userData?.world3dModelType ?? '');
+                    const isSafe = propKey.includes('safe');
+                    const color = isSafe ? 0xf59e0b : 0x38bdf8;
+                    game.spawnPhysicalBurst?.(pos.x, pos.z, { color, count: 8, upward: 0.2 });
+                    game.acknowledgePropExperience?.(v.sprite, { toggleArticulation: false });
                     safePlaySound('terminal_beep', { volume: 0.5 }, game);
+                }
+            },
+            {
+                time: 0.75,
+                run(game, v) {
+                    const pos = v.sprite?.position ?? game.player.position;
+                    const propKey = String(v.sprite?.userData?.type ?? v.sprite?.userData?.world3dModelType ?? '');
+                    const isSafe = propKey.includes('safe');
+                    const color = isSafe ? 0x22c55e : 0x4deeea;
+                    game.spawnPhysicalBurst?.(pos.x, pos.z, { color, count: 10, upward: 0.25 });
+                    game.acknowledgePropExperience?.(v.sprite, { toggleArticulation: false });
+                    safePlaySound(isSafe ? 'vault_open' : 'terminal_beep', { volume: 0.6, playbackRate: 1.2 }, game);
                 }
             }
         ])
@@ -104,7 +120,7 @@ export function resolveInteractionVignettePreset(type, spec = null) {
         || propKey.includes('cart') || propKey.includes('supplies')) {
         return INTERACTION_VIGNETTE_PRESETS.rummage;
     }
-    if (propKey.includes('terminal') || propKey.includes('console') || propKey.includes('safe') || propKey.includes('kiosk')) {
+    if (spec?.generic === 'terminal' || propKey.includes('terminal') || propKey.includes('console') || propKey.includes('safe') || propKey.includes('kiosk') || propKey.includes('podium')) {
         return INTERACTION_VIGNETTE_PRESETS.terminal_hack;
     }
     return null;
@@ -199,8 +215,8 @@ export function createInteractionVignetteController(game) {
                 currentVignette.animationStarted = true;
             }
 
-            // Trigger prop articulation / experience acknowledge
-            game.acknowledgePropExperience?.(sprite);
+            // Trigger prop experience acknowledge (emissive pulse without prematurely opening hinges)
+            game.acknowledgePropExperience?.(sprite, { toggleArticulation: false });
 
             return true;
         },

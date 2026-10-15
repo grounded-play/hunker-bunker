@@ -353,7 +353,7 @@ export function createPropExperience(root, model, type) {
             declaredState = String(next || 'ready');
             if (articulation?.set) {
                 articulation.set({
-                    open: declaredState === 'open',
+                    open: declaredState === 'open' || declaredState === 'spent' || declaredState === 'unlocked',
                     working: declaredState === 'working' || declaredState === 'on'
                 });
             }

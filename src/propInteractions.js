@@ -104,6 +104,7 @@ function terminalInteraction(interactPrompt, response, { hp = 35, sound = 'termi
         hp,
         canInteract: true,
         repeatable: true,
+        generic: 'terminal',
         interactPrompt,
         onInteract: (game) => {
             game.showBunkerLine?.(response);

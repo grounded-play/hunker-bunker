@@ -97,7 +97,7 @@ describe('threeGame interaction vignette gameplay integration', () => {
         expect(game.interactionVignette.isActive()).toBe(true);
         expect(game.isGameplayInputActive()).toBe(false);
         expect(game.player3dOverlay.trigger).toHaveBeenCalledWith('rummaging', 1.4);
-        expect(game.acknowledgePropExperience).toHaveBeenCalledWith(cartSprite);
+        expect(game.acknowledgePropExperience).toHaveBeenCalledWith(cartSprite, { toggleArticulation: false });
 
         // Advance 0.5 seconds (halfway through)
         game.updatePlayer(0.5);
@@ -195,5 +195,63 @@ describe('threeGame interaction vignette gameplay integration', () => {
         expect(game.isGameplayInputActive()).toBe(true);
         expect(game.playerVitals.hp).toBe(150);
         expect(game.showBunkerLine).toHaveBeenCalledWith(expect.stringContaining('OVERCHARGED TO 150%'));
+    });
+
+    it('executes biometric wall safe terminal hack: aligns to safe, runs scan & decrypt bursts, opens door, and awards scrap', () => {
+        const game = createMockGame();
+        game.player.position.set(4, 0, 3);
+        game.player.rotation.y = 0;
+
+        const safeSprite = new THREE.Sprite();
+        safeSprite.position.set(4, 0, 5);
+        safeSprite.userData = {
+            type: 'corp_biometric_wall_safe',
+            wallNormal: { x: 0, z: -1 }
+        };
+
+        const propExperienceMock = {
+            setState: vi.fn(),
+            acknowledge: vi.fn()
+        };
+        safeSprite.userData.world3dRoot = {
+            userData: { propExperience: propExperienceMock }
+        };
+
+        const nearestInfo = {
+            sprite: safeSprite,
+            spec: {
+                canInteract: true,
+                onInteract: (g) => {
+                    g.addScrap(45);
+                    g.showBunkerLine('WALL SAFE: REVENUE TOKENS RECOVERED. +45 SCRAP.');
+                    return { success: true, state: 'spent' };
+                }
+            }
+        };
+
+        const started = interactWithCustomProp(game, nearestInfo);
+        expect(started).toBe(true);
+        expect(game.interactionVignette.isActive()).toBe(true);
+        expect(game.isGameplayInputActive()).toBe(false);
+        expect(game.player3dOverlay.trigger).toHaveBeenCalledWith('terminal_hack', 1.25);
+
+        // Advance 0.2s (standoff alignment: 5 + (-1)*0.60 = 4.40)
+        game.updatePlayer(0.20);
+        expect(game.player.position.x).toBeCloseTo(4, 1);
+        expect(game.player.position.z).toBeCloseTo(4.4, 1);
+        expect(game.spawnPhysicalBurst).toHaveBeenCalledWith(4, 5, expect.objectContaining({ color: 0xf59e0b }));
+
+        // Advance past 0.75s (decryption authorized)
+        game.updatePlayer(0.60);
+        expect(game.spawnPhysicalBurst).toHaveBeenCalledWith(4, 5, expect.objectContaining({ color: 0x22c55e }));
+        expect(game.playSound).toHaveBeenCalledWith('vault_open', expect.anything());
+
+        // Complete (1.25s total)
+        game.updatePlayer(0.50);
+        expect(game.interactionVignette.isActive()).toBe(false);
+        expect(game.isGameplayInputActive()).toBe(true);
+        expect(game.addScrap).toHaveBeenCalledWith(45);
+        expect(game.showBunkerLine).toHaveBeenCalledWith(expect.stringContaining('REVENUE TOKENS RECOVERED'));
+        expect(propExperienceMock.setState).toHaveBeenCalledWith('spent');
     });
 });
