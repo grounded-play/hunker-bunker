@@ -29,6 +29,18 @@ Status: complete; focused verification green.
 Remaining in Slice 1: the asset-anchor audit/debug visualization and the fungal
 spore proof source (it currently follows the enemy/attack path, not prop FX).
 
+### 2026-10-15 — Slice 2A: pure emitter simulation core
+
+Status: implemented; integration pending.
+
+- Added a closed initial profile catalog for ruptured pipe steam, the interactive
+  steam manifold, and fungal spore vents.
+- Added deterministic cycle/proximity phase transitions, hysteresis, interaction
+  actions, per-target payload cadence, profile validation, and stable one-shot
+  destruction child IDs.
+- Kept the module independent of rendering and `ThreeGame`; player-facing payload
+  application arrives in Slice 2B.
+
 ## Decision summary
 
 Build one data-driven `WorldEmitterSystem` for prop-attached emissions and liquid
