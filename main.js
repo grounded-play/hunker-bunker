@@ -68,7 +68,8 @@ import { getControllerGlyphLabel } from './src/inputGlyphs.js';
 import {
     ACTION_SETS,
     MENU_FOCUS_ROOT_IDS,
-    shouldPointerRestoreMouseMode,
+    createPointerIntentTracker,
+    pointerPressCountsAsMouse,
     actionSetForAppPhase,
     createActionRouter,
     hasControllerContinuePress,
@@ -793,7 +794,7 @@ window.addEventListener('pointerdown', unlockAudioOnGesture, { capture: true, on
 window.addEventListener('keydown', unlockAudioOnGesture, { capture: true, once: true });
 window.addEventListener('touchstart', unlockAudioOnGesture, { capture: true, once: true });
 
-function setLastInputMode(mode, { refresh = true } = {}) {
+function setLastInputMode(mode, { refresh = true, cause = null } = {}) {
     const normalized = mode === 'controller' ? 'controller' : 'keyboard';
     const changed = steamInputState.lastInputMode !== normalized;
     steamInputState.lastInputMode = normalized;
@@ -809,6 +810,8 @@ function setLastInputMode(mode, { refresh = true } = {}) {
     if (changed) {
         debugLog.info('INPUT', 'input-mode-changed', {
             mode: normalized,
+            // What flipped it, so a Deck capture can show the source (S53-04).
+            cause,
             isSteamDeck: steamInputState.isSteamDeck,
             activeActionSet: mainActionRouter.getActionSet(),
             primaryControllerType: steamInputState.primaryControllerType
@@ -2843,24 +2846,24 @@ window.addEventListener('gamepadconnected', startBrowserGamepadFallback);
 
 window.addEventListener('keydown', (event) => {
     if (!event.isTrusted) return;
-    setLastInputMode('keyboard');
+    setLastInputMode('keyboard', { cause: { type: 'keydown', code: event.code } });
 }, true);
 
 window.addEventListener('pointerdown', (event) => {
-    if (!event.isTrusted) return;
-    lastPointerModePosition = { x: event.clientX, y: event.clientY };
-    setLastInputMode('keyboard');
+    if (!pointerPressCountsAsMouse(event)) return;
+    setLastInputMode('keyboard', { cause: { type: 'pointerdown', pointerType: event.pointerType } });
 }, true);
 
 // Moving the pointer counts as using the mouse, not only clicking it. The Deck
 // trackpad slides the cursor without ever pressing, so without this the UI
 // stayed in controller mode after any stick or button input and the cursor
 // drifted over controls that never highlighted.
-let lastPointerModePosition = null;
+// S53-04: lone pointer events (hover updates, cursor warps) are not a mouse in
+// hand; see createPointerIntentTracker.
+const pointerIntent = createPointerIntentTracker();
 window.addEventListener('pointermove', (event) => {
-    if (!shouldPointerRestoreMouseMode(event, lastPointerModePosition)) return;
-    lastPointerModePosition = { x: event.clientX, y: event.clientY };
-    setLastInputMode('keyboard');
+    if (!pointerIntent.observe(event)) return;
+    setLastInputMode('keyboard', { cause: { type: 'pointermove', pointerType: event.pointerType, movementX: event.movementX, movementY: event.movementY } });
 }, true);
 
 const CONTROL_ACTIONS = Object.freeze([

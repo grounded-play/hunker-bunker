@@ -362,14 +362,41 @@ export function createActionRouter({ now = () => (typeof performance !== 'undefi
  */
 export const POINTER_MODE_MOVEMENT_THRESHOLD_PX = 6;
 
-export function shouldPointerRestoreMouseMode(event, lastPosition = null) {
-    if (!event?.isTrusted) return false;
-    const pointerType = event.pointerType;
-    if (pointerType && pointerType !== 'mouse' && pointerType !== 'pen') return false;
-    const x = Number(event.clientX);
-    const y = Number(event.clientY);
-    if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
-    if (!lastPosition || !Number.isFinite(lastPosition.x) || !Number.isFinite(lastPosition.y)) return true;
-    const travelled = Math.abs(x - lastPosition.x) + Math.abs(y - lastPosition.y);
-    return travelled >= POINTER_MODE_MOVEMENT_THRESHOLD_PX;
+// A hand on a mouse or trackpad-as-mouse produces a run of pointer moves; a
+// controller-only Deck still sees lone trusted pointer events -- hover
+// updates when the page changes under a resting cursor (no movement) and
+// cursor warps (one jump) -- which flipped the UI to keyboard 13 times in one
+// session (S53-04). Mouse intent needs two moves within the window that add
+// up to the jitter threshold.
+const POINTER_INTENT_WINDOW_MS = 250;
+
+export function createPointerIntentTracker() {
+    let samples = [];
+    return {
+        observe(event, now = (typeof performance !== 'undefined' ? performance.now() : Date.now())) {
+            if (!event?.isTrusted) return false;
+            const pointerType = event.pointerType;
+            if (pointerType && pointerType !== 'mouse' && pointerType !== 'pen') return false;
+            const dx = Number(event.movementX);
+            const dy = Number(event.movementY);
+            const distance = (Number.isFinite(dx) ? Math.abs(dx) : 0) + (Number.isFinite(dy) ? Math.abs(dy) : 0);
+            if (distance === 0) return false;
+            samples = samples.filter((sample) => now - sample.t <= POINTER_INTENT_WINDOW_MS);
+            samples.push({ t: now, distance });
+            if (samples.length < 2) return false;
+            const travelled = samples.reduce((sum, sample) => sum + sample.distance, 0);
+            if (travelled < POINTER_MODE_MOVEMENT_THRESHOLD_PX) return false;
+            samples = [];
+            return true;
+        },
+        reset() { samples = []; }
+    };
 }
+
+// A press switches to mouse mode only from a mouse or pen; a finger on the
+// Deck's screen is not a reason to swap controller prompts for keyboard ones.
+export function pointerPressCountsAsMouse(event) {
+    if (!event?.isTrusted) return false;
+    return !event.pointerType || event.pointerType === 'mouse' || event.pointerType === 'pen';
+}
+

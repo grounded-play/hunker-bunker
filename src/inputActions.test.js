@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
     ACTION_SETS,
     MENU_FOCUS_ROOT_IDS,
-    POINTER_MODE_MOVEMENT_THRESHOLD_PX,
-    shouldPointerRestoreMouseMode,
+    createPointerIntentTracker,
+    pointerPressCountsAsMouse,
     actionSetForAppPhase,
     createActionRouter,
     hasControllerContinuePress,
@@ -414,38 +414,47 @@ describe('shouldPreferBrowserGamepad', () => {
     });
 });
 
-describe('pointer movement restores mouse mode', () => {
+// S53-04 (docs/planning/sprint-53-plan-2026-10-15.md): on a Deck played only
+// with its controls, the input mode flipped to keyboard 13 times and both
+// deploys recorded "keyboard". Every unexplained flip lined up with a modal
+// opening or closing: lone trusted pointer events (hover updates under a
+// resting cursor, a warped cursor), not a hand on a mouse.
+describe('pointer intent', () => {
     const move = (overrides = {}) => ({
-        isTrusted: true, pointerType: 'mouse', clientX: 100, clientY: 100, ...overrides
+        isTrusted: true, pointerType: 'mouse', clientX: 100, clientY: 100, movementX: 0, movementY: 0, ...overrides
     });
 
-    it('hands control back to the mouse on a real first move', () => {
-        expect(shouldPointerRestoreMouseMode(move(), null)).toBe(true);
+    it('ignores pointer updates that do not move (hover updates when the page changes)', () => {
+        const tracker = createPointerIntentTracker();
+        for (let t = 0; t < 1000; t += 50) expect(tracker.observe(move(), t)).toBe(false);
     });
 
-    // The Deck trackpad moves the pointer without ever clicking, which is why
-    // pointerdown alone was not enough.
-    it('accepts movement past the jitter threshold', () => {
-        const last = { x: 100, y: 100 };
-        expect(shouldPointerRestoreMouseMode(move({ clientX: 100 + POINTER_MODE_MOVEMENT_THRESHOLD_PX }), last)).toBe(true);
+    it('ignores a single jump, however large (a warped cursor)', () => {
+        const tracker = createPointerIntentTracker();
+        expect(tracker.observe(move({ movementX: 400, movementY: 300 }), 0)).toBe(false);
+        expect(tracker.observe(move({ movementX: 500 }), 2000)).toBe(false);
     });
 
-    it('ignores sub-threshold drift so the mode cannot flap', () => {
-        const last = { x: 100, y: 100 };
-        expect(shouldPointerRestoreMouseMode(move({ clientX: 101, clientY: 101 }), last)).toBe(false);
-        expect(shouldPointerRestoreMouseMode(move({ clientX: 100, clientY: 100 }), last)).toBe(false);
+    it('hands control to a real mouse within a couple of events', () => {
+        const tracker = createPointerIntentTracker();
+        expect(tracker.observe(move({ movementX: 4 }), 0)).toBe(false);
+        expect(tracker.observe(move({ movementX: 5 }), 16)).toBe(true);
     });
 
-    it('ignores touch, which the Deck screen emits while a finger rests on it', () => {
-        expect(shouldPointerRestoreMouseMode(move({ pointerType: 'touch', clientX: 400 }), { x: 100, y: 100 })).toBe(false);
+    it('ignores slow sub-threshold drift and touch', () => {
+        const tracker = createPointerIntentTracker();
+        expect(tracker.observe(move({ movementX: 1 }), 0)).toBe(false);
+        expect(tracker.observe(move({ movementX: 1 }), 400)).toBe(false);
+        expect(tracker.observe(move({ movementX: 1 }), 800)).toBe(false);
+        expect(tracker.observe(move({ pointerType: 'touch', movementX: 40 }), 810)).toBe(false);
+        expect(tracker.observe(move({ pointerType: 'touch', movementX: 40 }), 820)).toBe(false);
+        expect(tracker.observe(move({ isTrusted: false, movementX: 40 }), 830)).toBe(false);
     });
 
-    it('ignores synthetic events', () => {
-        expect(shouldPointerRestoreMouseMode(move({ isTrusted: false, clientX: 400 }), { x: 100, y: 100 })).toBe(false);
-    });
-
-    it('survives malformed events', () => {
-        expect(shouldPointerRestoreMouseMode(null, null)).toBe(false);
-        expect(shouldPointerRestoreMouseMode(move({ clientX: Number.NaN }), null)).toBe(false);
+    it('counts a mouse or pen press as the mouse, but not a touch on the screen', () => {
+        expect(pointerPressCountsAsMouse({ isTrusted: true, pointerType: 'mouse' })).toBe(true);
+        expect(pointerPressCountsAsMouse({ isTrusted: true, pointerType: 'pen' })).toBe(true);
+        expect(pointerPressCountsAsMouse({ isTrusted: true, pointerType: 'touch' })).toBe(false);
+        expect(pointerPressCountsAsMouse({ isTrusted: false, pointerType: 'mouse' })).toBe(false);
     });
 });
