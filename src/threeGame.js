@@ -27078,6 +27078,7 @@ export class ThreeGame {
         const campaign = resetRunState ? this.beginCampaignExpedition?.() : null;
         if (resetRunState) this.resetRunDrops();
         this.ambientVentSystem?.clear();
+        this.worldEmitterRuntime?.clear();
         this.floorFogSystem?.clear();
         this.resetVitalsForRun({ emit: false });
         this.resetWeaponState({ emit: false });
@@ -47599,6 +47600,8 @@ export class ThreeGame {
         this._containerSizeTarget = null;
         this.ambientVentSystem?.dispose();
         this.ambientVentSystem = null;
+        this.worldEmitterRuntime?.clear();
+        this.worldEmitterRuntime = null;
         this.floorFogSystem?.dispose();
         this.floorFogSystem = null;
         this.pointAudioEmitters?.dispose?.();

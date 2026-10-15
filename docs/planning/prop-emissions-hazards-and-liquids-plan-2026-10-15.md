@@ -54,6 +54,9 @@ Status: implemented for the pipe/manifold vertical slice.
   destruction retires emitter state before visual teardown.
 - Fungal spore vents deliberately remain on their established enemy eruption and
   projectile path until that path can be migrated without double-triggering.
+- Runtime state is cleared on run reset and full game teardown; payload adapter
+  tests cover damage routing, HP-independent infection, healing, poison, cleanse,
+  and inactive-Act-2 guards.
 
 ## Decision summary
 
