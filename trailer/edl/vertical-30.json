@@ -1,0 +1,419 @@
+{
+ "_doc": "Vertical 9:16 recut of cutdown-30 (center crop of the iso camera).",
+ "fps": 60,
+ "size": [
+  1080,
+  1920
+ ],
+ "music": {
+  "file": "public/audio/ost/Under Siege (Combat Alert).mp3",
+  "grid": "trailer/edl/under-siege-combat-alert.grid.json",
+  "anchor": {
+   "beat": "drop",
+   "at": 6.0
+  },
+  "start": 1.6,
+  "end": "beat:drop+24",
+  "gain": -1,
+  "fadeIn": 0.5,
+  "lowpass": [
+   [
+    1.6,
+    500
+   ],
+   [
+    "beat:drop-1",
+    2500
+   ],
+   [
+    "beat:drop",
+    19000
+   ]
+  ],
+  "tapeStop": {
+   "len": 0.8
+  }
+ },
+ "video": [
+  {
+   "shot": "cold-open-tank",
+   "in": 0.25,
+   "until": 3.3,
+   "grade": "night"
+  },
+  {
+   "shot": "crawler-lunge",
+   "in": 0.0,
+   "until": "beat:drop-1",
+   "speed": [
+    [
+     0,
+     1
+    ],
+    [
+     1.0,
+     1
+    ],
+    [
+     1.4,
+     0.35
+    ]
+   ],
+   "grade": "night"
+  },
+  {
+   "black": true,
+   "until": "beat:drop"
+  },
+  {
+   "shot": "drop-shotgun",
+   "in": 0.2,
+   "until": "beat:drop+2",
+   "grade": "hot",
+   "flash": 2,
+   "shakeAt": [
+    {
+     "at": 0.03,
+     "amp": 0.014,
+     "len": 0.3
+    }
+   ]
+  },
+  {
+   "shot": "drop-rail",
+   "in": 0.08,
+   "until": "beat:drop+4",
+   "grade": "hot",
+   "speed": [
+    [
+     0,
+     1
+    ],
+    [
+     0.15,
+     0.25
+    ]
+   ],
+   "freeze": {
+    "at": 0.32,
+    "frames": 8
+   },
+   "glitch": [
+    {
+     "at": 0.32,
+     "frames": 2
+    }
+   ]
+  },
+  {
+   "shot": "drop-flame",
+   "in": 0.3,
+   "until": "beat:drop+6",
+   "grade": "hot",
+   "whipOut": 6
+  },
+  {
+   "shot": "drop-cryo",
+   "in": 0.05,
+   "until": "beat:drop+8",
+   "grade": "hot",
+   "speed": [
+    [
+     0,
+     0.3
+    ],
+    [
+     0.9,
+     1
+    ]
+   ],
+   "whipIn": 6
+  },
+  {
+   "shot": "drop-turret",
+   "in": 0.4,
+   "until": "beat:drop+10",
+   "grade": "hot",
+   "shake": 0.003
+  },
+  {
+   "shot": "scout-dash",
+   "in": 0.0,
+   "until": "beat:drop+12",
+   "grade": "hot",
+   "speed": [
+    [
+     0,
+     1
+    ],
+    [
+     0.2,
+     0.45
+    ],
+    [
+     0.6,
+     1
+    ]
+   ]
+  },
+  {
+   "shot": "camp-siege",
+   "in": 1.0,
+   "until": "beat:drop+14",
+   "grade": "hot"
+  },
+  {
+   "shot": "hive-pulse",
+   "in": 0.4,
+   "until": "beat:drop+16",
+   "grade": "hot",
+   "push": {
+    "from": 1.0,
+    "to": 1.15
+   }
+  },
+  {
+   "shot": "drop-smg",
+   "in": 0.4,
+   "until": "beat:drop+17",
+   "grade": "hot"
+  },
+  {
+   "shot": "drop-pulse",
+   "in": 0.4,
+   "until": "beat:drop+18",
+   "grade": "hot"
+  },
+  {
+   "shot": "drop-tesla",
+   "in": 0.4,
+   "until": "beat:drop+19",
+   "grade": "hot"
+  },
+  {
+   "shot": "cold-open-tank",
+   "in": 2.0,
+   "until": "beat:drop+20",
+   "grade": "hot"
+  },
+  {
+   "shot": "drop-shotgun",
+   "in": 1.2,
+   "until": "beat:drop+21",
+   "grade": "hot"
+  },
+  {
+   "shot": "tank-smash",
+   "in": 1.2,
+   "until": "beat:drop+22",
+   "grade": "hot"
+  },
+  {
+   "shot": "drop-flame",
+   "in": 1.4,
+   "until": "beat:drop+23",
+   "grade": "hot"
+  },
+  {
+   "shot": "boss-charge",
+   "in": 0.6,
+   "until": "beat:drop+24",
+   "grade": "hot"
+  },
+  {
+   "shot": "queen-turn",
+   "in": 0.0,
+   "until": "beat:drop+24+3.9",
+   "grade": "sick",
+   "zoom": {
+    "z": 1.0,
+    "cx": 0.66,
+    "cy": 0.5
+   }
+  },
+  {
+   "shot": "title-reveal",
+   "in": 0.4,
+   "until": 30.0,
+   "flash": 3,
+   "push": {
+    "from": 1.0,
+    "to": 1.06
+   }
+  }
+ ],
+ "text": [
+  {
+   "style": "kinetic",
+   "text": "3 OPERATORS",
+   "at": "beat:drop+4",
+   "dur": "1.5beats",
+   "size": 96
+  },
+  {
+   "style": "kinetic",
+   "text": "3 BIOMES",
+   "at": "beat:drop+8",
+   "dur": "1.5beats",
+   "size": 96
+  },
+  {
+   "style": "kinetic",
+   "text": "10 ENDINGS",
+   "at": "beat:drop+16",
+   "dur": "1.5beats",
+   "size": 96
+  },
+  {
+   "style": "cta",
+   "text": "WISHLIST ON STEAM",
+   "at": "beat:drop+24+6.5",
+   "dur": 2.0,
+   "y": "h*0.62",
+   "size": 58
+  },
+  {
+   "style": "small",
+   "text": "Pre-release gameplay",
+   "at": "beat:drop+24+6.6",
+   "dur": 1.9,
+   "y": "h-70",
+   "size": 26,
+   "color": "white@0.6"
+  },
+  {
+   "style": "title",
+   "text": "HUNKER BUNKER",
+   "at": "beat:drop+24+3.9",
+   "dur": 30.0,
+   "y": "h*0.16",
+   "size": 118
+  }
+ ],
+ "letterbox": [],
+ "dialogue": [
+  {
+   "file": "public/audio/voice/bunker/voice_bunker_01_enjoy_darkness.mp3",
+   "at": 2.4,
+   "trim": [
+    6.8,
+    9.6
+   ],
+   "fx": "pa"
+  },
+  {
+   "file": "public/audio/voice/queen/voice_queen_01_two_heartbeats.mp3",
+   "at": "beat:drop+24+0.1",
+   "trim": [
+    0.18,
+    4.1
+   ],
+   "fx": "queen",
+   "gain": 1
+  }
+ ],
+ "kit": [
+  {
+   "fx": "sub_hit",
+   "at": 0.02,
+   "gain": -14
+  },
+  {
+   "fx": "riser_2s",
+   "end": "beat:drop-1",
+   "gain": -8
+  },
+  {
+   "fx": "reverse_swell",
+   "end": "beat:drop",
+   "gain": -6
+  },
+  {
+   "fx": "sub_hit",
+   "at": "beat:drop",
+   "gain": -2
+  },
+  {
+   "fx": "impact_metal",
+   "at": "beat:drop",
+   "gain": -6
+  },
+  {
+   "fx": "ui_text_slam",
+   "at": "beat:drop+4",
+   "gain": -8
+  },
+  {
+   "fx": "ui_text_slam",
+   "at": "beat:drop+8",
+   "gain": -8
+  },
+  {
+   "fx": "ui_text_slam",
+   "at": "beat:drop+16",
+   "gain": -8
+  },
+  {
+   "fx": "drone_low",
+   "at": "beat:drop+24",
+   "gain": -12
+  },
+  {
+   "fx": "braam",
+   "at": "beat:drop+24+2.9",
+   "gain": -2
+  },
+  {
+   "fx": "impact_metal",
+   "at": "beat:drop+24+3.9",
+   "gain": -3
+  },
+  {
+   "fx": "sub_hit",
+   "at": "beat:drop+24+3.9",
+   "gain": -3
+  }
+ ],
+ "ambience": [
+  {
+   "file": "public/audio/ambient/room_tone_interior_bunker.ogg",
+   "from": 0,
+   "to": "beat:drop",
+   "gain": -20
+  }
+ ],
+ "game_sfx": {
+  "gain": 3,
+  "mute": [
+   "ui_error",
+   "ui_scan_ping",
+   "fx_menu_hover"
+  ]
+ },
+ "mix": {
+  "lufs": -14,
+  "duckDb": 9,
+  "buses": {
+   "dialogue": 2,
+   "sfx": 0
+  }
+ },
+ "qa": {
+  "black": [
+   [
+    "beat:drop-1",
+    "beat:drop"
+   ]
+  ],
+  "freeze": [
+   [
+    "beat:drop+2",
+    "beat:drop+4"
+   ],
+   [
+    "beat:drop+24+3.9",
+    30.0
+   ]
+  ]
+ }
+}

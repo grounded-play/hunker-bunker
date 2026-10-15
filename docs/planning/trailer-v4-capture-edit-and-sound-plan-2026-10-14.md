@@ -1,7 +1,9 @@
 # Trailer v4: Capture, Edit and Sound Plan
 
-Date: 2026-10-14. Branch: `dev/sprint-52`. Status: **plan; nothing below is built
-yet**. The store page that this trailer goes on is planned in
+Date: 2026-10-14. Branch: `dev/sprint-52`. Status: **phases 0–3 and 5 built
+the same day, phase 4 (owner watch-through) and phase 6 (upload) open. See
+§10 for what was built, how to rerun it, and what differs from this plan.**
+The store page that this trailer goes on is planned in
 [steam-store-page-v2-copy-and-images-2026-10-14.md](steam-store-page-v2-copy-and-images-2026-10-14.md).
 
 This replaces the v3 cut (2026-08-07) described in
@@ -269,7 +271,7 @@ any cue.
 | `class-scout-sprint` / `class-tank-shockwave` / `class-engineer-turret` | One per class, same framing, the ability on frame 30 | 60 | Act 1 triptych |
 | `salvage-bank` | Corpse shell pickup → ship console bank, HUD counter visible | 60 | Act 1 |
 | `door-reveal` | Door transition into a dressed room | 60 | Act 1 |
-| `lights-out` | Furnished room, time 0.4 → 0.92 cut. This is staged: no in-game "lights suspended" event exists in `src/` (2026-10-14), only the announcer line. Keep the frames honest: night is a real game state, and the cut is the edit. | 60 | Act 2 |
+| `lights-out` | Corridor, time 0.42, then at frame 90 the real `triggerLightsOut()` event (it shows "LIGHTING BREAKER TRIPPED. PLEASE ENJOY THE DARKNESS RESPONSIBLY.") plus a drop to night 0.86. Correction (built): the event exists (`src/threeGame.js` `triggerLightsOut`), but in-game it only dims, and interiors stay lit at night, so the edit adds a 0.3 s flicker and a darker grade on that frame. See §10. | 60 | Act 2 |
 | `welcome-committee` | Corridor, 6 crawlers spawned off-screen walking in | 60 | Act 2 |
 | `walk-bunker` / `walk-cryo` / `walk-bio` / `walk-rim` | Same framing, walking left to right | 60 | Act 2 match-cut chain |
 | `o2-critical` | O2 forced low, storm sky | 60 | Act 2 |
@@ -277,7 +279,7 @@ any cue.
 | `camp-siege`, `hive-pulse` | Act 2 camp/hive sites from `act2.getState()` | 60 | Act 3 |
 | `boss-charge` | Debug boss chamber is **not** allowed on camera. Spawn the boss in a real biome room | 60 / 120 | Act 3 |
 | `uplink-abandoned` | Mothership uplink UI with the purge line | 60 | Act 4 |
-| `queen-push`, `queen-turn` | `startQueenFight()`, slow zoom. **Blocked**: in the 2026-10-14 store-shot runs it hung once, crashed the renderer once, and once ran with the Queen not readable on camera and HP never dropping (store doc §7). Fix that first. | 60 | Act 4 |
+| `queen-push`, `queen-turn` | `startQueenFight()`, framed beside the player. Unblocked (built): the earlier "Queen not on camera" runs were framing, not a broken fight. See §10.3. | 60 | Act 4 |
 | `title-reveal` | Real title screen boot | 60 | Act 5 |
 
 The store-shot probe run of 2026-10-14 is the location scout for these: its
@@ -436,3 +438,95 @@ Also produce:
 4. **FX:** synthesized kit only, or also spend ElevenLabs credits on SFX?
 5. **Release line:** the CTA says "Wishlist on Steam" with no date. Confirm.
 6. **Platform line:** "Steam Deck (in testing)" or omit Deck until Verified?
+
+---
+
+## 10. Build record (2026-10-14)
+
+Everything below ran on a `dev/sprint-52` checkout (worktree
+`../hunker-bunker-trailer`, branch `trailer/v4-capture`; the shared tree was
+switched to another agent's branch mid-session, so captures run from their own
+worktree and Vite server). Raw takes and build intermediates are under
+`trailer/raw/v4/` (gitignored); deliverables under `dist/trailer/v4/`
+(gitignored).
+
+### 10.1 Commands
+
+```bash
+npm run trailer:capture:v4                       # all 29 recipes, ~2.5 h on the RTX 2070 SUPER (1.25 s/frame)
+TRAILER_SHOTS=queen-push,queen-turn npm run trailer:capture:v4   # retake some
+npm run trailer:grid -- "public/audio/ost/Under Siege (Combat Alert).mp3"
+npm run trailer:sfx                              # trailer/sfx/*.wav, bit-identical per run
+npm run trailer:build:v4 -- gameplay-trailer     # also cutdown-30, cutdown-15, bumper-6, vertical-30
+node scripts/trailer/about-loops.js              # store About loops (store plan §5.2)
+```
+
+The capture config starts its own no-HMR server
+(`tests/e2e/trailer/v4/vite.capture.config.mjs`, port 5241, own optimizer
+cache). `TRAILER_REPL=1 npx playwright test -c tests/e2e/trailer/v4/playwright.config.js repl`
+boots once and runs `trailer/raw/repl/<n>.mjs` files dropped in, which is how
+the recipes were scouted.
+
+### 10.2 Phase results
+
+| Phase | Result |
+| --- | --- |
+| 0 | `tests/e2e/trailer/v4/vclock.js` owns `performance.now`, `Date.now`, rAF and timers in the page (pass-through until a take starts, then frame-stepped; pending timers keep their ids). 3 s of combat at 60 and 240 fps: exactly one `game.render()` per step, delta exactly 16.667 / 4.167 ms, **0 duplicated frames** (framemd5) of 180 and 720. The camera change and a HUD element added before step 6 both first appear in captured frame 6 (checked on the frames; `phase0-spike.spec.js`). `HeadlessExperimental.beginFrame` was not needed. **Capture resolution trap (measured):** a raw CDP `Page.captureScreenshot` returns CSS pixels (1728×972 for the 16:9 stage crop) at any `clip.scale`/`fromSurface`/`optimizeForSpeed` setting, and every call resets the page's `devicePixelRatio` to 1 (the canvas then drops to 1x on the next resize). Playwright's `page.screenshot({ clip })` returns device pixels and keeps the DPR. The context runs at deviceScaleFactor 1.35, the game's own render cap at this stage size (`src/renderScale.js`, 5 MP budget), so frames are 2333×1312 (cropped to 2332 for x264), downsampled to 1080p with 1.2x punch-in headroom; about 1.25 s per frame, so 60 s of footage is about 75 minutes. |
+| 1 | `tests/e2e/trailer/v4/shots.js` (29 recipes) + `capture-v4.spec.js` (one boot per class, 16:9 crop at 1.35x device pixels, x264 crf 12 intermediates, a contact sheet per take, `trailer/raw/v4/index.json`). Each take writes `<id>.events.json`: every `AudioManager.play` with its virtual time, the exact sample variant, gain, pan and rate. `Math.random` is seeded per take. |
+| 2 | `scripts/trailer/beat-grid.js`: **94.19 BPM, drop at 122.258 s (+18.8 dB)**; the half/double candidates score far lower (191.5 BPM: 77 vs 297). Owner listen still needed. `scripts/trailer/sfx-kit.js`: 18 synthesized FX (whooshes, risers, sub hit, metal impact, braam, reverse swell, heartbeats, text slam, type ticks, glitch, drone), checksums identical across runs. |
+| 3 | `scripts/trailer/build-v4.js` + `edl-time.js`, EDLs in `trailer/edl/`. Beat references (`beat:drop+8`, `bar:drop+2`, `2beats`), sequential `until` cuts, speed ramps and freezes by per-frame source mapping, push/shake/whip in Node, grades/flash/glitch/flicker/fades in ffmpeg, split-screen triptych, drawtext cards in the game's fonts (`trailer/fonts/`, OFL), animated letterbox. Five-bus mix in Node at 48 kHz: music with low-pass automation and tape stop, dialogue through radio/PA/Queen/system chains (whisper word timings + silencedetect for the trims), game SFX placed from the event logs (pitched with slow-mo), kit, ambience beds; dialogue ducks music 9 dB and SFX 5 dB. Two-pass loudnorm to -14 LUFS under a -3 dBTP limiter (ffmpeg's AAC adds ~1.2 dB of true peak on this mix). QA: codec/size/fps/audio/duration, loudness, true peak, blackdetect and freezedetect against the EDL's planned black/holds, plus a warning when a clip outruns its take. |
+| 4 | First full cut built: `hunker-bunker-gameplay-trailer.mp4`, 85.6 s, QA pass. Owner watch-through still to do; my notes in §10.4. |
+| 5 | `cutdown-30`, `cutdown-15`, `bumper-6`, `vertical-30` (1080×1920) built from the same takes, all through the same QA; thumbnails (railgun freeze, boss, Queen) exported by the build; four About loops (616×346, WebM + MP4, 120–470 KB, seamless) by `about-loops.js`. |
+
+### 10.3 What the capture found in the game
+
+- **The Queen fight works.** The 2026-10-14 store-shot misses were framing:
+  on this build `game.caveEntrance` is null, so `startQueenFight()` spawns her
+  at `getApexThreatOrigin()`, an offset from the player that lands below the
+  bottom edge of the screen; she does not move; her model plays an emergence
+  (root scale 0.05 → 1, about 1.5 s once the GLB is cached, longer on first
+  load) and rises about 0.66 NDC above its root, so anything placed screen-up
+  of the player leaves the 16:9 crop. Her brood adds are
+  `alien_proto_crawler` models that look like small Queens, which is what the
+  earlier "Queen on top of the player" frames showed. Framed beside the
+  player she reads well, takes damage (120 → 91 in a 4 s take) and her
+  boss bar updates. If the Queen should be findable in normal play, the spawn
+  offset is worth a look.
+- **Lights-out is real but subtle.** `triggerLightsOut()` needs the O2
+  generator online (`canTripLightingBreaker()`), and the visible effect is a
+  mild dim; "night" is a tint and furnished interiors stay lit. The trailer
+  uses the real event plus a night drop and adds a short flicker and darker
+  grade in the edit. The store's planned `hb_about_03_lights_out` loop has
+  the same limit.
+- **Live enemies draw through their 3D visual** (`userData.enemy3dVisual`);
+  their sprite is hidden, so `sprite.visible` is not an "alive" test.
+  Crawlers have 1 HP and cybersnails 2; recipes multiply HP (×2–×4) so a
+  fight lasts on camera.
+- **Clean HUD needs more than the stage.** The minimap is a canvas and some
+  toasts live outside `#game-viewport`; clean mode hides everything except
+  the renderer's canvas.
+- **The title menu shows MULTIPLAYER**, which the claim checklist keeps off
+  camera; the title capture hides the menu and profile HUD.
+- The weapon panel title stays `SIDEARM` after a field-weapon swap (store
+  doc §7), visible in every HUD-on shot.
+
+### 10.4 Differences from §4 and review notes for the owner
+
+- Act 2's "corridor → crawlers pour in" is staged in the cathedral hall (the
+  corridor hid them); the biome chain is bunker / cryo / bio walks; the O2 shot
+  carries the Bunker's "depth… and disapproves" line, and the System warning
+  was dropped for time.
+- Act 4 opens on the hive (not a Mothership uplink screen: there is no
+  uplink UI worth filming) with the purge line, then the Queen emerging and
+  the two-shot.
+- Act 5 has no music sting (the Main Theme has no ending swell; it is loud to
+  the last second): impact, reverse swell and drone under the title art, CTA
+  over the art, Bunker's "Your curiosity continues to exceed your clearance."
+  as the button.
+- Defaults taken for §9: music 1, VO 2 as written including the purge and
+  Queen lines, no new line recorded (3), synthesized kit only (4), "Wishlist
+  on Steam" with no date (5), no platform line (6). Each is one EDL edit.
+- To check on a watch-through: the mix balance (I verified levels and
+  waveform shape, not by ear), whether the weaker takes (welcome committee,
+  SMG, camp siege) should be re-staged, and the grid against the music.
+

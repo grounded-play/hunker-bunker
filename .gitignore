@@ -143,6 +143,9 @@ test-results/
 # npm run trailer:capture / npm run trailer:build) -- keep the pipeline
 # code and EDL in git, not the media itself.
 trailer/raw/
+# Trailer v4 FX kit: synthesized bit-identically by scripts/trailer/sfx-kit.js
+# (build-v4.js regenerates missing files), so it is not stored.
+trailer/sfx/
 dist/trailer/
 
 # Server-side session-log drop box (in-game console uploads)

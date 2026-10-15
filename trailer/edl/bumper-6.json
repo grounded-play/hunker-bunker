@@ -1,0 +1,94 @@
+{
+ "_doc": "6 s bumper: the cold-open gib, one drop shot, logo.",
+ "fps": 60,
+ "size": [
+  1920,
+  1080
+ ],
+ "music": {
+  "file": "public/audio/ost/Under Siege (Combat Alert).mp3",
+  "grid": "trailer/edl/under-siege-combat-alert.grid.json",
+  "anchor": {
+   "beat": "drop",
+   "at": 1.9
+  },
+  "start": "beat:drop",
+  "end": "beat:drop+4",
+  "gain": -1,
+  "tapeStop": {
+   "len": 0.4
+  }
+ },
+ "video": [
+  {
+   "shot": "cold-open-tank",
+   "in": 0.25,
+   "until": "beat:drop",
+   "grade": "night"
+  },
+  {
+   "shot": "drop-shotgun",
+   "in": 0.2,
+   "until": "beat:drop+2",
+   "flash": 2,
+   "grade": "hot",
+   "shakeAt": [
+    {
+     "at": 0.03,
+     "amp": 0.014,
+     "len": 0.3
+    }
+   ]
+  },
+  {
+   "shot": "title-reveal",
+   "in": 0.4,
+   "until": 6.0,
+   "flash": 3
+  }
+ ],
+ "text": [
+  {
+   "style": "small",
+   "text": "WISHLIST ON STEAM",
+   "at": "beat:drop+2.3",
+   "dur": 1.5,
+   "y": "h-120",
+   "size": 40,
+   "color": "white"
+  }
+ ],
+ "kit": [
+  {
+   "fx": "sub_hit",
+   "at": "beat:drop",
+   "gain": -2
+  },
+  {
+   "fx": "impact_metal",
+   "at": "beat:drop+2",
+   "gain": -4
+  }
+ ],
+ "game_sfx": {
+  "gain": 3,
+  "mute": [
+   "ui_error",
+   "ui_scan_ping"
+  ]
+ },
+ "mix": {
+  "lufs": -14,
+  "buses": {
+   "sfx": 0
+  }
+ },
+ "qa": {
+  "freeze": [
+   [
+    "beat:drop+2",
+    6.0
+   ]
+  ]
+ }
+}

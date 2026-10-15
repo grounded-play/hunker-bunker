@@ -206,6 +206,20 @@ they arrive with trailer Phase 1:
 Retire `scout.intro` / `eng.intro` from About. They show the cutscene, not
 play.
 
+Built 2026-10-14 (trailer plan §10): `node scripts/trailer/about-loops.js`
+writes all four to `dist/trailer/v4/about/` as 616×346 WebM (VP9) and MP4
+(H.264), 3.4–5 s seamless, 120–470 KB each. `hb_about_03_lights_out` shows the
+real lights-out event in a corridor going dark; the in-game dim is mild, so it
+reads as "the corridor gets darker", not "the lights die". `hb_about_02_bank`
+is the corpse pickup with the HUD counters; the ship-console bank tick-up is
+not in it (no console recipe yet).
+
+Copy check found while capturing: the About text says the Tank has a
+"shockwave stomp". In game the Tank's verbs are SMASH (melee, `V`) and the
+BULWARK block passive (`fx_tank_shockwave` is the block sound). Reword to
+"heavy frame, smashes through the line and shrugs off hits" or verify the
+stomp before publishing.
+
 ### 5.3 Capsule and library art: new briefs
 
 Problem: the current set is one painted image of a generic soldier in a
