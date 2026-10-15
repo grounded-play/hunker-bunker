@@ -140,17 +140,12 @@ def apply_articulations(name):
             bpy.ops.object.mode_set(mode='OBJECT')
             door = next(o for o in bpy.context.selected_objects if o is not body)
             door.name = 'HB_DOOR_00'
-            # Hinge at the left edge
-            pivot = Vector((-0.32, 0.0, 0.08))
-            offset = pivot - door.matrix_world.translation
-            door.data.transform(Matrix.Translation(-offset))
-            door.matrix_world.translation += offset
-            door['hb_motion'] = 'hinge'
-            door['hb_axis'] = to_gltf((0.0, 0.0, 1.0))
-            door['hb_open_angle'] = -1.570796
-            door['hb_open_offset'] = [0.0, 0.0, 0.0]
-            door['hb_duration'] = 1.1
-            print(f"[articulate] base_door_sealable_bulkhead: separated {count} faces into HB_DOOR_00")
+            door['hb_motion'] = 'slide'
+            door['hb_axis'] = [0.0, 1.0, 0.0]
+            door['hb_open_angle'] = 0.0
+            door['hb_open_offset'] = [0.0, -1.4, 0.0]
+            door['hb_duration'] = 0.9
+            print(f"[articulate] base_door_sealable_bulkhead: separated {count} faces into HB_DOOR_00 (vertical slide)")
         else:
             bpy.ops.object.mode_set(mode='OBJECT')
 

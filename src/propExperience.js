@@ -283,6 +283,16 @@ function materialsOf(object) {
 export function createPropExperience(root, model, type) {
     const profile = getPropExperienceProfile(type);
     const presentation = profile?.presentation;
+    if (type === 'base_door_sealable_bulkhead') {
+        model?.traverse?.((node) => {
+            if (node.name === 'HB_DOOR_00' && node.userData) {
+                node.userData.hb_motion = 'slide';
+                node.userData.hb_open_angle = 0;
+                node.userData.hb_open_offset = [0, -1.4, 0];
+                node.userData.hb_duration = 0.9;
+            }
+        });
+    }
     const articulation = createPropArticulation(model);
     if (!root || !model || (!presentation && !articulation)) return null;
 

@@ -94,12 +94,12 @@ describe('2026-10-12 Asset Cohort — GLB runtime files', () => {
     });
 
     it('ships moving parts with HB_* node hierarchy and motion metadata', () => {
-        // 1. Bulkhead door swing hinge
+        // 1. Bulkhead door vertical slide into ground
         const doorNodes = parseGltfNodes('base_door_sealable_bulkhead');
         const doorPart = doorNodes.find((n) => n.name === 'HB_DOOR_00');
         expect(doorPart).toBeDefined();
-        expect(doorPart.extras?.hb_motion).toBe('hinge');
-        expect(doorPart.extras?.hb_open_angle).toBeCloseTo(-Math.PI / 2);
+        expect(doorPart.extras?.hb_motion).toBe('slide');
+        expect(doorPart.extras?.hb_open_offset?.[1]).toBeCloseTo(-1.4);
 
         // 2. Guillotine vertical slide lift
         const guilNodes = parseGltfNodes('door_arch_guillotine_assembled');

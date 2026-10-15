@@ -26,7 +26,7 @@ export const DOOR_FAMILIES = Object.freeze({
     'blast-slab': Object.freeze({ motion: 'sink-floor', frameStyle: 'reinforced-bulkhead', materialVariant: 'bunker' }),
     'split-bulkhead': Object.freeze({ motion: 'split-sideways', frameStyle: 'pressure-frame', materialVariant: 'industrial' }),
     'arch-guillotine': Object.freeze({ motion: 'retract-crown', frameStyle: 'arched-rib', materialVariant: 'organic' }),
-    'camp-barricade': Object.freeze({ motion: 'swing-fold', frameStyle: 'salvage-brace', materialVariant: 'camp' })
+    'camp-barricade': Object.freeze({ motion: 'sink-floor', frameStyle: 'salvage-brace', materialVariant: 'camp' })
 });
 
 const STYLE_FAMILY = Object.freeze({
