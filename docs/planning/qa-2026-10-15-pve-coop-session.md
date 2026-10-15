@@ -64,7 +64,12 @@ Gameplay averaged about 16 fps on the PC (62.8 ms per presented frame) and about
   - The game behaved as designed. Worth a design look: a new player who picked "run me through protocols" can wipe on O2 before the tutorial teaches the bubble.
 - **The retry starts with 2 hearts on the Deck.** This is the fatigue scar (`src/fatigue.js`, −1 max heart after a death), intended.
 - **Relay reconnect works.** The PC's 38 s freeze closed its socket. It reconnected with a new id, and the Deck rebuilt its avatar (`spawn-relocated`, `remote-avatar-3d-ready`). The Deck ended with exactly one remote player, so the analyzer's "possible stale avatar" flag is a false positive.
-- **The Deck was not controller-only.** Its input mode flipped between controller and keyboard 13 times, and both deploys record `mode: keyboard`.
+- **Deck input is logged as keyboard although only the Deck's controls were used** (owner, 2026-10-15). The input mode flipped between controller and keyboard 13 times, and both deploys record `mode: keyboard`. Controller A presses arrive as clicks, and something in the Steam Input path reads as keyboard: a misclassification to fix, not a player using a keyboard.
+- **Class swap shows the previous class** (owner, 2026-10-15). On the Deck the hero select still showed the Scout after switching to the Tank. The capture has the exact route:
+  1. 18:09:18 pick the Scout, then ENTER ARMORY;
+  2. 18:09:30 RETURN TO MAIN MENU;
+  3. 18:09:33 pick the Tank, then ENTER ARMORY at 18:09:36.
+  The deployed class was the Tank (`opClass: TANK` in the relay join), so the stale model is presentation only.
 
 ## 3. Branch fixes and tickets this session can speak to
 
@@ -72,7 +77,6 @@ Gameplay averaged about 16 fps on the PC (62.8 ms per presented frame) and about
 | :--- | :--- |
 | #85 Two-account co-op | **Strong evidence, not closure.** The same build on both machines: lobby, ready, deploy, 3D remote avatars, damage, downed, squad wipe, black box recovered, joint redeploy, and a relay reconnect mid-run. Missing: an extraction, and a session without the freezes. |
 | #52 GPU / frame pacing | **Fails and regressed.** 32–38 s freezes and about 15 fps. T10's 5×5 residency holds (`retainedChunks` 25). See §1. |
-| #53 Deck controller-only | **Not shown.** Controller focus routing works in menus (163 `focus-route` events, including Armory slots), but the session mixes keyboard mode and both deploys are keyboard. |
-| Armory picks survive launch (`822a27cf`) | **Not exercised.** Both chassis slots stayed STANDARD CHASSIS and no finish was changed. |
-| Weapon fit, HUD weapon label, room doors | **Not observable in the logs;** they need the owner's eye or screenshots. |
+| #53 Deck controller-only | **Played controller-only (owner), but not yet provable from the log.** Menus route by controller (163 `focus-route` events, including Armory slots), yet the input-mode record says keyboard (§2). Fix the classification first, then the log can carry the evidence. |
+| Armory picks survive launch (`822a27cf`) | **Exercised.** On the Deck the Tank equipped the Trench Warden chassis, the Tectonic Driller then the Deep Core Melter, the Scout Victory Patch, the Amber CRT HUD, the Soviet voice bank and two modules (all DEV-unlocked). The PC loaded the Queen's Carapace Carbine in the Armory, and the Deck loaded the Chrono-Drifter for the remote Scout at deploy. The owner saw a non-standard chassis (Mayor Tina) in game in another play. The fetch log records only first loads, so it cannot list every model in the run. |
 | T8 Hero Select and Armory D-pad edges | **Working.** Controller `focus-route` moves through the Armory slots on the Deck. |
