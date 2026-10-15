@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-15
 
-**Status:** In progress; Slice 1A complete
+**Status:** In progress; directional steam vertical slice and pool foundation complete
 
 **Scope:** Steam/frost/spore bursts, pipe and prop outlets, slime/liquid volumes,
 interaction and proximity triggers, gameplay payloads, destruction, persistence,
@@ -71,6 +71,28 @@ Status: implemented with compatibility adapters.
   `dynamicPuddles` array remains as a compatibility view for track and relic code.
 - Visual lifetime still owns the current toxic-puddle fade, and unregisters the
   matching gameplay pool on disposal.
+
+### 2026-10-15 — Iteration verification and handoff
+
+Status: green on `dev/sprint-53`.
+
+- Full Vitest suite: 728 files passed, 6,213 tests passed.
+- Production Vite build: passed (the existing `threeGame` large-chunk advisory
+  remains non-blocking).
+- Required build-media audit: passed, 50 required door/cinematic assets present.
+- Focused ESLint and `git diff --check`: passed before each implementation commit.
+
+Open work retained from the plan:
+
+1. add the authored-anchor audit and in-world outlet/volume debug visualization;
+2. migrate fungal spore vents from their existing immediate eruption/projectile
+   behavior into the shared telegraph/exposure runtime without double effects;
+3. materialize destruction child descriptors as timed rupture jets and world
+   pools, including spent-state variants;
+4. add host-authoritative emitter/pool replication, late-join reconstruction,
+   and persistence for charges and long-lived leaks; and
+5. expand the catalog to cryo, decon, healing, specimen, fuel, sluice, and
+   severed-spline families after the first manual playtest/balance pass.
 
 ## Decision summary
 
