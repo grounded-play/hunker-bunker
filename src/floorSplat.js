@@ -806,6 +806,47 @@ export function isFloorSplatEnabled(storage = globalThis.localStorage) {
     }
 }
 
+// Floor specular (2026-10-15 playtest: highlight sparkle read as the floor
+// glitching). No floor surface goes glossier than this, wet included.
+export const FLOOR_MIN_ROUGHNESS = 0.3;
+export const FLOOR_WET_ROUGHNESS = 0.3;
+// World metres per screen pixel over which normal-map detail fades to flat:
+// once a pixel covers this much floor the detail can only alias.
+export const FLOOR_DETAIL_FADE = Object.freeze({ start: 0.035, end: 0.11 });
+// Junction blend. `ridge` is the height band in which surfaces mix, `breakup`
+// how far the painted grain pushes each surface's edge, and `fadeShare` the
+// corner share below which a surface eases out instead of popping.
+export const SPLAT_BLEND = Object.freeze({ ridge: 0.22, breakup: 0.4, fadeShare: 0.12 });
+
+const fract = (value) => value - Math.floor(value);
+const smoothstep = (edge0, edge1, x) => {
+    const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
+    return t * t * (3 - 2 * t);
+};
+
+/** Per-surface sign for the breakup grain: tied to the surface, not its slot. */
+export function splatBreakupSign(layer) {
+    return fract(layer * 0.6180339887) * 2 - 1;
+}
+
+/**
+ * Reference for the shader's junction blend (FLOOR_SPLAT_FRAGMENT_BLEND):
+ * every distinct surface among the four corner cells takes part, weighted by
+ * a height blend, and a surface's weight eases to zero with its corner share
+ * so nothing pops at cell edges. `slots` are [{ layer, share, height }] with
+ * shares summing to 1; returns normalized weights in the same order.
+ */
+export function splatJunctionWeights(slots, { breakup = 0.5 } = {}) {
+    const heights = slots.map(({ layer, share, height }) => (
+        height + share + (breakup - 0.5) * SPLAT_BLEND.breakup * splatBreakupSign(layer)
+    ));
+    const ridge = Math.max(...heights) - SPLAT_BLEND.ridge;
+    const keep = slots.map(({ share }, index) => Math.max(heights[index] - ridge, 0) * smoothstep(0, SPLAT_BLEND.fadeShare, share));
+    const total = keep.reduce((sum, value) => sum + value, 0);
+    if (total < 1e-4) return slots.map(({ share }) => share);
+    return keep.map((value) => value / total);
+}
+
 // Per-surface scale, ground blending and fallback, by layer range.
 const SURFACE_INFO_GLSL = FLOOR_SURFACES.map((surface) => {
     const end = SURFACE_LAYER_FIRST + surface.first + surface.variants;
@@ -820,10 +861,17 @@ export const FLOOR_SPLAT_FRAGMENT_PARS = /* glsl */ `
     uniform sampler2D uFloorMacro;
     uniform sampler2D uFloorBreakup;
     uniform float uFloorUtilityReady;
-    vec4 hbSurfAlbedoA;
-    vec4 hbSurfDetailA;
-    vec4 hbSurfAlbedoB;
-    vec4 hbSurfDetailB;
+    // Up to four distinct surfaces meet at a junction (one per corner cell).
+    vec4 hbSurfAlbedo[4];
+    vec4 hbSurfDetail[4];
+    float hbSplatSlotLayer[4];
+    float hbSplatSlotWeight[4];
+    int hbSplatSlotCount;
+    // World-space floor derivatives, taken once in uniform control flow so
+    // samples inside per-pixel branches still get correct mip levels.
+    vec2 hbFloorDx;
+    vec2 hbFloorDy;
+    float hbFloorDetailFade;
     // Returns the fallback layer; writes the surface's scale and ground flag.
     float hbSurfaceInfo(float layer, out float scale, out float groundLike) {
         scale = 4.0;
@@ -846,9 +894,6 @@ export const FLOOR_SPLAT_FRAGMENT_PARS = /* glsl */ `
     uniform vec3 uGroundEmissive[3];
     uniform float uFloorTime;
     float hbSplatActive;
-    float hbSplatLayerA;
-    float hbSplatLayerB;
-    float hbSplatMixB;
     float hbSplatWet;
     float hbSplatGrime;
     float hbSplatBaseWeight;
@@ -883,35 +928,37 @@ export const FLOOR_SPLAT_FRAGMENT_PARS = /* glsl */ `
         if (cell.x < 0 || cell.y < 0 || cell.x >= size || cell.y >= size) return vec4(1.0, 0.0, 0.0, 0.0);
         return texelFetch(uSplatData, cell, 0);
     }
+    float hbSplatBreakupSign(float layer) {
+        return fract(layer * 0.6180339887) * 2.0 - 1.0;
+    }
     vec3 hbSplatLayerColor(float layer, vec2 worldXZ, vec3 baseColor, float cryoMix, float bioMix) {
         if (layer < 0.5) return baseColor;
+        vec2 flipDx = vec2(hbFloorDx.x, -hbFloorDx.y);
+        vec2 flipDy = vec2(hbFloorDy.x, -hbFloorDy.y);
         if (layer < 1.5) {
             vec2 groundUv = vec2(worldXZ.x, -worldXZ.y) * 0.65;
-            vec3 ground = texture(uFloorLayers, vec3(groundUv, ${FLOOR_ARRAY_GROUND_FIRST}.0)).rgb;
-            if (cryoMix > 0.001) ground = mix(ground, texture(uFloorLayers, vec3(groundUv, ${FLOOR_ARRAY_GROUND_FIRST + 1}.0)).rgb, cryoMix);
-            if (bioMix > 0.001) ground = mix(ground, texture(uFloorLayers, vec3(groundUv, ${FLOOR_ARRAY_GROUND_FIRST + 2}.0)).rgb, bioMix);
+            vec2 gdx = flipDx * 0.65;
+            vec2 gdy = flipDy * 0.65;
+            vec3 ground = textureGrad(uFloorLayers, vec3(groundUv, ${FLOOR_ARRAY_GROUND_FIRST}.0), gdx, gdy).rgb;
+            if (cryoMix > 0.001) ground = mix(ground, textureGrad(uFloorLayers, vec3(groundUv, ${FLOOR_ARRAY_GROUND_FIRST + 1}.0), gdx, gdy).rgb, cryoMix);
+            if (bioMix > 0.001) ground = mix(ground, textureGrad(uFloorLayers, vec3(groundUv, ${FLOOR_ARRAY_GROUND_FIRST + 2}.0), gdx, gdy).rgb, bioMix);
             // The ledge material's lift of its near-black rock art.
             return pow(ground, vec3(0.55)) * 1.35;
         }
-        return texture(uFloorLayers, vec3(vec2(worldXZ.x, -worldXZ.y) * 0.25, layer - 2.0)).rgb;
+        return textureGrad(uFloorLayers, vec3(vec2(worldXZ.x, -worldXZ.y) * 0.25, layer - 2.0), flipDx * 0.25, flipDy * 0.25).rgb;
     }
-    // Samples a slot's layer (0 = A, 1 = B); new surfaces keep their albedo
-    // and detail texels for the roughness, metalness and normal chunks.
+    // Samples a junction slot's layer; new surfaces keep their albedo and
+    // detail texels for the roughness, metalness and normal chunks.
     vec3 hbSplatSampleLayer(int slot, float layer, vec2 worldXZ, vec3 baseColor, float cryoMix, float bioMix) {
         if (layer < ${SURFACE_LAYER_FIRST}.0 - 0.5) return hbSplatLayerColor(layer, worldXZ, baseColor, cryoMix, bioMix);
         float scale;
         float groundLike;
         hbSurfaceInfo(layer, scale, groundLike);
         vec3 uvw = vec3(worldXZ / scale, layer - ${SURFACE_LAYER_FIRST}.0);
-        vec4 albedo = texture(uSurfaceAlbedo, uvw);
-        vec4 detail = texture(uSurfaceDetail, uvw);
-        if (slot == 0) {
-            hbSurfAlbedoA = albedo;
-            hbSurfDetailA = detail;
-        } else {
-            hbSurfAlbedoB = albedo;
-            hbSurfDetailB = detail;
-        }
+        vec4 albedo = textureGrad(uSurfaceAlbedo, uvw, hbFloorDx / scale, hbFloorDy / scale);
+        vec4 detail = textureGrad(uSurfaceDetail, uvw, hbFloorDx / scale, hbFloorDy / scale);
+        hbSurfAlbedo[slot] = albedo;
+        hbSurfDetail[slot] = detail;
         vec3 color = albedo.rgb;
         // Outdoor ground still turns to ice or resin rock in those biomes.
         float biome = clamp(cryoMix + bioMix, 0.0, 1.0) * groundLike;
@@ -947,18 +994,24 @@ export const FLOOR_SPLAT_FRAGMENT_PARS = /* glsl */ `
  */
 export const FLOOR_SPLAT_FRAGMENT_BLEND = /* glsl */ `
     hbSplatActive = 0.0;
-    hbSplatLayerA = 0.0;
-    hbSplatLayerB = 0.0;
-    hbSplatMixB = 0.0;
     hbSplatWet = 0.0;
     hbSplatGrime = 0.0;
     hbSplatBaseWeight = 1.0;
     hbSplatGroundWeight = 0.0;
     hbSplatPathWear = 0.0;
-    hbSurfAlbedoA = vec4(0.5, 0.5, 0.5, 0.0);
-    hbSurfAlbedoB = hbSurfAlbedoA;
-    hbSurfDetailA = vec4(0.5, 0.5, 0.8, 0.5);
-    hbSurfDetailB = hbSurfDetailA;
+    hbSplatSlotCount = 0;
+    for (int k = 0; k < 4; k++) {
+        hbSplatSlotLayer[k] = -1.0;
+        hbSplatSlotWeight[k] = 0.0;
+        hbSurfAlbedo[k] = vec4(0.5, 0.5, 0.5, 0.0);
+        hbSurfDetail[k] = vec4(0.5, 0.5, 0.8, 0.5);
+    }
+    // Uniform control flow: every later sample uses these gradients, and
+    // normal detail fades as one pixel covers more floor (distance, grazing
+    // third-person angles), where it can only shimmer.
+    hbFloorDx = dFdx(vWorldPos.xz);
+    hbFloorDy = dFdy(vWorldPos.xz);
+    hbFloorDetailFade = 1.0 - smoothstep(${FLOOR_DETAIL_FADE.start}, ${FLOOR_DETAIL_FADE.end}, max(length(hbFloorDx), length(hbFloorDy)));
     if (uSplatInfo.z > 0.5 && uFloorLayersReady > 0.5) {
         vec2 splatWorld = vWorldPos.xz;
         vec2 splatLocal = splatWorld - uSplatInfo.xy;
@@ -999,52 +1052,70 @@ export const FLOOR_SPLAT_FRAGMENT_BLEND = /* glsl */ `
             splatPathWear += splatWeights[i] * splatTexels[i].b;
         }
         if (splatTotal > 0.0001) {
-            float layerA = -1.0;
-            float weightA = 0.0;
-            float layerB = -1.0;
-            float weightB = 0.0;
+            // Every distinct surface among the four corners takes part (the
+            // old top-two cut dropped a third surface abruptly where three
+            // met). Mirrors splatJunctionWeights() in JS.
+            float uniqLayer[4];
+            float uniqWeight[4];
+            int count = 0;
+            for (int i = 0; i < 4; i++) {
+                uniqLayer[i] = -1.0;
+                uniqWeight[i] = 0.0;
+            }
             for (int i = 0; i < 4; i++) {
                 if (splatWeights[i] <= 0.0) continue;
-                float candidate = splatLayers[i];
-                if (candidate == layerA || candidate == layerB) continue;
-                float sum = 0.0;
+                bool merged = false;
                 for (int j = 0; j < 4; j++) {
-                    if (splatLayers[j] == candidate) sum += splatWeights[j];
+                    if (j >= count) break;
+                    if (uniqLayer[j] == splatLayers[i]) {
+                        uniqWeight[j] += splatWeights[i];
+                        merged = true;
+                    }
                 }
-                if (sum > weightA) {
-                    layerB = layerA;
-                    weightB = weightA;
-                    layerA = candidate;
-                    weightA = sum;
-                } else if (sum > weightB) {
-                    layerB = candidate;
-                    weightB = sum;
+                if (!merged) {
+                    uniqLayer[count] = splatLayers[i];
+                    uniqWeight[count] = splatWeights[i];
+                    count++;
                 }
             }
-            vec3 colorA = hbSplatSampleLayer(0, layerA, splatWorld, floorColor, cryoMix, bioMix);
-            vec3 splatColor = colorA;
-            float mixB = 0.0;
-            if (layerB >= 0.0 && weightB > 0.0) {
-                vec3 colorB = hbSplatSampleLayer(1, layerB, splatWorld, floorColor, cryoMix, bioMix);
-                // Height blend: whichever surface stands higher wins first,
-                // so grit fills the cracks before it covers the plates.
-                float shareB = weightB / (weightA + weightB);
-                float heightA = hbSplatLayerHeight(layerA, colorA, hbSurfDetailA) + (1.0 - shareB);
-                float heightB = hbSplatLayerHeight(layerB, colorB, hbSurfDetailB) + shareB + (splatBreakup - 0.5) * 0.4;
-                float ridge = max(heightA, heightB) - 0.22;
-                float keepA = max(heightA - ridge, 0.0);
-                float keepB = max(heightB - ridge, 0.0);
-                mixB = keepB / max(keepA + keepB, 0.0001);
-                splatColor = mix(colorA, colorB, mixB);
-            } else {
-                layerB = layerA;
+            // Height blend: whichever surface stands higher wins first, so
+            // grit fills the cracks before it covers the plates. Each
+            // surface eases out with its corner share instead of popping.
+            vec3 slotColor[4];
+            float slotHeight[4];
+            float ridgeTop = -10000.0;
+            for (int k = 0; k < 4; k++) {
+                slotColor[k] = floorColor;
+                slotHeight[k] = 0.0;
+                if (k >= count) continue;
+                slotColor[k] = hbSplatSampleLayer(k, uniqLayer[k], splatWorld, floorColor, cryoMix, bioMix);
+                float share = uniqWeight[k] / splatTotal;
+                slotHeight[k] = hbSplatLayerHeight(uniqLayer[k], slotColor[k], hbSurfDetail[k]) + share
+                    + (splatBreakup - 0.5) * ${SPLAT_BLEND.breakup} * hbSplatBreakupSign(uniqLayer[k]);
+                ridgeTop = max(ridgeTop, slotHeight[k]);
             }
+            float ridge = ridgeTop - ${SPLAT_BLEND.ridge};
+            float keepTotal = 0.0;
+            for (int k = 0; k < 4; k++) {
+                if (k >= count) break;
+                float share = uniqWeight[k] / splatTotal;
+                hbSplatSlotWeight[k] = max(slotHeight[k] - ridge, 0.0) * smoothstep(0.0, ${SPLAT_BLEND.fadeShare}, share);
+                keepTotal += hbSplatSlotWeight[k];
+            }
+            vec3 splatColor = vec3(0.0);
+            hbSplatBaseWeight = 0.0;
+            hbSplatGroundWeight = 0.0;
+            for (int k = 0; k < 4; k++) {
+                if (k >= count) break;
+                float w = keepTotal > 0.0001 ? hbSplatSlotWeight[k] / keepTotal : uniqWeight[k] / splatTotal;
+                hbSplatSlotWeight[k] = w;
+                hbSplatSlotLayer[k] = uniqLayer[k];
+                splatColor += slotColor[k] * w;
+                if (uniqLayer[k] < 0.5) hbSplatBaseWeight += w;
+                else if (abs(uniqLayer[k] - 1.0) < 0.5) hbSplatGroundWeight += w;
+            }
+            hbSplatSlotCount = count;
             hbSplatActive = 1.0;
-            hbSplatLayerA = layerA;
-            hbSplatLayerB = layerB;
-            hbSplatMixB = mixB;
-            hbSplatBaseWeight = (layerA < 0.5 ? 1.0 - mixB : 0.0) + (layerB < 0.5 ? mixB : 0.0);
-            hbSplatGroundWeight = (abs(layerA - 1.0) < 0.5 ? 1.0 - mixB : 0.0) + (abs(layerB - 1.0) < 0.5 ? mixB : 0.0);
             float atlasWeight = max(0.0, 1.0 - hbSplatBaseWeight - hbSplatGroundWeight);
 
             hbSplatPathWear = splatPathWear / splatTotal;
@@ -1081,28 +1152,31 @@ export const FLOOR_SPLAT_FRAGMENT_BLEND = /* glsl */ `
 
 export const FLOOR_SPLAT_FRAGMENT_ROUGHNESS = /* glsl */ `
     if (hbSplatActive > 0.5) {
-        float splatRoughness = mix(
-            hbSplatLayerA > ${SURFACE_LAYER_FIRST}.0 - 0.5 ? hbSurfDetailA.b : hbSplatLayerRoughness(hbSplatLayerA, roughnessFactor),
-            hbSplatLayerB > ${SURFACE_LAYER_FIRST}.0 - 0.5 ? hbSurfDetailB.b : hbSplatLayerRoughness(hbSplatLayerB, roughnessFactor),
-            hbSplatMixB
-        );
-        splatRoughness = mix(splatRoughness, 0.1, hbSplatWet);
+        float splatRoughness = 0.0;
+        for (int k = 0; k < 4; k++) {
+            if (k >= hbSplatSlotCount) break;
+            float layer = hbSplatSlotLayer[k];
+            splatRoughness += hbSplatSlotWeight[k] * (layer > ${SURFACE_LAYER_FIRST}.0 - 0.5 ? hbSurfDetail[k].b : hbSplatLayerRoughness(layer, roughnessFactor));
+        }
+        splatRoughness = mix(splatRoughness, ${FLOOR_WET_ROUGHNESS.toFixed(2)}, hbSplatWet);
         splatRoughness = mix(splatRoughness, 0.95, hbSplatGrime * 0.6);
         float wearCenter = smoothstep(0.22, 0.75, hbSplatPathWear);
         float wearShoulder = smoothstep(0.04, 0.16, hbSplatPathWear) * (1.0 - smoothstep(0.16, 0.45, hbSplatPathWear));
         splatRoughness = mix(splatRoughness, splatRoughness * 0.65, wearCenter * 0.7);
         splatRoughness = mix(splatRoughness, 0.92, wearShoulder * 0.4);
-        roughnessFactor = clamp(splatRoughness, 0.04, 1.0);
+        roughnessFactor = clamp(splatRoughness, ${FLOOR_MIN_ROUGHNESS.toFixed(2)}, 1.0);
     }
 `;
 
 export const FLOOR_SPLAT_FRAGMENT_METALNESS = /* glsl */ `
     if (hbSplatActive > 0.5) {
-        metalnessFactor = mix(
-            hbSplatLayerA > ${SURFACE_LAYER_FIRST}.0 - 0.5 ? hbSurfAlbedoA.a : hbSplatLayerMetalness(hbSplatLayerA, metalnessFactor),
-            hbSplatLayerB > ${SURFACE_LAYER_FIRST}.0 - 0.5 ? hbSurfAlbedoB.a : hbSplatLayerMetalness(hbSplatLayerB, metalnessFactor),
-            hbSplatMixB
-        );
+        float splatMetalness = 0.0;
+        for (int k = 0; k < 4; k++) {
+            if (k >= hbSplatSlotCount) break;
+            float layer = hbSplatSlotLayer[k];
+            splatMetalness += hbSplatSlotWeight[k] * (layer > ${SURFACE_LAYER_FIRST}.0 - 0.5 ? hbSurfAlbedo[k].a : hbSplatLayerMetalness(layer, metalnessFactor));
+        }
+        metalnessFactor = splatMetalness;
         float wearCenter = smoothstep(0.22, 0.75, hbSplatPathWear);
         metalnessFactor = mix(metalnessFactor, min(1.0, metalnessFactor * 1.25 + 0.1), wearCenter * hbSplatBaseWeight * 0.5);
     }
@@ -1126,25 +1200,32 @@ export const FLOOR_SPLAT_FRAGMENT_NORMAL = /* glsl */ `
     hbFloorNormalPerturb *= hbSplatBaseWeight;
     normal = normalize(normal + hbFloorNormalPerturb);
     // New surfaces: tangent u along +x, v along +z, so the tangent-space
-    // normal (x, y, z) is (x, z, y) in the world.
-    float surfaceA = hbSplatLayerA > ${SURFACE_LAYER_FIRST}.0 - 0.5 ? 1.0 - hbSplatMixB : 0.0;
-    float surfaceB = hbSplatLayerB > ${SURFACE_LAYER_FIRST}.0 - 0.5 ? hbSplatMixB : 0.0;
-    if (surfaceA + surfaceB > 0.0) {
-        vec3 surfaceTangentNormal = normalize(
-            hbSurfaceNormal(hbSurfDetailA) * surfaceA
-            + hbSurfaceNormal(hbSurfDetailB) * surfaceB
-            + vec3(0.0, 0.0, 1.0) * max(0.0, 1.0 - surfaceA - surfaceB)
-        );
+    // normal (x, y, z) is (x, z, y) in the world. Detail fades with the
+    // pixel's floor footprint (hbFloorDetailFade).
+    float surfaceShare = 0.0;
+    vec3 surfaceTangentNormal = vec3(0.0);
+    for (int k = 0; k < 4; k++) {
+        if (k >= hbSplatSlotCount) break;
+        if (hbSplatSlotLayer[k] < ${SURFACE_LAYER_FIRST}.0 - 0.5) continue;
+        surfaceTangentNormal += hbSurfaceNormal(hbSurfDetail[k]) * hbSplatSlotWeight[k];
+        surfaceShare += hbSplatSlotWeight[k];
+    }
+    if (surfaceShare > 0.0) {
+        surfaceTangentNormal += vec3(0.0, 0.0, 1.0) * max(0.0, 1.0 - surfaceShare);
+        surfaceTangentNormal.xy *= hbFloorDetailFade;
+        surfaceTangentNormal = normalize(surfaceTangentNormal);
         vec3 surfaceWorldNormal = vec3(surfaceTangentNormal.x, surfaceTangentNormal.z, surfaceTangentNormal.y);
-        normal = normalize(mix(normal, normalize((viewMatrix * vec4(surfaceWorldNormal, 0.0)).xyz), min(1.0, surfaceA + surfaceB)));
+        normal = normalize(mix(normal, normalize((viewMatrix * vec4(surfaceWorldNormal, 0.0)).xyz), min(1.0, surfaceShare)));
     }
     if (hbSplatGroundWeight > 0.0) {
         vec2 groundNormalUv = vWorldPos.xz * 1.5;
-        vec3 groundNormal = texture(uGroundNormals, vec3(groundNormalUv, 0.0)).xyz;
-        if (cryoMix > 0.001) groundNormal = mix(groundNormal, texture(uGroundNormals, vec3(groundNormalUv, 1.0)).xyz, cryoMix);
-        if (bioMix > 0.001) groundNormal = mix(groundNormal, texture(uGroundNormals, vec3(groundNormalUv, 2.0)).xyz, bioMix);
+        vec2 gndx = hbFloorDx * 1.5;
+        vec2 gndy = hbFloorDy * 1.5;
+        vec3 groundNormal = textureGrad(uGroundNormals, vec3(groundNormalUv, 0.0), gndx, gndy).xyz;
+        if (cryoMix > 0.001) groundNormal = mix(groundNormal, textureGrad(uGroundNormals, vec3(groundNormalUv, 1.0), gndx, gndy).xyz, cryoMix);
+        if (bioMix > 0.001) groundNormal = mix(groundNormal, textureGrad(uGroundNormals, vec3(groundNormalUv, 2.0), gndx, gndy).xyz, bioMix);
         groundNormal = groundNormal * 2.0 - 1.0;
-        groundNormal.xy *= 0.72;
+        groundNormal.xy *= 0.72 * hbFloorDetailFade;
         mat3 groundTangentFrame = mat3(
             normalize((viewMatrix * vec4(1.0, 0.0, 0.0, 0.0)).xyz),
             normalize((viewMatrix * vec4(0.0, 0.0, -1.0, 0.0)).xyz),

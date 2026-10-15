@@ -278,6 +278,7 @@ import {
     FLOOR_SPLAT_FRAGMENT_EMISSIVE,
     FLOOR_SPLAT_FRAGMENT_METALNESS,
     FLOOR_SPLAT_FRAGMENT_NORMAL,
+    FLOOR_MIN_ROUGHNESS,
     FLOOR_SPLAT_FRAGMENT_PARS,
     FLOOR_SPLAT_FRAGMENT_ROUGHNESS,
     FLOOR_UTILITY_MAPS,
@@ -3206,7 +3207,9 @@ export class ThreeGame {
                     float floorLum = dot(floorColor, vec3(0.299, 0.587, 0.114));
                     float dFloorX = dFdx(floorLum);
                     float dFloorY = dFdy(floorLum);
-                    hbFloorNormalPerturb = vec3(-dFloorX * 1.5, 0.0, -dFloorY * 1.5);
+                    // Screen-space relief: noisier the more floor a pixel
+                    // covers, so it fades with the same footprint as normal maps.
+                    hbFloorNormalPerturb = vec3(-dFloorX * 1.5, 0.0, -dFloorY * 1.5) * hbFloorDetailFade;
                 #endif
                 `
             );
@@ -3216,7 +3219,7 @@ export class ThreeGame {
                 `
                 #include <roughnessmap_fragment>
                 #ifdef USE_MAP
-                    roughnessFactor = clamp(hbFloorRoughness, 0.04, 1.0);
+                    roughnessFactor = clamp(hbFloorRoughness, ${FLOOR_MIN_ROUGHNESS.toFixed(2)}, 1.0);
                     ${FLOOR_SPLAT_FRAGMENT_ROUGHNESS}
                 #endif
                 `
@@ -3227,6 +3230,26 @@ export class ThreeGame {
                 #include <metalnessmap_fragment>
                 #ifdef USE_MAP
                     ${FLOOR_SPLAT_FRAGMENT_METALNESS}
+                #endif
+                `
+            );
+            // Specular anti-aliasing (normal-variance roughness widening, as in
+            // Filament): where the shading normal changes quickly between
+            // neighbouring pixels a highlight can only sparkle, so roughness
+            // widens to cover it. Runs once the final floor normal exists.
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <lights_physical_fragment>',
+                `
+                #include <lights_physical_fragment>
+                #ifdef USE_MAP
+                {
+                    vec3 hbNormalDx = dFdx(normal);
+                    vec3 hbNormalDy = dFdy(normal);
+                    float hbNormalVariance = 0.15 * (dot(hbNormalDx, hbNormalDx) + dot(hbNormalDy, hbNormalDy));
+                    float hbAlpha = material.roughness * material.roughness;
+                    float hbFilteredAlpha = clamp(hbAlpha * hbAlpha + min(2.0 * hbNormalVariance, 0.2), 0.0, 1.0);
+                    material.roughness = clamp(sqrt(sqrt(hbFilteredAlpha)), material.roughness, 1.0);
+                }
                 #endif
                 `
             );

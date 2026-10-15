@@ -4,8 +4,15 @@ import fs from 'node:fs';
 import { read as readKtx2 } from 'three/examples/jsm/libs/ktx-parse.module.js';
 import {
     FLOOR_ARRAY_SOURCES,
+    FLOOR_DETAIL_FADE,
     FLOOR_LAYER,
+    FLOOR_MIN_ROUGHNESS,
+    FLOOR_SPLAT_FRAGMENT_BLEND,
+    FLOOR_SPLAT_FRAGMENT_NORMAL,
     FLOOR_SPLAT_FRAGMENT_PARS,
+    FLOOR_SPLAT_FRAGMENT_ROUGHNESS,
+    FLOOR_WET_ROUGHNESS,
+    splatJunctionWeights,
     FLOOR_SURFACES,
     FLOOR_SURFACE_COUNT,
     ROOM_THEME_SURFACE,
@@ -305,3 +312,69 @@ describe('scopeSpecularSofteningToBaseFloor', () => {
         expect(scoped).not.toContain('reflectedLight.directSpecular *= 0.35;');
     });
 });
+
+// 2026-10-15 playtest: floors "competing and glitching" in both camera views.
+describe('floor junction blend and specular stability', () => {
+    it('keeps every surface that meets at a junction', () => {
+        // Three surfaces at one corner: the old shader kept the top two and
+        // dropped the third outright.
+        const weights = splatJunctionWeights([
+            { layer: 20, share: 0.4, height: 0.5 },
+            { layer: 24, share: 0.35, height: 0.5 },
+            { layer: 30, share: 0.25, height: 0.5 }
+        ]);
+        expect(weights[2]).toBeGreaterThan(0.1);
+        expect(weights.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 6);
+    });
+
+    it('eases a surface out as its corner share vanishes, without a step', () => {
+        const at = (share) => splatJunctionWeights([
+            { layer: 20, share: 1 - share, height: 0.4 },
+            { layer: 30, share, height: 0.95 }
+        ])[1];
+        // A tall surface used to keep a large weight right up to the cell
+        // edge, then vanish there: a hard seam.
+        expect(at(0.001)).toBeLessThan(0.01);
+        let previous = at(0.0005);
+        for (let share = 0.001; share <= 0.3; share += 0.001) {
+            const next = at(share);
+            expect(Math.abs(next - previous), `share ${share.toFixed(3)}`).toBeLessThan(0.05);
+            previous = next;
+        }
+    });
+
+    it('does not depend on which corner slot a surface landed in', () => {
+        const slots = [
+            { layer: 20, share: 0.5, height: 0.3 },
+            { layer: 27, share: 0.3, height: 0.6 },
+            { layer: 33, share: 0.2, height: 0.45 }
+        ];
+        const forward = splatJunctionWeights(slots, { breakup: 0.8 });
+        const reversed = splatJunctionWeights([...slots].reverse(), { breakup: 0.8 }).reverse();
+        forward.forEach((weight, index) => expect(weight).toBeCloseTo(reversed[index], 9));
+    });
+
+    it('samples blend layers with gradients taken in uniform control flow', () => {
+        expect(FLOOR_SPLAT_FRAGMENT_BLEND).toContain('hbFloorDx = dFdx(vWorldPos.xz);');
+        const helpers = FLOOR_SPLAT_FRAGMENT_PARS.slice(FLOOR_SPLAT_FRAGMENT_PARS.indexOf('vec3 hbSplatLayerColor'));
+        const sampling = helpers.slice(0, helpers.indexOf('float hbSplatLayerHeight'));
+        expect(sampling).toContain('textureGrad(');
+        expect(sampling).not.toMatch(/[^a-zA-Z]texture\(/);
+        expect(FLOOR_SPLAT_FRAGMENT_NORMAL).not.toMatch(/[^a-zA-Z]texture\(/);
+        expect(FLOOR_SPLAT_FRAGMENT_BLEND).not.toContain('layerB');
+    });
+
+    it('never lets a floor surface go glossier than the minimum, wet included', () => {
+        expect(FLOOR_MIN_ROUGHNESS).toBeGreaterThanOrEqual(0.3);
+        expect(FLOOR_WET_ROUGHNESS).toBeGreaterThanOrEqual(FLOOR_MIN_ROUGHNESS);
+        expect(FLOOR_SPLAT_FRAGMENT_ROUGHNESS).toContain(`clamp(splatRoughness, ${FLOOR_MIN_ROUGHNESS.toFixed(2)}, 1.0)`);
+        expect(FLOOR_SPLAT_FRAGMENT_ROUGHNESS).toContain(`mix(splatRoughness, ${FLOOR_WET_ROUGHNESS.toFixed(2)}, hbSplatWet)`);
+    });
+
+    it('fades normal detail as one pixel covers more floor', () => {
+        expect(FLOOR_DETAIL_FADE.start).toBeLessThan(FLOOR_DETAIL_FADE.end);
+        expect(FLOOR_SPLAT_FRAGMENT_NORMAL).toContain('surfaceTangentNormal.xy *= hbFloorDetailFade;');
+        expect(FLOOR_SPLAT_FRAGMENT_NORMAL).toContain('groundNormal.xy *= 0.72 * hbFloorDetailFade;');
+    });
+});
+
