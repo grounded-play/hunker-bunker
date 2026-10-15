@@ -13,7 +13,13 @@ test('trailer repl', async ({ page }) => {
     test.skip(!process.env.TRAILER_REPL, 'set TRAILER_REPL=1');
     fs.mkdirSync(DIR, { recursive: true });
     for (const f of fs.readdirSync(DIR)) fs.rmSync(path.join(DIR, f), { force: true, recursive: true });
-    await bootForCapture(page, { playerClass: process.env.TRAILER_REPL_CLASS ?? null });
+    const boot = await bootForCapture(page, {
+        playerClass: process.env.TRAILER_REPL_CLASS ?? null,
+        chassisSkin: process.env.TRAILER_REPL_SKIN ?? null,
+        archetype: process.env.TRAILER_REPL_ARCHETYPE ?? null,
+        weaponSkin: process.env.TRAILER_REPL_WEAPON_SKIN ?? null
+    });
+    fs.writeFileSync(path.join(DIR, 'boot.json'), JSON.stringify(boot ?? null));
     const api = shotApi(page);
     fs.writeFileSync(path.join(DIR, 'ready'), new Date().toISOString());
     const done = new Set();
