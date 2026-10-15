@@ -77,10 +77,13 @@ Status: implemented with compatibility adapters.
 
 Status: green on `dev/sprint-53`.
 
-- Full Vitest suite: 728 files passed, 6,213 tests passed.
+- Full Vitest suite after the latest coolant/pool slice: 729 files passed, 6,225
+  tests passed.
 - Production Vite build: passed (the existing `threeGame` large-chunk advisory
   remains non-blocking).
 - Required build-media audit: passed, 50 required door/cinematic assets present.
+- World-emitter asset audit: passed in fallback-safe mode for all five catalog
+  assets; strict authored-anchor mode remains an intentional art-queue failure.
 - Focused ESLint and `git diff --check`: passed before each implementation commit.
 
 Open work retained from the plan:
