@@ -108,6 +108,7 @@ import { CombatSignal } from './combatSignal.js';
 import { PickupMagnet, PickupComboTracker } from './lootJuice.js';
 import { BiomeAtmosphereSystem } from './ambientDrift.js';
 import { AmbientVentSystem, FloorFogSystem } from './ambientVentsAndFog.js';
+import { buildCliffPathGlowBatch } from './cliffPathGlow.js';
 import { KillstreakFeedbackSystem } from './gameplayTactileVfx.js';
 import { CHUNK_SIZE, TILE_SIZE } from './tileCatalog.js';
 import { getControllerGlyphLabel } from './inputGlyphs.js';
@@ -12322,7 +12323,7 @@ export class ThreeGame {
      * One floor material per chunk: a clone of the floor material that reads
      * this chunk's per-cell surface data. Returns null when blending is off.
      */
-    createChunkFloorSplatMaterial(chunkX, chunkY, grid, { landform, ledgeGround = false } = {}) {
+    createChunkFloorSplatMaterial(chunkX, chunkY, grid, { landform, ledgeGround = true } = {}) {
         if (!this.floorMaterial || !this.floorSplatShared || !grid || !isFloorSplatEnabled()) return null;
         const splat = buildFloorSplatData({
             grid,
@@ -12718,6 +12719,27 @@ export class ThreeGame {
         image.src = safePath;
 
         return texture;
+    }
+
+    // The game container's size without a layout read per frame. Reading
+    // clientWidth after the HUD's DOM writes forced a synchronous layout every
+    // frame: ~5% of the main thread in gameplay (S53-02 profile). A
+    // ResizeObserver refreshes it after layout instead; without one (tests,
+    // old engines) it reads directly.
+    getContainerSize() {
+        const container = this.container;
+        if (!container) return { width: 0, height: 0 };
+        if (typeof ResizeObserver !== 'function') return { width: container.clientWidth, height: container.clientHeight };
+        if (this._containerSizeTarget !== container) {
+            this._containerSizeObserver?.disconnect?.();
+            this._containerSizeTarget = container;
+            this._containerSize = { width: container.clientWidth, height: container.clientHeight };
+            this._containerSizeObserver = new ResizeObserver(() => {
+                this._containerSize = { width: container.clientWidth, height: container.clientHeight };
+            });
+            this._containerSizeObserver.observe(container);
+        }
+        return this._containerSize;
     }
 
     resize() {
@@ -13567,8 +13589,9 @@ export class ThreeGame {
         // running its full per-frame update + renderer.render() every tick --
         // real GPU/CPU cost spent on a canvas nothing could see. No frame
         // skipped here is ever visible, on any hardware.
-        if (this.container && this.container.clientWidth === 0 && this.container.clientHeight === 0) {
-            return;
+        if (this.container) {
+            const { width, height } = this.getContainerSize();
+            if (width === 0 && height === 0) return;
         }
         // Keep the render guard callable with the deliberately minimal fake
         // objects used by the defensive tests and lightweight integrations.
@@ -26971,7 +26994,8 @@ export class ThreeGame {
             }
             if (child.userData?.isStickerDecals) child.geometry?.dispose?.();
             // Wall-top dressing and door pools share their geometry; their instance buffers go.
-            if (child.userData?.isWallTopDressing || child.userData?.isDoorLightPool || child.userData?.isChasmLandmark) child.dispose?.();
+            if (child.userData?.isWallTopDressing || child.userData?.isDoorLightPool || child.userData?.isChasmLandmark
+                || child.userData?.isCliffSecretPath) child.dispose?.();
             // A wall or cap pool owns its corner-cut geometry and its instance buffers.
             if (child.userData?.isInstancedWallPool || child.userData?.isWallRunFacadePool || child.userData?.isRoomCutawayCapPool
                 || (child.userData?.isCliff && child.geometry?.userData?.ownedByWallPool)) {
@@ -30181,8 +30205,9 @@ export class ThreeGame {
         const overlay = this.darknessOverlay;
         const ctx = this.darknessOverlayContext;
         if (!overlay || !ctx || !this.player || !this.camera) return;
-        const w = this.container.clientWidth || 1;
-        const h = this.container.clientHeight || 1;
+        const size = this.getContainerSize();
+        const w = size.width || 1;
+        const h = size.height || 1;
         // Match the WebGL framebuffer scale. A separate 2x fullscreen canvas
         // doubled the memory/bandwidth hit precisely on the high-DPI PCs that
         // already needed the render budget most.
@@ -35498,7 +35523,7 @@ export class ThreeGame {
         const floorCoverage = instancedFloor ? planInstancedFloorCoverage(grid) : null;
         const floorSplatMaterial = this.createChunkFloorSplatMaterial(chunkX, chunkY, grid, {
             landform,
-            ledgeGround: instancedFloor
+            ledgeGround: true
         });
         if (instancedFloor) {
             const { floorCells, exteriorGroundCells } = floorCoverage;
@@ -35705,6 +35730,7 @@ export class ThreeGame {
         }
 
         const voidPatchMatrices = [];
+        const cliffPathGlowCells = [];
         const cliffMatricesByBiome = new Map();
         const cliffEdgeMatricesByBiome = new Map();
         const canyonDropMatricesByBiome = new Map();
@@ -35900,13 +35926,7 @@ export class ThreeGame {
                 ));
             }
 
-            if (this.isCliffSecretPath(worldX, worldZ) && this.cliffPathGeometry && this.cliffPathMaterial) {
-                const pathGlow = new THREE.Mesh(this.cliffPathGeometry, this.cliffPathMaterial);
-                pathGlow.rotation.x = -Math.PI / 2;
-                pathGlow.position.set(worldX, 0.045, worldZ);
-                pathGlow.userData = { isCliffSecretPath: true };
-                group.add(pathGlow);
-            }
+            if (this.isCliffSecretPath(worldX, worldZ)) cliffPathGlowCells.push({ x: worldX, z: worldZ });
         };
 
         // Whether a cell shows a standing wall, for picking wall pieces: a '#'
@@ -36547,6 +36567,9 @@ export class ThreeGame {
                 group.add(cliffInstanced);
             }
         }
+
+        const cliffPathGlows = buildCliffPathGlowBatch(this.cliffPathGeometry, this.cliffPathMaterial, cliffPathGlowCells);
+        if (cliffPathGlows) group.add(cliffPathGlows);
 
         if (this.cliffEdgeGeometry && cliffEdgeMatricesByBiome.size > 0) {
             for (const [bKey, matrices] of cliffEdgeMatricesByBiome.entries()) {

@@ -114,6 +114,52 @@ describe('buildFloorSplatData', () => {
         expect(buildFloorSplatData(options).layer).toEqual(splat.layer);
     });
 
+    it('paints outdoor field, crater, ruins and canyon ground instead of metal base plates', () => {
+        const fieldSplat = build({ maze: false, landform: 'field', surfaces: true });
+        const fieldGroundSurface = surfaceForLayer(at(fieldSplat, 1, 0).layer)?.id;
+        expect(['tex_ground_regolith', 'tex_path_gravel_scree', 'tex_shoulder_swept_grit']).toContain(fieldGroundSurface);
+        expect(at(fieldSplat, 1, 0).layer).not.toBe(FLOOR_LAYER.BASE);
+        expect(at(fieldSplat, 0, 3).layer).not.toBe(FLOOR_LAYER.BASE);
+        // Room interior preserves authored room theme
+        expect(at(fieldSplat, 2, 3).layer).toBe(FLOOR_LAYER.CRYO);
+
+        const ruinsSplat = build({ maze: false, landform: 'ruins', surfaces: true });
+        const ruinsGroundSurface = surfaceForLayer(at(ruinsSplat, 1, 0).layer)?.id;
+        expect(['tex_ground_rutted_dirt', 'tex_path_gravel_scree', 'tex_shoulder_swept_grit']).toContain(ruinsGroundSurface);
+        expect(at(ruinsSplat, 1, 0).layer).not.toBe(FLOOR_LAYER.BASE);
+
+        const canyonSplat = build({ maze: false, landform: 'canyon', surfaces: false });
+        expect(at(canyonSplat, 1, 0).layer).toBe(FLOOR_LAYER.GROUND);
+        expect(at(canyonSplat, 0, 3).layer).toBe(FLOOR_LAYER.GROUND);
+    });
+
+    it('paints natural ground on ledges outside crash site bunker in chunk 0,0', () => {
+        const crashChunk = buildFloorSplatData({
+            grid: ['O.X', 'O.X', 'O.X'],
+            size: 3,
+            crashRoom: true,
+            landform: 'field',
+            surfaces: false,
+            variantKey: '0,0'
+        });
+        // Inside crash room: room floor
+        expect(crashChunk.layer[1 * 3 + 1]).toBe(FLOOR_LAYER.ROOM);
+        // Outside bunker: natural ground, not metallic grid
+        expect(crashChunk.layer[1 * 3 + 0]).toBe(FLOOR_LAYER.GROUND);
+
+        const crashChunkPbr = buildFloorSplatData({
+            grid: ['O.X', 'O.X', 'O.X'],
+            size: 3,
+            crashRoom: true,
+            landform: 'field',
+            surfaces: true,
+            variantKey: '0,0'
+        });
+        const exteriorSurface = surfaceForLayer(crashChunkPbr.layer[1 * 3 + 0])?.id;
+        expect(['tex_ground_regolith', 'tex_path_gravel_scree', 'tex_shoulder_swept_grit']).toContain(exteriorSurface);
+        expect(crashChunkPbr.layer[1 * 3 + 0]).not.toBe(FLOOR_LAYER.BASE);
+    });
+
     it('records the distance to the nearest wall in cells', () => {
         const splat = build();
         expect(at(splat, 1, 1).wall).toBe(0);

@@ -471,7 +471,7 @@ export function buildFloorSplatData({
     maze = false,
     crashRoom = false,
     crashImpact = null,
-    ledgeGround = false,
+    ledgeGround = true,
     landform = null,
     variantKey = '',
     surfaces = true
@@ -479,9 +479,10 @@ export function buildFloorSplatData({
     const count = size * size;
     const hallwayLayer = (surfaces && surfaceLayer(HALLWAY_SURFACE, variantKey)) || FLOOR_LAYER.HALLWAY;
     const groundSurface = surfaces ? LANDFORM_GROUND_SURFACE[landform] : null;
-    const groundLayer = ledgeGround
+    const groundLayer = (ledgeGround || Boolean(landform))
         ? ((groundSurface && surfaceLayer(groundSurface, variantKey)) || FLOOR_LAYER.GROUND)
         : FLOOR_LAYER.BASE;
+    const isOutdoorLandform = Boolean(landform && landform !== 'maze');
     const layer = new Uint8Array(count).fill(FLOOR_LAYER.NONE);
     const wetness = new Float32Array(count);
     const set = (x, y, value, wet) => {
@@ -503,6 +504,8 @@ export function buildFloorSplatData({
                 set(x, y, FLOOR_LAYER.ROOM, floorWetnessForStyle('bunker-standard'));
             } else if (maze && tile === '.' && !roomCells.has(`${x},${y}`)) {
                 set(x, y, hallwayLayer, floorWetnessForStyle('hallway'));
+            } else if (isOutdoorLandform && tile === '.' && !roomCells.has(`${x},${y}`)) {
+                set(x, y, groundLayer, 0);
             } else {
                 set(x, y, FLOOR_LAYER.BASE, 0);
             }
