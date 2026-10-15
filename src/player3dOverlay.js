@@ -7,6 +7,8 @@ import { recordAssetLoad } from './assetLoadTelemetry.js';
 import { getWeaponCalibration, getWeaponScaleForBounds } from './weaponCalibration.js';
 import { getCharmSocketTransform, resolveCharmModelOffset, getCharmCordLoopPoints } from './charmSockets.js';
 import { applyWeaponSheen } from './weaponSheenMaterial.js';
+import { resolveWeaponModel } from './data/weaponModelFrames.js';
+import { frameWeaponModel } from './weaponModelFrame.js';
 import { isMaterialFinish, applyWeaponMaterialFinish } from './weaponFinishMaterial.js';
 import { CHARM_GLB_MAP } from './charmModels.js';
 import { createOperatorEquipmentController } from './operatorEquipmentSockets.js';
@@ -132,9 +134,10 @@ export async function createClassWeapon(archetypeId, { position = null, skinId =
         console.warn('[player-3d-overlay] charm unavailable; keeping the weapon', error);
         return null;
     }) : Promise.resolve(null);
-    const skinUrl = skinId ? WEAPON_SKIN_MESHES[skinId] : null;
-    const archetypeUrl = WEAPON_ARCHETYPES[archetypeId] ?? WEAPON_URL;
-    const url = skinUrl ?? archetypeUrl;
+    const resolved = resolveWeaponModel(archetypeId, skinId);
+    const skinUrl = resolved.bespoke ? resolved.url : null;
+    const archetypeUrl = resolved.archetypeUrl;
+    let url = resolved.url;
     let template;
     try {
         template = await loadWeaponTemplate(url);
@@ -146,9 +149,14 @@ export async function createClassWeapon(archetypeId, { position = null, skinId =
         }
         console.warn(`[player-3d-overlay] weapon archetype "${archetypeId}" (${url}) failed to load; falling back to GG1`, err);
         template = await loadWeaponTemplate(WEAPON_URL);
+        url = WEAPON_URL;
     }
-    const weapon = template.scene.clone(true);
-    if (skinId && isMaterialFinish(skinId)) {
+    // Turned and slid so the muzzle points away from the operator and the
+    // grip sits where the class frame's hand pose expects it.
+    const weapon = frameWeaponModel(template.scene.clone(true), { url, archetypeId, archetypeUrl, context: 'gameplay' });
+    // A finish with its own model is shown as authored; painting the
+    // procedural finish over it flattened its textures.
+    if (skinId && !skinUrl && isMaterialFinish(skinId)) {
         applyWeaponMaterialFinish(weapon, skinId);
     }
     applyWeaponSheen(weapon, sheenColor);

@@ -3,8 +3,7 @@ import { assetUrl } from './assetUrl.js';
 import {
     CHASSIS_SKIN_MODELS,
     createPlayer3dOverlay,
-    WEAPON_ARCHETYPES,
-    WEAPON_SKIN_MESHES
+    WEAPON_ARCHETYPES
 } from './player3dOverlay.js';
 import { getCatalogEntry as getItemCatalogEntry } from './itemOwnership.js';
 import { getCharmCordLoopPoints, getCharmSocketTransform, resolveCharmModelOffset } from './charmSockets.js';
@@ -17,6 +16,8 @@ export { MOD_GLB_MAP } from './operatorEquipmentSockets.js';
 import { CHARM_GLB_MAP } from './charmModels.js';
 import { decodeChassisChoice, resolveChassisModelUrl } from './chassisBodies.js';
 import { createGltfLoader } from './gltfLoaderFactory.js';
+import { resolveWeaponModel } from './data/weaponModelFrames.js';
+import { frameWeaponModel } from './weaponModelFrame.js';
 export { CHARM_GLB_MAP } from './charmModels.js';
 
 export const CHASSIS_SKIN_GLB_MAP = CHASSIS_SKIN_MODELS;
@@ -25,8 +26,6 @@ export const CHASSIS_SKIN_GLB_MAP = CHASSIS_SKIN_MODELS;
 // drive the in-combat held weapon — so the Armory bench preview can never drift out of
 // sync with what actually renders in a run (this file used to keep its own stale copy;
 // see docs/armory-and-class-weapons-worklog.md).
-const WEAPON_SKIN_GLB_MAP = WEAPON_SKIN_MESHES;
-const WEAPON_ARCHETYPE_GLBS = WEAPON_ARCHETYPES;
 const FALLBACK_WEAPON_GLB = WEAPON_ARCHETYPES.gg1;
 const DEFAULT_CLASS_ARCHETYPES = Object.freeze({
     scout: 'talon',
@@ -451,8 +450,12 @@ export async function createArmoryScene(canvas) {
     async function loadWeaponAsset(archetypeId, skinItemdefId) {
         const gen = ++weaponLoadGen;
         applyCharmSocket(archetypeId);
-        const isFinish = isMaterialFinish(skinItemdefId);
-        let url = (!isFinish && WEAPON_SKIN_GLB_MAP[String(skinItemdefId)]) || WEAPON_ARCHETYPE_GLBS[archetypeId] || FALLBACK_WEAPON_GLB;
+        // The same model the operator holds (src/data/weaponModelFrames.js):
+        // a finish with its own model shows it as authored, one without is
+        // painted onto the class frame.
+        const resolved = resolveWeaponModel(archetypeId, skinItemdefId);
+        const isFinish = !resolved.bespoke && isMaterialFinish(skinItemdefId);
+        let url = resolved.url;
 
         try {
             let gltf;
@@ -460,6 +463,7 @@ export async function createArmoryScene(canvas) {
                 gltf = await loadArmoryGltfCached(gltfLoader, url);
             } catch {
                 // Fallback to GG1 if archetype or skin GLB is not authored yet
+                url = FALLBACK_WEAPON_GLB;
                 gltf = await loadArmoryGltfCached(gltfLoader, FALLBACK_WEAPON_GLB);
             }
             if (gen !== weaponLoadGen) return;
@@ -470,7 +474,8 @@ export async function createArmoryScene(canvas) {
                 disposeWeaponMaterialFinish(currentWeaponMesh);
             }
 
-            const model = gltf.scene.clone(true);
+            // Turned muzzle-first like the gun in the operator's hand.
+            const model = frameWeaponModel(gltf.scene.clone(true), { url, archetypeId, archetypeUrl: resolved.archetypeUrl, context: 'armory', matchGrip: false });
             if (isFinish) {
                 applyWeaponMaterialFinish(model, skinItemdefId);
             }
@@ -653,6 +658,8 @@ export async function createArmoryScene(canvas) {
     let idleTimer = 0;
     let armoryPresentationState = 'ARMED_IDLE';
     let nextArmoryStateChangeAt = performance.now() + 6800;
+    let heldPresentation = null;
+    let pinnedBenchYaw = null;
     let armoryAimBlend = 0;
 
     function animate(now) {
@@ -671,7 +678,7 @@ export async function createArmoryScene(canvas) {
         // Armory operator animation state machine:
         // Spends most time in relaxed 'heroIdle' (weapon lowered at side, not aimed)
         // Periodically transitions to a brief aim-ready stance, then lowers back down
-        if (now >= nextArmoryStateChangeAt) {
+        if (now >= nextArmoryStateChangeAt && !heldPresentation) {
             if (armoryPresentationState === 'ARMED_IDLE') {
                 armoryPresentationState = 'AIM_READY';
                 nextArmoryStateChangeAt = now + 2400;
@@ -708,7 +715,7 @@ export async function createArmoryScene(canvas) {
         }
 
         // 2. Subtle floating bob & rotation on weapon bench
-        if (!isDraggingWeapon) {
+        if (!isDraggingWeapon && pinnedBenchYaw === null) {
             weaponPivot.position.y = Math.sin(idleTimer * 1.4) * 0.012;
             weaponPivot.rotation.y += dt * 0.15; // Slow gentle turntable drift
         }
@@ -775,6 +782,9 @@ export async function createArmoryScene(canvas) {
         setWeaponSheen(color = 0xffffff) {
             currentSheenColor = color;
             applyWeaponSheen();
+            // The operator's gun too, or the close-up and the hero disagree
+            // until something else reloads the operator.
+            if (currentOverlay?.weapon) tintWeapon(currentOverlay.weapon, color);
         },
         setDecal(decalItemdefId) {
             currentDecalId = decalItemdefId || null;
@@ -784,6 +794,20 @@ export async function createArmoryScene(canvas) {
         // read its root, to check how equipment sits on every chassis.
         setOperatorYaw(yaw = 0) {
             if (currentOverlay?.root) currentOverlay.root.rotation.y = Number(yaw) || 0;
+        },
+        // Tooling (scripts/capture-weapon-fit.mjs): hold the operator in one
+        // pose ('ARMED_IDLE' or 'AIM_READY') and the bench gun at one angle;
+        // null hands both back to the presentation loop.
+        holdPresentation(state = null) {
+            heldPresentation = state === 'AIM_READY' || state === 'ARMED_IDLE' ? state : null;
+            if (heldPresentation) armoryPresentationState = heldPresentation;
+        },
+        pinBenchYaw(yaw = null) {
+            pinnedBenchYaw = yaw === null ? null : Number(yaw) || 0;
+            if (pinnedBenchYaw !== null) {
+                weaponPivot.rotation.y = pinnedBenchYaw;
+                weaponPivot.position.y = 0;
+            }
         },
         getOperatorRoot() {
             return currentOverlay?.root ?? null;
