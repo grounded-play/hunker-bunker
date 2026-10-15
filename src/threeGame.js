@@ -40536,11 +40536,47 @@ export class ThreeGame {
         canvas.width = 64;
         canvas.height = 64;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#ff9f1c'; // amber color!
-        ctx.font = 'bold 36px "Outfit", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(label, 32, 32);
+        if (ctx) {
+            // Circular badge with a radial gradient fading out to transparent
+            // at the edges, eliminating the hard square frame.
+            if (typeof ctx.createRadialGradient === 'function') {
+                const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 30);
+                gradient.addColorStop(0, 'rgba(28, 14, 6, 0.85)');
+                gradient.addColorStop(0.45, 'rgba(255, 120, 20, 0.45)');
+                gradient.addColorStop(0.8, 'rgba(255, 159, 28, 0.18)');
+                gradient.addColorStop(1, 'rgba(255, 159, 28, 0)');
+                ctx.fillStyle = gradient;
+                ctx.beginPath?.();
+                ctx.arc?.(32, 32, 30, 0, Math.PI * 2);
+                ctx.fill?.();
+            }
+            ctx.font = 'bold 36px "Outfit", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Sharp, subtle outline and drop shadow for maximum legibility and depth
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 1.5;
+
+            if (typeof ctx.strokeText === 'function') {
+                ctx.lineWidth = 3;
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = '#050302';
+                ctx.strokeText(label, 32, 32);
+            }
+
+            // High-contrast internal fill (pure bright white) to strongly contrast with the amber/dark background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(label, 32, 32);
+
+            // Reset shadow to avoid bleed onto any other canvas operations
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+        }
         const texture = new THREE.CanvasTexture(canvas);
         if (this._damagePipTextures.size >= DAMAGE_PIP_TEXTURE_CACHE_MAX) return { texture, owned: true };
         texture.userData.shared = true;
@@ -40553,7 +40589,7 @@ export class ThreeGame {
         // pip) — only round when it's actually a damage number.
         const displayAmount = Number.isFinite(amount) ? Math.round(amount) : amount;
         const { texture, owned } = this.getDamagePipTexture(`-${displayAmount}`);
-        const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+        const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
         const sprite = new THREE.Sprite(material);
         sprite.position.set(x + (Math.random() - 0.5) * 0.4, 0.8, z + (Math.random() - 0.5) * 0.4);
         sprite.scale.set(0.7, 0.7, 1);

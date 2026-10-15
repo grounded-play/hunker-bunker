@@ -49,4 +49,58 @@ describe('transient effects share their GPU resources', () => {
         for (const effect of g.transientEffects) disposeTransientEffect(g, effect);
         expect(dispose).not.toHaveBeenCalled();
     });
+
+    it('creates damage pip sprite with depthWrite: false to prevent hard square occlusion', () => {
+        const g = game();
+        g.spawnDamagePip(0, 0, 5);
+        const effect = g.transientEffects[0];
+        expect(effect.mesh.material.depthWrite).toBe(false);
+        expect(effect.mesh.material.transparent).toBe(true);
+    });
+
+    it('draws a circular radial gradient fading out to transparent around the damage label with sharp outline, shadow, and contrasting text', () => {
+        const addColorStop = vi.fn();
+        const gradientMock = { addColorStop };
+        const createRadialGradient = vi.fn(() => gradientMock);
+        const beginPath = vi.fn();
+        const arc = vi.fn();
+        const fill = vi.fn();
+        const fillText = vi.fn();
+        const strokeText = vi.fn();
+        const ctx = {
+            createRadialGradient,
+            beginPath,
+            arc,
+            fill,
+            fillText,
+            strokeText,
+            fillStyle: '',
+            strokeStyle: '',
+            lineWidth: 0,
+            lineJoin: '',
+            shadowColor: '',
+            shadowBlur: 0,
+            shadowOffsetX: 0,
+            shadowOffsetY: 0,
+            font: '',
+            textAlign: '',
+            textBaseline: ''
+        };
+        vi.stubGlobal('document', { createElement: () => ({ width: 0, height: 0, getContext: () => ctx }) });
+
+        const g = game();
+        g.getDamagePipTexture('-10');
+
+        expect(createRadialGradient).toHaveBeenCalledWith(32, 32, 0, 32, 32, 30);
+        expect(arc).toHaveBeenCalledWith(32, 32, 30, 0, Math.PI * 2);
+        expect(fill).toHaveBeenCalled();
+        expect(addColorStop).toHaveBeenCalledWith(0, expect.stringContaining('rgba'));
+        expect(addColorStop).toHaveBeenCalledWith(1, expect.stringContaining(', 0)'));
+        expect(strokeText).toHaveBeenCalledWith('-10', 32, 32);
+        expect(fillText).toHaveBeenCalledWith('-10', 32, 32);
+        expect(ctx.fillStyle).toBe('#ffffff');
+        expect(ctx.strokeStyle).toBe('#050302');
+        expect(ctx.lineWidth).toBe(3);
+        expect(ctx.lineJoin).toBe('round');
+    });
 });
