@@ -7613,12 +7613,15 @@ let _musicContext = 'safe_ship';
 
 function transitionToMenuMusic() {
     _musicTension = 'safe';
-    _musicContext = 'safe_ship';
+    _musicContext = 'menu';
     window.AudioManager?.startMenuMusic?.();
 }
 window.transitionToMenuMusic = transitionToMenuMusic;
 
 function updateMusicTension() {
+    const menuEl = document.getElementById('menu');
+    if (menuEl && !menuEl.classList.contains('hidden')) return;
+
     const hp = window.game?.playerVitals?.hp ?? 99;
     const o2 = window.game?.playerVitals?.o2 ?? 100;
     const biome = window.game?.currentBiomeKey ?? 'active';

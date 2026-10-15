@@ -1955,6 +1955,7 @@ export class AudioManager {
     // Map a gameplay context to a track key; supports biome exploration, combat,
     // and dedicated boss soundtracks (Tracks 25-31).
     static MUSIC_CONTEXT_TRACKS = {
+        menu:            'mainbg_music',
         safe_ship:       'music_safe_ship',
         cryo_explore:    'music_cryo_explore',
         bio_explore:     'music_bio_explore',
@@ -2114,6 +2115,9 @@ export class AudioManager {
     });
 
     static MUSIC_CONTEXT_PLAYLISTS = Object.freeze({
+        menu: Object.freeze([
+            'mainbg_music'
+        ]),
         safe_ship: Object.freeze([
             'music_safe_ship',
             'music_interstitial_01', // Someone Is Still Alive
@@ -2328,6 +2332,7 @@ export class AudioManager {
         }
 
         const isCombatOrBoss = context === 'combat' || context.startsWith('boss_');
+        const shouldLoop = isCombatOrBoss || context === 'menu';
 
         // Already playing the correct context and music is actively audible
         if (this.activeMusic && this.activeMusic.context === context && !options.forceNext) {
@@ -2340,7 +2345,7 @@ export class AudioManager {
         if (!this.buffers[bufferKey]) {
             // Trigger asynchronous on-demand decode and start once loaded
             this.playOST(bufferKey, {
-                loop: isCombatOrBoss,
+                loop: shouldLoop,
                 context,
                 volume: 0.62,
                 fadeSeconds: this._musicFadeSeconds
@@ -2366,7 +2371,7 @@ export class AudioManager {
         const targetVolume = Number.isFinite(options.volume) ? options.volume : 0.62;
         const started = this.play(bufferKey, {
             volume: 0.0001,
-            loop: isCombatOrBoss, // Bosses & combat loop until encounter finishes
+            loop: shouldLoop, // Bosses, combat & main menu loop continuously
             bus: 'music',
             varyPitch: false
         });
@@ -2390,7 +2395,7 @@ export class AudioManager {
         this.musicSource = started.source;
 
         // For non-looping exploration, schedule cycle fade and room tone breathing room
-        if (!isCombatOrBoss) {
+        if (!shouldLoop) {
             const buffer = this.buffers[bufferKey];
             const trackDuration = (buffer && Number.isFinite(buffer.duration) && buffer.duration > 20)
                 ? buffer.duration
@@ -2458,12 +2463,12 @@ export class AudioManager {
 
     static startMenuMusic() {
         if (!this.isUnlocked) {
-            this._pendingMusicContext = 'safe_ship';
+            this._pendingMusicContext = 'menu';
             return;
         }
         this.stopAmbience({ stopMusic: false });
         this.setMusicTension('safe');
-        this.setMusicContext('safe_ship');
+        this.setMusicContext('menu');
     }
 
     static stopMusic({ fadeSeconds = this._musicFadeSeconds } = {}) {
