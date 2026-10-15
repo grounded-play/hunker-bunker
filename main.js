@@ -8898,7 +8898,7 @@ function playCutsceneVideo(base, options = {}) {
             headshotEl.innerHTML = `
                 <div class="cinematic-headshot-hud__header">
                     <span class="cinematic-headshot-hud__beacon" aria-hidden="true"></span>
-                    <span class="cinematic-headshot-hud__status">LIVE TRANSMISSION</span>
+                    <span class="cinematic-headshot-hud__status" data-i18n="cinematic.live_transmission">LIVE TRANSMISSION</span>
                     <span class="cinematic-headshot-hud__channel">${speakerInfo.channel || '142.8 MHz'}</span>
                 </div>
                 <div class="cinematic-headshot-hud__card">
@@ -8918,7 +8918,7 @@ function playCutsceneVideo(base, options = {}) {
                             <span class="cinematic-headshot-hud__bar"></span>
                             <span class="cinematic-headshot-hud__bar"></span>
                             <span class="cinematic-headshot-hud__bar"></span>
-                            <span class="cinematic-headshot-hud__status-pill">TRANSMITTING</span>
+                            <span class="cinematic-headshot-hud__status-pill" data-i18n="cinematic.transmitting">TRANSMITTING</span>
                         </div>
                     </div>
                 </div>

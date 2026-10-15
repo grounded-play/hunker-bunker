@@ -256,7 +256,8 @@
       "commentary_list": "ENTWICKLERKOMMENTAR",
       "commentary_read_all": "ALLE LESEN",
       "content_guide": "INHALTSLEITFADEN (REIFE THEMEN)",
-      "graphics": "GRAFIK"
+      "graphics": "GRAFIK",
+      "intro_style": "INTRO-STIL"
     },
     "action": {
       "open": "ÖFFNEN",
@@ -312,7 +313,10 @@
       "shake_normal": "NORMAL (100%)",
       "aim_assist_off": "AUS",
       "aim_assist_low": "NIEDRIG (NUR MAGNETISMUS)",
-      "aim_assist_standard": "STANDARD (FANGEN + REIBUNG)"
+      "aim_assist_standard": "STANDARD (FANGEN + REIBUNG)",
+      "intro_tactical": "TAKTIK-TERMINAL (KINOREIF)",
+      "intro_timed": "SYNCHRONISIERT (TERMINAL)",
+      "intro_classic": "KLASSISCHE SCHREIBMASCHINE"
     },
     "aria": {
       "language_select": "Spielsprache",

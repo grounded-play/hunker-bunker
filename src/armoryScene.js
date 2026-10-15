@@ -28,6 +28,11 @@ export const CHASSIS_SKIN_GLB_MAP = CHASSIS_SKIN_MODELS;
 const WEAPON_SKIN_GLB_MAP = WEAPON_SKIN_MESHES;
 const WEAPON_ARCHETYPE_GLBS = WEAPON_ARCHETYPES;
 const FALLBACK_WEAPON_GLB = WEAPON_ARCHETYPES.gg1;
+const DEFAULT_CLASS_ARCHETYPES = Object.freeze({
+    scout: 'talon',
+    tank: 'siege_breaker',
+    engineer: 'tesla_lock'
+});
 
 // Lane D fix (docs/game-audit-lane-split-and-worklog.md §2): every other overlay file
 // (player3dOverlay.js, world3dOverlay.js, enemy3dOverlay.js) caches loaded GLTF templates by
@@ -264,23 +269,35 @@ export async function createArmoryScene(canvas) {
     // re-applied to the new material rather than set once.
     let currentSheenColor = getSelectedSheen().color;
     let currentDecalId = null;
+    let currentArchetypeId = 'talon';
+    let currentSkinItemdefId = null;
+    let currentCharmId = null;
+    let currentChassisSkinId = null;
+
     function applyDecalSprite(decalId) {
         const catalog = decalId ? getItemCatalogEntry(decalId) : null;
         currentOverlay?.setPatchImage(catalog?.localImg || catalog?.img || null);
     }
 
     async function loadOperatorModel(classType, chassisSkinId = null) {
+        currentChassisSkinId = chassisSkinId;
         const gen = ++loadGen;
         const normalized = ['SCOUT', 'TANK', 'ENGINEER'].includes(String(classType).toUpperCase())
             ? String(classType).toUpperCase()
             : 'SCOUT';
+        const activeArch = currentArchetypeId || DEFAULT_CLASS_ARCHETYPES[normalized.toLowerCase()] || 'talon';
         const configs = {
             SCOUT: {
                 operatorClass: 'SCOUT',
                 modelUrl: '/3d/scouting-scout/Scout.game.glb',
                 targetHeight: 1.85,
                 idleActionName: 'heroIdle',
-                weaponVisible: false
+                weaponVisible: true,
+                weaponEnabled: true,
+                weaponArchetype: activeArch,
+                weaponSkinId: currentSkinItemdefId,
+                weaponSheenColor: currentSheenColor,
+                charmId: currentCharmId
             },
             ENGINEER: {
                 operatorClass: 'ENGINEER',
@@ -289,8 +306,12 @@ export async function createArmoryScene(canvas) {
                 animationBonePrefix: 'mixamorig',
                 targetHeight: 1.85,
                 idleActionName: 'heroIdle',
-                weaponVisible: false,
-                weaponEnabled: true
+                weaponVisible: true,
+                weaponEnabled: true,
+                weaponArchetype: activeArch,
+                weaponSkinId: currentSkinItemdefId,
+                weaponSheenColor: currentSheenColor,
+                charmId: currentCharmId
             },
             TANK: {
                 operatorClass: 'TANK',
@@ -299,8 +320,12 @@ export async function createArmoryScene(canvas) {
                 animationBonePrefix: 'mixamorig',
                 targetHeight: 1.95,
                 idleActionName: 'heroIdle',
-                weaponVisible: false,
-                weaponEnabled: true
+                weaponVisible: true,
+                weaponEnabled: true,
+                weaponArchetype: activeArch,
+                weaponSkinId: currentSkinItemdefId,
+                weaponSheenColor: currentSheenColor,
+                charmId: currentCharmId
             }
         };
 
@@ -626,6 +651,9 @@ export async function createArmoryScene(canvas) {
     let isRunning = true;
     let lastTime = performance.now();
     let idleTimer = 0;
+    let armoryPresentationState = 'ARMED_IDLE';
+    let nextArmoryStateChangeAt = performance.now() + 6800;
+    let armoryAimBlend = 0;
 
     function animate(now) {
         if (!isRunning) return;
@@ -639,21 +667,43 @@ export async function createArmoryScene(canvas) {
         if (currentOverlay?.root && !isDraggingOperator) {
             currentOverlay.root.position.y = Math.sin(idleTimer * 1.8) * 0.006;
         }
+
+        // Armory operator animation state machine:
+        // Spends most time in relaxed 'heroIdle' (weapon lowered at side, not aimed)
+        // Periodically transitions to a brief aim-ready stance, then lowers back down
+        if (now >= nextArmoryStateChangeAt) {
+            if (armoryPresentationState === 'ARMED_IDLE') {
+                armoryPresentationState = 'AIM_READY';
+                nextArmoryStateChangeAt = now + 2400;
+                currentOverlay?.triggerCharmImpulse?.(1.2);
+            } else {
+                armoryPresentationState = 'ARMED_IDLE';
+                nextArmoryStateChangeAt = now + 7200;
+                currentOverlay?.triggerCharmImpulse?.(0.6);
+            }
+        }
+
+        armoryAimBlend = THREE.MathUtils.damp(
+            armoryAimBlend,
+            armoryPresentationState === 'AIM_READY' ? 1 : 0,
+            armoryPresentationState === 'AIM_READY' ? 3.0 : 4.0,
+            dt
+        );
+
         if (currentOverlay?.update) {
-            // Bench preview is a static idle pose — update() requires a full
-            // state object (see src/threeGame.js's call site for the live-combat
-            // shape); every field defaults to "not moving, not aiming" here.
             currentOverlay.update(dt, {
                 isFalling: false,
                 isReloading: false,
                 isMoving: false,
                 isSprinting: false,
                 isInjured: false,
-                hasAim: false,
+                hasAim: armoryPresentationState === 'AIM_READY' || armoryAimBlend > 0.05,
                 moveX: 0,
                 moveZ: 0,
-                aimX: 0,
-                aimZ: 1
+                aimX: Math.sin(0.35 + armoryAimBlend * 0.1),
+                aimZ: Math.cos(0.35 + armoryAimBlend * 0.1),
+                presentationAim: armoryAimBlend,
+                idleActionName: armoryPresentationState === 'AIM_READY' || armoryAimBlend > 0.4 ? 'idle' : 'heroIdle'
             });
         }
 
@@ -701,10 +751,19 @@ export async function createArmoryScene(canvas) {
             await loadOperatorModel(classType, chassisSkinId);
         },
         async setWeapon(archetypeId, skinItemdefId) {
+            currentArchetypeId = archetypeId;
+            currentSkinItemdefId = skinItemdefId;
             await loadWeaponAsset(archetypeId, skinItemdefId);
+            if (currentOverlay) {
+                await loadOperatorModel(activeClass, currentChassisSkinId);
+            }
         },
         async setCharm(charmItemdefId) {
+            currentCharmId = charmItemdefId;
             await loadCharmAsset(charmItemdefId);
+            if (currentOverlay) {
+                await loadOperatorModel(activeClass, currentChassisSkinId);
+            }
         },
         async setRigModule(slot, modItemdefId) {
             await loadModAsset(slot, modItemdefId);

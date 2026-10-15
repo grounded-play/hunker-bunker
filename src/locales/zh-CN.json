@@ -256,7 +256,8 @@
       "commentary_list": "开发者评论",
       "commentary_read_all": "全部阅读",
       "content_guide": "内容指南（成人主题）",
-      "graphics": "图形"
+      "graphics": "图形",
+      "intro_style": "开场风格"
     },
     "action": {
       "open": "打开",
@@ -312,7 +313,10 @@
       "shake_normal": "正常 (100%)",
       "aim_assist_off": "关闭",
       "aim_assist_low": "低 (仅磁吸)",
-      "aim_assist_standard": "标准 (吸附+减速)"
+      "aim_assist_standard": "标准 (吸附+减速)",
+      "intro_tactical": "战术终端（电影级）",
+      "intro_timed": "语音同步（终端）",
+      "intro_classic": "经典打字机"
     },
     "aria": {
       "language_select": "游戏语言",

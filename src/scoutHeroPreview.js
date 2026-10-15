@@ -22,7 +22,7 @@ function resolveClassConfig(type, loadout = null) {
         SCOUT: {
             targetHeight: 1.95,
             modelUrl: '/3d/scouting-scout/Scout.game.glb',
-            idleActionName: 'idle',
+            idleActionName: 'heroIdle',
             weaponVisible: true,
             weaponEnabled: true,
             weaponArchetype: archetype,
@@ -35,7 +35,7 @@ function resolveClassConfig(type, loadout = null) {
             modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
             animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
             animationBonePrefix: 'mixamorig',
-            idleActionName: 'idle',
+            idleActionName: 'heroIdle',
             weaponVisible: true,
             weaponEnabled: true,
             weaponArchetype: archetype,
@@ -48,14 +48,13 @@ function resolveClassConfig(type, loadout = null) {
             modelUrl: '/3d/runtime/tank-rigged.glb',
             animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
             animationBonePrefix: 'mixamorig',
-            idleActionName: 'idle',
+            idleActionName: 'heroIdle',
             weaponVisible: true,
             weaponEnabled: true,
             weaponArchetype: archetype,
             weaponSkinId: skinId,
             weaponSheenColor: sheenColor,
-            charmId,
-            weaponMount: { position: [0.03, 0.02, 0.03] }
+            charmId
         }
     };
 
@@ -133,7 +132,9 @@ export async function createScoutHeroPreview(canvas) {
         presentationState = 'ARMED_IDLE';
         nextStateChangeAt = performance.now() + 5400;
         aimBlend = 0;
-        idleState.idleActionName = 'idle';
+        idleState.idleActionName = 'heroIdle';
+        idleState.hasAim = false;
+        idleState.presentationAim = 0;
         overlay.root.position.y = 0.0;
         overlay.root.rotation.y = Math.atan2(camera.position.x, camera.position.z);
         scene.add(overlay.root);
@@ -156,7 +157,7 @@ export async function createScoutHeroPreview(canvas) {
         isSprinting: false,
         isFalling: false,
         isReloading: false,
-        hasAim: true,
+        hasAim: false,
         moveX: 0,
         moveZ: 1,
         // Match the preview camera's planar position so the operator faces us.
@@ -164,7 +165,7 @@ export async function createScoutHeroPreview(canvas) {
         aimZ: camera.position.z,
         lockRootFacing: true,
         presentationAim: 0,
-        idleActionName: 'idle'
+        idleActionName: 'heroIdle'
     };
 
     let presentationState = 'ARMED_IDLE'; // 'ARMED_IDLE' | 'AIM_READY'
@@ -202,7 +203,8 @@ export async function createScoutHeroPreview(canvas) {
         idleState.aimX = Math.sin(cameraYaw + lookOffset);
         idleState.aimZ = Math.cos(cameraYaw + lookOffset);
         idleState.presentationAim = aimBlend;
-        idleState.idleActionName = 'idle';
+        idleState.hasAim = presentationState === 'AIM_READY' || aimBlend > 0.05;
+        idleState.idleActionName = presentationState === 'AIM_READY' || aimBlend > 0.4 ? 'idle' : 'heroIdle';
         overlay.update(delta, idleState);
         renderer.render(scene, camera);
         frame = requestAnimationFrame(render);

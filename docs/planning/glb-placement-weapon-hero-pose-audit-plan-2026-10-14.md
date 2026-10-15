@@ -287,6 +287,19 @@ Use a small presentation state machine independent of combat simulation:
 - Class changes and loadout changes use generation tokens; stale async weapon
   or charm loads must dispose themselves and never overwrite the latest hero.
 
+### Implemented Resolution (Sprint 52)
+
+1. **Weapon Upright Euler Rotations**:
+   - `talon`, `talon_c`, `siege_breaker`, `tesla_lock`: calibrated to `[Math.PI, 0, -Math.PI / 2]`. This maps the +X muzzle vector to +Y_hand (forward), the +Y sight axis to +X_hand (up), and the -Y grip axis to -X_hand (down into palm).
+   - `gg1`: calibrated to `[-Math.PI / 2, -Math.PI / 2, 0]`. This maps the +X muzzle vector to +Y_hand (forward), the -Z sight axis to +X_hand (up), and the +Z grip axis to -X_hand (down into palm).
+   - Sights and muzzles achieve 0.0° deviation from the hand bone's natural axes.
+   - Guns no longer rotate sideways 90° or stick outside horizontally.
+2. **Snug Palm Grip Placement**:
+   - Calibrated translation offsets place the receiver grip nestled inside the operator's palm (`Z ≈ -0.005m`, `Y ≈ 0.085m–0.091m` forward of wrist).
+3. **Hero Select & Armory Idle Loops (`heroIdle` Base)**:
+   - `src/scoutHeroPreview.js` and `src/armoryScene.js` default to `heroIdle` as the base relaxed loop, holding the weapon resting lowered at the side with `hasAim: false`.
+   - Both scenes cycle through a seeded presentation loop: ~5.5–7.2s in `ARMED_IDLE` (`heroIdle`), smoothly cross-fading into ~2.4s of `AIM_READY` (`idle`), and gently returning to `heroIdle`.
+
 ## Implementation packages
 
 ### P0 — build a complete reproducible runtime asset inventory

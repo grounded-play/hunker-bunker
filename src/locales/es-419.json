@@ -256,7 +256,8 @@
       "commentary_list": "COMENTARIOS DEL DESARROLLADOR",
       "commentary_read_all": "LEER TODO",
       "content_guide": "GUÍA DE CONTENIDO (TEMAS MADUROS)",
-      "graphics": "GRÁFICOS"
+      "graphics": "GRÁFICOS",
+      "intro_style": "ESTILO DE INTRO"
     },
     "action": {
       "open": "ABRIR",
@@ -312,7 +313,10 @@
       "shake_normal": "NORMAL (100%)",
       "aim_assist_off": "DESACTIVADO",
       "aim_assist_low": "BAJO (SOLO MAGNETISMO)",
-      "aim_assist_standard": "ESTÁNDAR (IMÁN Y FRICCIÓN)"
+      "aim_assist_standard": "ESTÁNDAR (IMÁN Y FRICCIÓN)",
+      "intro_tactical": "TERMINAL TÁCTICA (CINEMÁTICA)",
+      "intro_timed": "SINCRONIZADO (TERMINAL)",
+      "intro_classic": "MÁQUINA DE ESCRIBIR CLÁSICA"
     },
     "aria": {
       "language_select": "Idioma del juego",

@@ -256,7 +256,8 @@
       "commentary_list": "КОММЕНТАРИИ РАЗРАБОТЧИКОВ",
       "commentary_read_all": "ЧИТАТЬ ВСЁ",
       "content_guide": "ОПИСАНИЕ КОНТЕНТА (ТЕМЫ ДЛЯ ВЗРОСЛЫХ)",
-      "graphics": "ГРАФИКА"
+      "graphics": "ГРАФИКА",
+      "intro_style": "СТИЛЬ ВСТУПЛЕНИЯ"
     },
     "action": {
       "open": "ОТКРЫТЬ",
@@ -312,7 +313,10 @@
       "shake_normal": "ОБЫЧНАЯ (100%)",
       "aim_assist_off": "ВЫКЛ",
       "aim_assist_low": "СЛАБОЕ (ТОЛЬКО ДОВОДКА)",
-      "aim_assist_standard": "СТАНДАРТ (ПРИЛИПАНИЕ И ТРЕНИЕ)"
+      "aim_assist_standard": "СТАНДАРТ (ПРИЛИПАНИЕ И ТРЕНИЕ)",
+      "intro_tactical": "ТАКТИЧЕСКИЙ ТЕРМИНАЛ (КИНЕМАТОГРАФИЧЕСКИЙ)",
+      "intro_timed": "СИНХРОНИЗИРОВАННЫЙ (ТЕРМИНАЛ)",
+      "intro_classic": "КЛАССИЧЕСКАЯ ПЕЧАТНАЯ МАШИНКА"
     },
     "aria": {
       "language_select": "Язык игры",
