@@ -21,7 +21,9 @@ const RECOVERY_DEFINITIONS = Object.freeze([
         definitionId: 'cot_bed',
         missionId: FIRST_NIGHT_COT_MISSION_ID,
         socketId: 'ship-sleep-bay',
-        sourceOffset: Object.freeze({ x: 5, z: 2 })
+        // West of the wreck, up-screen of the spawn and on the way to the
+        // sleep bay. At ship + (5, 2) the HUD covered it (2026-10-15 playtest).
+        sourceOffset: Object.freeze({ x: -4, z: 0 })
     }),
     Object.freeze({
         definitionId: 'hull_patch_panel',
@@ -36,6 +38,8 @@ const RECOVERY_DEFINITIONS = Object.freeze([
         sourceOffset: Object.freeze({ x: 7, z: 3 })
     })
 ]);
+
+const LEGACY_COT_SOURCE_OFFSET = Object.freeze({ x: 5, z: 2 });
 
 const LEGACY_GIVEAWAY_MODULE_IDS = new Set(['starter-berth-wall-w', 'starter-berth-door-e']);
 
@@ -101,7 +105,7 @@ export function ensureFirstNightBaseState(state, options = {}) {
             ...installedWithoutLegacyGiveaways,
             ...plan.shell.filter(({ instanceId }) => !installedIds.has(instanceId))
         ],
-        worldObjects: returnCampReservedCot(state.worldObjects ?? [], plan)
+        worldObjects: returnStrandedCot(state.worldObjects ?? [], plan, options)
     };
     // One step at a time (owner, 2026-10-15): the hull patch and door seal
     // appear once the cot is in, not lying at the wreck from the start.
@@ -138,12 +142,18 @@ export function ensureFirstNightBaseState(state, options = {}) {
     };
 }
 
-// Saves from the camp-handoff build (a7abbb17) can hold the cot reserved at a
-// survivor camp's rack, 120 m+ out. The cot is a first-night tutorial piece
-// beside the wreck again; a cot the player already took is left where it is.
-function returnCampReservedCot(worldObjects, plan) {
+// Older saves left the cot where the player was not looking: reserved at a
+// survivor camp's rack 120 m+ out (camp-handoff build a7abbb17), or untouched
+// at the old ship + (5, 2) spot under the HUD. Either goes to today's spot
+// beside the wreck; a cot the player already moved is left where it is.
+function returnStrandedCot(worldObjects, plan, { shipX = 0, shipZ = 0 } = {}) {
+    const legacyX = Math.round(shipX + LEGACY_COT_SOURCE_OFFSET.x);
+    const legacyZ = Math.round(shipZ + LEGACY_COT_SOURCE_OFFSET.z);
     return worldObjects.map((object) => {
-        if (object.definitionId !== 'cot_bed' || object.handoff?.type !== 'camp-cot' || object.handoff?.status !== 'reserved') return object;
+        if (object.definitionId !== 'cot_bed') return object;
+        const campReserved = object.handoff?.type === 'camp-cot' && object.handoff?.status === 'reserved';
+        const atLegacySpot = !object.handoff && object.worldPosition?.x === legacyX && object.worldPosition?.z === legacyZ;
+        if (!campReserved && !atLegacySpot) return object;
         const rest = { ...object };
         delete rest.handoff;
         const home = { ...plan.cotSource };

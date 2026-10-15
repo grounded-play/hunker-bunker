@@ -58,8 +58,8 @@ describe('physical first-night cargo runtime', () => {
         const game = baseGame();
         ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
         const cotId = game.carryState.worldObjects[0].instanceId;
-        game.player.position.x = 5;
-        game.player.position.z = 2;
+        game.player.position.x = game.getFirstNightBasePlan().cotSource.x;
+        game.player.position.z = game.getFirstNightBasePlan().cotSource.z;
         game.getNearestCarryObject = ThreeGame.prototype.getNearestCarryObject;
         expect(ThreeGame.prototype.beginCarryObject.call(game, cotId)).toBe(true);
         expect(game.carryState.carried?.definitionId).toBe('cot_bed');
@@ -184,8 +184,8 @@ describe('physical first-night cargo runtime', () => {
         ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
 
         // Standing near loose cot
-        game.player.position.x = 5;
-        game.player.position.z = 2;
+        game.player.position.x = game.getFirstNightBasePlan().cotSource.x;
+        game.player.position.z = game.getFirstNightBasePlan().cotSource.z;
         ThreeGame.prototype.updateCarryInteractionPrompt.call(game);
         expect(game._carryPromptLabel).toBe('[E] LIFT EXPEDITION RECOVERY COT · BOTH HANDS');
 

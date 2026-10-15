@@ -968,6 +968,8 @@ const MENU_SHOWROOM_FLOOR_OFFSET_Z = 0;
 // player in the surrounding lethal canyon when chunk dimensions change.
 const CRASH_SITE_CENTER = CRASH_SITE_BUILD.center.x;
 const CRASH_SITE_EDGE_OFFSET = CRASH_SITE_BUILD.edgeOffset;
+// Landing wreckage stays this far from the sleep bay and first-night cargo.
+const CRASH_DEBRIS_FIRST_NIGHT_CLEARANCE = 2.5;
 const PICKUP_DISTRIBUTION = {
     clustered: 0.7,
     transitional: 0.2,
@@ -45663,9 +45665,16 @@ export class ThreeGame {
         if (!plan || !group || !this.player) return false;
         this._crashDebrisPlan = null;
         const ships = (this.crashedShips ?? []).map((ship) => ({ x: ship.tileX, z: ship.tileZ }));
+        // Two slots sit on the sleep bay and one on the folded cot: wreckage
+        // landed under the installed cot (2026-10-15 playtest).
+        const firstNight = this.getFirstNightBasePlan?.();
+        const keepOut = firstNight
+            ? [firstNight.installSocket.transform, ...firstNight.recoveryCargo.map(({ worldPosition }) => worldPosition)]
+            : [];
         const clear = ({ x, z }) => this.getTileType?.(Math.round(x), Math.round(z)) === '.'
             && Math.hypot(x - this.player.position.x, z - this.player.position.z) > 3
             && ships.every((ship) => Math.hypot(x - ship.x, z - ship.z) > 3.5)
+            && keepOut.every((spot) => Math.hypot(x - spot.x, z - spot.z) > CRASH_DEBRIS_FIRST_NIGHT_CLEARANCE)
             && !(x > 6.5 && x < 11.5 && z < 6);
         const wanted = plan.filter((entry) => entry.preferred).length;
         const chosen = plan.filter(clear).slice(0, wanted);

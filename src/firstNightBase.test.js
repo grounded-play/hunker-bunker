@@ -35,7 +35,7 @@ describe('first-night base recovery', () => {
                 definitionId: 'cot_bed',
                 missionId: 'first-night-cot-recovery',
                 modelType: 'carry_field_cot_folded',
-                worldPosition: { x: 15, z: 22 }
+                worldPosition: { x: 6, z: 20 }
             })
         ]);
         const seal = evaluateRoomSealGraph({ modules: result.state.installed, defaultSafeBubble: null });
@@ -105,6 +105,24 @@ describe('first-night base recovery', () => {
         };
         const result = ensureFirstNightBaseState(legacy, { shipX: 10, shipZ: 20 });
         expect(ids(result.state.worldObjects)).toEqual(['cot_bed']);
+    });
+
+    it('puts the cot where the spawn camera sees it, short of the sleep bay', () => {
+        const plan = planFirstNightBase({ shipX: 9, shipZ: 9 });
+        expect(plan.cotSource).toEqual({ x: 5, z: 9 });
+        const spawn = { x: 9 - 1.6, z: 9 + 2.8 };
+        expect(Math.hypot(plan.cotSource.x - spawn.x, plan.cotSource.z - spawn.z)).toBeLessThan(4);
+        const { x, z } = plan.installSocket.transform;
+        expect(Math.hypot(plan.cotSource.x - x, plan.cotSource.z - z)).toBeLessThan(8);
+    });
+
+    it('moves an untouched cot from the old spot under the HUD', () => {
+        const { state, plan } = ensureFirstNightBaseState(createCarryState('run-a'), { shipX: 10, shipZ: 20 });
+        const old = { x: 15, z: 22 };
+        const legacy = { ...state, worldObjects: state.worldObjects.map((o) => ({ ...o, worldPosition: old, sourcePosition: old })) };
+        expect(ensureFirstNightBaseState(legacy, { shipX: 10, shipZ: 20 }).state.worldObjects[0].worldPosition).toEqual(plan.cotSource);
+        const moved = { ...state, worldObjects: state.worldObjects.map((o) => ({ ...o, worldPosition: { x: 13.4, z: 21.2 } })) };
+        expect(ensureFirstNightBaseState(moved, { shipX: 10, shipZ: 20 }).state.worldObjects[0].worldPosition).toEqual({ x: 13.4, z: 21.2 });
     });
 
     it('returns a cot a camp was holding to its spot beside the wreck', () => {
