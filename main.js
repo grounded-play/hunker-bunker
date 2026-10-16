@@ -2,6 +2,7 @@ import { createControllerPressGate } from './src/controllerPressGate.js';
 import { registerWebServiceWorker } from './src/serviceWorkerRegistration.js';
 import { initPlayerChatUI } from './src/playerChatUi.js';
 import { installToastNotification } from './src/toastNotification.js';
+import { describeSettingChange, selectPressNeedsInGamePicker } from './src/settingsInputRouting.js';
 import { crossingGuidance, expeditionDebrief } from './src/expeditionFeedback.js';
 import { runO2MilestoneChoreography } from './src/o2CinematicDoors.js';
 import { compactPerformanceSnapshot, compactPerfPhase, createLongTaskReporter } from './src/longTaskDiagnostics.js';
@@ -1054,6 +1055,22 @@ function commitSelectPickerOption(index) {
     }
     window.AudioManager?.play?.('fx_menu_hover', { volume: 0.2, bus: 'sfx' });
 }
+
+// Gamescope never presents Chromium's native dropdown popup, so on the Deck a
+// touch or trackpad press opens the same in-game picker as controller A
+// (src/settingsInputRouting.js).
+document.addEventListener('mousedown', (event) => {
+    const select = selectPressNeedsInGamePicker(event, { isSteamDeck: steamInputState.isSteamDeck });
+    if (!select) return;
+    event.preventDefault();
+    select.focus();
+    openSelectPickerForElement(select);
+}, true);
+
+document.addEventListener('change', (event) => {
+    const change = describeSettingChange(event.target);
+    if (change) debugLog.info('SETTINGS', 'setting-changed', change);
+}, true);
 
 function closeSelectPicker() {
     const overlay = document.getElementById('select-picker-overlay');
