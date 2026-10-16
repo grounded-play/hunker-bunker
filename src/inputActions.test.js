@@ -65,7 +65,6 @@ describe('menu focus surface registry', () => {
         'multiplayer-modal',
         'season-pass-modal',
         'progression-reward-overlay',
-        'npc-dialogue-modal',
         'wanderer-encounter-modal',
         'hb-debug-console',
         'rgb-root'

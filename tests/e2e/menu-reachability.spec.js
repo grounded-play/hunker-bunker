@@ -14,7 +14,6 @@ const ALLOWED_EMPTY_SURFACES = new Set([
     // html.phase-menu, so they cannot render from the title screen this audit
     // runs on.
     'leader-conversation-modal',
-    'npc-dialogue-modal',
     'mothership-dialogue',
     // The Armory builds its whole UI when it opens (armoryUi.js); the static
     // shell has no controls.

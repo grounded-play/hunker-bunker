@@ -69,7 +69,6 @@ export const MENU_FOCUS_ROOT_IDS = Object.freeze([
     'field-workbench-modal',
     'camp-services-modal',
     'leader-conversation-modal',
-    'npc-dialogue-modal',
     'mothership-dialogue',
     'console-terminal-modal',
     'o2-generator-modal',

@@ -681,13 +681,6 @@
     "close_player_trade": {
       "aria_label_close_trade_link": "Закрыть торговую связь"
     },
-    "npc_dialogue": {
-      "affection_bond": "ПРИВЯЗАННОСТЬ // СВЯЗЬ",
-      "press_1_4_or_click": "НАЖМИТЕ [1-4] ИЛИ ВЫБЕРИТЕ КАРТУ • [ESC] ВЫЙТИ"
-    },
-    "close_npc_dialogue": {
-      "title_exit_dialogue": "Выйти из диалога"
-    },
     "demo_end": {
       "transmission_terminated": "◈ ПЕРЕДАЧА ПРЕРВАНА",
       "you_belong_to_the_deep": "«Теперь ты принадлежишь глубине, машинка. Рой помнит твой зов.»",
@@ -1582,12 +1575,6 @@
       "self_class": "{class} // ОПЕРАТИВНИК",
       "peer_class": "{class} // УДАЛЁННЫЙ"
     },
-    "bond": {
-      "enamored": "ВЛЮБЛЁН / ПРЕДАН",
-      "warm": "ТЕПЛО / СИМПАТИЯ",
-      "attentive": "ВНИМАТЕЛЕН",
-      "badge": "{label} ({score} ОЧК)"
-    },
     "fab": {
       "scatter_repeater": "ДРОБОВОЙ РЕПИТЕР",
       "equipped_next_run": "ОСНАЩЕНО НА СЛЕДУЮЩИЙ ЗАБЕГ ✓",
@@ -1632,7 +1619,6 @@
       "field_conversation": "ПОЛЕВОЙ РАЗГОВОР",
       "callsign": "ПОЗЫВНОЙ {callsign}",
       "listen_hint": "Выслушайте, затем решите, чем помочь.",
-      "quote": "«{text}»",
       "next_action": "Твой следующий шаг изменит манифест запуска и вектор финала.",
       "scar_gained": "ПРОШЛАЯ НОЧЬ ОСТАВИЛА СЛЕД: {scar}",
       "services": "УСЛУГИ ЛАГЕРЯ ({count})",
@@ -2207,7 +2193,6 @@
         "map_zoom": "[LB / RB] МАСШТАБ",
         "map_operator": "[A] ОПЕРАТОР",
         "map_close": "[B] / [VIEW] ЗАКРЫТЬ",
-        "dialogue_choose": "КРЕСТОВИНА — ВЫБОР • [A] ПОДТВЕРДИТЬ • [B] ОТСТУПИТЬ",
         "compass_map": "[VIEW]",
         "radar_scan": "Сканирование радаром [LB]",
         "armory_cycle": "[LB / RB ПЕРЕКЛЮЧИТЬ]",

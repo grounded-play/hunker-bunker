@@ -2,6 +2,7 @@ import { createControllerPressGate } from './src/controllerPressGate.js';
 import { registerWebServiceWorker } from './src/serviceWorkerRegistration.js';
 import { initPlayerChatUI } from './src/playerChatUi.js';
 import { installToastNotification } from './src/toastNotification.js';
+import { CONTINUE_HOLD_MS, choiceToneLabel, pageConversationLines } from './src/conversationGrammar.js';
 import { describeSettingChange, selectPressNeedsInGamePicker } from './src/settingsInputRouting.js';
 import { crossingGuidance, expeditionDebrief } from './src/expeditionFeedback.js';
 import { runO2MilestoneChoreography } from './src/o2CinematicDoors.js';
@@ -613,13 +614,12 @@ function setAppPhase(phase) {
         // Menu isolation: ensure all in-flight dialogues and notifications are torn down
         dialogueManager?.cancelDialogue?.();
         dialogueManager?.cancelTutorial?.();
-        closeLeaderConversation();
+        closeLeaderConversation('phase-change');
         if (window.npcDialogueTreeManager?.activeTree) {
             window.npcDialogueTreeManager.closeDialogue();
         }
         document.getElementById('wanderer-encounter-modal')?.remove();
         window.campServicesUi?.close?.();
-        document.getElementById('npc-dialogue-modal')?.classList.add('hidden');
         document.getElementById('mothership-dialogue')?.classList.add('hidden');
         document.getElementById('leader-conversation-modal')?.classList.add('hidden');
         const notificationStack = document.querySelector('.hud-notification-stack');
@@ -12181,114 +12181,15 @@ let npcDialogueEventsInitialized = false;
 // conversation per camp, never a second modal).
 let npcTreeHost = null;
 
-function updateNpcDialogueUi(state = {}) {
-    const modal = document.getElementById('npc-dialogue-modal');
-    if (!modal) return;
-
-    if (!state.isOpen || !state.node || !state.tree) {
-        modal.classList.add('hidden');
-        modal.setAttribute('aria-hidden', 'true');
-        return;
-    }
-
-    modal.classList.remove('hidden');
-    modal.setAttribute('aria-hidden', 'false');
-
-    const tree = state.tree;
-    const node = state.node;
-    const bond = state.bond;
-
-    const iconEl = document.getElementById('npc-dialogue-icon');
-    const nameEl = document.getElementById('npc-dialogue-name');
-    const factionEl = document.getElementById('npc-dialogue-faction');
-    const bondBadgeEl = document.getElementById('npc-dialogue-bond-badge');
-    const avatarEl = document.getElementById('npc-avatar-visual');
-    const moodEl = document.getElementById('npc-mood-indicator');
-    const narrationEl = document.getElementById('npc-narration-box');
-    const speakerEl = document.getElementById('npc-dialogue-speaker');
-    const textEl = document.getElementById('npc-dialogue-text');
-    const choicesEl = document.getElementById('npc-choices-container');
-
-    const storyTitleEl = document.getElementById('npc-story-stage-title');
-    const storyObjectiveEl = document.getElementById('npc-story-objective-text');
-    const dotsContainer = document.getElementById('npc-story-progress-dots');
-
-    if (storyTitleEl) {
-        storyTitleEl.textContent = state.currentStage
-            ? `SIDE STORY // STAGE ${state.currentStage.index}/3: ${state.currentStage.title.toUpperCase()}`
-            : 'SIDE STORY // COMPANION ARC';
-    }
-    if (storyObjectiveEl) {
-        storyObjectiveEl.textContent = state.currentStage
-            ? `OBJECTIVE: ${state.currentStage.objective}`
-            : 'Explore the sector and converse with survivors.';
-    }
-    if (dotsContainer) {
-        const completed = state.storyState?.completedStages || [];
-        const activeIdx = state.storyState?.stageIndex || 1;
-        dotsContainer.innerHTML = [1, 2, 3].map((idx) => {
-            if (completed.includes(idx)) return '<span class="story-dot story-dot--completed"></span>';
-            if (idx === activeIdx) return '<span class="story-dot story-dot--active"></span>';
-            return '<span class="story-dot"></span>';
-        }).join('');
-    }
-
-    if (iconEl) iconEl.textContent = tree.icon || '💬';
-    if (nameEl) nameEl.textContent = tree.name.toUpperCase();
-    if (factionEl) factionEl.textContent = tree.faction;
-    if (bondBadgeEl && bond) {
-        bondBadgeEl.textContent = t('ui.bond.badge', { label: bond.label, score: state.bondScore || 0 });
-    }
-    if (avatarEl) avatarEl.textContent = tree.icon || '💬';
-    if (moodEl) {
-        moodEl.textContent = (bond?.level >= 2) ? t('ui.bond.enamored') : ((bond?.level === 1) ? t('ui.bond.warm') : t('ui.bond.attentive'));
-    }
-
-    if (narrationEl) {
-        if (node.narration) {
-            narrationEl.style.display = 'block';
-            narrationEl.textContent = node.narration;
-        } else {
-            narrationEl.style.display = 'none';
-        }
-    }
-
-    if (speakerEl) speakerEl.textContent = `${node.speaker ? node.speaker.toUpperCase() : tree.name.toUpperCase()}:`;
-    if (textEl) textEl.textContent = t('ui.camp.quote', { text: node.dialogue });
-
-    if (choicesEl) {
-        choicesEl.innerHTML = '';
-        (node.choices || []).forEach((choice, idx) => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'npc-choice-btn';
-            btn.setAttribute('data-choice-id', choice.id);
-            btn.innerHTML = `
-                <span class="npc-choice-key">[${idx + 1}]</span>
-                <span class="npc-choice-tone">${choice.tone || ''}</span>
-                <span class="npc-choice-text">${choice.text}</span>
-            `;
-            btn.addEventListener('click', () => {
-                window.AudioManager?.play?.('ui_click', { volume: 0.3 });
-                npcDialogueTreeManager.selectChoice(choice.id);
-            });
-            choicesEl.appendChild(btn);
-        });
-    }
-}
-
 function setupNpcDialogueEvents() {
     if (npcDialogueEventsInitialized) return;
     npcDialogueEventsInitialized = true;
 
-    npcDialogueTreeManager.onStateChanged = (state) => (npcTreeHost === 'leader'
-        ? renderLeaderConversationTree(state)
-        : updateNpcDialogueUi(state));
-
-    document.getElementById('close-npc-dialogue-modal')?.addEventListener('click', () => {
-        npcDialogueTreeManager.closeDialogue();
-        window.AudioManager?.play?.('ui_click', { volume: 0.3 });
-    });
+    // Trees only draw inside the camp conversation; the standalone tree modal
+    // was never opened by the game and is gone (camp audit 2026-10-16 §6).
+    npcDialogueTreeManager.onStateChanged = (state) => {
+        if (npcTreeHost === 'leader') renderLeaderConversationTree(state);
+    };
 
     window.addEventListener('keydown', (e) => {
         if (!npcDialogueTreeManager.activeTree || !npcDialogueTreeManager.currentNode) return;
@@ -12311,13 +12212,6 @@ function setupNpcDialogueEvents() {
         }
     });
 
-    window.openNpcDialogueTree = async (treeId) => {
-        if (!isGameplayPhase() || !isGameplayHudActive()) return null;
-        setupNpcDialogueEvents();
-        // No music video per node: a camp's title card plays on first
-        // contact only (owner, 2026-10-08).
-        return npcDialogueTreeManager.startDialogue(treeId);
-    };
     window.NPC_DIALOGUE_TREES = NPC_DIALOGUE_TREES;
     window.npcDialogueTreeManager = npcDialogueTreeManager;
     window.sideStoryManager = sideStoryManager;
@@ -14730,8 +14624,13 @@ const leaderConversation3d = {
         leaderConversation3dInstance?.hide();
     }
 };
+// Paged staged lines: { text, voice } (src/conversationGrammar.js).
 let leaderConversationLines = [];
 let leaderConversationLineIndex = 0;
+let leaderConversationLineShownAt = 0;
+// DIALOGUE telemetry for the open conversation: the live logs only had
+// clicks, so what players read and picked was guessed from button text.
+let leaderConversationLog = null;
 let leaderConversationIdentity = null;
 let leaderConversationTreeId = null;
 // The relationship where this conversation happens; gates intimate choices
@@ -14748,16 +14647,30 @@ function cleanLeaderDialogueLine(line, speakerName = '') {
     return names.some((name) => prefix.includes(name)) ? text.slice(colon + 1).trim() : text;
 }
 
+function logDialogue(event, data = {}) {
+    if (!leaderConversationLog) return;
+    debugLog.info('DIALOGUE', event, { leader: leaderConversationLog.leader, ...data });
+}
+
+function holdLeaderConversationContinue() {
+    leaderConversationLineShownAt = performance.now();
+    leaderConversationContinue?.classList.add('is-holding');
+    setTimeout(() => leaderConversationContinue?.classList.remove('is-holding'), CONTINUE_HOLD_MS);
+}
+
 function renderLeaderConversationLine() {
-    const raw = leaderConversationLines[leaderConversationLineIndex] ?? '';
+    const page = leaderConversationLines[leaderConversationLineIndex] ?? { text: '', voice: '' };
+    const raw = page.text;
     if (leaderConversationLine) leaderConversationLine.textContent = cleanLeaderDialogueLine(raw, leaderConversationIdentity?.name);
+    holdLeaderConversationContinue();
     const reaction = dialogueReactionForLine(raw);
     leaderConversationModal?.setAttribute('data-mood', reaction.mood);
     leaderConversation3d.react(reaction);
     const atEnd = leaderConversationLineIndex >= leaderConversationLines.length - 1;
     if (leaderConversationContinue) leaderConversationContinue.textContent = atEnd ? t('ui.camp.finish_conversation') : t('ui.camp.continue');
-    if (raw && typeof window !== 'undefined' && window.AudioManager?.playVoiceForMessage) {
-        window.AudioManager.playVoiceForMessage({ name: leaderConversationIdentity?.name || 'LEADER' }, raw);
+    // A split line is voiced whole on its first part; continuations are silent.
+    if (page.voice && typeof window !== 'undefined' && window.AudioManager?.playVoiceForMessage) {
+        window.AudioManager.playVoiceForMessage({ name: leaderConversationIdentity?.name || 'LEADER' }, page.voice);
     }
 }
 
@@ -14781,6 +14694,7 @@ function openLeaderConversationTree() {
     leaderConversationTreeId = null;
     if (!npcDialogueTreeManager.startDialogue(treeId, { context: leaderConversationContext })) {
         npcTreeHost = null;
+        logDialogue('tree-empty', { treeId });
         return false;
     }
     return true;
@@ -14788,10 +14702,15 @@ function openLeaderConversationTree() {
 
 function renderLeaderConversationTree(state = {}) {
     if (!state.isOpen || !state.node) {
-        closeLeaderConversation();
+        closeLeaderConversation('tree-end');
         return;
     }
     const node = state.node;
+    if (leaderConversationLog) {
+        leaderConversationLog.node = node.id;
+        leaderConversationLog.nodeShownAt = performance.now();
+        logDialogue('node', { treeId: state.tree?.id ?? null, node: node.id, choices: (node.choices ?? []).map(({ id }) => id) });
+    }
     if (leaderConversationLine) {
         leaderConversationLine.classList.add('is-tree');
         leaderConversationLine.textContent = '';
@@ -14818,7 +14737,8 @@ function renderLeaderConversationTree(state = {}) {
         button.type = 'button';
         button.className = 'npc-choice-btn';
         button.dataset.choiceId = choice.id;
-        for (const [className, text] of [['npc-choice-key', `[${index + 1}]`], ['npc-choice-tone', choice.tone ?? ''], ['npc-choice-text', choice.text ?? '']]) {
+        // Intent is a muted chip ("Ask"), not a bracketed tag (audit §6.1).
+        for (const [className, text] of [['npc-choice-key', String(index + 1)], ['npc-choice-tone', choiceToneLabel(choice.tone)], ['npc-choice-text', choice.text ?? '']]) {
             const part = document.createElement('span');
             part.className = className;
             part.textContent = text;
@@ -14826,6 +14746,13 @@ function renderLeaderConversationTree(state = {}) {
         }
         button.addEventListener('click', () => {
             window.AudioManager?.play?.('ui_click', { volume: 0.3 });
+            logDialogue('choice', {
+                node: node.id,
+                choice: choice.id,
+                tone: choiceToneLabel(choice.tone),
+                ms: Math.round(performance.now() - (leaderConversationLog?.nodeShownAt ?? performance.now()))
+            });
+            if (leaderConversationLog) leaderConversationLog.choices += 1;
             npcDialogueTreeManager.selectChoice(choice.id);
         });
         leaderConversationChoices.append(button);
@@ -14848,7 +14775,18 @@ function resetLeaderConversationTree() {
     leaderConversationModal?.classList.remove('is-choosing');
 }
 
-function closeLeaderConversation() {
+function closeLeaderConversation(reason = 'closed') {
+    if (leaderConversationLog) {
+        logDialogue('close', {
+            reason,
+            ms: Math.round(performance.now() - leaderConversationLog.openedAt),
+            linesRead: leaderConversationLog.linesRead,
+            lines: leaderConversationLines.length,
+            choices: leaderConversationLog.choices,
+            node: leaderConversationLog.node
+        });
+        leaderConversationLog = null;
+    }
     resetLeaderConversationTree();
     setCampDialogOpen('leader', false);
     leaderConversationModal?.classList.add('hidden');
@@ -14860,17 +14798,24 @@ function closeLeaderConversation() {
 }
 
 leaderConversationContinue?.addEventListener('click', () => {
+    // A double press can't skip a line nobody read (audit §6.1, F-6).
+    const shownMs = performance.now() - leaderConversationLineShownAt;
+    if (shownMs < CONTINUE_HOLD_MS) return;
     window.AudioManager?.play?.('ui_click', { volume: 0.4 });
+    if (leaderConversationLog) {
+        leaderConversationLog.linesRead = Math.max(leaderConversationLog.linesRead, leaderConversationLineIndex + 1);
+        logDialogue('line', { index: leaderConversationLineIndex, chars: leaderConversationLines[leaderConversationLineIndex]?.text.length ?? 0, ms: Math.round(shownMs) });
+    }
     if (leaderConversationLineIndex >= leaderConversationLines.length - 1) {
         if (openLeaderConversationTree()) return;
-        closeLeaderConversation();
+        closeLeaderConversation('finished');
         return;
     }
     leaderConversationLineIndex += 1;
     renderLeaderConversationLine();
 });
-leaderConversationLeave?.addEventListener('click', closeLeaderConversation);
-leaderConversationClose?.addEventListener('click', closeLeaderConversation);
+leaderConversationLeave?.addEventListener('click', () => closeLeaderConversation('leave'));
+leaderConversationClose?.addEventListener('click', () => closeLeaderConversation('close'));
 
 window.addEventListener('leader-dialogue', async (event) => {
     if (!isGameplayPhase() || !isGameplayHudActive() || isResettingRun) return;
@@ -14896,8 +14841,8 @@ window.addEventListener('leader-dialogue', async (event) => {
         saveWorldMemory(memory);
         lines = [
             ...lines,
-            'BRIGGS: REYES WROTE THIS? SHE ALWAYS SAID SHE WOULD MAKE IT HOME ON PAPER IF NOT IN PERSON.',
-            'BRIGGS: WE DO NOT HAVE A FUNERAL DETAIL. WE HAVE A LINE TO HOLD. I WILL HOLD IT FOR HER.'
+            'Briggs: Reyes wrote this? She always said she would make it home on paper if not in person.',
+            'Briggs: We do not have a funeral detail. We have a line to hold. I will hold it for her.'
         ];
         window.dispatchEvent(new CustomEvent('reyes-letter-delivered', {
             detail: { leaderName: leaderName ?? identity?.name ?? 'Commander Briggs', loreKey: 'C11' }
@@ -14917,7 +14862,7 @@ window.addEventListener('leader-dialogue', async (event) => {
         });
     }
 
-    leaderConversationLines = lines;
+    leaderConversationLines = pageConversationLines(lines);
     leaderConversationLineIndex = 0;
     if (!leaderConversationLines.length) return;
 
@@ -14957,6 +14902,16 @@ window.addEventListener('leader-dialogue', async (event) => {
         leaderConversationStats.textContent = stats.join('  •  ');
     }
     if (leaderConversationGuidance) leaderConversationGuidance.textContent = detail.progress?.guidance || t('ui.camp.listen_hint');
+    if (leaderConversationLog) logDialogue('close', { reason: 'replaced' });
+    leaderConversationLog = { leader: identity.name, openedAt: performance.now(), linesRead: 0, choices: 0, node: null, nodeShownAt: 0 };
+    logDialogue('open', {
+        kind: detail.kind ?? null,
+        beatType: beatType ?? null,
+        treeId: leaderConversationTreeId,
+        bond: leaderConversationContext.bond,
+        stage: leaderConversationContext.stage,
+        lines: leaderConversationLines.length
+    });
     renderLeaderConversationLine();
     leaderConversationModal.classList.remove('hidden');
     leaderConversationModal.setAttribute('aria-hidden', 'false');
@@ -14967,7 +14922,7 @@ window.addEventListener('leader-dialogue', async (event) => {
     const has3d = await leaderConversation3d.show(identity);
     if (leaderConversationIdentity?.id !== identity.id) return;
     leaderConversationPortrait?.classList.toggle('hidden', has3d);
-    if (has3d) leaderConversation3d.react(dialogueReactionForLine(leaderConversationLines[leaderConversationLineIndex]));
+    if (has3d) leaderConversation3d.react(dialogueReactionForLine(leaderConversationLines[leaderConversationLineIndex]?.text ?? ''));
 });
 
 // Generic hook for dialogue, encounters, bosses, memories, and endings. A

@@ -681,13 +681,6 @@
     "close_player_trade": {
       "aria_label_close_trade_link": "Close Trade Link"
     },
-    "npc_dialogue": {
-      "affection_bond": "AFFECTION // BOND",
-      "press_1_4_or_click": "PRESS [1-4] OR CLICK CHOICE CARD • [ESC] WITHDRAW"
-    },
-    "close_npc_dialogue": {
-      "title_exit_dialogue": "Exit Dialogue"
-    },
     "demo_end": {
       "transmission_terminated": "◈ TRANSMISSION TERMINATED",
       "you_belong_to_the_deep": "\"You belong to the deep now, little machine. The swarm remembers your call.\"",
@@ -1582,12 +1575,6 @@
       "self_class": "{class} // OPERATIVE",
       "peer_class": "{class} // REMOTE"
     },
-    "bond": {
-      "enamored": "ENAMORED / DEVOTED",
-      "warm": "WARM / ATTRACTION",
-      "attentive": "ATTENTIVE",
-      "badge": "{label} ({score} PTS)"
-    },
     "fab": {
       "scatter_repeater": "SCATTER REPEATER",
       "equipped_next_run": "EQUIPPED FOR NEXT RUN ✓",
@@ -1632,7 +1619,6 @@
       "field_conversation": "FIELD CONVERSATION",
       "callsign": "CALLSIGN {callsign}",
       "listen_hint": "Listen, then decide how you want to help.",
-      "quote": "\"{text}\"",
       "next_action": "Your next action changes the launch manifest and the ending vector.",
       "scar_gained": "LAST NIGHT LEFT ITS MARK: {scar}",
       "services": "CAMP SERVICES ({count})",
@@ -2207,7 +2193,6 @@
         "map_zoom": "[LB / RB] ZOOM",
         "map_operator": "[A] OPERATOR",
         "map_close": "[B] / [VIEW] CLOSE",
-        "dialogue_choose": "D-PAD TO CHOOSE • [A] SELECT • [B] WITHDRAW",
         "compass_map": "[VIEW]",
         "radar_scan": "Radar Scan [LB]",
         "armory_cycle": "[LB / RB CYCLE]",

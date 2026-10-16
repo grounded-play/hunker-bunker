@@ -681,13 +681,6 @@
     "close_player_trade": {
       "aria_label_close_trade_link": "Cerrar enlace de intercambio"
     },
-    "npc_dialogue": {
-      "affection_bond": "AFECTO // VÍNCULO",
-      "press_1_4_or_click": "PULSA [1-4] O HAZ CLIC EN UNA CARTA • [ESC] RETIRARSE"
-    },
-    "close_npc_dialogue": {
-      "title_exit_dialogue": "Salir del diálogo"
-    },
     "demo_end": {
       "transmission_terminated": "◈ TRANSMISIÓN TERMINADA",
       "you_belong_to_the_deep": "«Ahora perteneces a las profundidades, maquinita. El enjambre recuerda tu llamado.»",
@@ -1582,12 +1575,6 @@
       "self_class": "{class} // OPERATIVO",
       "peer_class": "{class} // REMOTO"
     },
-    "bond": {
-      "enamored": "ENAMORADA / DEVOTA",
-      "warm": "CÁLIDA / ATRACCIÓN",
-      "attentive": "ATENTA",
-      "badge": "{label} ({score} PTS)"
-    },
     "fab": {
       "scatter_repeater": "REPETIDOR DE DISPERSIÓN",
       "equipped_next_run": "EQUIPADO PARA LA PRÓXIMA PARTIDA ✓",
@@ -1632,7 +1619,6 @@
       "field_conversation": "CONVERSACIÓN DE CAMPO",
       "callsign": "DISTINTIVO {callsign}",
       "listen_hint": "Escucha y luego decide cómo quieres ayudar.",
-      "quote": "«{text}»",
       "next_action": "Tu próxima acción cambia el manifiesto de lanzamiento y el vector del final.",
       "scar_gained": "LA NOCHE DEJÓ SU MARCA: {scar}",
       "services": "SERVICIOS DEL CAMPAMENTO ({count})",
@@ -2207,7 +2193,6 @@
         "map_zoom": "[LB / RB] ZOOM",
         "map_operator": "[A] OPERADOR",
         "map_close": "[B] / [VIEW] CERRAR",
-        "dialogue_choose": "CRUCETA PARA ELEGIR • [A] SELECCIONAR • [B] RETIRARSE",
         "compass_map": "[VIEW]",
         "radar_scan": "Escaneo de radar [LB]",
         "armory_cycle": "[LB / RB CAMBIAR]",

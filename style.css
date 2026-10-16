@@ -7925,7 +7925,6 @@ html.boot-cursor-hidden #tactical-cursor {
 html.phase-menu .hud-notification-stack,
 html.phase-menu #mothership-dialogue,
 html.phase-menu #leader-conversation-modal,
-html.phase-menu #npc-dialogue-modal,
 html.phase-menu #wanderer-encounter-modal,
 html.phase-menu #tutorial-prompt,
 html.phase-menu .radio-transmission-prompt,
@@ -8731,6 +8730,22 @@ html[data-camp-dialog="open"] .hud-notification-stack {
 }
 .leader-conversation-actions button:hover,
 .leader-conversation-actions button:focus-visible { border-color: var(--leader-accent); background: color-mix(in srgb, var(--leader-accent) 16%, #081010); }
+/* One conversation grammar (camp audit 2026-10-16 §6.1): the intent is a
+   small muted chip, and Continue dims while it holds after a new line. */
+.leader-conversation-choices .npc-choice-tone {
+  flex: 0 0 auto;
+  min-width: 5.5em;
+  padding: 1px 8px;
+  border: 1px solid color-mix(in srgb, var(--leader-accent) 45%, transparent);
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--leader-accent) 60%, #c8d2cc);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+.leader-conversation-choices .npc-choice-tone:empty { display: none; }
+#leader-conversation-continue.is-holding { opacity: 0.55; }
 
 @media (max-width: 760px) {
   .leader-conversation-panel { grid-template-columns: 1fr; }
@@ -21559,244 +21574,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   color: #000000;
 }
 
-/* ==========================================================================
-   INTERACTIVE NPC DIALOGUE & SENSUAL STORYLINE MODAL
-   ========================================================================== */
-
-.npc-dialogue-content {
-  max-width: 820px;
-  width: 94%;
-  background: linear-gradient(175deg, rgba(14, 20, 28, 0.98), rgba(6, 9, 14, 0.99));
-  border: 1px solid rgba(255, 79, 100, 0.35);
-  box-shadow: 0 0 45px rgba(0, 0, 0, 0.9), 0 0 25px rgba(255, 79, 100, 0.15);
-  border-radius: 4px;
-  padding: 24px 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  position: relative;
-  overflow: hidden;
-}
-
-.npc-dialogue-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 12px;
-}
-
-.npc-header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.npc-header-icon {
-  font-size: 26px;
-  filter: drop-shadow(0 0 8px rgba(255, 79, 100, 0.6));
-}
-
-.npc-header-name {
-  font-family: 'Orbitron', 'Space Grotesk', sans-serif;
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: #ffffff;
-}
-
-.npc-header-faction {
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  color: #ff8899;
-}
-
-.npc-header-right {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.npc-bond-container {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-}
-
-.npc-bond-tag {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.npc-bond-badge {
-  font-family: 'Space Mono', monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: #ffaa00;
-  background: rgba(255, 170, 0, 0.12);
-  border: 1px solid rgba(255, 170, 0, 0.4);
-  padding: 3px 8px;
-  border-radius: 2px;
-}
-
-.npc-story-tracker {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  background: rgba(14, 22, 34, 0.85);
-  border: 1px solid rgba(255, 170, 0, 0.25);
-  border-left: 3px solid #ffaa00;
-  padding: 8px 14px;
-  border-radius: 2px;
-}
-
-.npc-story-stage-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.npc-story-stage-title {
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: #ffaa00;
-}
-
-.npc-story-progress-dots {
-  display: flex;
-  gap: 6px;
-}
-
-.story-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-}
-
-.story-dot--active {
-  background: #ffaa00;
-  border-color: #ffd070;
-  box-shadow: 0 0 8px rgba(255, 170, 0, 0.8);
-}
-
-.story-dot--completed {
-  background: #00ffd2;
-  border-color: #a0ffee;
-  box-shadow: 0 0 6px rgba(0, 255, 210, 0.6);
-}
-
-.npc-story-objective-text {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 11px;
-  color: #c0d8e8;
-  letter-spacing: 0.02em;
-}
-
-.npc-dialogue-body {
-  display: flex;
-  gap: 22px;
-  align-items: stretch;
-}
-
-.npc-portrait-wrapper {
-  width: 140px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.npc-portrait-frame {
-  width: 130px;
-  height: 130px;
-  background: radial-gradient(circle, rgba(40, 20, 30, 0.8) 0%, rgba(10, 10, 15, 0.95) 100%);
-  border: 2px solid rgba(255, 79, 100, 0.5);
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  box-shadow: inset 0 0 15px rgba(255, 79, 100, 0.2);
-}
-
-.npc-avatar-visual {
-  font-size: 54px;
-  filter: drop-shadow(0 0 12px rgba(255, 79, 100, 0.8));
-  animation: pulseGlow 3s ease-in-out infinite alternate;
-}
-
-.npc-mood-indicator {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #ff8899;
-  text-align: center;
-  background: rgba(255, 79, 100, 0.1);
-  padding: 2px 6px;
-  border-radius: 2px;
-  width: 100%;
-}
-
-.npc-script-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: rgba(4, 8, 12, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 16px;
-  border-radius: 4px;
-}
-
-.npc-narration-box {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #d8c090;
-  font-style: italic;
-  border-left: 2px solid #ffaa00;
-  padding-left: 10px;
-}
-
-.npc-dialogue-box {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.npc-dialogue-speaker {
-  font-family: 'Orbitron', 'Space Grotesk', sans-serif;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: #ff8899;
-}
-
-.npc-dialogue-text {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 15px;
-  line-height: 1.55;
-  color: #f0f8ff;
-  margin: 0;
-}
-
-.npc-choices-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
+/* Choice buttons in the camp conversation (#leader-conversation-choices). */
 .npc-choice-btn {
   display: flex;
   align-items: center;
@@ -21844,20 +21622,6 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   font-size: 13px;
   font-weight: 500;
   flex: 1;
-}
-
-.npc-dialogue-footer {
-  display: flex;
-  justify-content: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 8px;
-}
-
-.npc-footer-hint {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.4);
 }
 
 /* ── Fullsize 3D Pre-Mission Armory (#armory-screen) ─────────────────── */

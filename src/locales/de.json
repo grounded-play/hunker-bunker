@@ -681,13 +681,6 @@
     "close_player_trade": {
       "aria_label_close_trade_link": "Handels-Link schließen"
     },
-    "npc_dialogue": {
-      "affection_bond": "ZUNEIGUNG // BINDUNG",
-      "press_1_4_or_click": "[1-4] DRÜCKEN ODER KARTE ANKLICKEN • [ESC] ZURÜCKZIEHEN"
-    },
-    "close_npc_dialogue": {
-      "title_exit_dialogue": "Dialog verlassen"
-    },
     "demo_end": {
       "transmission_terminated": "◈ ÜBERTRAGUNG BEENDET",
       "you_belong_to_the_deep": "„Du gehörst jetzt der Tiefe, kleine Maschine. Der Schwarm erinnert sich an deinen Ruf.“",
@@ -1582,12 +1575,6 @@
       "self_class": "{class} // OPERATIVER",
       "peer_class": "{class} // ENTFERNT"
     },
-    "bond": {
-      "enamored": "VERLIEBT / ERGEBEN",
-      "warm": "WARM / ANZIEHUNG",
-      "attentive": "AUFMERKSAM",
-      "badge": "{label} ({score} PKT)"
-    },
     "fab": {
       "scatter_repeater": "STREU-REPETIERER",
       "equipped_next_run": "FÜR NÄCHSTEN RUN AUSGERÜSTET ✓",
@@ -1632,7 +1619,6 @@
       "field_conversation": "FELDGESPRÄCH",
       "callsign": "RUFZEICHEN {callsign}",
       "listen_hint": "Hör zu und entscheide dann, wie du helfen willst.",
-      "quote": "„{text}“",
       "next_action": "Deine nächste Handlung ändert die Startliste und den Endverlauf.",
       "scar_gained": "DIE NACHT HAT SPUREN HINTERLASSEN: {scar}",
       "services": "LAGERDIENSTE ({count})",
@@ -2207,7 +2193,6 @@
         "map_zoom": "[LB / RB] ZOOM",
         "map_operator": "[A] OPERATOR",
         "map_close": "[B] / [VIEW] SCHLIESSEN",
-        "dialogue_choose": "STEUERKREUZ ZUM WÄHLEN • [A] AUSWÄHLEN • [B] ZURÜCKZIEHEN",
         "compass_map": "[VIEW]",
         "radar_scan": "Radarscan [LB]",
         "armory_cycle": "[LB / RB WECHSELN]",

@@ -681,13 +681,6 @@
     "close_player_trade": {
       "aria_label_close_trade_link": "关闭交易链接"
     },
-    "npc_dialogue": {
-      "affection_bond": "好感 // 羁绊",
-      "press_1_4_or_click": "按 [1-4] 或点击选项卡片 • [ESC] 退出"
-    },
-    "close_npc_dialogue": {
-      "title_exit_dialogue": "退出对话"
-    },
     "demo_end": {
       "transmission_terminated": "◈ 传输已终止",
       "you_belong_to_the_deep": "“你现在属于深渊了，小机器。虫群记得你的呼唤。”",
@@ -1582,12 +1575,6 @@
       "self_class": "{class} // 特工",
       "peer_class": "{class} // 远程"
     },
-    "bond": {
-      "enamored": "倾心 / 忠诚",
-      "warm": "热情 / 好感",
-      "attentive": "关注",
-      "badge": "{label}（{score} 分）"
-    },
     "fab": {
       "scatter_repeater": "散射连发枪",
       "equipped_next_run": "已为下次征程装备 ✓",
@@ -1632,7 +1619,6 @@
       "field_conversation": "野外对话",
       "callsign": "呼号 {callsign}",
       "listen_hint": "先倾听，再决定你想如何帮忙。",
-      "quote": "“{text}”",
       "next_action": "你的下一步行动将改变发射清单与结局走向。",
       "scar_gained": "昨夜留下了印记: {scar}",
       "services": "营地服务（{count}）",
@@ -2207,7 +2193,6 @@
         "map_zoom": "[LB / RB] 缩放",
         "map_operator": "[A] 操作员",
         "map_close": "[B] / [VIEW] 关闭",
-        "dialogue_choose": "方向键选择 • [A] 确认 • [B] 撤退",
         "compass_map": "[VIEW]",
         "radar_scan": "雷达扫描 [LB]",
         "armory_cycle": "[LB / RB 切换]",

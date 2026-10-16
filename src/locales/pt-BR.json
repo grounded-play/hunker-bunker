@@ -681,13 +681,6 @@
     "close_player_trade": {
       "aria_label_close_trade_link": "Fechar elo de troca"
     },
-    "npc_dialogue": {
-      "affection_bond": "AFEIÇÃO // VÍNCULO",
-      "press_1_4_or_click": "PRESSIONE [1-4] OU CLIQUE NA CARTA • [ESC] RECUAR"
-    },
-    "close_npc_dialogue": {
-      "title_exit_dialogue": "Sair do diálogo"
-    },
     "demo_end": {
       "transmission_terminated": "◈ TRANSMISSÃO ENCERRADA",
       "you_belong_to_the_deep": "\"Você pertence às profundezas agora, pequena máquina. O enxame lembra do seu chamado.\"",
@@ -1582,12 +1575,6 @@
       "self_class": "{class} // OPERATIVO",
       "peer_class": "{class} // REMOTO"
     },
-    "bond": {
-      "enamored": "APAIXONADA / DEVOTA",
-      "warm": "CALOROSA / ATRAÇÃO",
-      "attentive": "ATENTA",
-      "badge": "{label} ({score} PTS)"
-    },
     "fab": {
       "scatter_repeater": "REPETIDOR DE DISPERSÃO",
       "equipped_next_run": "EQUIPADO PARA A PRÓXIMA CORRIDA ✓",
@@ -1632,7 +1619,6 @@
       "field_conversation": "CONVERSA EM CAMPO",
       "callsign": "CODINOME {callsign}",
       "listen_hint": "Ouça e então decida como quer ajudar.",
-      "quote": "“{text}”",
       "next_action": "Sua próxima ação muda o manifesto de lançamento e o vetor do final.",
       "scar_gained": "A NOITE DEIXOU SUA MARCA: {scar}",
       "services": "SERVIÇOS DO ACAMPAMENTO ({count})",
@@ -2207,7 +2193,6 @@
         "map_zoom": "[LB / RB] ZOOM",
         "map_operator": "[A] OPERADOR",
         "map_close": "[B] / [VIEW] FECHAR",
-        "dialogue_choose": "D-PAD PARA ESCOLHER • [A] SELECIONAR • [B] RECUAR",
         "compass_map": "[VIEW]",
         "radar_scan": "Varredura de radar [LB]",
         "armory_cycle": "[LB / RB ALTERNAR]",

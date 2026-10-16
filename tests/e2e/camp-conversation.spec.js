@@ -26,14 +26,16 @@ test('a camp has one conversation and a short prompt', async ({ page }) => {
     expect(started).toBe(true);
     await page.waitForTimeout(800);
     expect(await visible('leader-conversation-modal')).toBe(true);
-    expect(await visible('npc-dialogue-modal')).toBe(false);
+    // The standalone tree modal is gone; trees only draw in this window.
+    expect(await page.locator('#npc-dialogue-modal').count()).toBe(0);
     expect(await visible('song-interstitial')).toBe(false);
     await page.screenshot({ path: 'playwright-report/screenshots/camp-conversation-staged.png' });
 
     // The staged lines, then the leader's choices in the same window.
     for (let i = 0; i < 12 && !(await visible('leader-conversation-choices')); i++) {
         await page.locator('#leader-conversation-continue').click();
-        await page.waitForTimeout(250);
+        // Continue holds for CONTINUE_HOLD_MS (600) after each line appears.
+        await page.waitForTimeout(700);
     }
     expect(await visible('leader-conversation-choices')).toBe(true);
     expect(await visible('leader-conversation-modal')).toBe(true);
