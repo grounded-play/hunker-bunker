@@ -39,3 +39,39 @@ Two further gaps:
 ## Limits
 
 Both players need a build with this fix to see it. A 2.4.16 client still fails silently, and its lobbies advertise no version, so they list without one.
+
+## The solo runs that followed
+
+Both machines were **Steam Decks**: `tuesday-cinema-club` on 2.4.16 and `s1nAck` on 2.4.17. Each played about four minutes solo after giving up on multiplayer.
+
+| | Deck A, 2.4.16, Engineer, Daily Ops | Deck B, 2.4.17, Tank, empty co-op lobby |
+|---|---|---|
+| Median frame time | 47.5 ms (**21 fps**) | 35.5 ms (**28 fps**) |
+| Worst window | 9.4 fps | 5 fps (02:19:05, near the Meridian perimeter camp) |
+| Auto-adjust | `graphics-auto-nothing-left` at every check: settings were already at the floor before this run | lowered world detail, landmarks, effects, shadows (reduced, not off) and resolution 100→85 in 3 minutes, then nothing left |
+| Bound | CPU, every time | CPU, except one GPU-bound resolution step |
+| Freezes over 0.5 s in play | 3.87 s, 0.81 s, 0.93 s, all in `world-model:prepare` | 1.42 s (`frame:render`), 0.91 s (`world-model:prepare`) |
+| Typical frame | render submit ~27 ms, updateScatter 6.5 ms, updateCamps 2.8 ms, updatePlayer 2.7 ms, updateDayNightCycle 2.3 ms | render submit ~22 ms, updateScatter 4.0 ms, updatePlayer 2.6 ms, updateCamps 2.1 ms |
+
+### What this says
+
+- **The Deck is far from playable rates on either build.** 2.4.17 is better (28 vs 21 fps), but its auto-adjust also ran out of steps within three minutes. The cost is CPU:
+  - the render submit (draw calls through ANGLE on the Deck) is over half the frame;
+  - scatter, camps and the day/night cycle add another 10 ms or more every frame.
+- **The multi-second freezes are GLB model preparation on the main thread** (`world-model:prepare`), not shader compiles. 2.4.17 had fewer mid-run freezes. The 2026-10-15 room activation pass (b12f0f89) places more GLBs, so preparation cost is worth watching on the Deck.
+- **Deck A's death:**
+  - At 3:21 the Engineer went from 3 HP to 0 in three seconds: two `mycelium_stalker` hits, then a `poison` tick.
+  - Shots were firing (plasma carbine, 25 fire inputs in the last 10 s, many `fire_cooldown` blocks), but the projectiles mostly struck walls (`wall-impact source: player`).
+  - At 9–15 fps that is an aiming and readability problem as much as a balance one.
+- **Deck B:**
+  - It was body-blocked by a sporesnail twice (`player-blocked`) and took one hit.
+  - It regenerated to full and collected three shells.
+  - The early O2 hint is consistent: about 10% per 40 s (59% after four minutes).
+- **Camera settings:** both players opened Settings → Camera & HUD within the first minute and clicked the camera-mode dropdown (Deck B three times in one second). The camera `change` handler logs nothing, so the logs cannot show whether it changed. Log it, and check that the native `<select>` is operable with Deck controls.
+
+### Follow-ups worth taking
+
+1. Deck CPU frame budget: render submit, then updateScatter, updateCamps and updateDayNightCycle per frame.
+2. Move GLB `world-model:prepare` off the critical frame, or spread it out, to remove the 1–4 s freezes.
+3. Log camera and other settings changes, and verify the camera dropdown on Deck.
+4. Read the 2.4.17 Deck numbers again after these, since that build is what testers have now.
