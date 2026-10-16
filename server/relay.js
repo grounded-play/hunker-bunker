@@ -1009,6 +1009,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                     enemyType,
                     x,
                     z,
+                    rotY: Number.isFinite(state.rotY) ? Number(state.rotY) : null,
                     hp: Number.isFinite(state.hp) ? Math.max(0, Math.min(10000, state.hp)) : null,
                     burstTriggered: Boolean(state.burstTriggered),
                     // A peer can only update enemies it already has locally, so a

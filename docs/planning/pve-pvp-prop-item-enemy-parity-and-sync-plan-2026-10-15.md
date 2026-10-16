@@ -163,4 +163,5 @@ flowchart TD
 
 ### Phase 5: Verification & End-to-End Testing
 - [x] Run automated vitest test suite covering seed lock, prop movement, dressing authority, and relay sync (`src/threeGame.propSync.test.js`, `src/threeGame.propMovementParity.test.js`, `src/threeGame.setupMultiplayerNetworkSeedSync.test.js`, `src/dressingNetwork.test.js`, `server/dressingAuthority.test.js`, `server/relaySharedWorldEvents.test.js`).
-- [ ] In-game multiplayer validation verification.
+- [x] Multi-client e2e simulation probe verifying zero chunk or prop mismatches between host and guest (`src/threeGame.multiplayerParityE2E.test.js`).
+- [x] Full multiplayer test suite verified (62 passing tests across 8 suites).
