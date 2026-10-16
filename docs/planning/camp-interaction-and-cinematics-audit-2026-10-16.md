@@ -33,6 +33,8 @@
 | **P2** | Interaction-sequence runner + the first three sequences (§8): Meridian first meeting, Grid Covenant, first night on the cot | no in-world staging exists outside the O2 doors | skip applies the end state; a missing asset falls back to its card |
 | **P2** | Commission the clips in §10 (P1 rows first) | 14 of 15 side-story cards play another scene's video; 1 has none | each slot has its own clip or a still |
 | **P2** | Trees into i18n; voice the tree lines | 0 tree lines recorded or translated | the i18n audit passes; recorded lines play |
+| **P1** | Door bookends + every song video triggered (§13): doors shut → video → doors shut → conversation over gameplay | owner ask 2026-10-16; 22 of 32 videos never play; side-story cards have no caller | first Meridian visit plays doors → 02 → doors → Kaelen's window |
+| **P1** | Finish the other agent's runner glue (§13.4) | its subtitle/resume/perk events have no listener; S-1 double-cards | the runner's lines, resume and perk are visible in play |
 | **P3** | Vey and Rhun covenant trees; Aria only in a Queen context | no trees exist | each hive being has offered/accepted/refused |
 | **P3** | Check the three `camp_fire_loop` plays at run start | three plays within 13 ms (one per camp?) | one loop per audible camp |
 
@@ -594,6 +596,118 @@ Every slot resolves down this ladder, and the manifest records which rung it is 
 | 8 | Commission §10 clips (P1 first) | `public/interstitials/motion/`, `public/cutscenes/` | each slot `final` |
 | 9 | Trees into i18n; voice-render the tree lines | `src/npcDialogueTrees.js`, `scripts/voice/` | the i18n audit passes; lines voiced |
 | 10 | Vey and Rhun covenant trees; Aria behind Queen contact | `src/npcDialogueTrees.js` | every hive being has offered/accepted/refused |
+| 11 | Door bookends: doors shut → video → doors shut → open on the conversation (§13.1) | `src/songInterstitials.js`, `main.js`, `style.css` | a card with `then: 'conversation'` never cuts straight from video to a window |
+| 12 | One beat table: every one of the 32 song videos has a trigger (§13.2) | `src/cinematicBeats.js` (new), `main.js` | each row plays once per save; no two cards back to back |
+| 13 | Read `node.interstitial` in the tree choice handler (§13.3) | `main.js` | the 18 tree nodes that name a card play it |
+| 14 | Finish the runner glue (§13.4) | `src/threeGame.js`, `main.js` | lines show, conversation resumes, perk lands, no double card |
+
+---
+
+## 13. Doors → video → doors → conversation (owner ask, 2026-10-16 evening)
+
+> "I still want files like these [`public/interstitials/int_11_her_voice_inside_your_helmet_key_v1.mp4`] to be mapped and triggered, and it should do a set of doors, closing gameplay, open to video, then doors again, go to chat after, and that chat is dialogue windows over the gameplay."
+
+This section also folds in a second agent's work on this branch, committed as `2699c189` (side-story manifest edit, four `_v2` stills, `src/interactionSequenceRunner.js` and its `threeGame.js` glue). §13.4 reviews it.
+
+### 13.1 The beat, step by step
+
+| Step | Screen | Today | Change |
+|---|---|---|---|
+| 1 | Doors slide shut over live gameplay (540 ms) | yes (`is-closing`) | none |
+| 2 | Doors open on the video, which plays with its own audio | yes (`is-open`, webm has Opus audio) | none |
+| 3 | Video ends or is skipped (Space / Enter / Esc / click) | the overlay fades out (`is-settled`, 260 ms), no doors | **doors shut again** over the last frame (`is-closing-out`, 540 ms) |
+| 4 | Behind the closed doors, the conversation window mounts and the overlay's black backdrop is dropped | the window opens separately, if at all | `show(spec, { then: 'conversation', onBehindDoors })`: the caller opens the window during this step |
+| 5 | Doors open on gameplay with the dialogue window on top | — | doors slide out; the root hides once they clear |
+
+If the row's `then` is `'gameplay'` (bosses, endings, Mothership beats), step 4 does nothing and step 5 opens straight on play.
+
+**"Dialogue window over the gameplay" — today, almost.** `#leader-conversation-modal` sits over the running scene, but its backdrop is `rgba(2, 6, 10, 0.88)` (`style.css:8585`), so the game reads as black. To read as "over the gameplay", drop it to about 0.35 with a darker band behind the panel only. Doors render at z 16190, the window at 10020, so the doors cover the window while it mounts.
+
+Skip rules (ties to D-3): the skip press jumps to step 3. It never cuts to the window without doors. Hold-to-skip stays an owner decision.
+
+### 13.2 Every video gets a trigger
+
+**Today only 10 of the 32 videos ever play**: 01, 02, 04, 06, 11 and 22/23 through `camp-first-contact`; 04 (O2 upgrade) and 13/26/27 (snail bosses) through the cutscene path in `main.js:8800`. The other 22 ship and never trigger. `int_11` plays today only as the generic card for *any* hive's first contact.
+
+Proposal: one table, `src/cinematicBeats.js`, `{ beat, when, card, then, once }`, listened to in `main.js`. All events below already fire in the code. Rows marked *live* keep their current trigger.
+
+| Card | Title | When | Then |
+|---|---|---|---|
+| 01 | Someone Is Still Alive | *live:* first contact, unknown camp | conversation |
+| 02 | Kaelen's Sleeping Machine | *live:* first contact, Meridian | conversation (Kaelen) |
+| 03 | The Math Is Beautiful Now | `camp-bonded`, Meridian, bond 3 | conversation |
+| 04 | Warmth Beneath the Ice | *live:* first contact, Tallow; O2 upgrade | conversation (Martha) / gameplay |
+| 05 | The Pipes Are Singing | first `ship-module-activated` | gameplay |
+| 06 | Briggs Keeps the Ledger | *live:* first contact, Vesper | conversation (Briggs) |
+| 07 | Your Name Was Written Twice | `camp-bonded`, Vesper, bond 3 | conversation |
+| 08 | Dr. Nahl Remembers the Tissue | first contact, **Suture** hive (split from 11) | conversation (Nahl) |
+| 09 | Mothership Customer Support | first `player-respawned` | gameplay |
+| 10 | Mothership Is Not Feeling Well | `act2-console-dead` | gameplay |
+| **11** | **Her Voice Inside Your Helmet** | first `queen-hallucination` (Aria, Queen context per §10.5) | **conversation (Aria tree)** |
+| 12 | The Queen Makes a Reasonable Offer | `queen-fight-started` | gameplay |
+| 13 | A Snail Blocks the Hallway | *live:* cybersnail boss | gameplay |
+| 14 | Cold Enough to Think | first `depth-tier-changed` to tier 2 | gameplay |
+| 15 | The Spores Know Your Name | first `infection-stage-changed` | gameplay |
+| 16 | We Could Avoid Doing This | `hive-choice-resolved`, non-violent choice | conversation (hive being) |
+| 17 | It Understands the Gun | `act2-apex-threat-spawned` | gameplay |
+| 18 | The Creature Lets You Pass | first `snail-befriended` | gameplay |
+| 19 | Meridian Remembers You | `camp-quest-complete`, Meridian | conversation |
+| 20 | Tallow Keeps the Steam | `camp-quest-complete`, Tallow | conversation |
+| 21 | Vesper Sleeps in Shifts | `camp-quest-complete`, Vesper | conversation |
+| 22 | You Robbed the Only People Left | *live:* camp robbed | gameplay |
+| 23 | They Still Have Their Faces | *live:* camp turned | gameplay |
+| 24 | Nobody Says Goodbye | `act2-departed` | gameplay |
+| 25 | Gigawatt Goliath | `hive-harvest-boss-spawned` | gameplay |
+| 26 | Absolute Zero Has a Shell | *live:* cryosnail boss | gameplay |
+| 27 | The Bloom That Hunts | *live:* sporesnail boss | gameplay |
+| 28 | Martha Runs Faster Now | `camp-final-resolved`, Tallow | conversation |
+| 29 | Briggs Became the Barricade | `camp-final-resolved`, Vesper | conversation |
+| 30 | Kaelen Is the Grid | `camp-final-resolved`, Meridian | conversation |
+| 31 | Mother of the Last World | Queen fight won | gameplay |
+| 32 | Black Box Stain | first `black-box-recovered` (before S-13's image cutscene) | gameplay |
+| 33–38 | Act 3 and endings | unchanged (still + Ken Burns until §10.6 clips land) | gameplay |
+
+The "when" choices for 05, 09, 14, 15, 17, 25 are my best fit by title. The owner should confirm or swap them.
+
+Table rules:
+- **Once per save.** The seen set is saved with the run (not in memory).
+- **One card at a time.** If a second beat fires within 20 s, it waits. If it is lower priority, it is dropped. Priority order: story, then camp, then flavour.
+- **Never mid-fight.** Combat beats (bosses) play at spawn, as today. All other beats wait for `combat-state-changed` to calm.
+- **Co-op:** doors never close on a player while others fight. A guest gets a toast with the card title, and the clip goes to the codex/museum.
+- A card plays **as itself**. A song clip is never re-used as another scene's side-story card (§11.2 still holds). So int_11 is mapped as track 11 at its own beat (Aria's voice), not borrowed for `aria_whispers_abyss`.
+
+### 13.3 Side-story cards never play today
+
+The other agent's note says the side-story cards showed borrowed clips on screen. In gameplay they show nothing at all:
+- 18 tree nodes name an `interstitial:` (`npcDialogueTrees.js:92–853`), but only `matureContentAudit.js` reads the field.
+- `window.playSideStoryInterstitial` (`main.js:14574`) has no caller.
+
+Fix: when a chosen node has `interstitial`, run §13.1 with `then: 'conversation'`. The doors close on the chat, the still pans, and the doors reopen on the next line of the same tree.
+
+### 13.4 What the other agent's work changes in this plan
+
+| Their change (`2699c189`) | Verdict | Follow-up |
+|---|---|---|
+| Removed borrowed `motion*` from all 15 `SIDE_STORY_INTERSTITIALS` | **Keep.** It is §12 step 7, the rule in §11.2. | Add the `status: 'still'` field from §11.2. |
+| Claim: "the controller prioritizes `motionMp4`" | Wrong. `loadMotion` reads `motion`, then `motionWebm`. `motionMp4` is unused by all 38 entries. Harmless, because the webm has Opus audio. | Drop `motionMp4` or make it the Safari fallback. |
+| 4 `_v2` 16:9 stills (Briggs rig, Kaelen cradle, Nahl mind-link, Martha hearth) | Unreferenced: the manifest still points at `_v1`. | Owner looks at them, then swap the 4 `image` paths. |
+| `src/interactionSequenceRunner.js` + test (5 tests pass, run 16:44) | Format matches §8.2. `skip` applies the end state. | Persist `completedSequences` (it lives in memory today, so it replays every load). Bind skip to input. |
+| `threeGame.js` glue for S-1, S-3, S-11 | Stubs that look done but do nothing visible. See the list below. | Step 14. |
+
+Glue gaps found by reading the diff:
+- `displaySequenceSubtitle`, `resumeConversationAfterSequence` and `grantSequenceReward` dispatch `narrative-sequence-subtitle`, `leader-dialogue-resume` and `perk-unlocked`. **Nothing listens** for any of the three. No line shows, the conversation doesn't resume, and there is no toast.
+- `this.bank.addPerk?.()`: `addPerk` doesn't exist, so the Grid Covenant perk is silently never granted.
+- `walkActorToAnchor` teleports the player to fixed offsets from Meridian, whatever the anchor. The leader never moves. `transitionCamera` and `spawnPropFx` hardcode Meridian or the player's position. `setWorldPropState` ignores the state.
+- `findPropAnchor` checks `worldDressingNetwork` and `props`, not the dressing instancer. If `meridian_logic_core_drum` isn't found there, S-1 falls back to card 19 **right after** first contact has already played card 02: two cards back to back on the first meeting. Under §13.2, 19 belongs to the quest's completion. S-1's fallback should be "skip to the conversation", not a card.
+- S-1 fires on the TALK handler while the conversation window opens, so the two race. The sequence should run first, and its `resumeConversation` step should open the window (§13.1 step 4).
+
+### 13.5 Order of work
+
+1. §13.1 door bookends + the backdrop change, and route `camp-first-contact` through them (02/04/06 already exist, so the owner sees the beat in the first camp visit).
+2. §13.3 node interstitials, using the same call.
+3. §13.4 glue fixes, so the runner's lines and resumes are real.
+4. §13.2 beat table, in two passes: first the conversation rows (03, 07, 08, 11, 16, 19–21, 28–30), then the gameplay rows.
+5. Verify in the dev server (vite + system Chrome). Capture the Meridian first visit: doors → 02 → doors → Kaelen's window over the live camp.
 
 ---
 
