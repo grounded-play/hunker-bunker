@@ -237,6 +237,15 @@ export function describeJoinRejection({ reason, hostBuild, clientBuild } = {}) {
     return 'COULD NOT JOIN LOBBY';
 }
 
+// A public lobby whose host advertises a different game build than ours.
+// Builds before 2.4.17 advertised an empty hb_build; those stay joinable and
+// the relay's own build gate decides.
+export function steamLobbyBuildMismatch(lobby, localBuild = getLocalBuildVersion()) {
+    const hostBuild = String(lobby?.data?.hb_build ?? '').trim();
+    if (!hostBuild || !localBuild || hostBuild === localBuild) return null;
+    return { reason: 'build_mismatch', hostBuild, clientBuild: localBuild };
+}
+
 export function filterDiscoverableSteamLobbies(lobbies = [], localSteamId64 = null) {
     const localId = String(localSteamId64 ?? '').trim();
     if (!localId) return lobbies;
@@ -669,7 +678,7 @@ export class MultiplayerLobby {
 
                 this.socket.on('matchDeployRejected', ({ reason } = {}) => {
                     logMultiplayerEvent('relay-deploy-rejected', { reason: reason || 'unknown' });
-                    if (reason === 'build_mismatch') window.showToastNotification?.(describeJoinRejection({ reason }));
+                    if (reason === 'build_mismatch') window.showToastNotification?.(t('ui.lobby.squad_build_mismatch'), { tone: 'error', duration: 9000 });
                     const el = document.getElementById('net-status-pill');
                     if (!el) return;
                     const original = el.textContent;
@@ -702,7 +711,7 @@ export class MultiplayerLobby {
                 // player and let them retry.
                 this.socket.on('joinRejected', (detail = {}) => {
                     this.disconnect();
-                    window.showToastNotification?.(describeJoinRejection(detail));
+                    this.reportJoinRejection(detail);
                 });
 
                 this.socket.on('connect_error', (err) => {
@@ -807,6 +816,9 @@ export class MultiplayerLobby {
         const result = await createSteamLobby({
             mode: this.currentMode,
             maxPlayers: 4,
+            // Shown on other players' lobby lists so a version split is
+            // visible before anyone presses JOIN.
+            build: getLocalBuildVersion(),
             visibility: this.hostPrivate ? 'private' : 'public',
             passwordRequired: Boolean(this.hostPrivate && this.hostPasswordValue)
         });
@@ -819,6 +831,24 @@ export class MultiplayerLobby {
         } else {
             this.setSteamLobbyStatus('STEAM LOBBY FAILED — RUN `STEAM` DIAGNOSTICS', 'error');
         }
+    }
+
+    // Tell the player why a join failed, in the toast and in the lobby's own
+    // status line, and keep the reason in the session log. A rejected join
+    // used to show nothing: on 2026-10-15 a 2.4.17 player pressed JOIN on a
+    // 2.4.16 lobby six times and only saw the connection drop.
+    reportJoinRejection(detail = {}) {
+        const reason = typeof detail.reason === 'string' ? detail.reason : 'unknown';
+        logMultiplayerEvent('relay-join-rejected', {
+            reason,
+            hostBuild: detail.hostBuild ?? null,
+            clientBuild: detail.clientBuild ?? null
+        });
+        const message = describeJoinRejection(detail);
+        if (typeof window !== 'undefined') {
+            window.showToastNotification?.(message, { tone: 'error', duration: 9000 });
+        }
+        this.setSteamLobbyStatus(message, 'error');
     }
 
     setSteamLobbyStatus(message, state = '') {
@@ -910,13 +940,30 @@ export class MultiplayerLobby {
             label.className = 'net-spec-name';
             const mode = (lobby.data?.hb_mode || 'coop').toUpperCase();
             const memberCount = lobby.members?.length ?? 0;
-            label.textContent = t('ui.lobby.mode_members', { mode, count: memberCount });
+            const hostBuild = String(lobby.data?.hb_build ?? '').trim();
+            label.textContent = hostBuild
+                ? `${t('ui.lobby.mode_members', { mode, count: memberCount })} // ${t('ui.lobby.lobby_build_tag', { build: hostBuild })}`
+                : t('ui.lobby.mode_members', { mode, count: memberCount });
+
+            const mismatch = steamLobbyBuildMismatch(lobby);
+            if (mismatch) {
+                row.classList.add('net-spec-row--build-mismatch');
+                const warning = document.createElement('span');
+                warning.className = 'net-spec-val net-lobby-build-warning';
+                warning.textContent = t('ui.lobby.lobby_build_mismatch', { host: mismatch.hostBuild, client: mismatch.clientBuild });
+                label.appendChild(document.createElement('br'));
+                label.appendChild(warning);
+            }
 
             const joinBtn = document.createElement('button');
             joinBtn.type = 'button';
             joinBtn.className = 'net-code-copy-btn';
             joinBtn.textContent = t('ui.lobby.join');
-            joinBtn.addEventListener('click', () => this.handleSteamLobbyJoinRequested(lobby.id));
+            // The relay would refuse this join anyway; say why without
+            // joining the Steam lobby and dropping out of it again.
+            joinBtn.addEventListener('click', () => (mismatch
+                ? this.reportJoinRejection(mismatch)
+                : this.handleSteamLobbyJoinRequested(lobby.id)));
 
             row.appendChild(label);
             row.appendChild(joinBtn);

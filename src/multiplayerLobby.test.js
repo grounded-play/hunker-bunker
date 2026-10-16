@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
-import { MultiplayerLobby, MULTIPLAYER_MODES, resolveRelayUrl, fetchMultiplayerSessionToken, getLocalLoadoutSummary, getLocalOperatorClass, getLocalCallsign, filterDiscoverableSteamLobbies } from './multiplayerLobby.js';
+import { MultiplayerLobby, MULTIPLAYER_MODES, resolveRelayUrl, fetchMultiplayerSessionToken, getLocalLoadoutSummary, getLocalOperatorClass, getLocalCallsign, filterDiscoverableSteamLobbies, steamLobbyBuildMismatch } from './multiplayerLobby.js';
 
 describe('MultiplayerLobby', () => {
     let lobby;
@@ -835,5 +835,33 @@ describe('each lobby deploy is a new map', () => {
         const b = createDeploymentSeed('STEAM-1097');
         expect(a).toMatch(/^STEAM-1097:\d+$/);
         expect(a).not.toBe(b);
+    });
+});
+
+// 2026-10-15 playtest: a 2.4.17 player pressed JOIN on a 2.4.16 lobby six
+// times; the relay refused each one and the player saw nothing.
+describe('telling the player about a version split', () => {
+    let originalWindow;
+    afterEach(() => { globalThis.window = originalWindow; });
+
+    it('flags a public lobby whose host advertises a different build', () => {
+        expect(steamLobbyBuildMismatch({ data: { hb_build: '2.4.16-beta' } }, '2.4.17-beta'))
+            .toEqual({ reason: 'build_mismatch', hostBuild: '2.4.16-beta', clientBuild: '2.4.17-beta' });
+        expect(steamLobbyBuildMismatch({ data: { hb_build: '2.4.17-beta' } }, '2.4.17-beta')).toBeNull();
+        // Older builds advertised no version: leave the decision to the relay.
+        expect(steamLobbyBuildMismatch({ data: { hb_build: '' } }, '2.4.17-beta')).toBeNull();
+        expect(steamLobbyBuildMismatch({ data: { hb_build: '2.4.16-beta' } }, null)).toBeNull();
+    });
+
+    it('shows both versions when the relay rejects a join', () => {
+        originalWindow = globalThis.window;
+        const showToastNotification = vi.fn();
+        globalThis.window = { showToastNotification };
+        const lobby = new MultiplayerLobby();
+        lobby.reportJoinRejection({ reason: 'build_mismatch', hostBuild: '2.4.16-beta', clientBuild: '2.4.17-beta' });
+        expect(showToastNotification).toHaveBeenCalledWith(
+            expect.stringMatching(/2\.4\.16-beta.*2\.4\.17-beta/),
+            expect.objectContaining({ tone: 'error' })
+        );
     });
 });

@@ -1307,7 +1307,10 @@
       "no_tracked_objectives": "无追踪目标",
       "surface": "地表",
       "story_prelude": "第一幕 // 人类序章",
-      "build_mismatch": "主机版本为 {host}，你的版本为 {client} — 请更新或切换 Steam 测试分支以保持一致"
+      "build_mismatch": "主机版本为 {host}，你的版本为 {client} — 请更新或切换 Steam 测试分支以保持一致",
+      "lobby_build_tag": "v{build}",
+      "lobby_build_mismatch": "版本不一致 — 主机 v{host}，你 v{client}",
+      "squad_build_mismatch": "有队友使用不同的游戏版本 — 所有人版本一致后才能部署"
     },
     "dossier": {
       "title": "战术档案",

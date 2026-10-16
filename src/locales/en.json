@@ -1307,7 +1307,10 @@
       "no_tracked_objectives": "NO TRACKED OBJECTIVES",
       "surface": "SURFACE",
       "story_prelude": "ACT I // HUMAN PRELUDE",
-      "build_mismatch": "HOST IS ON {host}, YOU ARE ON {client} — UPDATE OR SWITCH YOUR STEAM BETA BRANCH TO MATCH"
+      "build_mismatch": "HOST IS ON {host}, YOU ARE ON {client} — UPDATE OR SWITCH YOUR STEAM BETA BRANCH TO MATCH",
+      "lobby_build_tag": "v{build}",
+      "lobby_build_mismatch": "VERSION MISMATCH — HOST v{host}, YOU v{client}",
+      "squad_build_mismatch": "A SQUADMATE IS ON A DIFFERENT GAME VERSION — EVERYONE MUST MATCH TO DEPLOY"
     },
     "dossier": {
       "title": "TACTICAL DOSSIER",

@@ -25569,3 +25569,52 @@ html.phase-gameplay #tactical-telemeter-box {
 }
 .sleep-interstitial__body { font-size: clamp(12px, 1.6vw, 17px); opacity: 0.8; max-width: 36rem; }
 .sleep-interstitial__skip { position: absolute; bottom: 8%; font-size: 12px; letter-spacing: 0.2em; opacity: 0.45; text-transform: uppercase; }
+
+/* Short notices (src/toastNotification.js): lobby join rejections, co-op
+   squad events. Above menus and modals, below the debug console; never
+   takes pointer or focus. */
+.hb-toast-stack {
+  position: fixed;
+  top: calc(var(--vu) * 4);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--vu) * 1);
+  width: min(92vw, calc(var(--vu) * 110));
+  pointer-events: none;
+}
+.hb-toast {
+  padding: calc(var(--vu) * 1.4) calc(var(--vu) * 2.4);
+  border: 1px solid rgba(34, 211, 238, 0.55);
+  border-left-width: 4px;
+  background: rgba(6, 12, 14, 0.94);
+  color: #e6f4f6;
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--vu) * 1.9);
+  letter-spacing: 0.06em;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: 0 0 calc(var(--vu) * 2) rgba(0, 0, 0, 0.6);
+  animation: hb-toast-in 180ms ease-out;
+}
+.hb-toast--warning {
+  border-color: rgba(245, 158, 11, 0.75);
+  color: #fde7c2;
+}
+.hb-toast--error {
+  border-color: rgba(239, 68, 68, 0.8);
+  color: #ffd9d9;
+}
+@keyframes hb-toast-in {
+  from { opacity: 0; transform: translateY(calc(var(--vu) * -1.5)); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hb-toast { animation: none; }
+}
+.net-spec-row--build-mismatch .net-lobby-build-warning {
+  color: #fca5a5;
+}

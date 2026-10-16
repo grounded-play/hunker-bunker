@@ -1,6 +1,7 @@
 import { createControllerPressGate } from './src/controllerPressGate.js';
 import { registerWebServiceWorker } from './src/serviceWorkerRegistration.js';
 import { initPlayerChatUI } from './src/playerChatUi.js';
+import { installToastNotification } from './src/toastNotification.js';
 import { crossingGuidance, expeditionDebrief } from './src/expeditionFeedback.js';
 import { runO2MilestoneChoreography } from './src/o2CinematicDoors.js';
 import { compactPerformanceSnapshot, compactPerfPhase, createLongTaskReporter } from './src/longTaskDiagnostics.js';
@@ -18051,6 +18052,8 @@ initSteamVaultUI();
 initSeasonPassUI();
 initVoiceCallouts();
 multiplayerLobby.init();
+// Lobby rejections and co-op squad notices call window.showToastNotification.
+installToastNotification();
 initPlayerChatUI({ onBoundaryChange: () => syncSteamInputPhase() });
 matureContentAudit.init();
 progressionWalkthrough.init();

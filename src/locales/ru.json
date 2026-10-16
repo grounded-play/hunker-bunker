@@ -1307,7 +1307,10 @@
       "no_tracked_objectives": "НЕТ ОТСЛЕЖИВАЕМЫХ ЦЕЛЕЙ",
       "surface": "ПОВЕРХНОСТЬ",
       "story_prelude": "АКТ I // ПРОЛОГ ЛЮДЕЙ",
-      "build_mismatch": "У ХОСТА {host}, У ВАС {client} — ОБНОВИТЕСЬ ИЛИ СМЕНИТЕ БЕТА-ВЕТКУ STEAM, ЧТОБЫ ВЕРСИИ СОВПАДАЛИ"
+      "build_mismatch": "У ХОСТА {host}, У ВАС {client} — ОБНОВИТЕСЬ ИЛИ СМЕНИТЕ БЕТА-ВЕТКУ STEAM, ЧТОБЫ ВЕРСИИ СОВПАДАЛИ",
+      "lobby_build_tag": "v{build}",
+      "lobby_build_mismatch": "ВЕРСИИ НЕ СОВПАДАЮТ — ХОСТ v{host}, ВЫ v{client}",
+      "squad_build_mismatch": "У ОДНОГО ИЗ ОТРЯДА ДРУГАЯ ВЕРСИЯ ИГРЫ — ДЛЯ ВЫСАДКИ ВЕРСИИ ДОЛЖНЫ СОВПАДАТЬ"
     },
     "dossier": {
       "title": "ТАКТИЧЕСКОЕ ДОСЬЕ",

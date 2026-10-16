@@ -1307,7 +1307,10 @@
       "no_tracked_objectives": "SEM OBJETIVOS RASTREADOS",
       "surface": "SUPERFÍCIE",
       "story_prelude": "ATO I // PRELÚDIO HUMANO",
-      "build_mismatch": "O ANFITRIÃO ESTÁ NA {host} E VOCÊ NA {client} — ATUALIZE OU TROQUE SEU BRANCH BETA DA STEAM PARA COMBINAR"
+      "build_mismatch": "O ANFITRIÃO ESTÁ NA {host} E VOCÊ NA {client} — ATUALIZE OU TROQUE SEU BRANCH BETA DA STEAM PARA COMBINAR",
+      "lobby_build_tag": "v{build}",
+      "lobby_build_mismatch": "VERSÃO DIFERENTE — ANFITRIÃO v{host}, VOCÊ v{client}",
+      "squad_build_mismatch": "UM COMPANHEIRO ESTÁ EM OUTRA VERSÃO DO JOGO — TODOS PRECISAM COMBINAR PARA IMPLANTAR"
     },
     "dossier": {
       "title": "DOSSIÊ TÁTICO",
