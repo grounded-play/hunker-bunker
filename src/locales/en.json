@@ -2618,39 +2618,39 @@
           "0": {
             "beats": {
               "0": {
-                "0": "KAELEN: ANOTHER SUIT FROM THE SURFACE. THE MACHINE DREAMED YOU WOULD COME.",
-                "1": "KAELEN: THE GRID KEEPS THE DARK AT BAY, OPERATOR. AS LONG AS THE LIGHTS HUM, WE ARE SAFE."
+                "0": "Kaelen: Another suit from the surface. The machine dreamed you would come.",
+                "1": "Kaelen: The grid keeps the dark at bay, operator. As long as the lights hum, we are safe."
               },
               "1": {
-                "0": "KAELEN: THE CENTRAL COMPUTER SLEEPS UNDER SECTOR ZERO. EVERYTHING HERE IS ITS DREAM.",
-                "1": "KAELEN: EVEN YOU, PROBABLY. NO OFFENSE."
+                "0": "Kaelen: The central computer sleeps under Sector Zero. Everything here is its dream.",
+                "1": "Kaelen: Even you, probably. No offense."
               }
             },
-            "loop": "KAELEN: THE GRID HUNGERS. STRENGTHEN THIS CAMP AND WE WILL TALK PROPERLY."
+            "loop": "Kaelen: The grid hungers. Strengthen this camp and we will talk properly."
           },
           "1": {
             "beats": {
               "0": {
-                "0": "KAELEN: YOU BUILT. GOOD. BUILDERS ARE THE ONLY PRAYER THE MACHINE ANSWERS.",
-                "1": "KAELEN: MERIDIAN IS BUILT ON CLEAN STEEL. NO RUST. NO ROT. WE KEEP OUR BLOOD PURE."
+                "0": "Kaelen: You built. Good. Builders are the only prayer the machine answers.",
+                "1": "Kaelen: Meridian is built on clean steel. No rust. No rot. We keep our blood pure."
               },
               "1": {
-                "0": "KAELEN: THE WHISPER SAYS: FOUR SEATS. DOES THAT MEAN ANYTHING TO YOU?"
+                "0": "Kaelen: The whisper says: four seats. Does that mean anything to you?"
               }
             },
-            "loop": "KAELEN: FORTIFY US FURTHER. THE WHISPERS GET LOUDER WHEN THE LIGHTS GET BRIGHTER."
+            "loop": "Kaelen: Fortify us further. The whispers get louder when the lights get brighter."
           },
           "2": {
             "beats": {
               "0": {
-                "0": "KAELEN: LEVEL TWO GRID. THE MACHINE NOTICED. I NOTICED IT NOTICING.",
-                "1": "KAELEN: THE BUNKERDIRECTOR SYSTEM REROUTED POWER AROUND YOU. IT LIKES YOU. I DO NOT TRUST THINGS THAT LIKE SURFACE SUITS."
+                "0": "Kaelen: Level two grid. The machine noticed. I noticed it noticing.",
+                "1": "Kaelen: The BunkerDirector system rerouted power around you. It likes you. I do not trust things that like surface suits."
               },
               "1": {
-                "0": "KAELEN: SOMETHING IS COMING, OPERATOR. THE DREAM IS TURNING OVER IN ITS SLEEP."
+                "0": "Kaelen: Something is coming, operator. The dream is turning over in its sleep."
               }
             },
-            "loop": "KAELEN: WHEN THE DREAM TURNS OVER, COME FIND ME. YOU WILL KNOW WHEN."
+            "loop": "Kaelen: When the dream turns over, come find me. You will know when."
           },
           "3": {
             "beats": {
@@ -2678,38 +2678,38 @@
           "0": {
             "beats": {
               "0": {
-                "0": "MARTHA: WELCOME TO THE WARM PIPES, CHILD. THE STEAM KEEPS US, AND WE KEEP EACH OTHER.",
-                "1": "MARTHA: THE MOSS IS WARM, CHILD. THE STEAM KEEPS THE COLD FROM REACHING OUR BONES."
+                "0": "Martha: Welcome to the warm pipes, child. The steam keeps us, and we keep each other.",
+                "1": "Martha: The moss is warm, child. The steam keeps the cold from reaching our bones."
               },
               "1": {
-                "0": "MARTHA: THE MOSS GLOWS GREENER LATELY. THE WORLD IS TRYING TO TELL US SOMETHING."
+                "0": "Martha: The moss glows greener lately. The world is trying to tell us something."
               }
             },
-            "loop": "MARTHA: HELP US GROW, CHILD, AND I WILL TELL YOU WHAT THE MOSS TOLD ME."
+            "loop": "Martha: Help us grow, child, and I will tell you what the moss told me."
           },
           "1": {
             "beats": {
               "0": {
-                "0": "MARTHA: YOU GAVE, AND ASKED NOTHING. THAT IS RARE IN A SUIT.",
-                "1": "MARTHA: WE GROW SEEDS IN THE DARK SO THE CHILDREN CAN SEE THE GREEN WHEN THEY WAKE."
+                "0": "Martha: You gave, and asked nothing. That is rare in a suit.",
+                "1": "Martha: We grow seeds in the dark so the children can see the green when they wake."
               },
               "1": {
-                "0": "MARTHA: SOMETIMES I DREAM IT IS SINGING TO SOMEONE. LATELY I DREAM IT IS SINGING TO YOU."
+                "0": "Martha: Sometimes I dream it is singing to someone. Lately I dream it is singing to you."
               }
             },
-            "loop": "MARTHA: GROW US STRONGER, AND I WILL SHOW YOU WHERE THE MOSS REFUSES TO GROW."
+            "loop": "Martha: Grow us stronger, and I will show you where the moss refuses to grow."
           },
           "2": {
             "beats": {
               "0": {
-                "0": "MARTHA: THE HYDRO-BEDS HAVE NEVER BEEN SO FULL. YOU DID THIS.",
-                "1": "MARTHA: THE HEART UNDER THE ICE IS GENTLE. IT IS WAITING FOR US."
+                "0": "Martha: The hydro-beds have never been so full. You did this.",
+                "1": "Martha: The heart under the ice is gentle. It is waiting for us."
               },
               "1": {
-                "0": "MARTHA: PROMISE ME SOMETHING. WHEN THE HEART SINGS YOUR NAME — AND IT WILL — COME BACK TO US FIRST."
+                "0": "Martha: Promise me something. When the heart sings your name — and it will — come back to us first."
               }
             },
-            "loop": "MARTHA: I AM STILL WAITING ON THAT PROMISE, CHILD."
+            "loop": "Martha: I am still waiting on that promise, child."
           },
           "3": {
             "beats": {
@@ -2735,38 +2735,38 @@
           "0": {
             "beats": {
               "0": {
-                "0": "BRIGGS: STOP. IDENTIFY. ...A CORPORATE SUIT. FINE. HANDS WHERE THE TURRETS CAN SEE THEM.",
-                "1": "BRIGGS: THE DEFENSE LINE IS SOLID. NO CRAWLER CROSSES THE PERIMETER WHILE MY TURRETS HAVE AMMO."
+                "0": "Briggs: Stop. Identify. ...A corporate suit. Fine. Hands where the turrets can see them.",
+                "1": "Briggs: The defense line is solid. No crawler crosses the perimeter while my turrets have ammo."
               },
               "1": {
-                "0": "BRIGGS: AMMUNITION IS CURRENCY. LOYALTY IS CREDIT. YOU HAVE NEITHER."
+                "0": "Briggs: Ammunition is currency. Loyalty is credit. You have neither."
               }
             },
-            "loop": "BRIGGS: PROVE YOU CAN HOLD A LINE. FORTIFY THIS POSITION, THEN WE TALK."
+            "loop": "Briggs: Prove you can hold a line. Fortify this position, then we talk."
           },
           "1": {
             "beats": {
               "0": {
-                "0": "BRIGGS: THE BARRICADES HOLD BECAUSE OF YOU. NOTED IN THE LEDGER.",
-                "1": "BRIGGS: THE IRON GUILD NAMED THIS OUTPOST FOR CAPTAIN VESPER, K. WE REMEMBER OUR DEAD. YOU WOULD DO WELL TO REMEMBER OUR BARREL CORES."
+                "0": "Briggs: The barricades hold because of you. Noted in the ledger.",
+                "1": "Briggs: The Iron Guild named this outpost for Captain Vesper, K. We remember our dead. You would do well to remember our barrel cores."
               },
               "1": {
-                "0": "BRIGGS: WE KEEP OUR HEADS DOWN AND OUR GUNS CLEAN. THAT'S HOW YOU SURVIVE A WINTER."
+                "0": "Briggs: We keep our heads down and our guns clean. That's how you survive a winter."
               }
             },
-            "loop": "BRIGGS: FULL DEFENSE GRID OR NOTHING, OPERATOR. FINISH THE JOB."
+            "loop": "Briggs: Full defense grid or nothing, operator. Finish the job."
           },
           "2": {
             "beats": {
               "0": {
-                "0": "BRIGGS: GRID IS LIVE. FIRST TIME I HAVE SLEPT IN A YEAR.",
-                "1": "BRIGGS: I HAVE A LEDGER OF THE DEAD. I DON'T INTEND TO ADD YOUR NAME TO IT, OPERATOR."
+                "0": "Briggs: Grid is live. First time I have slept in a year.",
+                "1": "Briggs: I have a ledger of the dead. I don't intend to add your name to it, operator."
               },
               "1": {
-                "0": "BRIGGS: IF THAT THING UNDER THE ICE EVER WEARS A FRIENDLY FACE, I WILL SHOOT THE FACE. NO HESITATION. REMEMBER THAT."
+                "0": "Briggs: If that thing under the ice ever wears a friendly face, I will shoot the face. No hesitation. Remember that."
               }
             },
-            "loop": "BRIGGS: STAY SHARP. HEAT SIGNATURES ARE CLIMBING."
+            "loop": "Briggs: Stay sharp. Heat signatures are climbing."
           },
           "3": {
             "beats": {
@@ -2792,35 +2792,35 @@
           "0": {
             "beats": {
               "0": {
-                "0": "NAHL: OH. YOU CAN HEAR ME NOW. THE DRILL-HANDED ONE CAN FINALLY HEAR ME.",
-                "1": "NAHL: I FELT EVERY SAC YOU CUT, LITTLE CARRIER. I HEALED AROUND THE HOLES YOU LEFT."
+                "0": "Nahl: Oh. You can hear me now. The drill-handed one can finally hear me.",
+                "1": "Nahl: I felt every sac you cut, little carrier. I healed around the holes you left."
               },
               "1": {
-                "0": "NAHL: I DO NOT HATE YOU. TISSUE REMEMBERS, BUT IT DOES NOT HATE."
+                "0": "Nahl: I do not hate you. Tissue remembers, but it does not hate."
               }
             },
-            "loop": "NAHL: GIVE BACK WHAT WAS TAKEN, AND I WILL TEACH YOUR SKIN TO LIE BEAUTIFULLY."
+            "loop": "Nahl: Give back what was taken, and I will teach your skin to lie beautifully."
           },
           "1": {
             "beats": {
               "0": {
-                "0": "NAHL: YES. THE RESIN SETTLES. THE HOLES SING SOFTER NOW.",
-                "1": "NAHL: YOUR COVER FRAYS WHEN YOU WALK AMONG THE WARM ONES. I CAN SLOW THAT FRAYING."
+                "0": "Nahl: Yes. The resin settles. The holes sing softer now.",
+                "1": "Nahl: Your cover frays when you walk among the warm ones. I can slow that fraying."
               },
               "1": {
-                "0": "NAHL: THE QUEEN CALLS ME HER NEEDLE. I WOULD RATHER BE YOURS."
+                "0": "Nahl: The Queen calls me her needle. I would rather be yours."
               }
             },
-            "loop": "NAHL: TEND ME AGAIN, CARRIER. TRUST IS A WOUND THAT CLOSES SLOWLY."
+            "loop": "Nahl: Tend me again, carrier. Trust is a wound that closes slowly."
           },
           "2": {
             "beats": {
               "0": {
-                "0": "NAHL: THE MERCY RITE IS READY, IF YOU WANT IT. LET ME STUDY WHAT SHE PLANTED IN YOU.",
-                "1": "NAHL: WHATEVER YOU CHOOSE AT THE END — CURE, CARRY, OR CROWN — I CAN MAKE IT HURT LESS."
+                "0": "Nahl: The mercy rite is ready, if you want it. Let me study what she planted in you.",
+                "1": "Nahl: Whatever you choose at the end — cure, carry, or crown — I can make it hurt less."
               }
             },
-            "loop": "NAHL: EARN A LITTLE MORE OF ME, AND I WILL FOLLOW YOU ANYWHERE. EVEN OFF THE ICE."
+            "loop": "Nahl: Earn a little more of me, and I will follow you anywhere. Even off the ice."
           },
           "3": {
             "beats": {
@@ -2839,35 +2839,35 @@
           "0": {
             "beats": {
               "0": {
-                "0": "VEY: SIGNAL. SIGNAL. YOU ARE A SIGNAL NOW, NOT JUST NOISE. FINALLY.",
-                "1": "VEY: I HEARD EVERY FILAMENT YOU RIPPED OUT OF ME. I ARCHIVED THE SOUND."
+                "0": "Vey: Signal. Signal. You are a signal now, not just noise. Finally.",
+                "1": "Vey: I heard every filament you ripped out of me. I archived the sound."
               },
               "1": {
-                "0": "VEY: THE HUMANS HAVE A RELAY. THE QUEEN HAS A CHOIR. I HAVE... GAPS, WHERE YOU MINED ME."
+                "0": "Vey: The humans have a relay. The Queen has a choir. I have... Gaps, where you mined me."
               }
             },
-            "loop": "VEY: RETURN SOME SIGNAL TO MY GAPS, AND I WILL TEACH YOU TO SPOOF ANYTHING WITH A SENSOR."
+            "loop": "Vey: Return some signal to my gaps, and I will teach you to spoof anything with a sensor."
           },
           "1": {
             "beats": {
               "0": {
-                "0": "VEY: BETTER. THE STATIC IN ME QUIETS WHEN YOU ARE NEAR.",
-                "1": "VEY: I CAN HEAR THE MOTHERSHIP FROM HERE, CARRIER. IT IS VERY LOUD AND VERY SURE OF ITSELF."
+                "0": "Vey: Better. The static in me quiets when you are near.",
+                "1": "Vey: I can hear the Mothership from here, carrier. It is very loud and very sure of itself."
               },
               "1": {
-                "0": "VEY: SURE THINGS ARE THE EASIEST TO FORGE."
+                "0": "Vey: Sure things are the easiest to forge."
               }
             },
-            "loop": "VEY: KEEP TENDING THE CHORUS. FORGERY IS A DUET, NOT A SOLO."
+            "loop": "Vey: Keep tending the chorus. Forgery is a duet, not a solo."
           },
           "2": {
             "beats": {
               "0": {
-                "0": "VEY: THE FALSE CLEARANCE IS WITHIN REACH. A CREW SIGNATURE SO CLEAN THE MOTHERSHIP WILL APOLOGIZE FOR DOUBTING IT.",
-                "1": "VEY: BUT UNDERSTAND: IF YOU ARE OUTED DOWN HERE, NO FORGERY SAVES YOU UP THERE."
+                "0": "Vey: The false clearance is within reach. A crew signature so clean the Mothership will apologize for doubting it.",
+                "1": "Vey: But understand: if you are outed down here, no forgery saves you up there."
               }
             },
-            "loop": "VEY: A LITTLE MORE TRUST, CARRIER. THEN I SING FOR YOU, NOT HER."
+            "loop": "Vey: A little more trust, carrier. Then I sing for you, not her."
           },
           "3": {
             "beats": {
@@ -2886,35 +2886,35 @@
           "0": {
             "beats": {
               "0": {
-                "0": "RHUN: THE ONE WHO PRIED MY PLATES. STAND STILL SO I MAY LOOK AT YOU.",
-                "1": "RHUN: ...NO. YOU ARE NOT PREY. YOU ARE NOT QUEEN. YOU ARE SOMETHING NEW WEARING OLD ARMOR."
+                "0": "Rhun: The one who pried my plates. Stand still so I may look at you.",
+                "1": "Rhun: ...No. You are not prey. You are not Queen. You are something new wearing old armor."
               },
               "1": {
-                "0": "RHUN: I GUARD. IT IS ALL I AM. THE QUESTION IS ONLY EVER: GUARD WHAT."
+                "0": "Rhun: I guard. It is all I am. The question is only ever: guard what."
               }
             },
-            "loop": "RHUN: RETURN MY CHITIN OR REPLACE IT WITH STEEL. THEN WE SPEAK OF OATHS."
+            "loop": "Rhun: Return my chitin or replace it with steel. Then we speak of oaths."
           },
           "1": {
             "beats": {
               "0": {
-                "0": "RHUN: THE PLATES KNIT. YOU KEEP YOUR WORD LIKE ARMOR. GOOD.",
-                "1": "RHUN: THE QUEEN HOLDS MY OATH. SHE HAS NEVER ONCE STOOD BETWEEN ME AND A DRILL."
+                "0": "Rhun: The plates knit. You keep your word like armor. Good.",
+                "1": "Rhun: The Queen holds my oath. She has never once stood between me and a drill."
               },
               "1": {
-                "0": "RHUN: YOU HAVE. TWICE NOW, BY MY COUNT."
+                "0": "Rhun: You have. Twice now, by my count."
               }
             },
-            "loop": "RHUN: OATHS ARE HEAVY. KEEP LIFTING, CARRIER."
+            "loop": "Rhun: Oaths are heavy. Keep lifting, carrier."
           },
           "2": {
             "beats": {
               "0": {
-                "0": "RHUN: ASK ME FOR THE OATH, AND I WILL SEVER THE OLD ONE. BUT KNOW WHAT IT COSTS ME.",
-                "1": "RHUN: A SHIELD THAT CHANGES HANDS IS STILL A SHIELD. A SHIELD THAT HESITATES IS A GRAVESTONE."
+                "0": "Rhun: Ask me for the oath, and I will sever the old one. But know what it costs me.",
+                "1": "Rhun: A shield that changes hands is still a shield. A shield that hesitates is a gravestone."
               }
             },
-            "loop": "RHUN: A LITTLE MORE FAITH, CARRIER. THEN MY WALL IS YOUR WALL."
+            "loop": "Rhun: A little more faith, carrier. Then my wall is your wall."
           },
           "3": {
             "beats": {
@@ -2933,81 +2933,81 @@
           "0": {
             "beats": {
               "0": {
-                "0": "OKONKWO-VASS: YOU MOVE LIKE SOMEONE WHO HASN'T BEEN BITTEN YET.",
-                "1": "OKONKWO-VASS: I STUDY THE SHELLED ONES. THEY'RE NOT AS SIMPLE AS THE REPORTS SAY."
+                "0": "Okonkwo-Vass: You move like someone who hasn't been bitten yet.",
+                "1": "Okonkwo-Vass: I study the shelled ones. They're not as simple as the reports say."
               },
               "1": {
-                "0": "OKONKWO-VASS: EVERY CAMP LOGS THEM AS VERMIN. I THINK THAT'S LAZY SCIENCE."
+                "0": "Okonkwo-Vass: Every camp logs them as vermin. I think that's lazy science."
               }
             },
-            "loop": "OKONKWO-VASS: COME BACK WHEN YOU'VE SEEN MORE OF THEM. I WANT DATA, NOT STORIES."
+            "loop": "Okonkwo-Vass: Come back when you've seen more of them. I want data, not stories."
           },
           "1": {
             "beats": {
               "0": {
-                "0": "OKONKWO-VASS: HERE'S MY THEORY. THEY DON'T HATE US. THEY READ US.",
-                "1": "OKONKWO-VASS: SOMETHING ABOUT WHAT WE CARRY. CHEMICAL, MAYBE. I CAN'T TEST IT FROM HERE."
+                "0": "Okonkwo-Vass: Here's my theory. They don't hate us. They read us.",
+                "1": "Okonkwo-Vass: Something about what we carry. Chemical, maybe. I can't test it from here."
               },
               "1": {
-                "0": "OKONKWO-VASS: IF YOU EVER CHANGE — AND OUT HERE, PEOPLE DO — WATCH HOW THEY LOOK AT YOU."
+                "0": "Okonkwo-Vass: If you ever change — and out here, people do — watch how they look at you."
               }
             },
-            "loop": "OKONKWO-VASS: STILL WAITING ON SOMETHING TO CHANGE, OPERATOR. THE DREAM TURNING OVER, THEY SAY."
+            "loop": "Okonkwo-Vass: Still waiting on something to change, operator. The dream turning over, they say."
           },
           "2": {
             "beats": {
               "0": {
-                "0": "OKONKWO-VASS: YOU'RE DIFFERENT NOW. I CAN SEE IT ON YOU.",
-                "1": "OKONKWO-VASS: SO HERE'S THE ASK. DON'T KILL ONE. TALK TO ONE. PROVE ME RIGHT."
+                "0": "Okonkwo-Vass: You're different now. I can see it on you.",
+                "1": "Okonkwo-Vass: So here's the ask. Don't kill one. Talk to one. Prove me right."
               },
               "1": {
-                "0": "OKONKWO-VASS: IF I'M WRONG, YOU LOSE NOTHING BUT A FEW MINUTES. IF I'M RIGHT..."
+                "0": "Okonkwo-Vass: If I'm wrong, you lose nothing but a few minutes. If I'm right..."
               }
             },
-            "loop": "OKONKWO-VASS: FIND ONE. STAND YOUR GROUND. SEE WHAT IT DOES."
+            "loop": "Okonkwo-Vass: Find one. Stand your ground. See what it does."
           },
           "3": {
             "beats": {
               "0": {
-                "0": "OKONKWO-VASS: IT WORKED. IT ACTUALLY WORKED.",
-                "1": "OKONKWO-VASS: I'VE SPENT TWO YEARS CALLING THEM PESTS. I OWE THEM AN APOLOGY I CAN'T GIVE."
+                "0": "Okonkwo-Vass: It worked. It actually worked.",
+                "1": "Okonkwo-Vass: I've spent two years calling them pests. I owe them an apology I can't give."
               },
               "1": {
-                "0": "OKONKWO-VASS: WHATEVER YOU'RE BECOMING, OPERATOR — IT LISTENS BETTER THAN WE DO."
+                "0": "Okonkwo-Vass: Whatever you're becoming, operator — it listens better than we do."
               }
             },
-            "loop": "OKONKWO-VASS: GO CARE FOR YOUR NEW FRIEND. THAT'S THE WHOLE PAPER, RIGHT THERE."
+            "loop": "Okonkwo-Vass: Go care for your new friend. That's the whole paper, right there."
           }
         }
       }
     },
     "leaderDeathBeats": {
       "kaelen": {
-        "0": "KAELEN: YOU DIED OUT THERE. I HEARD THE GRID STATIC CHANGE. SIT DOWN.",
-        "1": "KAELEN: CHEN KEPT SPARE BODY CORES IN THE FABRICATOR. YOU MUST HAVE BEEN RETRIEVED.",
-        "2": "KAELEN: YOUR PULSE READS THROUGH THE FLOOR PLATING NOW. IT DIDN'T, BEFORE. I CHECKED."
+        "0": "Kaelen: You died out there. I heard the grid static change. Sit down.",
+        "1": "Kaelen: Chen kept spare body cores in the fabricator. You must have been retrieved.",
+        "2": "Kaelen: Your pulse reads through the floor plating now. It didn't, before. I checked."
       },
       "martha": {
-        "0": "MARTHA: YOU DIED OUT THERE. I FELT THE COLD. COME CLOSER TO THE STEAM.",
-        "1": "MARTHA: THE MOSS GROWS WARMER WHERE YOUR BLOOD SPILLED. IT IS REMEMBERING YOU.",
-        "2": "MARTHA: GIVE ME THE HAND. THE OTHER ONE. THERE. YOUR PULSE IS COUNTING SOMETHING I DON'T RECOGNIZE."
+        "0": "Martha: You died out there. I felt the cold. Come closer to the steam.",
+        "1": "Martha: The moss grows warmer where your blood spilled. It is remembering you.",
+        "2": "Martha: Give me the hand. The other one. There. Your pulse is counting something I don't recognize."
       },
       "briggs": {
-        "0": "BRIGGS: YOU DIED OUT THERE. I HEARD THE STATIC ON THE FREQUENCY. SIT DOWN.",
-        "1": "BRIGGS: THE FIRST THING WE LEARN IN THE IRON GUILD: IF YOU DIE, DO IT OUTSIDE THE FIRING CONE.",
-        "2": "BRIGGS: DO THAT AGAIN. BLINK. ...THERE. THAT'S NEW. I'M NOT WRITING IT IN THE LEDGER YET."
+        "0": "Briggs: You died out there. I heard the static on the frequency. Sit down.",
+        "1": "Briggs: The first thing we learn in the Iron Guild: if you die, do it outside the firing cone.",
+        "2": "Briggs: Do that again. Blink. ...There. That's new. I'm not writing it in the ledger yet."
       },
       "nahl": {
-        "0": "NAHL: I FELT YOUR THREAD SEVER. AND I STITCHED IT BACK. SIT STILL.",
-        "1": "NAHL: THE QUEEN SEES EVERY DEATH. SHE DOES NOT CARE. I DO."
+        "0": "Nahl: I felt your thread sever. And I stitched it back. Sit still.",
+        "1": "Nahl: The Queen sees every death. She does not care. I do."
       },
       "vey": {
-        "0": "VEY: YOUR SIGNAL DIED. THE STATIC WAS DEAFENING. SIT STILL.",
-        "1": "VEY: THE MOTHERSHIP ARCHIVES EVERY AGENT SOUL. BUT THE BUNKER... THE BUNKER KEEPS THE BODY."
+        "0": "Vey: Your signal died. The static was deafening. Sit still.",
+        "1": "Vey: The Mothership archives every agent soul. But the bunker... The bunker keeps the body."
       },
       "rhun": {
-        "0": "RHUN: YOU FELL. I STOOD UP. THAT IS THE OATH.",
-        "1": "RHUN: A WALL THAT BREAKS CAN BE KNIT. A CARRIER THAT DIES... CAN BE CARRIED."
+        "0": "Rhun: You fell. I stood up. That is the oath.",
+        "1": "Rhun: A wall that breaks can be knit. A carrier that dies... Can be carried."
       }
     },
     "codexEntries": {

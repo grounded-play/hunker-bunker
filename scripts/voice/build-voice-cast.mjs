@@ -45,12 +45,15 @@ const HIVE_ALLIES = new Set(['nahl', 'vey', 'rhun']);
 export function cleanPerformanceText(text, { stripLocalizedPrefix = false } = {}) {
     let out = String(text ?? '')
         .replace(/\[[^\]]*\]/g, ' ')
-        .replace(/^\s*>\s*/, '')
-        .replace(/^\s*[A-Z][A-Z .'-]{1,40}:\s+/, '');
-    // Translated speaker prefixes ("БРИГГС:", "布里格斯：") are only removed
-    // when the English line is known to carry one, so a sentence that merely
-    // contains a colon early on keeps its words.
-    if (stripLocalizedPrefix) out = out.replace(/^\s*[^:：]{1,30}[:：]\s*/u, '');
+        .replace(/^\s*>\s*/, '');
+    // One speaker prefix at most: a German "KAELEN: DAS FLÜSTERN SAGT: ..."
+    // lost its first words when both strips ran. Translated or sentence-case
+    // prefixes ("Kaelen:", "БРИГГС:", "布里格斯：") are only removed when the
+    // line is known to carry one, so a sentence that merely contains a colon
+    // early on keeps its words.
+    const shoutedPrefix = /^\s*[A-Z][A-Z .'-]{1,40}:\s+/;
+    if (shoutedPrefix.test(out)) out = out.replace(shoutedPrefix, '');
+    else if (stripLocalizedPrefix) out = out.replace(/^\s*[^:：]{1,30}[:：]\s*/u, '');
     out = out.replace(/O₂|O2(?=\b)/g, 'oxygen').replace(/\s+/g, ' ').trim();
     const letters = (out.match(/\p{L}/gu) ?? []).join('');
     const shouted = letters.length > 3 && letters === letters.toUpperCase() && letters !== letters.toLowerCase();

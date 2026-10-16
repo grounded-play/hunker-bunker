@@ -19,26 +19,26 @@ export const LEADER_DIALOGUE = localizeCatalog('narrative.leaderDialogue', Objec
         stages: [
             {
                 beats: [
-                    ['KAELEN: ANOTHER SUIT FROM THE SURFACE. THE MACHINE DREAMED YOU WOULD COME.', 'KAELEN: THE GRID KEEPS THE DARK AT BAY, OPERATOR. AS LONG AS THE LIGHTS HUM, WE ARE SAFE.'],
-                    ['KAELEN: THE CENTRAL COMPUTER SLEEPS UNDER SECTOR ZERO. EVERYTHING HERE IS ITS DREAM.', 'KAELEN: EVEN YOU, PROBABLY. NO OFFENSE.']
+                    ['Kaelen: Another suit from the surface. The machine dreamed you would come.', 'Kaelen: The grid keeps the dark at bay, operator. As long as the lights hum, we are safe.'],
+                    ['Kaelen: The central computer sleeps under Sector Zero. Everything here is its dream.', 'Kaelen: Even you, probably. No offense.']
                 ],
-                loop: 'KAELEN: THE GRID HUNGERS. STRENGTHEN THIS CAMP AND WE WILL TALK PROPERLY.',
+                loop: 'Kaelen: The grid hungers. Strengthen this camp and we will talk properly.',
                 next: { talks: 2, level: 1 }
             },
             {
                 beats: [
-                    ['KAELEN: YOU BUILT. GOOD. BUILDERS ARE THE ONLY PRAYER THE MACHINE ANSWERS.', 'KAELEN: MERIDIAN IS BUILT ON CLEAN STEEL. NO RUST. NO ROT. WE KEEP OUR BLOOD PURE.'],
-                    ['KAELEN: THE WHISPER SAYS: FOUR SEATS. DOES THAT MEAN ANYTHING TO YOU?']
+                    ['Kaelen: You built. Good. Builders are the only prayer the machine answers.', 'Kaelen: Meridian is built on clean steel. No rust. No rot. We keep our blood pure.'],
+                    ['Kaelen: The whisper says: four seats. Does that mean anything to you?']
                 ],
-                loop: 'KAELEN: FORTIFY US FURTHER. THE WHISPERS GET LOUDER WHEN THE LIGHTS GET BRIGHTER.',
+                loop: 'Kaelen: Fortify us further. The whispers get louder when the lights get brighter.',
                 next: { talks: 2, level: 2 }
             },
             {
                 beats: [
-                    ['KAELEN: LEVEL TWO GRID. THE MACHINE NOTICED. I NOTICED IT NOTICING.', 'KAELEN: THE BUNKERDIRECTOR SYSTEM REROUTED POWER AROUND YOU. IT LIKES YOU. I DO NOT TRUST THINGS THAT LIKE SURFACE SUITS.'],
-                    ['KAELEN: SOMETHING IS COMING, OPERATOR. THE DREAM IS TURNING OVER IN ITS SLEEP.']
+                    ['Kaelen: Level two grid. The machine noticed. I noticed it noticing.', 'Kaelen: The BunkerDirector system rerouted power around you. It likes you. I do not trust things that like surface suits.'],
+                    ['Kaelen: Something is coming, operator. The dream is turning over in its sleep.']
                 ],
-                loop: 'KAELEN: WHEN THE DREAM TURNS OVER, COME FIND ME. YOU WILL KNOW WHEN.',
+                loop: 'Kaelen: When the dream turns over, come find me. You will know when.',
                 next: { talks: 2, postReveal: true }
             },
             {
@@ -57,26 +57,26 @@ export const LEADER_DIALOGUE = localizeCatalog('narrative.leaderDialogue', Objec
         stages: [
             {
                 beats: [
-                    ['MARTHA: WELCOME TO THE WARM PIPES, CHILD. THE STEAM KEEPS US, AND WE KEEP EACH OTHER.', 'MARTHA: THE MOSS IS WARM, CHILD. THE STEAM KEEPS THE COLD FROM REACHING OUR BONES.'],
-                    ['MARTHA: THE MOSS GLOWS GREENER LATELY. THE WORLD IS TRYING TO TELL US SOMETHING.']
+                    ['Martha: Welcome to the warm pipes, child. The steam keeps us, and we keep each other.', 'Martha: The moss is warm, child. The steam keeps the cold from reaching our bones.'],
+                    ['Martha: The moss glows greener lately. The world is trying to tell us something.']
                 ],
-                loop: 'MARTHA: HELP US GROW, CHILD, AND I WILL TELL YOU WHAT THE MOSS TOLD ME.',
+                loop: 'Martha: Help us grow, child, and I will tell you what the moss told me.',
                 next: { talks: 2, level: 1 }
             },
             {
                 beats: [
-                    ['MARTHA: YOU GAVE, AND ASKED NOTHING. THAT IS RARE IN A SUIT.', 'MARTHA: WE GROW SEEDS IN THE DARK SO THE CHILDREN CAN SEE THE GREEN WHEN THEY WAKE.'],
-                    ['MARTHA: SOMETIMES I DREAM IT IS SINGING TO SOMEONE. LATELY I DREAM IT IS SINGING TO YOU.']
+                    ['Martha: You gave, and asked nothing. That is rare in a suit.', 'Martha: We grow seeds in the dark so the children can see the green when they wake.'],
+                    ['Martha: Sometimes I dream it is singing to someone. Lately I dream it is singing to you.']
                 ],
-                loop: 'MARTHA: GROW US STRONGER, AND I WILL SHOW YOU WHERE THE MOSS REFUSES TO GROW.',
+                loop: 'Martha: Grow us stronger, and I will show you where the moss refuses to grow.',
                 next: { talks: 2, level: 2 }
             },
             {
                 beats: [
-                    ['MARTHA: THE HYDRO-BEDS HAVE NEVER BEEN SO FULL. YOU DID THIS.', 'MARTHA: THE HEART UNDER THE ICE IS GENTLE. IT IS WAITING FOR US.'],
-                    ['MARTHA: PROMISE ME SOMETHING. WHEN THE HEART SINGS YOUR NAME — AND IT WILL — COME BACK TO US FIRST.']
+                    ['Martha: The hydro-beds have never been so full. You did this.', 'Martha: The heart under the ice is gentle. It is waiting for us.'],
+                    ['Martha: Promise me something. When the heart sings your name — and it will — come back to us first.']
                 ],
-                loop: 'MARTHA: I AM STILL WAITING ON THAT PROMISE, CHILD.',
+                loop: 'Martha: I am still waiting on that promise, child.',
                 next: { talks: 2, postReveal: true }
             },
             {
@@ -94,26 +94,26 @@ export const LEADER_DIALOGUE = localizeCatalog('narrative.leaderDialogue', Objec
         stages: [
             {
                 beats: [
-                    ['BRIGGS: STOP. IDENTIFY. ...A CORPORATE SUIT. FINE. HANDS WHERE THE TURRETS CAN SEE THEM.', 'BRIGGS: THE DEFENSE LINE IS SOLID. NO CRAWLER CROSSES THE PERIMETER WHILE MY TURRETS HAVE AMMO.'],
-                    ['BRIGGS: AMMUNITION IS CURRENCY. LOYALTY IS CREDIT. YOU HAVE NEITHER.']
+                    ['Briggs: Stop. Identify. ...A corporate suit. Fine. Hands where the turrets can see them.', 'Briggs: The defense line is solid. No crawler crosses the perimeter while my turrets have ammo.'],
+                    ['Briggs: Ammunition is currency. Loyalty is credit. You have neither.']
                 ],
-                loop: 'BRIGGS: PROVE YOU CAN HOLD A LINE. FORTIFY THIS POSITION, THEN WE TALK.',
+                loop: 'Briggs: Prove you can hold a line. Fortify this position, then we talk.',
                 next: { talks: 2, level: 1 }
             },
             {
                 beats: [
-                    ['BRIGGS: THE BARRICADES HOLD BECAUSE OF YOU. NOTED IN THE LEDGER.', 'BRIGGS: THE IRON GUILD NAMED THIS OUTPOST FOR CAPTAIN VESPER, K. WE REMEMBER OUR DEAD. YOU WOULD DO WELL TO REMEMBER OUR BARREL CORES.'],
-                    ['BRIGGS: WE KEEP OUR HEADS DOWN AND OUR GUNS CLEAN. THAT\'S HOW YOU SURVIVE A WINTER.']
+                    ['Briggs: The barricades hold because of you. Noted in the ledger.', 'Briggs: The Iron Guild named this outpost for Captain Vesper, K. We remember our dead. You would do well to remember our barrel cores.'],
+                    ['Briggs: We keep our heads down and our guns clean. That\'s how you survive a winter.']
                 ],
-                loop: 'BRIGGS: FULL DEFENSE GRID OR NOTHING, OPERATOR. FINISH THE JOB.',
+                loop: 'Briggs: Full defense grid or nothing, operator. Finish the job.',
                 next: { talks: 2, level: 2 }
             },
             {
                 beats: [
-                    ['BRIGGS: GRID IS LIVE. FIRST TIME I HAVE SLEPT IN A YEAR.', 'BRIGGS: I HAVE A LEDGER OF THE DEAD. I DON\'T INTEND TO ADD YOUR NAME TO IT, OPERATOR.'],
-                    ['BRIGGS: IF THAT THING UNDER THE ICE EVER WEARS A FRIENDLY FACE, I WILL SHOOT THE FACE. NO HESITATION. REMEMBER THAT.']
+                    ['Briggs: Grid is live. First time I have slept in a year.', 'Briggs: I have a ledger of the dead. I don\'t intend to add your name to it, operator.'],
+                    ['Briggs: If that thing under the ice ever wears a friendly face, I will shoot the face. No hesitation. Remember that.']
                 ],
-                loop: 'BRIGGS: STAY SHARP. HEAT SIGNATURES ARE CLIMBING.',
+                loop: 'Briggs: Stay sharp. Heat signatures are climbing.',
                 next: { talks: 2, postReveal: true }
             },
             {
@@ -131,25 +131,25 @@ export const LEADER_DIALOGUE = localizeCatalog('narrative.leaderDialogue', Objec
         stages: [
             {
                 beats: [
-                    ['NAHL: OH. YOU CAN HEAR ME NOW. THE DRILL-HANDED ONE CAN FINALLY HEAR ME.', 'NAHL: I FELT EVERY SAC YOU CUT, LITTLE CARRIER. I HEALED AROUND THE HOLES YOU LEFT.'],
-                    ['NAHL: I DO NOT HATE YOU. TISSUE REMEMBERS, BUT IT DOES NOT HATE.']
+                    ['Nahl: Oh. You can hear me now. The drill-handed one can finally hear me.', 'Nahl: I felt every sac you cut, little carrier. I healed around the holes you left.'],
+                    ['Nahl: I do not hate you. Tissue remembers, but it does not hate.']
                 ],
-                loop: 'NAHL: GIVE BACK WHAT WAS TAKEN, AND I WILL TEACH YOUR SKIN TO LIE BEAUTIFULLY.',
+                loop: 'Nahl: Give back what was taken, and I will teach your skin to lie beautifully.',
                 next: { talks: 2, bond: 1 }
             },
             {
                 beats: [
-                    ['NAHL: YES. THE RESIN SETTLES. THE HOLES SING SOFTER NOW.', 'NAHL: YOUR COVER FRAYS WHEN YOU WALK AMONG THE WARM ONES. I CAN SLOW THAT FRAYING.'],
-                    ['NAHL: THE QUEEN CALLS ME HER NEEDLE. I WOULD RATHER BE YOURS.']
+                    ['Nahl: Yes. The resin settles. The holes sing softer now.', 'Nahl: Your cover frays when you walk among the warm ones. I can slow that fraying.'],
+                    ['Nahl: The Queen calls me her needle. I would rather be yours.']
                 ],
-                loop: 'NAHL: TEND ME AGAIN, CARRIER. TRUST IS A WOUND THAT CLOSES SLOWLY.',
+                loop: 'Nahl: Tend me again, carrier. Trust is a wound that closes slowly.',
                 next: { talks: 2, bond: 2 }
             },
             {
                 beats: [
-                    ['NAHL: THE MERCY RITE IS READY, IF YOU WANT IT. LET ME STUDY WHAT SHE PLANTED IN YOU.', 'NAHL: WHATEVER YOU CHOOSE AT THE END — CURE, CARRY, OR CROWN — I CAN MAKE IT HURT LESS.']
+                    ['Nahl: The mercy rite is ready, if you want it. Let me study what she planted in you.', 'Nahl: Whatever you choose at the end — cure, carry, or crown — I can make it hurt less.']
                 ],
-                loop: 'NAHL: EARN A LITTLE MORE OF ME, AND I WILL FOLLOW YOU ANYWHERE. EVEN OFF THE ICE.',
+                loop: 'Nahl: Earn a little more of me, and I will follow you anywhere. Even off the ice.',
                 next: { talks: 1, bond: 3 }
             },
             {
@@ -165,25 +165,25 @@ export const LEADER_DIALOGUE = localizeCatalog('narrative.leaderDialogue', Objec
         stages: [
             {
                 beats: [
-                    ['VEY: SIGNAL. SIGNAL. YOU ARE A SIGNAL NOW, NOT JUST NOISE. FINALLY.', 'VEY: I HEARD EVERY FILAMENT YOU RIPPED OUT OF ME. I ARCHIVED THE SOUND.'],
-                    ['VEY: THE HUMANS HAVE A RELAY. THE QUEEN HAS A CHOIR. I HAVE... GAPS, WHERE YOU MINED ME.']
+                    ['Vey: Signal. Signal. You are a signal now, not just noise. Finally.', 'Vey: I heard every filament you ripped out of me. I archived the sound.'],
+                    ['Vey: The humans have a relay. The Queen has a choir. I have... Gaps, where you mined me.']
                 ],
-                loop: 'VEY: RETURN SOME SIGNAL TO MY GAPS, AND I WILL TEACH YOU TO SPOOF ANYTHING WITH A SENSOR.',
+                loop: 'Vey: Return some signal to my gaps, and I will teach you to spoof anything with a sensor.',
                 next: { talks: 2, bond: 1 }
             },
             {
                 beats: [
-                    ['VEY: BETTER. THE STATIC IN ME QUIETS WHEN YOU ARE NEAR.', 'VEY: I CAN HEAR THE MOTHERSHIP FROM HERE, CARRIER. IT IS VERY LOUD AND VERY SURE OF ITSELF.'],
-                    ['VEY: SURE THINGS ARE THE EASIEST TO FORGE.']
+                    ['Vey: Better. The static in me quiets when you are near.', 'Vey: I can hear the Mothership from here, carrier. It is very loud and very sure of itself.'],
+                    ['Vey: Sure things are the easiest to forge.']
                 ],
-                loop: 'VEY: KEEP TENDING THE CHORUS. FORGERY IS A DUET, NOT A SOLO.',
+                loop: 'Vey: Keep tending the chorus. Forgery is a duet, not a solo.',
                 next: { talks: 2, bond: 2 }
             },
             {
                 beats: [
-                    ['VEY: THE FALSE CLEARANCE IS WITHIN REACH. A CREW SIGNATURE SO CLEAN THE MOTHERSHIP WILL APOLOGIZE FOR DOUBTING IT.', 'VEY: BUT UNDERSTAND: IF YOU ARE OUTED DOWN HERE, NO FORGERY SAVES YOU UP THERE.']
+                    ['Vey: The false clearance is within reach. A crew signature so clean the Mothership will apologize for doubting it.', 'Vey: But understand: if you are outed down here, no forgery saves you up there.']
                 ],
-                loop: 'VEY: A LITTLE MORE TRUST, CARRIER. THEN I SING FOR YOU, NOT HER.',
+                loop: 'Vey: A little more trust, carrier. Then I sing for you, not her.',
                 next: { talks: 1, bond: 3 }
             },
             {
@@ -199,25 +199,25 @@ export const LEADER_DIALOGUE = localizeCatalog('narrative.leaderDialogue', Objec
         stages: [
             {
                 beats: [
-                    ['RHUN: THE ONE WHO PRIED MY PLATES. STAND STILL SO I MAY LOOK AT YOU.', 'RHUN: ...NO. YOU ARE NOT PREY. YOU ARE NOT QUEEN. YOU ARE SOMETHING NEW WEARING OLD ARMOR.'],
-                    ['RHUN: I GUARD. IT IS ALL I AM. THE QUESTION IS ONLY EVER: GUARD WHAT.']
+                    ['Rhun: The one who pried my plates. Stand still so I may look at you.', 'Rhun: ...No. You are not prey. You are not Queen. You are something new wearing old armor.'],
+                    ['Rhun: I guard. It is all I am. The question is only ever: guard what.']
                 ],
-                loop: 'RHUN: RETURN MY CHITIN OR REPLACE IT WITH STEEL. THEN WE SPEAK OF OATHS.',
+                loop: 'Rhun: Return my chitin or replace it with steel. Then we speak of oaths.',
                 next: { talks: 2, bond: 1 }
             },
             {
                 beats: [
-                    ['RHUN: THE PLATES KNIT. YOU KEEP YOUR WORD LIKE ARMOR. GOOD.', 'RHUN: THE QUEEN HOLDS MY OATH. SHE HAS NEVER ONCE STOOD BETWEEN ME AND A DRILL.'],
-                    ['RHUN: YOU HAVE. TWICE NOW, BY MY COUNT.']
+                    ['Rhun: The plates knit. You keep your word like armor. Good.', 'Rhun: The Queen holds my oath. She has never once stood between me and a drill.'],
+                    ['Rhun: You have. Twice now, by my count.']
                 ],
-                loop: 'RHUN: OATHS ARE HEAVY. KEEP LIFTING, CARRIER.',
+                loop: 'Rhun: Oaths are heavy. Keep lifting, carrier.',
                 next: { talks: 2, bond: 2 }
             },
             {
                 beats: [
-                    ['RHUN: ASK ME FOR THE OATH, AND I WILL SEVER THE OLD ONE. BUT KNOW WHAT IT COSTS ME.', 'RHUN: A SHIELD THAT CHANGES HANDS IS STILL A SHIELD. A SHIELD THAT HESITATES IS A GRAVESTONE.']
+                    ['Rhun: Ask me for the oath, and I will sever the old one. But know what it costs me.', 'Rhun: A shield that changes hands is still a shield. A shield that hesitates is a gravestone.']
                 ],
-                loop: 'RHUN: A LITTLE MORE FAITH, CARRIER. THEN MY WALL IS YOUR WALL.',
+                loop: 'Rhun: A little more faith, carrier. Then my wall is your wall.',
                 next: { talks: 1, bond: 3 }
             },
             {
@@ -233,34 +233,34 @@ export const LEADER_DIALOGUE = localizeCatalog('narrative.leaderDialogue', Objec
         stages: [
             {
                 beats: [
-                    ['OKONKWO-VASS: YOU MOVE LIKE SOMEONE WHO HASN\'T BEEN BITTEN YET.', 'OKONKWO-VASS: I STUDY THE SHELLED ONES. THEY\'RE NOT AS SIMPLE AS THE REPORTS SAY.'],
-                    ['OKONKWO-VASS: EVERY CAMP LOGS THEM AS VERMIN. I THINK THAT\'S LAZY SCIENCE.']
+                    ['Okonkwo-Vass: You move like someone who hasn\'t been bitten yet.', 'Okonkwo-Vass: I study the shelled ones. They\'re not as simple as the reports say.'],
+                    ['Okonkwo-Vass: Every camp logs them as vermin. I think that\'s lazy science.']
                 ],
-                loop: 'OKONKWO-VASS: COME BACK WHEN YOU\'VE SEEN MORE OF THEM. I WANT DATA, NOT STORIES.',
+                loop: 'Okonkwo-Vass: Come back when you\'ve seen more of them. I want data, not stories.',
                 next: { talks: 2 }
             },
             {
                 beats: [
-                    ['OKONKWO-VASS: HERE\'S MY THEORY. THEY DON\'T HATE US. THEY READ US.', 'OKONKWO-VASS: SOMETHING ABOUT WHAT WE CARRY. CHEMICAL, MAYBE. I CAN\'T TEST IT FROM HERE.'],
-                    ['OKONKWO-VASS: IF YOU EVER CHANGE — AND OUT HERE, PEOPLE DO — WATCH HOW THEY LOOK AT YOU.']
+                    ['Okonkwo-Vass: Here\'s my theory. They don\'t hate us. They read us.', 'Okonkwo-Vass: Something about what we carry. Chemical, maybe. I can\'t test it from here.'],
+                    ['Okonkwo-Vass: If you ever change — and out here, people do — watch how they look at you.']
                 ],
-                loop: 'OKONKWO-VASS: STILL WAITING ON SOMETHING TO CHANGE, OPERATOR. THE DREAM TURNING OVER, THEY SAY.',
+                loop: 'Okonkwo-Vass: Still waiting on something to change, operator. The dream turning over, they say.',
                 next: { talks: 2, postReveal: true }
             },
             {
                 beats: [
-                    ['OKONKWO-VASS: YOU\'RE DIFFERENT NOW. I CAN SEE IT ON YOU.', 'OKONKWO-VASS: SO HERE\'S THE ASK. DON\'T KILL ONE. TALK TO ONE. PROVE ME RIGHT.'],
-                    ['OKONKWO-VASS: IF I\'M WRONG, YOU LOSE NOTHING BUT A FEW MINUTES. IF I\'M RIGHT...']
+                    ['Okonkwo-Vass: You\'re different now. I can see it on you.', 'Okonkwo-Vass: So here\'s the ask. Don\'t kill one. Talk to one. Prove me right.'],
+                    ['Okonkwo-Vass: If I\'m wrong, you lose nothing but a few minutes. If I\'m right...']
                 ],
-                loop: 'OKONKWO-VASS: FIND ONE. STAND YOUR GROUND. SEE WHAT IT DOES.',
+                loop: 'Okonkwo-Vass: Find one. Stand your ground. See what it does.',
                 next: { talks: 1, questFlag: 'snail_befriended' }
             },
             {
                 beats: [
-                    ['OKONKWO-VASS: IT WORKED. IT ACTUALLY WORKED.', 'OKONKWO-VASS: I\'VE SPENT TWO YEARS CALLING THEM PESTS. I OWE THEM AN APOLOGY I CAN\'T GIVE.'],
-                    ['OKONKWO-VASS: WHATEVER YOU\'RE BECOMING, OPERATOR — IT LISTENS BETTER THAN WE DO.']
+                    ['Okonkwo-Vass: It worked. It actually worked.', 'Okonkwo-Vass: I\'ve spent two years calling them pests. I owe them an apology I can\'t give.'],
+                    ['Okonkwo-Vass: Whatever you\'re becoming, operator — it listens better than we do.']
                 ],
-                loop: 'OKONKWO-VASS: GO CARE FOR YOUR NEW FRIEND. THAT\'S THE WHOLE PAPER, RIGHT THERE.'
+                loop: 'Okonkwo-Vass: Go care for your new friend. That\'s the whole paper, right there.'
             }
         ]
     }
@@ -281,23 +281,23 @@ export const LEADER_KEYS = Object.freeze(Object.keys(LEADER_DIALOGUE));
 // "I HEARD THE...") caught while touching this block.
 export const LEADER_DEATH_BEATS = localizeCatalog('narrative.leaderDeathBeats', Object.freeze({
     kaelen: [
-        'KAELEN: YOU DIED OUT THERE. I HEARD THE GRID STATIC CHANGE. SIT DOWN.',
-        'KAELEN: CHEN KEPT SPARE BODY CORES IN THE FABRICATOR. YOU MUST HAVE BEEN RETRIEVED.',
-        'KAELEN: YOUR PULSE READS THROUGH THE FLOOR PLATING NOW. IT DIDN\'T, BEFORE. I CHECKED.'
+        'Kaelen: You died out there. I heard the grid static change. Sit down.',
+        'Kaelen: Chen kept spare body cores in the fabricator. You must have been retrieved.',
+        'Kaelen: Your pulse reads through the floor plating now. It didn\'t, before. I checked.'
     ],
     martha: [
-        'MARTHA: YOU DIED OUT THERE. I FELT THE COLD. COME CLOSER TO THE STEAM.',
-        'MARTHA: THE MOSS GROWS WARMER WHERE YOUR BLOOD SPILLED. IT IS REMEMBERING YOU.',
-        'MARTHA: GIVE ME THE HAND. THE OTHER ONE. THERE. YOUR PULSE IS COUNTING SOMETHING I DON\'T RECOGNIZE.'
+        'Martha: You died out there. I felt the cold. Come closer to the steam.',
+        'Martha: The moss grows warmer where your blood spilled. It is remembering you.',
+        'Martha: Give me the hand. The other one. There. Your pulse is counting something I don\'t recognize.'
     ],
     briggs: [
-        'BRIGGS: YOU DIED OUT THERE. I HEARD THE STATIC ON THE FREQUENCY. SIT DOWN.',
-        'BRIGGS: THE FIRST THING WE LEARN IN THE IRON GUILD: IF YOU DIE, DO IT OUTSIDE THE FIRING CONE.',
-        'BRIGGS: DO THAT AGAIN. BLINK. ...THERE. THAT\'S NEW. I\'M NOT WRITING IT IN THE LEDGER YET.'
+        'Briggs: You died out there. I heard the static on the frequency. Sit down.',
+        'Briggs: The first thing we learn in the Iron Guild: if you die, do it outside the firing cone.',
+        'Briggs: Do that again. Blink. ...There. That\'s new. I\'m not writing it in the ledger yet.'
     ],
-    nahl: ['NAHL: I FELT YOUR THREAD SEVER. AND I STITCHED IT BACK. SIT STILL.', 'NAHL: THE QUEEN SEES EVERY DEATH. SHE DOES NOT CARE. I DO.'],
-    vey: ['VEY: YOUR SIGNAL DIED. THE STATIC WAS DEAFENING. SIT STILL.', 'VEY: THE MOTHERSHIP ARCHIVES EVERY AGENT SOUL. BUT THE BUNKER... THE BUNKER KEEPS THE BODY.'],
-    rhun: ['RHUN: YOU FELL. I STOOD UP. THAT IS THE OATH.', 'RHUN: A WALL THAT BREAKS CAN BE KNIT. A CARRIER THAT DIES... CAN BE CARRIED.']
+    nahl: ['Nahl: I felt your thread sever. And I stitched it back. Sit still.', 'Nahl: The Queen sees every death. She does not care. I do.'],
+    vey: ['Vey: Your signal died. The static was deafening. Sit still.', 'Vey: The Mothership archives every agent soul. But the bunker... The bunker keeps the body.'],
+    rhun: ['Rhun: You fell. I stood up. That is the oath.', 'Rhun: A wall that breaks can be knit. A carrier that dies... Can be carried.']
 }));
 
 // Resolve a leader key from a display name like 'Sister Martha'.

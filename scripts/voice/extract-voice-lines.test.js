@@ -40,7 +40,7 @@ describe('voice line extraction', () => {
 
     it('speaks clean text: no speaker prefixes or terminal markers, oxygen not O₂, no shouting caps', () => {
         const briggs = en.find((l) => l.key === 'narrative.leaderDialogue.briggs.stages.0.loop');
-        expect(briggs.display.startsWith('BRIGGS:')).toBe(true);
+        expect(briggs.display.startsWith('Briggs:')).toBe(true);
         expect(briggs.spoken).toBe('Prove you can hold a line. Fortify this position, then we talk.');
         const mothership = en.find((l) => l.key === 'narrative.mothershipReactive.0.text');
         expect(mothership.spoken.startsWith('>')).toBe(false);

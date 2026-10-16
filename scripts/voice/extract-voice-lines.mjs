@@ -51,8 +51,8 @@ const LEADER_ROLE = { kaelen: 'kaelen', martha: 'martha', briggs: 'briggs', nahl
 
 // catalog: narrative.<catalog>; match(pathParts) -> { role, register? } | null.
 export const VOICE_LINE_RULES = Object.freeze([
-    { catalog: 'leaderDialogue', match: ([leader, part]) => (part === 'stages' && LEADER_ROLE[leader] ? { role: LEADER_ROLE[leader] } : null) },
-    { catalog: 'leaderDeathBeats', match: ([leader]) => (LEADER_ROLE[leader] ? { role: LEADER_ROLE[leader] } : null) },
+    { catalog: 'leaderDialogue', speaker: true, match: ([leader, part]) => (part === 'stages' && LEADER_ROLE[leader] ? { role: LEADER_ROLE[leader] } : null) },
+    { catalog: 'leaderDeathBeats', speaker: true, match: ([leader]) => (LEADER_ROLE[leader] ? { role: LEADER_ROLE[leader] } : null) },
     // The suit's own voice, in its three registers (corporate, glitched, reverent).
     { catalog: 'dialogue', match: ([register]) => ({ role: 'system', register }) },
     { catalog: 'mothershipReactive', match: (parts) => (parts.at(-1) === 'text' ? { role: 'mothership' } : null) },
@@ -91,8 +91,10 @@ export function extractVoiceLines(localesDir = path.join(ROOT, 'src/locales')) {
                 const assigned = rule.match(parts);
                 if (!assigned) continue;
                 const key = `narrative.${rule.catalog}.${parts.join('.')}`;
-                const prefixed = SPEAKER_PREFIX.test(englishText.get(key) ?? '');
-                const cleaned = cleanPerformanceText(text, { stripLocalizedPrefix: locale !== 'en' && prefixed });
+                // Leader lines always open with the speaker ("Kaelen: ..."),
+                // in whatever case the catalog writes it.
+                const prefixed = rule.speaker === true || SPEAKER_PREFIX.test(englishText.get(key) ?? '');
+                const cleaned = cleanPerformanceText(text, { stripLocalizedPrefix: prefixed });
                 const spoken = locale === 'zh-CN' ? speakChineseNumbers(cleaned) : cleaned;
                 if (!spoken) continue;
                 lines.push({ key, locale, ...assigned, display: text, spoken });

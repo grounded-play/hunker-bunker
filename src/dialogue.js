@@ -1014,33 +1014,33 @@ export class DialogueManager {
             name = "SYNTHESIZED AI 'AURA'";
             portrait = '/lore_portraits/voice_aura_persona.png';
             cleanText = text.replace(/^(SYNTHESIZED AI 'AURA'|SYNTHESIZED AI AURA|AURA):\s*/, '');
-        } else if (text.startsWith('SISTER MARTHA:') || text.startsWith('MARTHA:')) {
+        } else if (/^(SISTER MARTHA|MARTHA):/i.test(text)) {
             name = 'SISTER MARTHA';
             portrait = '/lore_portraits/tallow_martha.webp';
-            cleanText = text.replace(/^(SISTER MARTHA|MARTHA):\s*/, '');
-        } else if (text.startsWith('COMMANDER BRIGGS:') || text.startsWith('BRIGGS:')) {
+            cleanText = text.replace(/^(SISTER MARTHA|MARTHA):\s*/i, '');
+        } else if (/^(COMMANDER BRIGGS|BRIGGS):/i.test(text)) {
             name = 'COMMANDER BRIGGS';
             portrait = '/lore_portraits/vesper_briggs.webp';
-            cleanText = text.replace(/^(COMMANDER BRIGGS|BRIGGS):\s*/, '');
-        } else if (text.startsWith('OVERSEER KAELEN:') || text.startsWith('KAELEN:')) {
+            cleanText = text.replace(/^(COMMANDER BRIGGS|BRIGGS):\s*/i, '');
+        } else if (/^(OVERSEER KAELEN|KAELEN):/i.test(text)) {
             name = 'OVERSEER KAELEN';
             portrait = '/lore_portraits/meridian_kaelen.jpg';
-            cleanText = text.replace(/^(OVERSEER KAELEN|KAELEN):\s*/, '');
+            cleanText = text.replace(/^(OVERSEER KAELEN|KAELEN):\s*/i, '');
         } else if (/^(DR\.\s*OKONKWO|OKONKWO):/i.test(text)) {
             name = 'DR. OKONKWO-VASS';
             portrait = '/lore_portraits/survivor_10.webp';
             cleanText = text.replace(/^(DR\.\s*OKONKWO|OKONKWO):\s*/i, '');
-        } else if (/^(NAHL|VEY|RHUN):/.test(text)) {
+        } else if (/^(NAHL|VEY|RHUN):/i.test(text)) {
             const speakerMap = {
                 NAHL: { name: 'NAHL, THE SUTURE', portrait: '/lore_portraits/survivor_05.webp' },
                 VEY: { name: 'VEY, THE LISTENER', portrait: '/lore_portraits/survivor_11.webp' },
                 RHUN: { name: 'RHUN, THE SHIELD', portrait: '/lore_portraits/survivor_06.webp' }
             };
-            const prefix = text.split(':')[0];
+            const prefix = text.split(':')[0].toUpperCase();
             const mapped = speakerMap[prefix];
             name = mapped.name;
             portrait = mapped.portrait;
-            cleanText = text.replace(/^[A-Z]+:\s*/, '');
+            cleanText = text.replace(/^[A-Z]+:\s*/i, '');
         } else if (text.startsWith('QUEEN:')) {
             name = 'THE QUEEN';
             portrait = '/lore_portraits/queen_00.webp';
