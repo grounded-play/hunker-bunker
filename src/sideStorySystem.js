@@ -50,9 +50,9 @@ export const SIDE_STORIES_CONFIG = Object.freeze({
                     shells: 100,
                     med: 8,
                     schematic: { id: 'tallow_thermal_wrap', name: 'Tallow Thermal Wrap', desc: 'Fabricator schematic for freezing resistance suit liner' },
-                    perk: { id: 'tallows_seductive_warmth', name: "Tallow's Seductive Warmth", desc: '+15 Max HP & Freezing Resistance' }
+                    perk: { id: 'tallows_seductive_warmth', name: "Tallow's Warmth", desc: '+15 Max HP & Freezing Resistance' }
                 },
-                dialogueNode: 'val_massage_response'
+                dialogueNode: 'val_trusted'
             },
             {
                 index: 3,
@@ -66,7 +66,7 @@ export const SIDE_STORIES_CONFIG = Object.freeze({
                     titleBadge: 'SUTURE BOUND',
                     perk: { id: 'flesh_communion_blessing', name: 'Flesh Communion Blessing', desc: '+25% HP regen near safe zones' }
                 },
-                dialogueNode: 'val_embrace_response',
+                dialogueNode: 'val_history',
                 frictionFactions: [{ faction: 'meridian', suspicionDelta: 15, message: 'Meridian Tech-Purists note your devotion to the Flesh Cult.' }]
             }
         ]
@@ -106,7 +106,7 @@ export const SIDE_STORIES_CONFIG = Object.freeze({
                     schematic: { id: 'vesper_vanguard_rig', name: 'Vesper Vanguard Rig', desc: 'Fabricator schematic for high-durability chest harness' },
                     perk: { id: 'vesper_vanguard_adrenaline', name: 'Vesper Vanguard Adrenaline', desc: '+10% Speed & +15% Melee Knockback' }
                 },
-                dialogueNode: 'briggs_clasps_response'
+                dialogueNode: 'briggs_trusted'
             },
             {
                 index: 3,
@@ -120,7 +120,7 @@ export const SIDE_STORIES_CONFIG = Object.freeze({
                     titleBadge: 'VANGUARD BELOVED',
                     perk: { id: 'vesper_unyielding_might', name: 'Vesper Unyielding Might', desc: '+25% Crit Chance when below 40% HP' }
                 },
-                dialogueNode: 'briggs_intimate_climax',
+                dialogueNode: 'briggs_history',
                 lockoutConditions: [
                     { storyId: 'aria_queen_mimic', minStage: 3, reason: 'Commander Briggs refuses to embrace a contractor branded by the Brood Queen.' }
                 ]
@@ -161,7 +161,7 @@ export const SIDE_STORIES_CONFIG = Object.freeze({
                     schematic: { id: 'meridian_frequency_scanner', name: 'Meridian Frequency Scanner', desc: 'Fabricator schematic for sector radar amplifier' },
                     perk: { id: 'meridian_neural_overclock', name: 'Meridian Neural Overclock', desc: '+20m Radar & +10% Sprint Recharge' }
                 },
-                dialogueNode: 'kaelen_biolink_response'
+                dialogueNode: 'kaelen_trusted'
             },
             {
                 index: 3,
@@ -175,7 +175,7 @@ export const SIDE_STORIES_CONFIG = Object.freeze({
                     titleBadge: 'GRID SYNCHRONIZED',
                     perk: { id: 'meridian_supercharged_matrix', name: 'Supercharged Matrix', desc: '-20% Fabricator Schematics cost' }
                 },
-                dialogueNode: 'kaelen_intimate_climax'
+                dialogueNode: 'kaelen_history'
             }
         ]
     },
