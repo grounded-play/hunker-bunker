@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+    INTIMACY_REQUIREMENT,
     NPC_DIALOGUE_TREES,
     NpcDialogueTreeManager
 } from './npcDialogueTrees.js';
+import { SideStoryManager } from './sideStorySystem.js';
 
 describe('NpcDialogueTreeManager & Sensual Storyline Trees', () => {
     it('contains all 4 major mature character dialogue trees', () => {
@@ -124,5 +126,61 @@ describe('no third way to leave', () => {
         // this file advance Kaelen's stage on the shared side-story state).
         expect(NPC_DIALOGUE_TREES.overseer_kaelen.nodes.kaelen_greeting.choices
             .some((choice) => /LEAVE/.test(choice.tone ?? ''))).toBe(true);
+    });
+});
+
+// Owner, 2026-10-16: every leader opened with seduction options before the
+// player had done anything, and the same options came back on every visit.
+// docs/planning/camp-interaction-and-cinematics-audit-2026-10-16.md
+describe('earned, non-repeating leader conversations', () => {
+    const CLOSE = { context: { bond: 5, stage: 3 } };
+    const STRANGER = { context: { bond: 0, stage: 0 } };
+    const freshStories = () => new SideStoryManager({ storage: null });
+    const intimateOpening = {
+        sister_val: 'val_warmth_touch',
+        commander_briggs: 'briggs_flirt_clasps',
+        overseer_kaelen: 'kaelen_bio_link'
+    };
+
+    it('holds intimate choices until camp trust and the story allow them', () => {
+        for (const treeId of ['sister_val', 'commander_briggs', 'overseer_kaelen']) {
+            const stranger = new NpcDialogueTreeManager({ stories: freshStories() }).startDialogue(treeId, STRANGER);
+            expect(stranger.choices.map(({ id }) => id), treeId).not.toContain(intimateOpening[treeId]);
+            const below = new NpcDialogueTreeManager({ stories: freshStories() })
+                .startDialogue(treeId, { context: { bond: INTIMACY_REQUIREMENT.bond - 1, stage: 3 } });
+            expect(below.choices.map(({ id }) => id), treeId).not.toContain(intimateOpening[treeId]);
+            const close = new NpcDialogueTreeManager({ stories: freshStories() }).startDialogue(treeId, CLOSE);
+            expect(close.choices.map(({ id }) => id), treeId).toContain(intimateOpening[treeId]);
+        }
+    });
+
+    it('does not offer a branch again once all of it has been heard, and ends the tree when nothing is new', () => {
+        const stories = freshStories();
+        const exits = NPC_DIALOGUE_TREES.sister_val.nodes.val_spores_response.choices
+            .filter((choice) => !/TASTE|INTIMA|SENSUAL/.test(choice.tone ?? ''));
+        for (const exit of exits) {
+            const visit = new NpcDialogueTreeManager({ stories });
+            visit.startDialogue('sister_val', STRANGER);
+            visit.selectChoice('val_lore_spores');
+            visit.selectChoice(exit.id);
+        }
+        const later = new NpcDialogueTreeManager({ stories });
+        const nextStage = later.startDialogue('sister_val', STRANGER);
+        expect(nextStage?.choices.map(({ id }) => id) ?? []).not.toContain('val_lore_spores');
+    });
+
+    it('pays bond and perks once, not on every walk down the same branch', () => {
+        const stories = freshStories();
+        const manager = new NpcDialogueTreeManager({ stories });
+        manager.startDialogue('commander_briggs', CLOSE);
+        manager.selectChoice('briggs_flirt_clasps');
+        const afterFirst = manager.bondState.commander_briggs;
+        manager.closeDialogue();
+        const again = new NpcDialogueTreeManager({ stories });
+        again.bondState.commander_briggs = afterFirst;
+        again.startDialogue('commander_briggs', CLOSE);
+        const reoffered = again.currentNode.choices.find((choice) => choice.id === 'briggs_flirt_clasps');
+        if (reoffered) again.selectChoice('briggs_flirt_clasps');
+        expect(again.bondState.commander_briggs).toBe(afterFirst);
     });
 });

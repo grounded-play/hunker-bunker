@@ -692,7 +692,7 @@ export const INTIMACY_REQUIREMENT = Object.freeze({ bond: 3, stage: 1 });
 const INTIMATE_TONE = /INTIMA|SENSUAL|SEDUC|EMBRACE|PASSION|FLIRT|SURRENDER|TOUCH|TASTE|CARESS/i;
 
 export function isIntimateChoice(choice) {
-    return choice?.intimate === true || INTIMATE_TONE.test(String(choice?.tone ?? ''));
+    return choice?.intimate === true || INTIMATE_TONE.test(`${choice?.id ?? ''} ${choice?.tone ?? ''}`);
 }
 
 export function meetsIntimacyRequirement(context = {}, requirement = INTIMACY_REQUIREMENT) {
@@ -734,12 +734,26 @@ export class NpcDialogueTreeManager {
         this.stories?.save?.();
     }
 
+    // The side-story store this manager was given, when it is a full one
+    // (tests pass a plain { state } record); otherwise the shared manager.
+    get storyManager() {
+        return typeof this.stories?.getCurrentStage === 'function' ? this.stories : sideStoryManager;
+    }
+
     isNodeExhausted(tree, nodeId, memory, seen = new Set()) {
         if (!nodeId || seen.has(nodeId)) return true;
         seen.add(nodeId);
         const node = tree.nodes[nodeId];
         if (!node || !memory.visitedNodes.includes(nodeId)) return false;
-        return (node.choices ?? []).every((choice) => this.isChoiceSpent(tree, choice, memory, seen));
+        // Judged by what can be said now: a branch closes once every line the
+        // relationship allows has been heard, and reopens when it allows more.
+        return (node.choices ?? [])
+            .filter((choice) => this.isChoiceAvailable(choice))
+            .every((choice) => this.isChoiceSpent(tree, choice, memory, seen));
+    }
+
+    isChoiceAvailable(choice) {
+        return !isIntimateChoice(choice) || meetsIntimacyRequirement(this.context);
     }
 
     isChoiceSpent(tree, choice, memory, seen = new Set()) {
@@ -754,7 +768,7 @@ export class NpcDialogueTreeManager {
     visibleChoices(tree, node, memory) {
         return (node.choices ?? []).filter((choice) => {
             if (choice.isSkipAction) return true;
-            if (isIntimateChoice(choice) && !meetsIntimacyRequirement(this.context)) return false;
+            if (!this.isChoiceAvailable(choice)) return false;
             if (!choice.nextNode) return true;
             return !this.isChoiceSpent(tree, choice, memory);
         });
@@ -782,7 +796,7 @@ export class NpcDialogueTreeManager {
         this.activeTree = tree;
 
         // Check if side story has lockout
-        const lockout = sideStoryManager.isLockedOut(treeId);
+        const lockout = this.storyManager.isLockedOut(treeId);
         if (!bypassPrereq && lockout.locked) {
             this.currentNode = {
                 id: `${treeId}_lockout`,
@@ -798,7 +812,7 @@ export class NpcDialogueTreeManager {
             return this.currentNode;
         }
 
-        const currentStage = sideStoryManager.getCurrentStage(treeId);
+        const currentStage = this.storyManager.getCurrentStage(treeId);
         let startNodeId = tree.initialNode;
 
         if (currentStage && tree.nodes[currentStage.dialogueNode]) {
@@ -855,7 +869,7 @@ export class NpcDialogueTreeManager {
 
         if (choice.isSkipAction) {
             const currentInv = inventory || (typeof window !== 'undefined' ? (window.game?.bank?.getBanked?.() || {}) : {});
-            const skipResult = sideStoryManager.skipCurrentStageWithCost(this.activeTree.id, currentInv);
+            const skipResult = this.storyManager.skipCurrentStageWithCost(this.activeTree.id, currentInv);
             const prevTree = this.activeTree;
             this.activeTree = null;
             this.currentNode = null;
@@ -864,7 +878,7 @@ export class NpcDialogueTreeManager {
         }
 
         if (choice.isPauseAction) {
-            sideStoryManager.pauseStory(this.activeTree.id);
+            this.storyManager.pauseStory(this.activeTree.id);
             const prevTree = this.activeTree;
             this.activeTree = null;
             this.currentNode = null;
@@ -906,7 +920,7 @@ export class NpcDialogueTreeManager {
         if (firstVisit && nextNode.bondDelta && this.activeTree) {
             const treeId = this.activeTree.id;
             this.bondState[treeId] = (this.bondState[treeId] || 0) + nextNode.bondDelta;
-            const story = sideStoryManager.getStoryState(treeId);
+            const story = this.storyManager.getStoryState(treeId);
             if (story) story.bondScore = this.bondState[treeId];
         }
 
@@ -919,7 +933,7 @@ export class NpcDialogueTreeManager {
                 window.showToastNotification?.(`${nextNode.rewardPerk.name} — ${nextNode.rewardPerk.description ?? ''}`.replace(/ — $/, ''), { tone: 'info', duration: 7000 });
             }
             // Mark stage completed in sideStoryManager
-            sideStoryManager.completeCurrentStage(this.activeTree.id);
+            this.storyManager.completeCurrentStage(this.activeTree.id);
         }
 
         this.notifyChange();
@@ -942,8 +956,8 @@ export class NpcDialogueTreeManager {
 
     notifyChange() {
         if (typeof this.onStateChanged === 'function') {
-            const storyState = this.activeTree ? sideStoryManager.getStoryState(this.activeTree.id) : null;
-            const currentStage = this.activeTree ? sideStoryManager.getCurrentStage(this.activeTree.id) : null;
+            const storyState = this.activeTree ? this.storyManager.getStoryState(this.activeTree.id) : null;
+            const currentStage = this.activeTree ? this.storyManager.getCurrentStage(this.activeTree.id) : null;
             this.onStateChanged({
                 isOpen: Boolean(this.activeTree && this.currentNode),
                 tree: this.activeTree,
