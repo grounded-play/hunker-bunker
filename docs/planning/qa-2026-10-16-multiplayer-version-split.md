@@ -75,3 +75,40 @@ Both machines were **Steam Decks**: `tuesday-cinema-club` on 2.4.16 and `s1nAck`
 2. Move GLB `world-model:prepare` off the critical frame, or spread it out, to remove the 1–4 s freezes.
 3. Log camera and other settings changes, and verify the camera dropdown on Deck.
 4. Read the 2.4.17 Deck numbers again after these, since that build is what testers have now.
+
+## Follow-up work, 2026-10-16
+
+Commits `1959b52c` (settings) and `5926e68b` (performance).
+
+### What changed
+
+1. **Freezes.** The 3.8 s stall was inside the render submit, not model preparation: `renderFrame` max 3843.7 ms in the 02:16:05 frame breakdown. A probe that times every WebGL call inside each render call put long renders down to work three.js does on first draw:
+   - shader links for variants never compiled ahead;
+   - every new texture uploading in the same frame (up to 39).
+   
+   Fixes:
+   - a texture upload queue spreads `initTexture` over frames at 3 ms each;
+   - chunks mounted during play are compiled in the background and their textures queued;
+   - late models wait for their own uploads, bounded at 4 s, and only in gameplay.
+2. **Per-frame CPU waste:**
+   - transparent double-sided materials that need only one pass (flat rain splashes; additive, no-depth-write beacons and light shafts) no longer draw twice with two program lookups each;
+   - fog-of-war visibility raycasts once, not twice, near the player.
+3. **Settings:**
+   - every `setting-*` change is logged (`SETTINGS setting-changed`);
+   - on the Deck a touch or trackpad press on a dropdown opens the in-game picker. Gamescope never shows Chromium's native popup, which is why the camera dropdown did nothing.
+
+### What was measured, and what this machine cannot show
+
+- **Hardware path.** On this desktop the real-GPU path is ANGLE over Vulkan on an RTX 2070 SUPER. At 4× CPU throttle it shows no texture-upload or shader-link stalls at all, before or after the change. ANGLE over OpenGL under Xvfb is Mesa `llvmpipe` (software), so its multi-second link times are not a Deck proxy. They only confirm the mechanism.
+- **CPU per frame** (V8 profile, 40 s walk): program lookups fell (`getProgram` 0.85 → 0.63 ms, `getParameters` 0.45 → 0.32 ms, `setProgram` 3.5 → 3.2 ms). Total frame CPU varied more between runs than these savings, because enemy AI and position differed. Setting `fixedRunEntropy` before deploy does not give identical worlds.
+- **Frame gaps at 4× throttle:** no gap over 1 s with 20+ chunks streamed, and the upload queue drained to empty. One large texture can still take 50–117 ms through the queue.
+
+### Deck capture needed
+
+On a build containing `5926e68b`, play 5 minutes on each Deck: walk through several new chunks and fight once. Then upload the session log. Compare with the 2026-10-15 captures:
+- `PERF frame-breakdown`: median `avgFrameMs`, and max `renderFrame` per window;
+- long tasks over 500 ms with `lastPhase` `frame:render`;
+- `graphics-auto-*` events;
+- the new `SETTINGS setting-changed` lines when the camera mode is changed by touch.
+
+Install the same build on both Decks; the relay refuses mismatched builds, and now says so.
