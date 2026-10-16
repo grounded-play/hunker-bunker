@@ -785,6 +785,7 @@ import {
     claimRewardCache,
     REWARD_CACHE_I18N_KEYS
 } from './rewardCache.js';
+import { InteractionSequenceRunner } from './interactionSequenceRunner.js';
 
 const CAMP_PROBE_MISSION_ID = 'camp-quest:camp_meridian:lost_probe';
 const HIVE_MEMBRANE_MISSION_ID = 'hive-quest:hive_suture:host_mercy';
@@ -2477,6 +2478,7 @@ export class ThreeGame {
         this.brokenPropScatterKeys = new Set();
         this.spentPropScatterKeys = new Set();
         this.interactionVignette = createInteractionVignetteController(this);
+        this.interactionSequenceRunner = new InteractionSequenceRunner(this);
         // docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #1 --
         // "environmental" PointLights (terminal/status/beacon/O2-safe/lore-terminal
         // lights, etc, registered via registerEnvLight below) accumulate as the
@@ -11049,7 +11051,12 @@ export class ThreeGame {
             window.dispatchEvent(new CustomEvent('ship-rebuild-progress', { detail: progress }));
         } else {
             // The hull patch and door seal appear once the cot is in.
-            if (result.installed.definitionId === 'cot_bed') this.bootstrapFirstNightBaseRecovery?.();
+            if (result.installed.definitionId === 'cot_bed') {
+                this.bootstrapFirstNightBaseRecovery?.();
+                if (this.interactionSequenceRunner) {
+                    void this.interactionSequenceRunner.runSequence('base_cot_first_night');
+                }
+            }
             const remaining = this.getFirstNightBasePlan().recoveryCargo.filter(({ definitionId }) => (
                 !this.carryState.installed.some((module) => module.definitionId === definitionId)
             ));
@@ -21345,6 +21352,9 @@ export class ThreeGame {
             this.spawnCampQuestLandmark?.(camp, spot);
         }
         this.act2.setCampQuestActive(camp.id, quest.id);
+        if (quest.id === 'grid_covenant' && this.interactionSequenceRunner) {
+            void this.interactionSequenceRunner.runSequence('meridian_grid_covenant');
+        }
         window.AudioManager?.play?.('ui_scan_ping', { volume: 0.5, playbackRate: 1.0 });
         window.dispatchEvent(new CustomEvent('camp-quest-progress', {
             detail: { campId: camp.id, questId: quest.id, label: quest.label, current: 0, target: this._activeCampQuest.target }
@@ -22941,7 +22951,116 @@ export class ThreeGame {
             }
         }
 
+        if (kind === 'camp' && entity.id === 'camp_meridian' && this.interactionSequenceRunner) {
+            if (!this.interactionSequenceRunner.isSequenceCompleted('meridian_first_meeting')) {
+                void this.interactionSequenceRunner.runSequence('meridian_first_meeting');
+            }
+        }
+
         return true;
+    }
+
+    findPropAnchor(anchorName) {
+        if (!anchorName) return null;
+        if (this.carryState?.installed?.some((item) => item.definitionId === anchorName || item.modelType === anchorName || item.socketId === anchorName)) {
+            return true;
+        }
+        if (this.worldDressingNetwork?.has?.(anchorName)) return true;
+        if (this.props?.some((p) => p.propType === anchorName || p.id === anchorName)) return true;
+        return false;
+    }
+
+    playInterstitialCard(cardId) {
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('song-interstitial-open', {
+                detail: { trackId: String(cardId).padStart(2, '0') }
+            }));
+        }
+    }
+
+    async transitionCamera(_shot, target, ms = 500) {
+        let pos = null;
+        if (target === 'leader') {
+            const camp = this.camps?.find((c) => c.id === 'camp_meridian') ?? this.camps?.[0];
+            if (camp) pos = { x: camp.pos.x, z: camp.pos.z };
+        } else if (target === 'player' && this.player) {
+            pos = { x: this.player.position.x, z: this.player.position.z };
+        } else if (typeof target === 'string') {
+            const camp = this.camps?.find((c) => c.id === 'camp_meridian') ?? this.camps?.[0];
+            if (camp) pos = { x: camp.pos.x + 1.0, z: camp.pos.z };
+        }
+        if (pos) {
+            this.focusCinematicCamera(pos);
+        }
+        if (ms > 0) {
+            await new Promise((resolve) => setTimeout(resolve, Math.min(ms, 100)));
+        }
+    }
+
+    async walkActorToAnchor(actor, _anchor, offset = [0, 0, 0]) {
+        const camp = this.camps?.find((c) => c.id === 'camp_meridian') ?? this.camps?.[0];
+        const baseX = camp ? camp.pos.x : (this.player?.position.x ?? 0);
+        const baseZ = camp ? camp.pos.z : (this.player?.position.z ?? 0);
+        const targetX = baseX + (offset[0] ?? 0);
+        const targetZ = baseZ + (offset[2] ?? 0);
+
+        if (actor === 'player' && this.player) {
+            this.player.position.x = targetX;
+            this.player.position.z = targetZ;
+        }
+    }
+
+    faceActorToward(_actor, _toward) {
+        // Orient actor toward target
+    }
+
+    playActorGesture(actor, _clip) {
+        if (actor === 'leader') {
+            window.AudioManager?.play?.('ui_scan_ping', { volume: 0.35, playbackRate: 1.1 });
+        }
+    }
+
+    setWorldPropState(anchor, _state, _step = {}) {
+        if (anchor === 'meridian_logic_core_drum') {
+            this.spawnPhysicalBurst?.(this.player?.position.x ?? 0, this.player?.position.z ?? 0, { color: 0x22d3ee, count: 8, upward: 0.1 });
+        }
+    }
+
+    spawnPropFx(_anchor, _effect, color = '#22d3ee') {
+        const hex = parseInt(color.replace('#', '0x'), 16) || 0x22d3ee;
+        const x = this.player?.position.x ?? 0;
+        const z = this.player?.position.z ?? 0;
+        this.spawnPhysicalBurst?.(x, z, { color: hex, count: 12, upward: 0.25 });
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 1.2 });
+    }
+
+    async displaySequenceSubtitle(speaker, key, text) {
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('narrative-sequence-subtitle', {
+                detail: { speaker, key, text }
+            }));
+        }
+    }
+
+    grantSequenceReward(reward = {}) {
+        if (reward.perk && this.bank) {
+            this.bank.addPerk?.(reward.perk);
+        }
+        if (reward.bondDelta && this.act2) {
+            const campRecord = this.getCampRecord?.('camp_meridian');
+            if (campRecord) {
+                campRecord.bond = Math.min(5, (campRecord.bond ?? 0) + reward.bondDelta);
+            }
+        }
+        if (reward.toast && reward.perk) {
+            window.dispatchEvent(new CustomEvent('perk-unlocked', { detail: { perk: reward.perk } }));
+        }
+    }
+
+    resumeConversationAfterSequence(offer) {
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('leader-dialogue-resume', { detail: { offer } }));
+        }
     }
 
     getActionableCampAt(x, z, phase = this.act2?.getPhase(), { skip = null } = {}) {

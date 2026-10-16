@@ -45,4 +45,27 @@ describe('one conversation per camp', () => {
         const { events } = talkTo('camp_meridian', 'Sister Martha');
         expect(events.find((event) => event.type === 'leader-dialogue').detail.treeId).toBe('sister_val');
     });
+
+    it('triggers meridian_first_meeting sequence when talking at Camp Meridian', () => {
+        const events = [];
+        globalThis.window = { dispatchEvent: (event) => events.push(event), openNpcDialogueTree: vi.fn(), achievementEngine: null };
+        globalThis.CustomEvent = class CustomEvent {
+            constructor(type, options = {}) { this.type = type; this.detail = options.detail; }
+        };
+        const fake = Object.create(ThreeGame.prototype);
+        const runSequence = vi.fn();
+        Object.assign(fake, {
+            interactionSequenceRunner: {
+                isSequenceCompleted: vi.fn().mockReturnValue(false),
+                runSequence
+            },
+            act2: { recordDialogueTalk: vi.fn(), advanceDialogueStage: vi.fn() },
+            getCampRecord: () => ({ status: 'alive', bond: 1, level: 1, dialogueStage: 0, stageTalks: 0 }),
+            peekDialogueBeat: () => ({ type: 'beat', stage: 0, lines: ['KAELEN: ANOTHER SUIT FROM THE SURFACE.'] }),
+            getDialogueContext: () => ({})
+        });
+        fake.talkToLeader('camp', { id: 'camp_meridian', leaderName: 'Overseer Kaelen' });
+        expect(runSequence).toHaveBeenCalledWith('meridian_first_meeting');
+        delete globalThis.window;
+    });
 });
