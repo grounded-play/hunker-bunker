@@ -15,6 +15,21 @@
  * `mountY` lifts a wall prop off the floor (sconces, clocks, light cages).
  */
 import { WALL_FIXTURE_ELEVATIONS } from './modelPresentationRegistry.js';
+import { WORLD_EXPANSION_80_SPECS } from './data/worldExpansion80.js';
+
+const WORLD80_BY_THEME = WORLD_EXPANSION_80_SPECS.reduce((groups, spec) => {
+    (groups[spec.theme] ??= []).push(spec);
+    return groups;
+}, {});
+
+const WORLD80_DECAL_SCALES = Object.fromEntries(WORLD_EXPANSION_80_SPECS.map((spec) => [
+    spec.decal,
+    Object.freeze(spec.decal.includes('drag') || spec.decal.includes('skid') || spec.decal.includes('route')
+        ? { min: 2.2, max: 3.2 }
+        : spec.decal.includes('muster') || spec.decal.includes('sweep') || spec.decal.includes('fallout')
+            ? { min: 1.6, max: 2.4 }
+            : { min: 0.9, max: 1.6 })
+]));
 
 export const WALL_MOUNT_HEIGHT = Object.freeze({
     ...WALL_FIXTURE_ELEVATIONS
@@ -92,7 +107,7 @@ export const DRESSING_KITS = Object.freeze({
             'vass_hybrid_embryo_incubator', 'carapace_sentry_chrysalis',
             'tina_cosmetic_skin_loom', 'suture_larval_nursery_urn', 'vass_bio_centrifuge_rack'],
         wallDecals: ['decal_spore_stain_01', 'decal_spore_stain_02', 'decal_spore_stain_03', 'decal_vine_iron_shadow_1',
-            'decal_vine_iron_shadow_2', 'decal_claw_scratches', 'decal_bite_marks_02', 'decal_hand_smears_2',
+            'decal_vine_iron_shadow_2', 'decal_claw_scratches', 'decal_bite_marks_02', 'decal_bite_marks_03', 'decal_hand_smears_2',
             'decal_wall_grime_drip', 'decal_hive_growth', 'decal_vass_acoustic_diagram'],
         clutter: ['prop_hive_resin_sac', 'state_growth_overrun_2', 'scatter_bolts', 'scatter_cable_coil',
             'prop_biomech_respirator', 'prop_cave_bones', 'bunker_junk_rare', 'prop_body_empty_exosuit',
@@ -238,6 +253,7 @@ export const DECAL_WORLD_SCALES = Object.freeze({
     decal_strip_cart_ruts: Object.freeze({ min: 2.6, max: 3.2 }),
     decal_walkway_borders: Object.freeze({ min: 2.4, max: 3.0 }),
     decal_strip_drag_marks: Object.freeze({ min: 2.2, max: 2.8 }),
+    decal_strip_drain_gutter: Object.freeze({ min: 2.6, max: 3.4 }),
     decal_strip_hive_veins: Object.freeze({ min: 2.2, max: 2.8 }),
     decal_sled_tracks: Object.freeze({ min: 2.4, max: 3.0 }),
     decal_door_wear_apron: Object.freeze({ min: 2.0, max: 2.5 }),
@@ -369,7 +385,10 @@ export const DECAL_WORLD_SCALES = Object.freeze({
     decal_meridian_binary_litany: Object.freeze({ min: 1.0, max: 1.5 }),
     decal_tina_dermis_shed_residue: Object.freeze({ min: 1.3, max: 1.8 }),
     decal_vass_neural_diagram: Object.freeze({ min: 1.2, max: 1.7 }),
-    decal_vesper_kill_tally: Object.freeze({ min: 0.50, max: 0.80 })
+    decal_vesper_kill_tally: Object.freeze({ min: 0.50, max: 0.80 }),
+
+    // World Expansion 80 story traces (2026-10-16)
+    ...WORLD80_DECAL_SCALES
 });
 
 export function decalWorldScale(type, random) {
@@ -398,12 +417,21 @@ export function dressingProfileFor(themeId) {
 
 /** The full kit for a theme and role (family kit plus role additions, de-duplicated). */
 export function dressingKitFor(themeId, role) {
-    const family = DRESSING_KITS[dressingFamilyForTheme(themeId)];
+    const familyId = dressingFamilyForTheme(themeId);
+    const family = DRESSING_KITS[familyId];
     const extra = ROLE_DRESSING[role] ?? {};
     const merged = {};
     for (const layer of ['wallProps', 'wallDecals', 'clutter', 'corners', 'floorDecals']) {
         merged[layer] = [...new Set([...(extra[layer] ?? []), ...(family[layer] ?? [])])];
     }
+    for (const spec of WORLD80_BY_THEME[String(themeId ?? '')] ?? []) {
+        if (spec.placement === 'wall' || spec.placement === 'ceiling') merged.wallProps.push(spec.id);
+        else if (spec.placement === 'tabletop') merged.clutter.push(spec.id);
+        else merged.corners.push(spec.id);
+        const decalLayer = spec.placement === 'wall' || spec.placement === 'ceiling' ? 'wallDecals' : 'floorDecals';
+        merged[decalLayer].push(spec.decal);
+    }
+    for (const layer of Object.keys(merged)) merged[layer] = [...new Set(merged[layer])];
     return merged;
 }
 
@@ -605,5 +633,18 @@ export const ROLE_VIGNETTES = Object.freeze({
 
 /** Vignettes for a theme and role: role groups first, then the family's. */
 export function vignettesFor(themeId, role) {
-    return [...(ROLE_VIGNETTES[role] ?? []), ...(VIGNETTES[dressingFamilyForTheme(themeId)] ?? [])];
+    const familyId = dressingFamilyForTheme(themeId);
+    const eligible = (WORLD80_BY_THEME[String(themeId ?? '')] ?? [])
+        .filter((spec) => !['wall', 'ceiling', 'threshold', 'recess'].includes(spec.placement));
+    const world80Vignettes = [];
+    for (let index = 0; index < eligible.length; index += 2) {
+        world80Vignettes.push(eligible.slice(index, index + 2).map((spec) => spec.id));
+    }
+    if (world80Vignettes.length > 1 && world80Vignettes.at(-1).length === 1) {
+        world80Vignettes.at(-2).push(world80Vignettes.pop()[0]);
+    }
+    if (world80Vignettes.length === 1 && world80Vignettes[0].length === 1) {
+        world80Vignettes.length = 0;
+    }
+    return [...(ROLE_VIGNETTES[role] ?? []), ...world80Vignettes, ...(VIGNETTES[familyId] ?? [])];
 }

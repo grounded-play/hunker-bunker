@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createPropArticulation } from './propArticulation.js';
+import { WORLD_EXPANSION_80_SPECS } from './data/worldExpansion80.js';
 
 const freezeProfile = (value) => Object.freeze({
     ...value,
@@ -30,7 +31,18 @@ const mechanism = (color, behaviors = ['use', 'damage']) => freezeProfile({
 
 const passive = (behaviors) => freezeProfile({ behaviors });
 
+const WORLD_EXPANSION_80_EXPERIENCE = Object.freeze(Object.fromEntries(
+    WORLD_EXPANSION_80_SPECS.map((spec) => {
+        const color = spec.fx === 'organic' ? 0x84cc16
+            : spec.fx === 'thermal' ? 0xf59e0b
+                : spec.fx === 'liquid' ? 0x22d3ee
+                    : 0x38bdf8;
+        return [spec.id, mechanism(color, ['use', 'ambient', 'damage'])];
+    })
+));
+
 export const PROP_EXPERIENCE_PROFILES = Object.freeze({
+    ...WORLD_EXPANSION_80_EXPERIENCE,
     life_arcade_cabinet: terminal(0x55d9ff, { intensity: 2.1 }),
     life_surgical_lamp: terminal(0xe9fff4, { duration: 0.35, intensity: 1.5 }),
     cryo_heater_station: terminal(0xff7a24, { duration: 0.4, intensity: 1.7 }),

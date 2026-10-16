@@ -10,6 +10,7 @@ import { createPropExperience } from './propExperience.js';
 import { applyClothFlutter } from './clothFlutter.js';
 import { createGltfLoader as createSharedGltfLoader } from './gltfLoaderFactory.js';
 import { getModelPresentationProfile, getWallModelDepth } from './modelPresentationRegistry.js';
+import { WORLD_EXPANSION_80_MODELS } from './data/worldExpansion80.js';
 
 // docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws without this registered first.
@@ -553,7 +554,11 @@ export const WORLD_3D_MODELS = Object.freeze({
     evac_cabin_co2_scrubber: { url: '/3d/runtime/new3ds/evac_cabin_co2_scrubber.glb', height: 1.7, span: 1.1, yaw: 0 },
     evac_manual_abort_detonator: { url: '/3d/runtime/new3ds/evac_manual_abort_detonator.glb', height: 1.4, span: 0.8, yaw: 0 },
     evac_cargo_ballast_scale: { url: '/3d/runtime/new3ds/evac_cargo_ballast_scale.glb', height: 0.4, span: 2.0, yaw: 0 },
-    mothership_docking_umbilical_collar: { url: '/3d/runtime/new3ds/mothership_docking_umbilical_collar.glb', height: 3.0, span: 2.8, yaw: 0 }
+    mothership_docking_umbilical_collar: { url: '/3d/runtime/new3ds/mothership_docking_umbilical_collar.glb', height: 3.0, span: 2.8, yaw: 0 },
+
+    // 2026-10-16 World Expansion 80. The shared manifest also owns each
+    // model's interaction, FX, surface, decal, and placement contract.
+    ...WORLD_EXPANSION_80_MODELS
 });
 
 // Metric-scale set-piece shells are deliberately separate from prop models.

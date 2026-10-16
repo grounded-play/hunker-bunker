@@ -1,3 +1,5 @@
+import { WORLD_EXPANSION_80_SPECS } from './data/worldExpansion80.js';
+
 export const MODEL_SURFACE = Object.freeze({
     FLOOR: 'floor',
     WALL: 'wall',
@@ -183,7 +185,19 @@ const MODEL_PRESENTATION = Object.freeze(Object.fromEntries([
             mountType,
             mountY
         })];
-    })
+    }),
+    ...WORLD_EXPANSION_80_SPECS
+        .filter((spec) => spec.placement === 'wall' || spec.placement === 'ceiling')
+        .map((spec) => {
+            const ceiling = spec.placement === 'ceiling';
+            return [spec.id, Object.freeze({
+                ...(ceiling ? CEILING_WALL_PROFILE : DEFAULT_WALL_PROFILE),
+                type: spec.id,
+                mountType: 'wall-hanging',
+                mountY: ceiling ? 2.15 : Math.max(0.8, spec.height * 0.72),
+                depth: Math.min(1.4, Math.max(0.2, spec.maxSpan * 0.28))
+            })];
+        })
 ]));
 
 export function getModelPresentationProfile(type) {

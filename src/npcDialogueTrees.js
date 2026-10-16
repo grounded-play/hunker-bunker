@@ -684,6 +684,21 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
     }
 });
 
+// Intimate choices wait until the relationship is real: camp trust (bond, of
+// 5) and the leader's story past its first stage. Every leader used to open
+// with two of them on first meeting (owner, 2026-10-16: "all the options to
+// seduce before I'd done anything").
+export const INTIMACY_REQUIREMENT = Object.freeze({ bond: 3, stage: 1 });
+const INTIMATE_TONE = /INTIMA|SENSUAL|SEDUC|EMBRACE|PASSION|FLIRT|SURRENDER|TOUCH|TASTE|CARESS/i;
+
+export function isIntimateChoice(choice) {
+    return choice?.intimate === true || INTIMATE_TONE.test(String(choice?.tone ?? ''));
+}
+
+export function meetsIntimacyRequirement(context = {}, requirement = INTIMACY_REQUIREMENT) {
+    return (Number(context.bond) || 0) >= requirement.bond && (Number(context.stage) || 0) >= requirement.stage;
+}
+
 export class NpcDialogueTreeManager {
     constructor({ onStateChanged = null, stories = sideStoryManager } = {}) {
         this.onStateChanged = onStateChanged;
@@ -698,7 +713,51 @@ export class NpcDialogueTreeManager {
         };
         this.activePerks = new Set();
         this.history = [];
+        this.stories = stories;
+        this.context = {};
         this.restoreFromSideStories(stories);
+    }
+
+    // What this player has already said and earned with a leader, saved with
+    // the side stories so a choice is not offered again once everything
+    // behind it has been heard, and a node's bond or perk pays out once.
+    memoryFor(treeId) {
+        const stories = this.stories;
+        const story = stories?.getStoryState?.(treeId)
+            ?? (stories?.state ? (stories.state[treeId] ??= {}) : (this._memory ??= {})[treeId] ??= {});
+        story.takenChoices ??= [];
+        story.visitedNodes ??= [];
+        return story;
+    }
+
+    saveMemory() {
+        this.stories?.save?.();
+    }
+
+    isNodeExhausted(tree, nodeId, memory, seen = new Set()) {
+        if (!nodeId || seen.has(nodeId)) return true;
+        seen.add(nodeId);
+        const node = tree.nodes[nodeId];
+        if (!node || !memory.visitedNodes.includes(nodeId)) return false;
+        return (node.choices ?? []).every((choice) => this.isChoiceSpent(tree, choice, memory, seen));
+    }
+
+    isChoiceSpent(tree, choice, memory, seen = new Set()) {
+        if (!choice.nextNode) return memory.takenChoices.includes(choice.id);
+        if (!memory.takenChoices.includes(choice.id)) return false;
+        return this.isNodeExhausted(tree, choice.nextNode, memory, seen);
+    }
+
+    // The choices to offer at a node: closing lines always (they are the way
+    // out), intimate ones only once the relationship allows, and nothing
+    // whose whole branch the player has already heard.
+    visibleChoices(tree, node, memory) {
+        return (node.choices ?? []).filter((choice) => {
+            if (choice.isSkipAction) return true;
+            if (isIntimateChoice(choice) && !meetsIntimacyRequirement(this.context)) return false;
+            if (!choice.nextNode) return true;
+            return !this.isChoiceSpent(tree, choice, memory);
+        });
     }
 
     // Perks and bond used to live only in memory, so everything earned here
@@ -711,10 +770,15 @@ export class NpcDialogueTreeManager {
         }
     }
 
-    startDialogue(treeId, { bypassPrereq = false } = {}) {
+    // `context` is the leader's relationship where the conversation happens:
+    // { bond: camp trust 0-5, stage: leader story stage }. Returns null when
+    // there is nothing new to say, so the conversation ends after its staged
+    // lines instead of repeating the same choices every visit.
+    startDialogue(treeId, { bypassPrereq = false, context = {} } = {}) {
         const tree = NPC_DIALOGUE_TREES[treeId];
         if (!tree) return null;
 
+        this.context = context ?? {};
         this.activeTree = tree;
 
         // Check if side story has lockout
@@ -742,7 +806,18 @@ export class NpcDialogueTreeManager {
         }
 
         const baseNode = tree.nodes[startNodeId] || tree.nodes[tree.initialNode];
-        this.currentNode = { ...baseNode, choices: [...baseNode.choices] };
+        const memory = this.memoryFor(treeId);
+        const offered = this.visibleChoices(tree, baseNode, memory);
+        if (!offered.some((choice) => choice.nextNode) && !(currentStage && currentStage.skipCost)) {
+            this.activeTree = null;
+            this.currentNode = null;
+            return null;
+        }
+        if (!memory.visitedNodes.includes(baseNode.id)) {
+            memory.visitedNodes.push(baseNode.id);
+            this.saveMemory();
+        }
+        this.currentNode = { ...baseNode, choices: offered };
 
         // Append Skip / Pause options if side story is in progress
         if (currentStage && currentStage.skipCost) {
@@ -774,6 +849,9 @@ export class NpcDialogueTreeManager {
 
         const choice = (this.currentNode.choices || []).find((c) => c.id === choiceId);
         if (!choice) return null;
+        const memory = this.memoryFor(this.activeTree.id);
+        if (!choice.isSkipAction && !memory.takenChoices.includes(choice.id)) memory.takenChoices.push(choice.id);
+        this.saveMemory();
 
         if (choice.isSkipAction) {
             const currentInv = inventory || (typeof window !== 'undefined' ? (window.game?.bank?.getBanked?.() || {}) : {});
@@ -811,14 +889,21 @@ export class NpcDialogueTreeManager {
             return { concluded: true };
         }
 
-        this.currentNode = { ...nextNode, choices: [...nextNode.choices] };
+        // Bond and perks pay out the first time a node is reached, not on
+        // every walk down the same branch.
+        const firstVisit = !memory.visitedNodes.includes(nextNode.id);
+        if (firstVisit) {
+            memory.visitedNodes.push(nextNode.id);
+            this.saveMemory();
+        }
+        this.currentNode = { ...nextNode, choices: this.visibleChoices(this.activeTree, nextNode, memory) };
         this.history.push(nextNode.id);
         // No music video per choice: a camp plays one title card, on first
         // contact only (owner, 2026-10-08). Nodes keep their `interstitial`
         // for the codex and side-story screens.
 
         // Apply bond delta if arriving at a node with bondDelta
-        if (nextNode.bondDelta && this.activeTree) {
+        if (firstVisit && nextNode.bondDelta && this.activeTree) {
             const treeId = this.activeTree.id;
             this.bondState[treeId] = (this.bondState[treeId] || 0) + nextNode.bondDelta;
             const story = sideStoryManager.getStoryState(treeId);
@@ -826,14 +911,12 @@ export class NpcDialogueTreeManager {
         }
 
         // Apply reward perk if arriving at a node with rewardPerk
-        if (nextNode.rewardPerk) {
+        if (firstVisit && nextNode.rewardPerk) {
             this.activePerks.add(nextNode.rewardPerk.id);
-            if (typeof window !== 'undefined' && window.showSteamDropToast) {
-                window.showSteamDropToast({
-                    name: nextNode.rewardPerk.name,
-                    icon: '❤️',
-                    category: 'SENSUAL STORY PERK'
-                });
+            // showSteamDropToast takes a Steam itemdefid; given this object it
+            // found no catalog entry and showed nothing, so perks arrived silently.
+            if (typeof window !== 'undefined') {
+                window.showToastNotification?.(`${nextNode.rewardPerk.name} — ${nextNode.rewardPerk.description ?? ''}`.replace(/ — $/, ''), { tone: 'info', duration: 7000 });
             }
             // Mark stage completed in sideStoryManager
             sideStoryManager.completeCurrentStage(this.activeTree.id);

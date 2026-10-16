@@ -22882,13 +22882,14 @@ export class ThreeGame {
         // The leader's choice tree (src/npcDialogueTrees.js) continues this
         // same conversation once its staged lines end -- one window, never a
         // second modal (owner, 2026-10-08).
+        // Suture's being is Nahl (src/act2.js), whose tree is dr_nahl. Relay
+        // (Vey) and Carapace (Rhun) have no tree yet: they opened Aria's, so
+        // talking to Nahl offered another character's seduction lines.
         const treeMap = {
             camp_tallow: 'sister_val',
             camp_vesper: 'commander_briggs',
             camp_meridian: 'overseer_kaelen',
-            hive_suture: 'aria_queen_mimic',
-            hive_relay: 'aria_queen_mimic',
-            hive_carapace: 'aria_queen_mimic',
+            hive_suture: 'dr_nahl',
             camp_nahl: 'dr_nahl',
             hive_nahl: 'dr_nahl',
             hive_bio_relay: 'dr_nahl'

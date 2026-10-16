@@ -14734,6 +14734,9 @@ let leaderConversationLines = [];
 let leaderConversationLineIndex = 0;
 let leaderConversationIdentity = null;
 let leaderConversationTreeId = null;
+// The relationship where this conversation happens; gates intimate choices
+// (src/npcDialogueTrees.js INTIMACY_REQUIREMENT).
+let leaderConversationContext = {};
 const leaderConversationChoices = document.getElementById('leader-conversation-choices');
 
 function cleanLeaderDialogueLine(line, speakerName = '') {
@@ -14776,7 +14779,7 @@ function openLeaderConversationTree() {
     npcTreeHost = 'leader';
     const treeId = leaderConversationTreeId;
     leaderConversationTreeId = null;
-    if (!npcDialogueTreeManager.startDialogue(treeId)) {
+    if (!npcDialogueTreeManager.startDialogue(treeId, { context: leaderConversationContext })) {
         npcTreeHost = null;
         return false;
     }
@@ -14803,9 +14806,8 @@ function renderLeaderConversationTree(state = {}) {
         leaderConversationLine.append(spoken);
     }
     leaderConversation3d.react(dialogueReactionForLine(node.dialogue ?? ''));
-    if (leaderConversationGuidance && state.bond) {
-        leaderConversationGuidance.textContent = t('ui.bond.badge', { label: state.bond.label, score: state.bondScore || 0 });
-    }
+    // The stats line already shows camp trust (BOND x/5); the tree's own
+    // point score beside it read as a second, contradicting bond.
     if (leaderConversationContinue) leaderConversationContinue.hidden = true;
     leaderConversationModal?.classList.add('is-choosing');
     if (!leaderConversationChoices) return;
@@ -14877,6 +14879,10 @@ window.addEventListener('leader-dialogue', async (event) => {
     leaderConversationIdentity = identity;
     resetLeaderConversationTree();
     leaderConversationTreeId = detail.treeId ?? null;
+    leaderConversationContext = {
+        bond: detail.relationship?.bond ?? 0,
+        stage: detail.progress?.stage ?? detail.stage ?? 0
+    };
     const { beatType, leaderName, leaderClassId } = detail;
     let lines = (detail.lines ?? []).map((line) => String(line ?? '')).filter(Boolean);
 

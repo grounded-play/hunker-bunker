@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { WORLD_EXPANSION_80_SPECS } from './data/worldExpansion80.js';
 
 // Runtime contract for authored prop effects. Blender exports may contain
 // empties with these names; until an asset is re-authored, each effect uses
@@ -624,7 +625,21 @@ const SEVERED_SPLINE_PROFILES = {
     })
 };
 
-export const PROP_FX_PROFILES = Object.freeze({ ...AMBIENT_PROFILES, ...HERO_PROFILES, ...SEVERED_SPLINE_PROFILES });
+const WORLD_EXPANSION_80_FX_PROFILES = Object.freeze(Object.fromEntries(
+    WORLD_EXPANSION_80_SPECS.map((spec) => [spec.id,
+        spec.fx === 'thermal' ? thermalProfile({})
+            : spec.fx === 'liquid' ? liquidProfile({})
+                : spec.fx === 'organic' ? organicProfile({})
+                    : poweredProfile({ sparks: spec.suite === 'network-hazard' })
+    ])
+));
+
+export const PROP_FX_PROFILES = Object.freeze({
+    ...AMBIENT_PROFILES,
+    ...HERO_PROFILES,
+    ...SEVERED_SPLINE_PROFILES,
+    ...WORLD_EXPANSION_80_FX_PROFILES
+});
 
 function hashString(value) {
     let hash = 2166136261;

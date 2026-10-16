@@ -3,7 +3,14 @@
  * rooms with these). Generated from the files; roomDressing.test.js fails if a
  * model changes without this table following.
  */
+import { WORLD_EXPANSION_80_SPECS } from './worldExpansion80.js';
+
+const WORLD_EXPANSION_80_TRIANGLE_BUDGETS = Object.fromEntries(
+    WORLD_EXPANSION_80_SPECS.map((spec) => [spec.id, spec.maxSpan >= 3.2 ? 36000 : 25000])
+);
+
 export const DRESSING_TRIANGLES = Object.freeze({
+    ...WORLD_EXPANSION_80_TRIANGLE_BUDGETS,
     life_acoustic_ear_horn: 5000,
     life_ammo_ovipositor: 6000,
     life_barrel_heater: 4000,

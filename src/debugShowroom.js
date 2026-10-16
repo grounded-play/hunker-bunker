@@ -15,9 +15,11 @@ import {
 export { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y, SHOWROOM_CHUNK_KEY } from './debugWorldLayout.js';
 import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugWorldLayout.js';
 import { createGltfLoader } from './gltfLoaderFactory.js';
+import { WORLD_EXPANSION_80_IDS } from './data/worldExpansion80.js';
 
 // Categorized catalog for exhibition
 export const SHOWROOM_CATEGORIES = Object.freeze({
+    WORLD_EXPANSION_80: WORLD_EXPANSION_80_IDS,
     // Kenney modular kits, restyled to the game palette. Exhibited so the
     // museum coverage guard stays meaningful -- a registered model nobody can
     // look at is a model nobody notices is broken.
@@ -823,6 +825,7 @@ export async function buildShowroomScene(threeGame) {
         ...SHOWROOM_CATEGORIES.LIVED_IN_PROPS.map((id) => ({ id, type: 'prop', category: 'LIVED_IN' })),
         ...SHOWROOM_CATEGORIES.WORLD_STORY_PROPS.map((id) => ({ id, type: 'prop', category: 'WORLD_STORY' })),
         ...SHOWROOM_CATEGORIES.EXPANSION_60_PROPS.map((id) => ({ id, type: 'prop', category: 'EXPANSION_60' })),
+        ...SHOWROOM_CATEGORIES.WORLD_EXPANSION_80.map((id) => ({ id, type: 'prop', category: 'WORLD_EXPANSION_80' })),
         ...SHOWROOM_CATEGORIES.SECRETS.map((id) => ({ id, type: 'prop', category: 'SECRETS' })),
         ...SHOWROOM_CATEGORIES.AFTERMATH_STATES.map((id) => ({ id, type: 'prop', category: 'AFTERMATH' })),
         ...SHOWROOM_CATEGORIES.ARCHITECTURE_3D.map((id) => ({ id, type: 'prop', category: 'ARCHITECTURE' })),

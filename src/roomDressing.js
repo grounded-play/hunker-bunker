@@ -32,8 +32,8 @@ export const DRESSING_LIMITS = Object.freeze({
     // and each room's 3D dressing is capped (decals are a quad each). Measured
     // in game 2026-10-04: without these caps the visible dressing added
     // 0.8-1.25M triangles, about half the frame.
-    maxTrianglesPerModel: Object.freeze({ wallProps: 25000, clutter: 12000, corners: 25000 }),
-    roomTriangles: Object.freeze({ perimeter: 120000, vignettes: 70000 }),
+    maxTrianglesPerModel: Object.freeze({ wallProps: 36000, clutter: 25000, corners: 36000 }),
+    roomTriangles: Object.freeze({ perimeter: 120000, vignettes: 72000 }),
     // One vignette per this many open floor cells, within [min, max].
     vignettes: Object.freeze({ cellsPer: 22, min: 2, max: 6 })
 });

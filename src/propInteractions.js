@@ -5,6 +5,7 @@
 
 import { applyChitinVulnerability, STATUS_DEFAULTS } from './statusEffects.js';
 import { resolveInteractionVignettePreset } from './interactionVignette.js';
+import { WORLD_EXPANSION_80_SPECS } from './data/worldExpansion80.js';
 
 export const BIOMECH_SYNERGY_TUNING = Object.freeze({
     cryoStunRadius: 5.0,
@@ -196,7 +197,24 @@ export function isSearchableType(type) {
     return SEARCHABLE.test(String(type ?? '')) && !/^arch_/.test(String(type));
 }
 
+const WORLD_EXPANSION_80_INTERACTIONS = Object.freeze(Object.fromEntries(
+    WORLD_EXPANSION_80_SPECS.map((spec) => [spec.id, statefulInteraction(
+        `[E] ${spec.prompt.toUpperCase()}`,
+        (state) => `${propLabel(spec.id)}: ${state.toUpperCase()}.`,
+        {
+            hp: spec.placement === 'tabletop' ? 18 : 45,
+            repeatable: true,
+            sound: spec.fx === 'organic' ? 'neural_tap' : spec.fx === 'thermal' ? 'ambient_steam_hiss' : 'power_hum',
+            nextState: (_game, prop) => {
+                const current = spec.states.indexOf(prop?.userData?.propState);
+                return spec.states[(current + 1 + spec.states.length) % spec.states.length];
+            }
+        }
+    )])
+));
+
 export const PROP_INTERACTION_SPECS = Object.freeze({
+    ...WORLD_EXPANSION_80_INTERACTIONS,
     life_arcade_cabinet: statefulInteraction(
         '[E] PLAY ARCADE CABINET',
         () => 'ARCADE CABINET: HIGH SCORE TABLE RECOVERED. INITIALS: T.I.N.A.',

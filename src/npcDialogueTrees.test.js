@@ -14,9 +14,9 @@ describe('NpcDialogueTreeManager & Sensual Storyline Trees', () => {
 
     it('starts dialogue and transitions through choices correctly', () => {
         const stateCallback = vi.fn();
-        const manager = new NpcDialogueTreeManager({ onStateChanged: stateCallback });
+        const manager = new NpcDialogueTreeManager({ onStateChanged: stateCallback, stories: { state: {} } });
 
-        const firstNode = manager.startDialogue('sister_val');
+        const firstNode = manager.startDialogue('sister_val', { context: { bond: 3, stage: 1 } });
         expect(firstNode).not.toBeNull();
         expect(firstNode.id).toBe('val_greeting');
         expect(stateCallback).toHaveBeenCalled();
@@ -37,10 +37,10 @@ describe('NpcDialogueTreeManager & Sensual Storyline Trees', () => {
     });
 
     it('accumulates bond points and advances bond levels', () => {
-        const manager = new NpcDialogueTreeManager();
+        const manager = new NpcDialogueTreeManager({ stories: { state: {} } });
         expect(manager.getBondLevel('commander_briggs').level).toBe(0);
 
-        manager.startDialogue('commander_briggs');
+        manager.startDialogue('commander_briggs', { context: { bond: 3, stage: 1 } });
         manager.selectChoice('briggs_flirt_clasps');
         expect(manager.bondState.commander_briggs).toBeGreaterThanOrEqual(25);
         expect(manager.getBondLevel('commander_briggs').level).toBeGreaterThanOrEqual(1);
@@ -51,8 +51,8 @@ describe('NpcDialogueTreeManager & Sensual Storyline Trees', () => {
     });
 
     it('navigates Aria queen mimic sensual telepathy tree', () => {
-        const manager = new NpcDialogueTreeManager();
-        const start = manager.startDialogue('aria_queen_mimic');
+        const manager = new NpcDialogueTreeManager({ stories: { state: {} } });
+        const start = manager.startDialogue('aria_queen_mimic', { context: { bond: 3, stage: 1 } });
         expect(start.id).toBe('aria_whisper');
 
         const surrender = manager.selectChoice('aria_surrender');
