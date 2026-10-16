@@ -822,7 +822,9 @@ export class NpcDialogueTreeManager {
         const baseNode = tree.nodes[startNodeId] || tree.nodes[tree.initialNode];
         const memory = this.memoryFor(treeId);
         const offered = this.visibleChoices(tree, baseNode, memory);
-        if (!offered.some((choice) => choice.nextNode) && !(currentStage && currentStage.skipCost)) {
+        // Only a way out (and at most a quest bribe) left: say nothing rather
+        // than reopen the same window.
+        if (!offered.some((choice) => choice.nextNode)) {
             this.activeTree = null;
             this.currentNode = null;
             return null;
