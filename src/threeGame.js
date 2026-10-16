@@ -260,6 +260,7 @@ import {
 } from './wfcGenerator.js';
 import { generateArchitecturalMazeChunk } from './architecturalMaze.js';
 import { crashSiteClearCells, stampCrashSiteApproach, stampCrashSiteOrigin } from './crashSiteBuild.js';
+import { TextureUploadQueue } from './textureUploadQueue.js';
 import { CRASH_SITE_BUILD } from './data/crashSiteBuild.js';
 import { applyVerticalBridgeFeature, VERTICAL_TILE } from './verticalWfc.js';
 import {
@@ -816,6 +817,10 @@ const PLAYER_COLORS = {
 // Half of a 16.6ms (60fps) frame, leaving headroom for the rest of the
 // render/game loop that still has to run in the same frame.
 const CHUNK_MOUNT_BATCH_BUDGET_MS = 8;
+// Per-frame time for early texture uploads (src/textureUploadQueue.js).
+const TEXTURE_UPLOAD_BUDGET_MS = 3;
+// A late model waits this long at most for its textures to upload.
+const LATE_MODEL_TEXTURE_WAIT_MS = 4000;
 
 const BUILD_STRUCTURE_GRID_SIZE = 2;
 const BUILD_STRUCTURE_FRAME_REPEAT = 1 / BUILD_STRUCTURE_GRID_SIZE;
@@ -13698,6 +13703,7 @@ export class ThreeGame {
         fp.measure('updatePortalPlanePresentation', () => this.updatePortalPlanePresentation?.());
         this._lastFrameDeltaForChunkMounts = delta;
         fp.measure('syncVisibleChunks', () => this.syncVisibleChunks());
+        fp.measure('drainTextureUploads', () => this.textureUploads?.drain(TEXTURE_UPLOAD_BUDGET_MS));
         if (this._milestoneBossRestagePending) this.restageReadyMilestoneBosses?.();
         fp.measure('updateTacticalMapDiscovery', () => this.updateTacticalMapDiscovery?.());
         fp.measure('updateCompanions', () => this.updateCompanions(delta));
@@ -30483,16 +30489,21 @@ export class ThreeGame {
         const tileZ = Math.round(z);
         const tileKey = `${tileX},${tileZ}`;
 
+        // Both the radial and the cone test need the same wall raycast; it
+        // ran twice for anything near the player inside the suit cone.
+        let wallBetween = null;
+        const blocked = () => (wallBetween ??= this.hasWallBetween(this.player.position.x, this.player.position.z, x, z));
+
         // 1. Ambient radial visibility around player
         const fadeStart = FOG_OF_WAR_CLEAR_RADIUS;
         const fadeEnd = FOG_OF_WAR_CLEAR_RADIUS + FOG_OF_WAR_FADE_RADIUS;
         let ambientVis = FOG_OF_WAR_MIN_VISIBILITY;
         if (distance <= fadeStart) {
-            if (!this.hasWallBetween(this.player.position.x, this.player.position.z, x, z)) {
+            if (!blocked()) {
                 ambientVis = 1;
             }
         } else if (distance < fadeEnd) {
-            if (!this.hasWallBetween(this.player.position.x, this.player.position.z, x, z)) {
+            if (!blocked()) {
                 const t = (distance - fadeStart) / Math.max(0.001, fadeEnd - fadeStart);
                 ambientVis = THREE.MathUtils.lerp(1, FOG_OF_WAR_MIN_VISIBILITY, t * t * (3 - 2 * t));
             }
@@ -30506,7 +30517,7 @@ export class ThreeGame {
             const dot = (dx * this.playerForwardDir.x + dz * this.playerForwardDir.y) / distance;
             const cosLimit = Math.cos(SUIT_CONE_LIGHT_ANGLE);
             if (dot >= cosLimit) {
-                if (!this.hasWallBetween(this.player.position.x, this.player.position.z, x, z)) {
+                if (!blocked()) {
                     const edgeFade = THREE.MathUtils.smoothstep(dot, cosLimit, cosLimit + 0.12);
                     const distanceFade = 1.0 - THREE.MathUtils.smoothstep(distance, SUIT_CONE_LIGHT_DISTANCE * 0.72, SUIT_CONE_LIGHT_DISTANCE);
                     flashlightVis = edgeFade * distanceFade;
@@ -30709,7 +30720,11 @@ export class ThreeGame {
                 transparent: true,
                 opacity: 0.52,
                 depthWrite: false,
-                side: THREE.DoubleSide
+                side: THREE.DoubleSide,
+                // Flat, so one pass draws the same pixels. Splashes live
+                // shorter than the flat-material sweep and were drawn twice,
+                // with two program lookups each (2026-10-16 profile).
+                forceSinglePass: true
             })
         );
         ring.rotation.x = -Math.PI / 2;
@@ -30728,7 +30743,8 @@ export class ThreeGame {
                     transparent: true,
                     opacity: 0.6,
                     depthWrite: false,
-                    side: THREE.DoubleSide
+                    side: THREE.DoubleSide,
+                    forceSinglePass: true
                 })
             );
             droplet.rotation.x = -Math.PI / 2;
@@ -33173,6 +33189,7 @@ export class ThreeGame {
             });
             this.mountChunk(next.chunkX, next.chunkY);
             span.end();
+            this.prewarmMountedChunk?.(next.key);
             mounted += 1;
         }
         return mounted;
@@ -40615,7 +40632,42 @@ export class ThreeGame {
     // fine). Compile in the background first, as preloadEnemy3dTemplates
     // already does for enemies. Bounded, so a compile that never settles
     // cannot keep a model out of the world; a late corpse beats a frozen game.
-    async prewarmLateModel(root, timeoutMs = 30000) {
+    getTextureUploadQueue() {
+        if (this.textureUploads) return this.textureUploads;
+        const renderer = this.renderer;
+        if (typeof renderer?.initTexture !== 'function') return null;
+        this.textureUploads = new TextureUploadQueue({ upload: (texture) => renderer.initTexture(texture) });
+        return this.textureUploads;
+    }
+
+    // A chunk mounted during play is drawn as soon as it is in view, which
+    // compiled any new shader variant and uploaded every new texture inside
+    // that frame: 0.3-2.3 s links and 1-3.6 s of texture uploads per render
+    // call on ANGLE-GL with the CPU throttled to Deck speed (freeze probe,
+    // 2026-10-16), matching the 3.8 s render freeze in a 2026-10-15 Deck
+    // log. Chunks mount ahead of the player, so compile them in the
+    // background and spread their texture uploads over the following frames.
+    // Deployment staging is covered by the deploy warm-up instead.
+    prewarmMountedChunk(key) {
+        if (this.performanceProfile !== 'gameplay' || !this.inputEnabled) return;
+        const group = this.chunkMeshes?.get(key);
+        if (!group) return;
+        void this.prewarmLateModel?.(group, 30000, { waitForTextures: false });
+    }
+
+    async prewarmLateModel(root, timeoutMs = 30000, { waitForTextures = true } = {}) {
+        // Textures first: queued now, they upload a few per frame while the
+        // shaders compile. Only gameplay drains the queue, so menus never wait.
+        const uploads = this.performanceProfile === 'gameplay' ? this.getTextureUploadQueue?.()?.enqueue(root) : null;
+        await this.compileLateModel(root, timeoutMs);
+        if (uploads && waitForTextures) {
+            let timer = null;
+            await Promise.race([uploads, new Promise((resolve) => { timer = setTimeout(resolve, LATE_MODEL_TEXTURE_WAIT_MS); })]);
+            clearTimeout(timer);
+        }
+    }
+
+    async compileLateModel(root, timeoutMs = 30000) {
         const renderer = this.renderer;
         if (!root || typeof renderer?.compileAsync !== 'function' || !this.camera || !this.scene) return;
         const previousTarget = renderer.getRenderTarget?.() ?? null;

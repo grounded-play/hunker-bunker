@@ -9,7 +9,10 @@
 // are opaque today but made transparent later by fog-of-war get it too.)
 //
 // Only materials whose every mesh seen here is planar are switched; a material
-// that also dresses a solid mesh keeps three's two-pass sort.
+// that also dresses a solid mesh keeps three's two-pass sort. Additive
+// blending without depth writes is the other safe case, whatever the shape:
+// adding light does not depend on draw order, so back-then-front and one pass
+// give the same pixels (beacons, light shafts, socket columns; 2026-10-16).
 import * as THREE from 'three';
 
 const _box = new THREE.Box3();
@@ -25,6 +28,10 @@ function isFlatCached(geometry) {
     const flat = isFlatGeometry(geometry);
     flatByGeometry.set(geometry, { flat, version: geometry.attributes?.position?.version });
     return flat;
+}
+
+export function isOrderIndependent(material) {
+    return material?.blending === THREE.AdditiveBlending && material.depthWrite === false;
 }
 
 export function isFlatGeometry(geometry) {
@@ -49,7 +56,7 @@ export function useSinglePassForFlatMaterials(root) {
         const planar = isFlatCached(object.geometry);
         for (const material of materials) {
             if (!material || material.side !== THREE.DoubleSide) continue;
-            flat.set(material, (flat.get(material) ?? true) && planar);
+            flat.set(material, (flat.get(material) ?? true) && (planar || isOrderIndependent(material)));
         }
     });
     let changed = 0;
