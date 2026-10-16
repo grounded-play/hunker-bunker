@@ -817,6 +817,13 @@ const PLAYER_COLORS = {
 // Half of a 16.6ms (60fps) frame, leaving headroom for the rest of the
 // render/game loop that still has to run in the same frame.
 const CHUNK_MOUNT_BATCH_BUDGET_MS = 8;
+// Choice tree (src/npcDialogueTrees.js) for each leader key (leaderKeyFromName).
+const LEADER_TREES = Object.freeze({
+    martha: 'sister_val',
+    briggs: 'commander_briggs',
+    kaelen: 'overseer_kaelen',
+    nahl: 'dr_nahl'
+});
 // Per-frame time for early texture uploads (src/textureUploadQueue.js).
 const TEXTURE_UPLOAD_BUDGET_MS = 3;
 // A late model waits this long at most for its textures to upload.
@@ -22882,19 +22889,12 @@ export class ThreeGame {
         // The leader's choice tree (src/npcDialogueTrees.js) continues this
         // same conversation once its staged lines end -- one window, never a
         // second modal (owner, 2026-10-08).
-        // Suture's being is Nahl (src/act2.js), whose tree is dr_nahl. Relay
-        // (Vey) and Carapace (Rhun) have no tree yet: they opened Aria's, so
-        // talking to Nahl offered another character's seduction lines.
-        const treeMap = {
-            camp_tallow: 'sister_val',
-            camp_vesper: 'commander_briggs',
-            camp_meridian: 'overseer_kaelen',
-            hive_suture: 'dr_nahl',
-            camp_nahl: 'dr_nahl',
-            hive_nahl: 'dr_nahl',
-            hive_bio_relay: 'dr_nahl'
-        };
-        const treeId = treeMap[entity.id] || (String(entity.id).includes('nahl') ? 'dr_nahl' : null);
+        // The tree follows the leader standing here, not the camp: camps are
+        // led by whoever the player's class assigns them (getCampClassMapping),
+        // so Meridian can be Martha's. A Deck session on 2026-10-07 read
+        // "TALK — SISTER MARTHA" at Meridian and got Kaelen's lines. Suture's
+        // being is Nahl (src/act2.js); Vey and Rhun have no tree yet.
+        const treeId = LEADER_TREES[key] ?? null;
 
         window.dispatchEvent(new CustomEvent('leader-dialogue', {
             detail: {

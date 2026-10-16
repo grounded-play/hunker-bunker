@@ -5,7 +5,7 @@ import { ThreeGame } from './threeGame.js';
 // the choice tree, with music videos behind them. A camp now has one
 // conversation: talkToLeader hands its choice tree to that window instead of
 // opening a second modal. docs/planning/qa-2026-10-08-camp-interaction-audit.md
-function talkTo(campId) {
+function talkTo(campId, leaderName = 'Overseer Kaelen') {
     const events = [];
     const openTree = vi.fn();
     globalThis.window = { dispatchEvent: (event) => events.push(event), openNpcDialogueTree: openTree, achievementEngine: null };
@@ -19,7 +19,7 @@ function talkTo(campId) {
         peekDialogueBeat: () => ({ type: 'beat', stage: 0, lines: ['KAELEN: ANOTHER SUIT FROM THE SURFACE.'] }),
         getDialogueContext: () => ({})
     });
-    const ok = fake.talkToLeader('camp', { id: campId, leaderName: 'Overseer Kaelen' });
+    const ok = fake.talkToLeader('camp', { id: campId, leaderName });
     delete globalThis.window;
     return { ok, events, openTree };
 }
@@ -35,7 +35,14 @@ describe('one conversation per camp', () => {
     });
 
     it("gives Tallow's conversation Sister Martha's tree", () => {
-        const { events } = talkTo('camp_tallow');
+        const { events } = talkTo('camp_tallow', 'Sister Martha');
+        expect(events.find((event) => event.type === 'leader-dialogue').detail.treeId).toBe('sister_val');
+    });
+
+    // 2026-10-07 Deck log: Meridian was led by Martha for that class, the
+    // prompt said "TALK — SISTER MARTHA", and Kaelen's tree opened.
+    it("follows the leader standing at the camp, not the camp's usual leader", () => {
+        const { events } = talkTo('camp_meridian', 'Sister Martha');
         expect(events.find((event) => event.type === 'leader-dialogue').detail.treeId).toBe('sister_val');
     });
 });
