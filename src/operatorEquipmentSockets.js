@@ -38,24 +38,6 @@ const CLASS_SOCKET_CALIBRATION = Object.freeze({
         back_upper: { offset: [0, 0.035, -0.032], scale: 0.96 },
         helmet_side: { offset: [0.018, 0.018, 0.012], scale: 0.90 },
         waist_back: { offset: [0, 0.012, -0.025], scale: 0.94 }
-    }),
-    MEDIC: Object.freeze({
-        chest_center: { offset: [0, 0, 0.020], scale: 0.92 },
-        back_upper: { offset: [0, 0.015, -0.020], scale: 0.92 },
-        shoulder_left: { offset: [-0.008, 0.012, 0.020], scale: 0.88 },
-        waist_back: { offset: [0, 0, -0.015], scale: 0.90 }
-    }),
-    DEMOLITIONIST: Object.freeze({
-        chest_center: { offset: [0, 0.02, 0.060], scale: 1.10 },
-        back_upper: { offset: [0, 0.03, -0.055], scale: 1.08 },
-        shoulder_left: { offset: [-0.02, 0.03, 0.050], scale: 1.05 },
-        waist_back: { offset: [0, 0.03, -0.045], scale: 1.06 }
-    }),
-    INFILTRATOR: Object.freeze({
-        chest_center: { offset: [0, -0.005, 0.018], scale: 0.88 },
-        back_upper: { offset: [0, 0.008, -0.015], scale: 0.88 },
-        shoulder_left: { offset: [-0.005, 0.008, 0.015], scale: 0.84 },
-        waist_back: { offset: [0, -0.005, -0.012], scale: 0.86 }
     })
 });
 
