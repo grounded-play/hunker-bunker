@@ -5063,6 +5063,20 @@ input:checked+.slider:before {
 .song-interstitial.is-closing .song-interstitial__door { transform: translateX(0); }
 .song-interstitial.is-open .song-interstitial__door--left { transform: translateX(-101%); }
 .song-interstitial.is-open .song-interstitial__door--right { transform: translateX(101%) scaleX(-1); }
+/* Exit bookend (docs/planning/camp-interaction-and-cinematics-audit-2026-10-16.md
+   §13.1): the doors shut over the last frame, the conversation mounts behind
+   them, then they open on live gameplay with the window on top. */
+.song-interstitial.is-open.is-closing-out .song-interstitial__door { transform: translateX(0); }
+.song-interstitial.is-revealing { pointer-events: none; }
+.song-interstitial.is-open.is-revealing::before,
+.song-interstitial.is-open.is-revealing .song-interstitial__media,
+.song-interstitial.is-open.is-revealing .song-interstitial__placeholder,
+.song-interstitial.is-open.is-revealing .song-interstitial__caption,
+.song-interstitial.is-open.is-revealing .song-interstitial__flash {
+  opacity: 0;
+  transition: none;
+  animation: none;
+}
 
 .song-interstitial__caption {
   position: absolute;
@@ -8585,7 +8599,10 @@ body.mission-intro-active #game-container canvas {
 .leader-conversation-modal {
   --leader-accent: #9cff85;
   z-index: 10020;
-  background: rgba(2, 6, 10, 0.88);
+  /* An in-world conversation reads as a window over live play, not as
+     "menu land": keep the camp visible behind the opaque panel (§13.1). */
+  background: rgba(2, 6, 10, 0.38);
+  backdrop-filter: blur(2px);
 }
 
 .leader-conversation-panel {

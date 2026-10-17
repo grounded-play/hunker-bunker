@@ -26,8 +26,7 @@ export const INTERACTION_SEQUENCES = Object.freeze({
             propStates: { meridian_logic_core_drum: 'active' },
             questOffer: 'lost_probe'
         },
-        skip: 'applyEndStateAndResume',
-        placeholder: { card: '19' }
+        skip: 'applyEndStateAndResume'
     }),
 
     meridian_grid_covenant: Object.freeze({
@@ -53,8 +52,7 @@ export const INTERACTION_SEQUENCES = Object.freeze({
             bondDelta: 2,
             perk: 'meridian_neural_overclock'
         },
-        skip: 'applyEndStateAndResume',
-        placeholder: { card: '30' }
+        skip: 'applyEndStateAndResume'
     }),
 
     base_cot_first_night: Object.freeze({
@@ -75,8 +73,7 @@ export const INTERACTION_SEQUENCES = Object.freeze({
             propStates: { base_cot_installed: 'ready' },
             firstNightPrompt: true
         },
-        skip: 'applyEndStateAndResume',
-        placeholder: { card: '01' }
+        skip: 'applyEndStateAndResume'
     })
 });
 
@@ -107,7 +104,10 @@ export class InteractionSequenceRunner {
             return { ok: false, reason: 'Sequence already completed' };
         }
 
-        // Check anchor availability; fallback to placeholder card if missing
+        // A missing anchor applies the end state. A sequence may name its own
+        // placeholder card, never another beat's song card: those play at
+        // their own beats (audit 2026-10-16 §13.2), and borrowing one here
+        // doubled the first-contact card at Meridian.
         if (spec.anchors && this.game?.findPropAnchor) {
             for (const [key, anchorName] of Object.entries(spec.anchors)) {
                 const anchorExists = this.game.findPropAnchor(anchorName);

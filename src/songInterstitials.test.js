@@ -90,6 +90,102 @@ describe('song interstitial manifest', () => {
         await transition;
     });
 
+    it('closes the doors again and mounts the next scene behind them before revealing gameplay', async () => {
+        vi.useFakeTimers();
+        const classes = new Set(['hidden']);
+        const root = {
+            classList: {
+                add: (...names) => names.forEach((name) => classes.add(name)),
+                remove: (...names) => names.forEach((name) => classes.delete(name)),
+                toggle: (name, force) => force ? classes.add(name) : classes.delete(name),
+                contains: (name) => classes.has(name)
+            },
+            setAttribute() {}
+        };
+        const controller = new SongInterstitialController({ root, reducedMotion: false });
+        controller.loadStill = async () => true;
+        controller.loadMotion = async () => false;
+        controller.startSong = async () => true;
+        const behind = vi.fn(() => {
+            // The conversation must mount while the doors fully cover the screen.
+            expect(classes.has('is-closing-out')).toBe(true);
+        });
+
+        const transition = controller.show(1, { holdMs: 100, onBehindDoors: behind });
+        await vi.advanceTimersByTimeAsync(540 + 100);
+        expect(classes.has('is-closing-out')).toBe(true);
+        expect(behind).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(539);
+        expect(behind).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(1);
+        expect(behind).toHaveBeenCalledTimes(1);
+        expect(classes.has('is-revealing')).toBe(true);
+        expect(classes.has('is-closing-out')).toBe(false);
+        expect(classes.has('hidden')).toBe(false);
+        await vi.advanceTimersByTimeAsync(540);
+        const result = await transition;
+        expect(result).toMatchObject({ shown: true, behindDoors: true });
+        expect(classes.has('hidden')).toBe(true);
+        expect(classes.has('is-revealing')).toBe(false);
+    });
+
+    it('plays one card at a time: a card requested mid-reveal waits for the first to finish', async () => {
+        vi.useFakeTimers();
+        const classes = new Set(['hidden']);
+        const root = {
+            classList: {
+                add: (...names) => names.forEach((name) => classes.add(name)),
+                remove: (...names) => names.forEach((name) => classes.delete(name)),
+                toggle: (name, force) => force ? classes.add(name) : classes.delete(name)
+            },
+            setAttribute() {}
+        };
+        const title = { textContent: '' };
+        const controller = new SongInterstitialController({ root, title, reducedMotion: false });
+        controller.loadStill = async () => true;
+        controller.loadMotion = async () => false;
+        controller.startSong = async () => true;
+        let second = null;
+        const first = controller.show(2, {
+            holdMs: 100,
+            // The conversation that mounts behind the doors asks for another card.
+            onBehindDoors: () => { second = controller.show(19, { holdMs: 100 }); }
+        });
+        await vi.advanceTimersByTimeAsync(540 + 100 + 540);
+        expect(second).toBeTruthy();
+        expect(classes.has('is-revealing')).toBe(true);
+        expect(title.textContent).toBe(getSongInterstitial(2).title);
+        await vi.advanceTimersByTimeAsync(540);
+        await first;
+        expect(classes.has('is-revealing')).toBe(false);
+        await vi.advanceTimersByTimeAsync(1);
+        expect(title.textContent).toBe(getSongInterstitial(19).title);
+        expect(classes.has('is-closing')).toBe(true);
+        await vi.runAllTimersAsync();
+        await expect(second).resolves.toMatchObject({ shown: true });
+    });
+
+    it('still reveals gameplay when the behind-doors callback throws', async () => {
+        vi.useFakeTimers();
+        const classes = new Set();
+        const root = {
+            classList: {
+                add: (...names) => names.forEach((name) => classes.add(name)),
+                remove: (...names) => names.forEach((name) => classes.delete(name)),
+                toggle: (name, force) => force ? classes.add(name) : classes.delete(name)
+            },
+            setAttribute() {}
+        };
+        const controller = new SongInterstitialController({ root, reducedMotion: true });
+        controller.loadStill = async () => true;
+        controller.loadMotion = async () => false;
+        controller.startSong = async () => true;
+        const transition = controller.show(1, { onBehindDoors: () => { throw new Error('boom'); } });
+        await vi.runAllTimersAsync();
+        await expect(transition).resolves.toMatchObject({ shown: true, behindDoors: true });
+        expect(classes.has('hidden')).toBe(true);
+    });
+
     it('provides 15 authored companion side-story interstitials with key art and audio cues', () => {
         expect(Object.keys(SIDE_STORY_INTERSTITIALS)).toHaveLength(15);
 

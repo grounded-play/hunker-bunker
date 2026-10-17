@@ -297,12 +297,21 @@ export class SongInterstitialController {
         });
     }
 
-    async show(specOrId, { holdMs = 1050 } = {}) {
+    // One card at a time (audit 2026-10-16 §13.2): a card requested while
+    // another is on screen -- e.g. by the scene mounting behind the exit
+    // doors -- waits for it to finish instead of hijacking its reveal.
+    show(specOrId, options = {}) {
+        const next = (this._queue ?? Promise.resolve()).then(() => this._showNow(specOrId, options));
+        this._queue = next.catch(() => {});
+        return next;
+    }
+
+    async _showNow(specOrId, { holdMs = 1050, onBehindDoors = null } = {}) {
         const spec = typeof specOrId === 'object' ? specOrId : getSongInterstitial(specOrId);
         if (!spec || !this.root) return { shown: false, fallback: true };
         const run = ++this._run;
         const closeStartedAt = Date.now();
-        this.root.classList.remove('hidden', 'is-open', 'is-settled', 'has-motion');
+        this.root.classList.remove('hidden', 'is-open', 'is-settled', 'is-closing-out', 'is-revealing', 'has-motion');
         this.root.classList.add('is-closing');
         this.root.setAttribute('aria-hidden', 'false');
         if (this.title) this.title.textContent = spec.title;
@@ -394,6 +403,25 @@ export class SongInterstitialController {
             }, this.reducedMotion ? 120 : fallbackTimeoutMs);
         });
 
+        if (typeof onBehindDoors === 'function') {
+            // Bookend: the doors shut over the last frame, the next scene (a
+            // conversation window) mounts behind them, and they open on live
+            // gameplay. Never cut straight from the video to a window.
+            this.root.classList.add('is-closing-out');
+            await new Promise((resolve) => setTimeout(resolve, closeDuration));
+            try {
+                await onBehindDoors();
+            } catch (error) {
+                console.warn('[interstitial] behind-doors scene failed', error);
+            }
+            this.video?.pause?.();
+            this.root.classList.add('is-revealing');
+            this.root.classList.remove('is-closing-out');
+            await new Promise((resolve) => setTimeout(resolve, closeDuration));
+            this.hide();
+            return { shown: true, fallback: !loaded, behindDoors: true };
+        }
+
         this.root.classList.add('is-settled');
         await new Promise((resolve) => setTimeout(resolve, this.reducedMotion ? 80 : 260));
         this.hide();
@@ -403,7 +431,7 @@ export class SongInterstitialController {
     hide() {
         if (!this.root) return;
         this.root.classList.add('hidden');
-        this.root.classList.remove('is-closing', 'is-open', 'is-settled', 'has-placeholder', 'has-motion');
+        this.root.classList.remove('is-closing', 'is-open', 'is-settled', 'is-closing-out', 'is-revealing', 'has-placeholder', 'has-motion');
         this.root.setAttribute('aria-hidden', 'true');
         if (this.video) {
             this.video.pause?.();

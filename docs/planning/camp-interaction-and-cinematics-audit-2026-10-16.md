@@ -371,7 +371,7 @@ Every trigger below is a hook that already exists in the code. Every prop is reg
   - **choreography precedent:** the O2 doors.
 - Lines are i18n keys, so they can be voiced.
 - Each sequence plays once, and its completion is saved with the quest.
-- If an actor model or anchor is missing, the sequence plays its placeholder card instead.
+- If an actor model or anchor is missing, the sequence applies its end state. It may play its **own** placeholder card, never another beat's song card (§13.2). The three shipped sequences have none.
 - New runner: `src/interactionSequenceRunner.js` (to create).
 
 ---
@@ -703,11 +703,19 @@ Glue gaps found by reading the diff:
 
 ### 13.5 Order of work
 
-1. §13.1 door bookends + the backdrop change, and route `camp-first-contact` through them (02/04/06 already exist, so the owner sees the beat in the first camp visit).
+1. §13.1 door bookends + the backdrop change, and route `camp-first-contact` through them (02/04/06 already exist, so the owner sees the beat in the first camp visit). **Done** (see §13.6).
 2. §13.3 node interstitials, using the same call.
 3. §13.4 glue fixes, so the runner's lines and resumes are real.
 4. §13.2 beat table, in two passes: first the conversation rows (03, 07, 08, 11, 16, 19–21, 28–30), then the gameplay rows.
 5. Verify in the dev server (vite + system Chrome). Capture the Meridian first visit: doors → 02 → doors → Kaelen's window over the live camp.
+
+
+### 13.6 Status log
+
+| Date | Step | What shipped | Verified |
+|---|---|---|---|
+| 2026-10-16 | 1 | `SongInterstitialController.show(spec, { onBehindDoors })`: doors shut over the last frame, the callback mounts the window, the doors open on play (`is-closing-out` → `is-revealing`). `main.js` `showCardThenScene()` runs the scene exactly once, even if the card can't show. `camp-first-contact` uses it. `#leader-conversation-modal` backdrop is 0.38 with a 2 px blur (was 0.88 / 14 px). | Unit: `songInterstitials.test.js` (8). Browser, :5211 no-HMR: the Meridian class log reads `is-closing` → `is-open` (int_02 webm, audio on) → `is-closing-out` → window mounts → `is-revealing` → `hidden`, and nothing follows in the next 8 s. Spec: `tests/e2e/camp-first-contact-doors.spec.js`. It failed twice at the boot helper (stuck at the armory, ahead of this beat). A hand-driven boot passed the same checks. |
+| 2026-10-16 | 1 (bug) | Browser run caught the §13.4 double card. S-1's fallback played card 19 while the doors were revealing Kaelen's window. Fix: the controller queues cards (one at a time), and the runner's three borrowed placeholders (19, 30, 01) are gone. | Unit: `interactionSequenceRunner.test.js` "never borrows another beat's song card". Browser re-run is clean. |
 
 ---
 

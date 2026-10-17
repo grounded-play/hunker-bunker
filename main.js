@@ -14576,6 +14576,30 @@ window.playSideStoryInterstitial = async (id) => {
     return await songInterstitial.show(id, { holdMs: 1400 });
 };
 
+// Doors shut over play -> card -> doors shut again -> `openScene` mounts the
+// conversation behind them -> doors open on play with the window on top
+// (docs/planning/camp-interaction-and-cinematics-audit-2026-10-16.md §13.1).
+// `openScene` runs exactly once, even when the card can't show.
+async function showCardThenScene(specOrId, openScene, options = {}) {
+    let opened = false;
+    const open = async () => {
+        if (opened) return;
+        opened = true;
+        await openScene?.();
+    };
+    let result = { shown: false };
+    try {
+        result = await songInterstitial.show(specOrId, {
+            ...options,
+            onBehindDoors: typeof openScene === 'function' ? open : null
+        });
+    } finally {
+        await open();
+    }
+    return result;
+}
+window.showCardThenScene = showCardThenScene;
+
 // The camp's title card plays once, on first contact (owner, 2026-10-08:
 // "first contact only"); the decision opens straight away.
 window.addEventListener('camp-choice-open', (event) => {
@@ -14585,8 +14609,7 @@ window.addEventListener('camp-choice-open', (event) => {
 // First contact with a camp (any act) gets the same song title card as the
 // choice modal, without opening the choice modal itself.
 window.addEventListener('camp-first-contact', async (event) => {
-    await songInterstitial.show(selectCampInterstitial(event?.detail ?? {}));
-    event?.detail?.onComplete?.();
+    await showCardThenScene(selectCampInterstitial(event?.detail ?? {}), event?.detail?.onComplete);
 });
 
 const leaderConversationModal = document.getElementById('leader-conversation-modal');

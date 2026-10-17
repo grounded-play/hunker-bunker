@@ -51,7 +51,26 @@ describe('InteractionSequenceRunner', () => {
         expect(result.reason).toContain('already completed');
     });
 
-    it('falls back to placeholder card if prop anchor is missing', async () => {
+    it('never borrows another beat\'s song card when an anchor is missing', async () => {
+        const game = {
+            findPropAnchor: vi.fn().mockReturnValue(false),
+            playInterstitialCard: vi.fn(),
+            setWorldPropState: vi.fn(),
+            resumeConversationAfterSequence: vi.fn(),
+            clearCinematicCameraFocus: vi.fn(),
+            setCinematicLock: vi.fn(),
+            setInputEnabled: vi.fn()
+        };
+        const runner = new InteractionSequenceRunner(game);
+        for (const id of Object.keys(INTERACTION_SEQUENCES)) {
+            const result = await runner.runSequence(id);
+            expect(result).toMatchObject({ ok: true, fallback: true });
+        }
+        expect(game.playInterstitialCard).not.toHaveBeenCalled();
+        expect(game.setWorldPropState).toHaveBeenCalledWith('meridian_logic_core_drum', 'active');
+    });
+
+    it('plays a sequence\'s own placeholder card if its prop anchor is missing', async () => {
         const game = {
             findPropAnchor: vi.fn().mockReturnValue(false),
             playInterstitialCard: vi.fn(),
@@ -63,11 +82,14 @@ describe('InteractionSequenceRunner', () => {
         };
 
         const runner = new InteractionSequenceRunner(game);
-        const result = await runner.runSequence('meridian_first_meeting');
+        const result = await runner.runSequence({
+            ...INTERACTION_SEQUENCES.meridian_first_meeting,
+            placeholder: { card: 'kaelen_diagnostic_cradle' }
+        });
 
         expect(result.ok).toBe(true);
         expect(result.fallback).toBe(true);
-        expect(game.playInterstitialCard).toHaveBeenCalledWith('19');
+        expect(game.playInterstitialCard).toHaveBeenCalledWith('kaelen_diagnostic_cradle');
         expect(game.setWorldPropState).toHaveBeenCalledWith('meridian_logic_core_drum', 'active');
         expect(runner.isSequenceCompleted('meridian_first_meeting')).toBe(true);
     });
