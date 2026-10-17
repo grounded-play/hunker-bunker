@@ -705,7 +705,7 @@ Glue gaps found by reading the diff:
 
 1. §13.1 door bookends + the backdrop change, and route `camp-first-contact` through them (02/04/06 already exist, so the owner sees the beat in the first camp visit). **Done** (see §13.6).
 2. §13.3 node interstitials, using the same call. **Done** (see §13.6).
-3. §13.4 glue fixes, so the runner's lines and resumes are real. **Partly done** (see §13.6): perk, lines and persistence are real. Still open: `resumeConversationAfterSequence` dispatches an event nothing hears, S-1 still races the window it fires beside, and walk, camera and FX are still Meridian-hardcoded stubs. Those matter only once the anchors resolve (today every sequence takes the fallback).
+3. §13.4 glue fixes, so the runner's lines and resumes are real. **Done** (see §13.6, 2026-10-17).
 4. §13.2 beat table, in two passes: first the conversation rows (03, 07, 08, 11, 16, 19–21, 28–30), then the gameplay rows. **Done** (see §13.6). Every video now has a home:
    - **Event beats** (`src/cinematicBeats.js`): 03, 05, 07, 09, 10, 11, 14, 15, 16, 17, 18, 19, 20, 21, 25, 28, 29, 30, 31, 32.
    - **Inside their own flow**, claimed once per save with `director.claim()`:
@@ -740,6 +740,12 @@ Glue gaps found by reading the diff:
 - the boarding choice → card 12 → doors → the boarding window behind them, and no replay;
 - a respawn beat fired during a conversation waited, then played 0.1 s after the window closed;
 - deploy now records tier 1, where the player stands (it was 3). |
+| 2026-10-17 | 3 (rest) | The sequences play for real.
+- **Anchors:** they resolve to places: the camp's own dressing (`resolveSequenceAnchor`), which now holds `meridian_logic_core_drum` and `meridian_grid_covenant_seal` at Meridian, or the installed cot. The old check read `worldDressingNetwork`, which never existed, so every sequence fell back.
+- **Steps:** the camera focuses on the target, the player walks to the mark over 0.7 s, and FX and the prop state land at the prop. Each sequence names its camp (no Meridian hardcoding). The leader holds position and gestures; camp leaders have no walk cycle.
+- **Order and input:** a sequence waits for a clear stage (no card, window or cutscene), and Esc/Space/Enter skips it. S-1 runs **before** the conversation and its end opens it; with no anchor, the conversation just opens.
+- **Rewards:** Grid Covenant paid its +2 bond and perk twice (in a step and again in the end state). Now once.
+- **Re-entry:** a run is spent when it starts, so a resume can't loop back into it. (`fe664c2e`) | Unit: `interactionSequenceRunner.test.js` (8), `threeGame.campConversation.test.js` (S-1 order, anchors). Full suite 6,369 pass. Browser, headed on Vulkan: first contact → card → doors → camera on Kaelen → the operator walks from (3, 2) to (−2, 3) beside the drum → "Overseer Kaelen: The core is holding…" → camera released → Kaelen's window over the live camp, 9 s after the card. |
 
 **Resolved from owner review:**
 - **All 32 song videos mapped:** no card is left unmapped. Each plays once per save, pauses play and waits out fights and other cutscenes, with doors in and out. Where each lives: §13.5 step 4.
