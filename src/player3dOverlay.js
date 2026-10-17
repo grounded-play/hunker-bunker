@@ -1,3 +1,4 @@
+import { FootContactTracker, StepClock } from './footContactTracker.js';
 import { loadGltfTemplate } from './gltfTemplateCache.js';
 import { createOperatorPatch } from './operatorPatch.js';
 import * as THREE from 'three';
@@ -734,6 +735,24 @@ export async function createPlayer3dOverlay({
         });
         return match;
     }).filter(Boolean);
+    // Footfalls come from the posed feet (src/footContactTracker.js), so
+    // footsteps land when a boot does, at any clip speed.
+    const footPatterns = [/left_?foot$|foot[._]l$|^l_?foot$/i, /right_?foot$|foot[._]r$|^r_?foot$/i];
+    const footBones = footPatterns.map((pattern) => {
+        let match = null;
+        root.traverse((object) => {
+            if (!match && object.isBone && pattern.test(object.name.replace(/^mixamorig:?/i, ''))) match = object;
+        });
+        return match;
+    });
+    const footTracker = footBones.every(Boolean) ? new FootContactTracker() : null;
+    const stepClock = new StepClock();
+    const STEPPING_ACTIONS = ['walk', 'run', 'backward', 'strafeLeft', 'strafeRight',
+        ...Object.values(INJURED_LOCOMOTION_VARIANTS)].filter((name) => actions.has(name));
+    const pendingFootContacts = [];
+    let lastFootHeights = null;
+    const footWorld = new THREE.Vector3();
+    const rootWorld = new THREE.Vector3();
     const smoothedWeights = Object.fromEntries([...actions.keys()].map((name) => [name, 0]));
     const downedActionName = ['defeat', 'rejected', 'fall'].find((name) => actions.has(name)) ?? null;
     const injuredVariantActions = Object.values(INJURED_LOCOMOTION_VARIANTS).filter((name) => actions.has(name));
@@ -769,6 +788,9 @@ export async function createPlayer3dOverlay({
         actions,
         syncFollowerBones,
         hasAnimation(name) { return actions.has(name); },
+        hasFootTracking() { return Boolean(footTracker); },
+        consumeFootContacts() { return pendingFootContacts.splice(0); },
+        getFootHeights() { return lastFootHeights ? [...lastFootHeights] : null; },
         getAnimationNames() { return [...actions.keys()]; },
         weapon,
         patch: chestPatch.root,
@@ -911,6 +933,26 @@ export async function createPlayer3dOverlay({
             }
             mixer.update(delta);
             syncFollowerBones();
+            if (footTracker) {
+                root.getWorldPosition(rootWorld);
+                const heights = footBones.map((bone) => bone.getWorldPosition(footWorld).y - rootWorld.y);
+                lastFootHeights = heights;
+                const moving = Boolean(state?.isMoving);
+                const contacts = footTracker.update(delta, heights, moving);
+                // Cadence from the clip carrying the most weight: one step
+                // per half cycle at the mixer's current playback rate.
+                let dominant = null;
+                for (const name of STEPPING_ACTIONS) {
+                    const action = actions.get(name);
+                    if (action && (!dominant || action.getEffectiveWeight() > dominant.getEffectiveWeight())) dominant = action;
+                }
+                const stepInterval = dominant && dominant.getEffectiveWeight() > 0.25
+                    ? dominant.getClip().duration / 2 / Math.max(0.1, mixer.timeScale)
+                    : 0;
+                for (const foot of stepClock.update(delta, { moving, stepInterval, contacts })) {
+                    if (pendingFootContacts.length < 8) pendingFootContacts.push(foot);
+                }
+            }
             const targetUpperBodyTurn = computeUpperBodyTurnTarget(root.rotation.y, state);
             upperBodyTurn = THREE.MathUtils.damp(upperBodyTurn, targetUpperBodyTurn, 12, delta);
             const turnPerBone = upperBodyTurn / Math.max(upperBodyBones.length, 1);

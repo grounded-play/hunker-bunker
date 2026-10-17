@@ -32,8 +32,9 @@ describe('shipped gameplay sound coverage', () => {
 
     it('loads every approved footstep and impact variant from a real shipped asset', () => {
         expect(main).toContain('...GAMEPLAY_FOLEY_MANIFEST');
-        expect(GAMEPLAY_FOLEY_MANIFEST).toHaveLength(56);
-        expect(new Set(GAMEPLAY_FOLEY_MANIFEST.map(({ key }) => key)).size).toBe(56);
+        // 20 footstep banks x 10 steps (build_footstep_banks.py) + 6 impacts.
+        expect(GAMEPLAY_FOLEY_MANIFEST).toHaveLength(206);
+        expect(new Set(GAMEPLAY_FOLEY_MANIFEST.map(({ key }) => key)).size).toBe(206);
         for (const { url } of GAMEPLAY_FOLEY_MANIFEST) {
             expect(existsSync(new URL(`public${url}`, root)), url).toBe(true);
         }

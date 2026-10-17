@@ -1,5 +1,30 @@
 const VALID_RETRIGGER_POLICIES = new Set(['reject', 'replace-oldest', 'replace-quietest']);
 
+// Footstep banks (scripts/audio/build_footstep_banks.py, 2026-10-17): ten
+// steps per surface sliced from AudioGen walking takes, trimmed, extended
+// above AudioGen's 8 kHz ceiling and loudness-matched across surfaces, so
+// one gain fits all; chassis weight and sprint are applied at play time
+// (src/footstepAudio.js). footstep_gear_rattle is the kit, not a surface.
+export const FOOTSTEP_SOUNDSET_KEYS = Object.freeze([
+    'footstep_concrete', 'footstep_metal_deck', 'footstep_metal_grate', 'footstep_ice_crunch',
+    'footstep_snow', 'footstep_deep_snow', 'footstep_slush', 'footstep_gravel', 'footstep_mud',
+    'footstep_wood_plank', 'footstep_soft_fabric', 'footstep_rubber_mat', 'footstep_bone_terrazzo',
+    'footstep_hive_slime', 'footstep_organic', 'footstep_chitin', 'footstep_glass',
+    'footstep_shell_casings', 'footstep_wet_puddle', 'footstep_gear_rattle'
+]);
+export const FOOTSTEP_VARIANT_COUNT = 10;
+
+const FOOTSTEP_SOUNDSETS = Object.freeze(Object.fromEntries(FOOTSTEP_SOUNDSET_KEYS.map((key) => {
+    const variants = Array.from({ length: FOOTSTEP_VARIANT_COUNT }, (_, i) => `${key}_${String(i).padStart(3, '0')}`);
+    return [key, Object.freeze({
+        variants: Object.freeze(variants),
+        // Ten variants and no immediate repeat: a repeated footstep is the
+        // most noticeable audio artefact, because the ear tracks a walk cycle.
+        fallback: variants[0], bus: 'sfx', gain: 0.4,
+        pitch: Object.freeze([0.95, 1.05]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    })];
+})));
+
 /**
  * Runtime soundset definitions live here only after edited assets pass
  * provenance review. Raw source-pack files never become shipping dependencies.
@@ -16,32 +41,12 @@ export const GAME_SOUNDSETS = Object.freeze({
         pitch: Object.freeze([0.92, 1.06]), noImmediateRepeat: true, retrigger: 'replace-quietest'
     }),
 
+    // Footsteps: FOOTSTEP_SOUNDSETS above.
+    ...FOOTSTEP_SOUNDSETS,
+
     // Kenney Impact Sounds, CC0. Licence file retained with the pack under
     // art/source/audio/cinematic-source/kenney/; only the selected files are
     // copied into public/, the raw packs stay in the ignored source tree.
-    //
-    // The sprite layouts have carried footstepFrames since the atlas work, so
-    // the game already knew exactly which animation frames are footfalls. It
-    // had no sound to play on them and fell back to a synthesised blip.
-    footstep_concrete: Object.freeze({
-        variants: Object.freeze([
-            'footstep_concrete_000', 'footstep_concrete_001', 'footstep_concrete_002',
-            'footstep_concrete_003', 'footstep_concrete_004'
-        ]),
-        // Five variants and no immediate repeat. A repeated footstep is the
-        // most noticeable audio artefact a game can have, because the ear
-        // tracks a walk cycle whether the player wants it to or not.
-        fallback: 'footstep_concrete_000', bus: 'sfx', gain: 0.42,
-        pitch: Object.freeze([0.94, 1.08]), noImmediateRepeat: true, retrigger: 'replace-oldest'
-    }),
-    footstep_snow: Object.freeze({
-        variants: Object.freeze([
-            'footstep_snow_000', 'footstep_snow_001', 'footstep_snow_002',
-            'footstep_snow_003', 'footstep_snow_004'
-        ]),
-        fallback: 'footstep_snow_000', bus: 'sfx', gain: 0.40,
-        pitch: Object.freeze([0.92, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
-    }),
     // Prop debris had no sound at all until this sprint, then borrowed
     // amb_metal_stress -- an ambience cue doing an impact's job.
     prop_impact_metal: Object.freeze({
@@ -73,71 +78,6 @@ export const GAME_SOUNDSETS = Object.freeze({
         ]),
         fallback: 'impactSoft_heavy_000', bus: 'sfx', gain: 0.55,
         pitch: Object.freeze([0.72, 0.95]), noImmediateRepeat: true, retrigger: 'replace-oldest'
-    }),
-    // AudioCraft generated surface footsteps
-    footstep_metal_grate: Object.freeze({
-        variants: Object.freeze([
-            'footstep_metal_grate_000', 'footstep_metal_grate_001', 'footstep_metal_grate_002',
-            'footstep_metal_grate_003', 'footstep_metal_grate_004'
-        ]),
-        fallback: 'footstep_metal_grate_000', bus: 'sfx', gain: 0.44,
-        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
-    }),
-    footstep_ice_crunch: Object.freeze({
-        variants: Object.freeze([
-            'footstep_ice_crunch_000', 'footstep_ice_crunch_001', 'footstep_ice_crunch_002',
-            'footstep_ice_crunch_003', 'footstep_ice_crunch_004'
-        ]),
-        fallback: 'footstep_ice_crunch_000', bus: 'sfx', gain: 0.42,
-        pitch: Object.freeze([0.93, 1.07]), noImmediateRepeat: true, retrigger: 'replace-oldest'
-    }),
-    footstep_hive_slime: Object.freeze({
-        variants: Object.freeze([
-            'footstep_hive_slime_000', 'footstep_hive_slime_001', 'footstep_hive_slime_002',
-            'footstep_hive_slime_003', 'footstep_hive_slime_004'
-        ]),
-        fallback: 'footstep_hive_slime_000', bus: 'sfx', gain: 0.40,
-        pitch: Object.freeze([0.90, 1.08]), noImmediateRepeat: true, retrigger: 'replace-oldest'
-    }),
-    footstep_wood_plank: Object.freeze({
-        variants: Object.freeze([
-            'footstep_wood_plank_000', 'footstep_wood_plank_001', 'footstep_wood_plank_002',
-            'footstep_wood_plank_003', 'footstep_wood_plank_004'
-        ]),
-        fallback: 'footstep_wood_plank_000', bus: 'sfx', gain: 0.42,
-        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
-    }),
-    footstep_deep_snow: Object.freeze({
-        variants: Object.freeze([
-            'footstep_deep_snow_000', 'footstep_deep_snow_001', 'footstep_deep_snow_002',
-            'footstep_deep_snow_003', 'footstep_deep_snow_004'
-        ]),
-        fallback: 'footstep_deep_snow_000', bus: 'sfx', gain: 0.44,
-        pitch: Object.freeze([0.93, 1.07]), noImmediateRepeat: true, retrigger: 'replace-oldest'
-    }),
-    footstep_shell_casings: Object.freeze({
-        variants: Object.freeze([
-            'footstep_shell_casings_000', 'footstep_shell_casings_001', 'footstep_shell_casings_002',
-            'footstep_shell_casings_003', 'footstep_shell_casings_004'
-        ]),
-        fallback: 'footstep_shell_casings_000', bus: 'sfx', gain: 0.40,
-        pitch: Object.freeze([0.92, 1.08]), noImmediateRepeat: true, retrigger: 'replace-oldest'
-    }),
-    footstep_bone_terrazzo: Object.freeze({
-        variants: Object.freeze([
-            'footstep_bone_terrazzo_000', 'footstep_bone_terrazzo_001', 'footstep_bone_terrazzo_002',
-            'footstep_bone_terrazzo_003', 'footstep_bone_terrazzo_004'
-        ]),
-        fallback: 'footstep_bone_terrazzo_000', bus: 'sfx', gain: 0.45,
-        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
-    }),
-    footstep_wet_puddle: Object.freeze({
-        variants: Object.freeze([
-            'footstep_wet_puddle_000', 'footstep_wet_puddle_001', 'footstep_wet_puddle_002',
-            'footstep_wet_puddle_003', 'footstep_wet_puddle_004'
-        ]),
-        fallback: 'footstep_wet_puddle_000', bus: 'sfx', gain: 0.42,
-        pitch: Object.freeze([0.93, 1.07]), noImmediateRepeat: true, retrigger: 'replace-oldest'
     }),
 
     // AudioCraft generated interactive props & mechanisms
@@ -417,11 +357,7 @@ export const GAME_SOUNDSETS = Object.freeze({
 
 // Approved gameplay foley & surfaces
 export const GAMEPLAY_FOLEY_MANIFEST = Object.freeze([
-    ...[
-        'footstep_concrete', 'footstep_snow', 'footstep_metal_grate', 'footstep_ice_crunch',
-        'footstep_hive_slime', 'footstep_wood_plank', 'footstep_deep_snow', 'footstep_shell_casings',
-        'footstep_bone_terrazzo', 'footstep_wet_puddle'
-    ].flatMap((key) => (
+    ...FOOTSTEP_SOUNDSET_KEYS.flatMap((key) => (
         GAME_SOUNDSETS[key].variants.map((variant) => Object.freeze({ key: variant, url: `/audio/footsteps/${variant}.ogg` }))
     )),
     ...['prop_impact_metal', 'prop_impact_glass'].flatMap((key) => (

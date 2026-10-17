@@ -788,6 +788,8 @@ import {
 import { InteractionSequenceRunner } from './interactionSequenceRunner.js';
 import { advanceHitStop, extendHitStop, HIT_STOP_PRESETS } from './hitStop.js';
 import { CHITIN_SCUTTLER, planScuttlerPack, scuttlerTuning } from './chitinScuttler.js';
+import { resolveFootstepSurface } from './footstepSurface.js';
+import { planFootstep, playFootstepPlan } from './footstepAudio.js';
 import { SPORE_MORTAR, planSporeMortarPlacements, sporeMortarTuning } from './sporeMortar.js';
 import { SectorZeroTutorialManager } from './sectorZeroTutorial.js';
 
@@ -31049,6 +31051,25 @@ export class ThreeGame {
     // 'water', 'slime', 'blood', 'oil', 'snow', or null for plain floor.
     // Liquids come from a cached subset of the scatter, rebuilt only when the
     // scatter list changes, not a scan of every prop each frame.
+    // The blended floor's texture layer and wetness under a world point, from
+    // the chunk's own splat data; null where no blended floor is mounted.
+    getFloorSurfaceAt(x, z) {
+        const size = this.chunkSize;
+        const tileX = Math.round(x);
+        const tileZ = Math.round(z);
+        const chunkX = Math.floor(tileX / size);
+        const chunkY = Math.floor(tileZ / size);
+        const material = this.chunkMeshes?.get(`${chunkX},${chunkY}`)?.userData?.floorSplatMaterial;
+        const layer = material?.userData?.floorSplatLayer;
+        if (!layer) return null;
+        const index = (tileZ - chunkY * size) * size + (tileX - chunkX * size);
+        const data = material.userData.floorSplat?.uSplatData?.value?.image?.data;
+        return {
+            floorLayer: layer[index],
+            wetness: data ? data[index * 4 + 3] / 255 : 0
+        };
+    }
+
     getTrackSurfaceAt(x, z) {
         if (this._trackLiquidsSource !== this.scatterSprites || this._trackLiquidsLength !== this.scatterSprites?.length) {
             this._trackLiquidsSource = this.scatterSprites;
@@ -31278,6 +31299,10 @@ export class ThreeGame {
                     aimZ: this.aimDirZ
                 }
             );
+            // Footsteps land when a boot on screen does (footContactTracker).
+            if (this.performanceProfile !== 'menu') {
+                for (const foot of this.player3dOverlay.consumeFootContacts?.() ?? []) this.emitPlayerFootstep(foot);
+            }
         }
         const aiming = this.hasActiveAim;
         // Upper body tracks the aim whenever the player is aiming.
@@ -31305,56 +31330,12 @@ export class ThreeGame {
             }
             if (column !== this.lastAnimationColumn) {
                 this.lastAnimationColumn = column;
-                if (layout.footstepFrames.includes(column)) {
-                    if (this.performanceProfile !== 'menu') {
-                        // Real sampled footsteps now that the soundset registry
-                        // has them; the procedural blip remains the fallback for
-                        // when the buffers have not decoded yet. Surface picks
-                        // the set across all 10 dynamic material layers.
-                        const px = this.player?.position?.x ?? 0;
-                        const pz = this.player?.position?.z ?? 0;
-                        const underfoot = this.getTrackSurfaceAt?.(px, pz);
-                        const biome = (this.currentBiomeKey || this.currentBiome || '').toLowerCase();
-                        let surface = 'footstep_concrete';
-                        if (underfoot === 'water' || underfoot === 'oil') {
-                            surface = 'footstep_wet_puddle';
-                        } else if (underfoot === 'slime' || underfoot === 'blood' || biome === 'bio') {
-                            surface = 'footstep_hive_slime';
-                        } else if (underfoot === 'snow' || this.isOutdoors?.()) {
-                            surface = 'footstep_deep_snow';
-                        } else if (biome === 'cryo') {
-                            surface = 'footstep_ice_crunch';
-                        } else if (biome === 'camp') {
-                            surface = 'footstep_wood_plank';
-                        } else {
-                            const chunkX = Math.floor(px / 16);
-                            const chunkY = Math.floor(pz / 16);
-                            const roomMeta = this.wfcMetadataCache?.get?.(`${chunkX},${chunkY}`);
-                            const localX = Math.floor(px - chunkX * 16);
-                            const localY = Math.floor(pz - chunkY * 16);
-                            const room = roomMeta?.roomInstances?.find?.(r => r.floorCells?.some?.(c => c.x === localX && c.y === localY));
-                            const style = (room?.themeConfig?.floorSurface || room?.themeConfig?.wallStyle || room?.type || '').toLowerCase();
-                            if (style.includes('bone') || style.includes('cathedral')) {
-                                surface = 'footstep_bone_terrazzo';
-                            } else if (style.includes('casing') || style.includes('armory') || style.includes('security')) {
-                                surface = 'footstep_shell_casings';
-                            } else if (style.includes('grate') || style.includes('trench') || style.includes('workshop') || style.includes('storage')) {
-                                surface = 'footstep_metal_grate';
-                            } else if (style.includes('plank') || style.includes('camp')) {
-                                surface = 'footstep_wood_plank';
-                            } else if (style.includes('permafrost') || style.includes('cryo')) {
-                                surface = 'footstep_ice_crunch';
-                            } else if (style.includes('resin') || style.includes('slime') || style.includes('bio')) {
-                                surface = 'footstep_hive_slime';
-                            }
-                        }
-                        const played = window.AudioManager?.play?.(
-                            surface,
-                            this.audioAt?.(px, pz, { volume: 0.5 })
-                                ?? { volume: 0.5 }
-                        );
-                        if (!played) window.AudioManager?.playProceduralFootstep?.(this.playerType);
-                    }
+                // Sprite-frame steps only when the 3D chassis can't report
+                // its own footfalls (no model, or a rig without foot bones).
+                if (layout.footstepFrames.includes(column)
+                    && this.performanceProfile !== 'menu'
+                    && !this.player3dOverlay?.hasFootTracking?.()) {
+                    this.emitPlayerFootstep();
                 }
             }
             return;
@@ -31371,6 +31352,36 @@ export class ThreeGame {
             this.torsoFacingRow = this.currentFacingRow;
         }
         this.updatePlayerSpriteFrame(0, this.currentFacingRow, this.torsoFacingRow);
+    }
+
+    // One footstep: the floor under the boot, layered for chassis and pace
+    // (src/footstepSurface.js, src/footstepAudio.js). `foot` comes from the
+    // 3D chassis's foot contacts; sprite-frame steps alternate.
+    emitPlayerFootstep(foot = null) {
+        // Puddles, slime and blood underfoot win over the floor texture; the
+        // procedural blip covers the moments before the banks decode.
+        const px = this.player?.position?.x ?? 0;
+        const pz = this.player?.position?.z ?? 0;
+        const surface = resolveFootstepSurface({
+            ...(this.getFloorSurfaceAt?.(px, pz) ?? {}),
+            underfoot: this.getTrackSurfaceAt?.(px, pz),
+            outdoors: Boolean(this.isOutdoors?.()),
+            biome: this.currentBiomeKey || this.currentBiome || ''
+        });
+        this._footstepIndex = (this._footstepIndex ?? 0) + 1;
+        const layers = planFootstep({
+            surface,
+            playerType: this.playerType,
+            sprinting: Boolean(this.sprinting),
+            foot: foot ?? this._footstepIndex % 2,
+            stepIndex: this._footstepIndex
+        });
+        const played = playFootstepPlan(
+            window.AudioManager,
+            layers,
+            (volume) => this.audioAt?.(px, pz, { volume }) ?? { volume }
+        );
+        if (!played) window.AudioManager?.playProceduralFootstep?.(this.playerType);
     }
 
     getFacingRow(worldX, worldZ) {
@@ -35926,6 +35937,8 @@ export class ThreeGame {
             landform,
             ledgeGround: true
         });
+        // Footsteps read the floor the player sees (getFloorSurfaceAt).
+        group.userData.floorSplatMaterial = floorSplatMaterial;
         if (instancedFloor) {
             const { floorCells, exteriorGroundCells } = floorCoverage;
             const floors = new THREE.InstancedMesh(this.floorGeometry, floorSplatMaterial ?? this.floorMaterial, floorCells.length);
