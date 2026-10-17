@@ -77,13 +77,35 @@ export const INTERACTION_SEQUENCES = Object.freeze({
     })
 });
 
+// Saved per campaign (src/profile.js CAMPAIGN_SPECIFIC_STORAGE_KEYS): a
+// sequence plays once per save, not once per page load (audit §8.3).
+export const INTERACTION_SEQUENCE_STORAGE_KEY = 'hb_cinematics_v1';
+
+function defaultStorage() {
+    try {
+        return typeof window !== 'undefined' ? window.localStorage ?? null : null;
+    } catch {
+        return null;
+    }
+}
+
 export class InteractionSequenceRunner {
-    constructor(game = null) {
+    constructor(game = null, { storage = defaultStorage() } = {}) {
         this.game = game;
+        this.storage = storage;
         this.activeSequence = null;
         this.currentStepIndex = -1;
         this.isSkipped = false;
-        this.completedSequences = new Set();
+        this.completedSequences = new Set(this.loadCompleted());
+    }
+
+    loadCompleted() {
+        try {
+            const parsed = JSON.parse(this.storage?.getItem?.(INTERACTION_SEQUENCE_STORAGE_KEY) ?? 'null');
+            return Array.isArray(parsed?.sequences) ? parsed.sequences : [];
+        } catch {
+            return [];
+        }
     }
 
     isSequenceCompleted(id) {
@@ -92,6 +114,11 @@ export class InteractionSequenceRunner {
 
     markSequenceCompleted(id) {
         this.completedSequences.add(id);
+        try {
+            this.storage?.setItem?.(INTERACTION_SEQUENCE_STORAGE_KEY, JSON.stringify({ sequences: [...this.completedSequences] }));
+        } catch {
+            // best effort: the sequence still won't replay this session
+        }
     }
 
     async runSequence(specOrId, context = {}) {

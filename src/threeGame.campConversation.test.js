@@ -68,4 +68,29 @@ describe('one conversation per camp', () => {
         expect(runSequence).toHaveBeenCalledWith('meridian_first_meeting');
         delete globalThis.window;
     });
+
+    // Audit 2026-10-16 §13.4: the runner's reward and line hooks were silent
+    // no-ops (bank.addPerk does not exist; nothing listened for the events).
+    it('grants a sequence perk through the side stories and shows the toast', () => {
+        const toast = vi.fn();
+        const activePerks = new Set();
+        const grantPerk = vi.fn(() => ({ storyId: 'overseer_kaelen', perk: { id: 'meridian_neural_overclock', name: 'Meridian Neural Overclock', desc: '+20m Radar' } }));
+        globalThis.window = { dispatchEvent: vi.fn(), showToastNotification: toast, sideStoryManager: { grantPerk }, npcDialogueTreeManager: { activePerks } };
+        const fake = Object.create(ThreeGame.prototype);
+        fake.grantSequenceReward({ perk: 'meridian_neural_overclock', toast: true });
+        expect(grantPerk).toHaveBeenCalledWith('meridian_neural_overclock');
+        expect(activePerks.has('meridian_neural_overclock')).toBe(true);
+        expect(toast).toHaveBeenCalledWith('Meridian Neural Overclock — +20m Radar', expect.objectContaining({ tone: 'info' }));
+        delete globalThis.window;
+    });
+
+    it('shows a sequence line as a bunker line, with the speaker', async () => {
+        globalThis.window = { dispatchEvent: vi.fn() };
+        const fake = Object.create(ThreeGame.prototype);
+        fake.showBunkerLine = vi.fn();
+        fake.camps = [{ id: 'camp_meridian', leaderName: 'Overseer Kaelen', pos: { x: 0, z: 0 } }];
+        await fake.displaySequenceSubtitle('mothership', 'narrative.sequences.missing', 'Rest infrastructure verified.', { holdMs: 0 });
+        expect(fake.showBunkerLine).toHaveBeenCalledWith('MOTHERSHIP: Rest infrastructure verified.');
+        delete globalThis.window;
+    });
 });

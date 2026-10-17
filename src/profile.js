@@ -210,6 +210,7 @@ export const CAMPAIGN_SPECIFIC_STORAGE_KEYS = Object.freeze([
     'hb_arc_v1',
     'hb_act2_v1',
     'hb_side_stories_v1',
+    'hb_cinematics_v1',
     'hb_day_cycle',
     'hb_fatigue',
     'hb_overnight_v1',

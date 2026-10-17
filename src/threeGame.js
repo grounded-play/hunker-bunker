@@ -23034,26 +23034,35 @@ export class ThreeGame {
         window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 1.2 });
     }
 
-    async displaySequenceSubtitle(speaker, key, text) {
-        if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('narrative-sequence-subtitle', {
-                detail: { speaker, key, text }
-            }));
-        }
+    // Nothing listened for 'narrative-sequence-subtitle', so sequence lines
+    // never showed. They go out as a bunker line (subtitle strip, co-op
+    // broadcast) and hold for a reading beat.
+    async displaySequenceSubtitle(speaker, key, text, { holdMs = null } = {}) {
+        const line = t(key, {}, text ?? '');
+        if (!line) return;
+        const name = speaker === 'mothership'
+            ? 'MOTHERSHIP'
+            : (speaker === 'leader' ? (this.camps?.find((c) => c.id === 'camp_meridian')?.leaderName ?? null) : speaker);
+        this.showBunkerLine?.(name ? `${name}: ${line}` : line);
+        const wait = holdMs ?? Math.min(4000, 1200 + line.length * 30);
+        if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
     }
 
     grantSequenceReward(reward = {}) {
-        if (reward.perk && this.bank) {
-            this.bank.addPerk?.(reward.perk);
+        // bank.addPerk never existed, so the perk was silently dropped. Perks
+        // live with the side stories (saved) and the tree manager (live).
+        if (reward.perk && typeof window !== 'undefined') {
+            const granted = window.sideStoryManager?.grantPerk?.(reward.perk);
+            window.npcDialogueTreeManager?.activePerks?.add?.(reward.perk);
+            if (granted && reward.toast) {
+                window.showToastNotification?.(`${granted.perk.name} — ${granted.perk.desc ?? ''}`.replace(/ — $/, ''), { tone: 'info', duration: 7000 });
+            }
         }
         if (reward.bondDelta && this.act2) {
             const campRecord = this.getCampRecord?.('camp_meridian');
             if (campRecord) {
                 campRecord.bond = Math.min(5, (campRecord.bond ?? 0) + reward.bondDelta);
             }
-        }
-        if (reward.toast && reward.perk) {
-            window.dispatchEvent(new CustomEvent('perk-unlocked', { detail: { perk: reward.perk } }));
         }
     }
 

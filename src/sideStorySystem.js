@@ -349,6 +349,23 @@ export class SideStoryManager {
         return this.state[storyId];
     }
 
+    // A perk earned outside the dialogue trees (an interaction sequence,
+    // audit 2026-10-16 §13.4) is recorded on the story whose stage rewards it,
+    // so it survives reload like any tree perk. Returns null if already held
+    // or if no story owns the perk.
+    grantPerk(perkId) {
+        for (const [storyId, config] of Object.entries(SIDE_STORIES_CONFIG)) {
+            const perk = config.stages?.map((stage) => stage.rewards?.perk).find((entry) => entry?.id === perkId);
+            if (!perk) continue;
+            const storyState = this.getStoryState(storyId);
+            if (storyState.perks.includes(perkId)) return null;
+            storyState.perks.push(perkId);
+            this.save();
+            return { storyId, perk };
+        }
+        return null;
+    }
+
     getCurrentStage(storyId) {
         const config = SIDE_STORIES_CONFIG[storyId];
         if (!config) return null;

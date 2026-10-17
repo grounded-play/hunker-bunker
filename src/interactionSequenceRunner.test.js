@@ -144,4 +144,15 @@ describe('InteractionSequenceRunner', () => {
         expect(game.setWorldPropState).toHaveBeenCalledWith('base_cot_installed', 'ready');
         expect(runner.isSequenceCompleted('base_cot_first_night')).toBe(true);
     });
+
+    it('remembers completed sequences across a reload', async () => {
+        const store = new Map();
+        const storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)) };
+        const game = { findPropAnchor: () => false, setWorldPropState: vi.fn() };
+        const first = new InteractionSequenceRunner(game, { storage });
+        await first.runSequence('base_cot_first_night');
+        const later = new InteractionSequenceRunner(game, { storage });
+        expect(later.isSequenceCompleted('base_cot_first_night')).toBe(true);
+        expect((await later.runSequence('base_cot_first_night')).ok).toBe(false);
+    });
 });
