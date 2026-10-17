@@ -1,59 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { createHitStopManager, HIT_STOP_PRESETS, HitStopManager } from './hitStop.js';
+import { advanceHitStop, extendHitStop, HIT_STOP_PRESETS } from './hitStop.js';
 
-describe('HitStopManager', () => {
-    it('initializes in an inactive state with timescale 1.0', () => {
-        const manager = createHitStopManager();
-        expect(manager.isActive()).toBe(false);
-        expect(manager.update(16)).toBe(1.0);
+describe('hit-stop rules (the one freeze: ThreeGame.hitstopTimer)', () => {
+    it('keeps the feel the game shipped with', () => {
+        expect(HIT_STOP_PRESETS).toEqual({ HIT_CONFIRM: 60, KILL: 45, BOSS_KILL: 90 });
     });
 
-    it('triggers a hit-stop freeze window', () => {
-        const manager = new HitStopManager();
-        manager.trigger(50, 0.0);
-        expect(manager.isActive()).toBe(true);
-
-        // First tick inside window should return freezeScale (0.0)
-        const scale = manager.update(20);
-        expect(scale).toBe(0.0);
-        expect(manager.isActive()).toBe(true);
-
-        // Next tick completing the window
-        const finalScale = manager.update(35);
-        expect(finalScale).toBe(1.0);
-        expect(manager.isActive()).toBe(false);
+    it('never shortens a freeze that is already running', () => {
+        expect(extendHitStop(60, HIT_STOP_PRESETS.KILL)).toBe(60);
+        expect(extendHitStop(10, HIT_STOP_PRESETS.KILL)).toBe(45);
+        expect(extendHitStop(0, HIT_STOP_PRESETS.BOSS_KILL)).toBe(90);
+        expect(extendHitStop(undefined, 30)).toBe(30);
+        expect(extendHitStop(Number.NaN, -5)).toBe(0);
     });
 
-    it('supports slow-motion dilation instead of full freeze', () => {
-        const manager = new HitStopManager();
-        manager.trigger(100, 0.2);
-        expect(manager.update(50)).toBe(0.2);
-        expect(manager.update(60)).toBe(1.0);
-    });
-
-    it('re-triggering takes the higher duration without shortening an active freeze', () => {
-        const manager = new HitStopManager();
-        manager.trigger(40);
-        manager.trigger(80);
-        expect(manager.remainingMs).toBe(80);
-
-        manager.trigger(20); // Lower duration does not overwrite longer
-        expect(manager.remainingMs).toBe(80);
-    });
-
-    it('exposes authored presets for light, medium, heavy, and boss impacts', () => {
-        expect(HIT_STOP_PRESETS.LIGHT).toBe(35);
-        expect(HIT_STOP_PRESETS.MEDIUM).toBe(50);
-        expect(HIT_STOP_PRESETS.HEAVY).toBe(75);
-        expect(HIT_STOP_PRESETS.BOSS_STAGGER).toBe(120);
-    });
-
-    it('allows immediate reset', () => {
-        const manager = new HitStopManager();
-        manager.trigger(120);
-        expect(manager.isActive()).toBe(true);
-        manager.reset();
-        expect(manager.isActive()).toBe(false);
-        expect(manager.update(16)).toBe(1.0);
+    it('runs out on wall-clock time and never goes negative', () => {
+        expect(advanceHitStop(60, 16.7)).toBeCloseTo(43.3);
+        expect(advanceHitStop(10, 16.7)).toBe(0);
+        expect(advanceHitStop(0, 16.7)).toBe(0);
     });
 });

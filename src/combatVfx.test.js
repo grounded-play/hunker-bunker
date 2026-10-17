@@ -141,6 +141,13 @@ describe('Combat VFX Upgrade and Placeholder Removal', () => {
             expect(game.hitstopTimer).toBe(45);
         });
 
+        it('a kill during a hit\'s freeze does not shorten it', () => {
+            const game = buildFakeCombatRig();
+            game.hitstopTimer = 60;
+            game.spawnEnemyDeathBurst(5, 5, 'geo_snail', false);
+            expect(game.hitstopTimer).toBe(60);
+        });
+
         it('scales debris count and hitstop for boss death', () => {
             const game = buildFakeCombatRig();
 

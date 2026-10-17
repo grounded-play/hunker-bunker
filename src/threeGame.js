@@ -786,6 +786,7 @@ import {
     REWARD_CACHE_I18N_KEYS
 } from './rewardCache.js';
 import { InteractionSequenceRunner } from './interactionSequenceRunner.js';
+import { advanceHitStop, extendHitStop, HIT_STOP_PRESETS } from './hitStop.js';
 
 const CAMP_PROBE_MISSION_ID = 'camp-quest:camp_meridian:lost_probe';
 const HIVE_MEMBRANE_MISSION_ID = 'hive-quest:hive_suture:host_mercy';
@@ -13655,7 +13656,7 @@ export class ThreeGame {
         }
 
         if (this.hitstopTimer > 0) {
-            this.hitstopTimer -= delta * 1000;
+            this.hitstopTimer = advanceHitStop(this.hitstopTimer, delta * 1000);
             renderFrame();
             return;
         }
@@ -32439,7 +32440,7 @@ export class ThreeGame {
         }
 
         // 4. Visceral hitstop
-        this.hitstopTimer = isBoss ? 90 : 45;
+        this.hitstopTimer = extendHitStop(this.hitstopTimer, isBoss ? HIT_STOP_PRESETS.BOSS_KILL : HIT_STOP_PRESETS.KILL);
 
         // 5. Impact audio
         if (typeof window !== 'undefined') {
@@ -40462,7 +40463,7 @@ export class ThreeGame {
         sprite.userData.hp = Math.max(0, previousHp - damage);
         if (sprite.userData.hp === previousHp) return;
 
-        this.hitstopTimer = 60;
+        this.hitstopTimer = extendHitStop(this.hitstopTimer, HIT_STOP_PRESETS.HIT_CONFIRM);
         this.spawnDamagePip(sprite.position.x, sprite.position.z, damage);
 
         sprite.userData.shotByPlayer = true;
