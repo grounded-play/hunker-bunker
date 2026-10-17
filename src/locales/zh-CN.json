@@ -1153,7 +1153,10 @@
     "arcade": {
       "thrust": "[W/A/D · 摇杆] 推进/转向",
       "fire": "[空格 · A] 开火",
-      "exit": "[ESC · B] 离开街机"
+      "exit": "[ESC · B] 离开街机",
+      "reflexes": "街机反应：本次远征剩余时间内装弹速度加快10%。",
+      "sheen_unlocked": "武器涂装已解锁：{name}",
+      "tina_radio": "蒂娜镇长：哟，高手……终于有人破了我的纪录。来漂流前哨站吧，酒我请。"
     },
     "interstitial": {
       "track": "曲目 {id}"

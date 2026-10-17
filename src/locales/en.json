@@ -1153,7 +1153,10 @@
     "arcade": {
       "thrust": "[W/A/D · STICK] THRUST/TURN",
       "fire": "[SPACE · A] FIRE",
-      "exit": "[ESC · B] EXIT CABINET"
+      "exit": "[ESC · B] EXIT CABINET",
+      "reflexes": "ARCADE REFLEXES: reloads 10% faster for the rest of this expedition.",
+      "sheen_unlocked": "WEAPON SHEEN UNLOCKED: {name}",
+      "tina_radio": "MAYOR TINA: Well, well, hotshot... somebody finally cracked my record. Stop by the drift outpost; your drinks are on me."
     },
     "interstitial": {
       "track": "TRACK {id}"

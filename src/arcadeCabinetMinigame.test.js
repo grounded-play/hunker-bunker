@@ -202,3 +202,33 @@ describe('ArcadeCabinetController owns input while open', () => {
         }
     });
 });
+
+// AAA plan §7.4 / §11: rewards were promised and never paid (nothing passed
+// onReward; nothing heard arcade-tina-beaten). The cabinet now announces
+// every finished game once, whatever the initials screen does.
+describe('arcade announces a finished game once', () => {
+    it('dispatches arcade-score-recorded when play ends, not before and not twice', () => {
+        const events = [];
+        const previous = globalThis.window;
+        globalThis.window = { dispatchEvent: (event) => events.push(event) };
+        globalThis.CustomEvent ??= class CustomEvent { constructor(type, o = {}) { this.type = type; this.detail = o.detail; } };
+        try {
+            const controller = new ArcadeCabinetController();
+            controller.gameSim.startNewGame();
+            controller._announceGameEnd();
+            expect(events).toHaveLength(0);
+            controller.gameSim.score = 70_000;
+            controller.gameSim.state = 'ENTER_INITIALS';
+            controller._announceGameEnd();
+            controller._announceGameEnd();
+            expect(events.map((e) => [e.type, e.detail.score])).toEqual([['arcade-score-recorded', 70_000]]);
+            controller.gameSim.startNewGame();
+            controller._announceGameEnd();
+            controller.gameSim.state = 'GAME_OVER';
+            controller._announceGameEnd();
+            expect(events).toHaveLength(2);
+        } finally {
+            globalThis.window = previous;
+        }
+    });
+});

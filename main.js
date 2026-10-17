@@ -6792,7 +6792,8 @@ for (const signal of ['achievement-stats-changed', 'bank-deposited']) {
     'reyes-letter-delivered',
     'run-cards-drawn',
     'shell-collected',
-    'lore-drop-collected'
+    'lore-drop-collected',
+    'arcade-score-recorded'
 ].forEach((eventName) => {
     window.addEventListener(eventName, (event) => {
         recordAchievementEvent(eventName, event?.detail ?? {});
@@ -14996,6 +14997,26 @@ window.addEventListener('song-interstitial-open', async (event) => {
     window.dispatchEvent(new CustomEvent('song-interstitial-settled', {
         detail: { trackId, ...result }
     }));
+});
+
+// Camp arcade cabinet rewards (AAA plan §7.4). Granted when a game ends;
+// announced when the cabinet closes, so nothing hides behind the CRT.
+const pendingArcadeNotices = [];
+window.addEventListener('arcade-score-recorded', (event) => {
+    if (!isGameplayPhase()) return;
+    const { score = 0, beatTina = false } = event?.detail ?? {};
+    if (score >= 25000 && window.game?.grantArcadeReflexes?.()) {
+        pendingArcadeNotices.push(() => window.showToastNotification?.(t('ui.arcade.reflexes'), { tone: 'info', duration: 7000 }));
+    }
+    if (beatTina) {
+        if (unlockSheenForMilestone('arcade:tinaBeaten')) {
+            pendingArcadeNotices.push(() => showBiomePrompt(`> ${t('ui.arcade.sheen_unlocked', { name: 'CHROMA VECTOR 84' })}`));
+        }
+        pendingArcadeNotices.push(() => window.game?.showBunkerLine?.(t('ui.arcade.tina_radio')));
+    }
+});
+window.addEventListener('arcade-cabinet-closed', () => {
+    for (const notice of pendingArcadeNotices.splice(0)) notice();
 });
 
 // Every shipped song video has a beat (src/cinematicBeats.js, audit

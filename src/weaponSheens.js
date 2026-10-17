@@ -8,6 +8,8 @@
 // Deliberately the same shape as OPERATOR_POLISHES so both can drive the same
 // picker and the same unlock plumbing.
 
+import { getArcadeHighScores, TINA_HIGH_SCORE } from './arcadeCabinetMinigame.js';
+
 const STORAGE_UNLOCKED = 'hb_weapon_sheens_v1';
 const STORAGE_SELECTED = 'hb_weapon_sheen_selected_v1';
 
@@ -29,7 +31,8 @@ export const WEAPON_SHEENS = Object.freeze([
     { id: 14, name: 'HIVE CHITIN', color: '#84cc16', itemdefid: 4218, hint: 'Set piece: Hive Chitin weapon sheen.' },
     { id: 15, name: 'HORIZON TEAL', color: '#14b8a6', itemdefid: 4225, hint: 'Set piece: Horizon Corporate weapon sheen.' },
     { id: 16, name: 'BUNKER 404', color: '#d946ef', itemdefid: 4232, hint: 'Set piece: Bunker 404 weapon sheen.' },
-    { id: 17, name: 'GRAND MARSHAL', color: '#f59e0b', itemdefid: 4239, hint: 'Set piece: Grand Marshal weapon sheen.' }
+    { id: 17, name: 'GRAND MARSHAL', color: '#f59e0b', itemdefid: 4239, hint: 'Set piece: Grand Marshal weapon sheen.' },
+    { id: 18, name: 'CHROMA VECTOR 84', color: '#39ff88', hint: "Beat Mayor Tina's record on the camp arcade cabinet." }
 ]);
 
 export const SHEEN_UNLOCK_BY_MILESTONE = Object.freeze({
@@ -43,7 +46,8 @@ export const SHEEN_UNLOCK_BY_MILESTONE = Object.freeze({
     'achievement:gentle_drill': 8,
     'achievement:kin': 9,
     'act2:queenKilled': 10,
-    'achievement:hunkered': 11
+    'achievement:hunkered': 11,
+    'arcade:tinaBeaten': 18
 });
 
 const MAX_ID = WEAPON_SHEENS.length;
@@ -123,9 +127,16 @@ export function reconcileSheenUnlocks({ achievements = {}, world = {} } = {}, st
         campTurned: world.campTurned || world.camps?.some((camp) => camp.turned || camp.status === 'turned'),
         queenKilled: world.queenKilled || world.queenStatus === 'killed'
     };
+    // The cabinet's table is the record of beating Tina (operator entries only).
+    const arcadeFlags = {
+        tinaBeaten: getArcadeHighScores(storageOrDefault(storage))
+            .some((entry) => entry.role === 'OPERATOR' && Number(entry.score) > TINA_HIGH_SCORE)
+    };
     for (const [milestone, id] of Object.entries(SHEEN_UNLOCK_BY_MILESTONE)) {
         const [kind, key] = milestone.split(':');
-        if (kind === 'achievement' ? achievements[key] : worldFlags[key]) unlockSheen(id, storage);
+        const earned = kind === 'achievement' ? achievements[key]
+            : (kind === 'arcade' ? arcadeFlags[key] : worldFlags[key]);
+        if (earned) unlockSheen(id, storage);
     }
     return getUnlockedSheenIds(storage);
 }

@@ -1153,7 +1153,10 @@
     "arcade": {
       "thrust": "[W/A/D · STICK] EMPUJE/GIRO",
       "fire": "[ESPACIO · A] DISPARAR",
-      "exit": "[ESC · B] SALIR DE LA MÁQUINA"
+      "exit": "[ESC · B] SALIR DE LA MÁQUINA",
+      "reflexes": "REFLEJOS DE ARCADE: recargas 10 % más rápidas por el resto de esta expedición.",
+      "sheen_unlocked": "BRILLO DE ARMA DESBLOQUEADO: {name}",
+      "tina_radio": "ALCALDESA TINA: Vaya, vaya, estrella... por fin alguien rompió mi récord. Pasa por el puesto de la deriva; las bebidas corren por mi cuenta."
     },
     "interstitial": {
       "track": "PISTA {id}"

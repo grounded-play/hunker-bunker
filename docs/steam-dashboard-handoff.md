@@ -1,6 +1,6 @@
 # Steam Dashboard Handoff
 
-Generated: 2026-09-30.
+Generated: 2026-10-17.
 
 This is the copy/paste packet for Steamworks dashboard work that cannot be
 completed from the repo. Keep it in sync with code by running:
@@ -98,6 +98,8 @@ active in code.
 | API Name | Display Name | Reason |
 | --- | --- | --- |
 | `slay_the_queen` | SLAY THE QUEEN | hold: comingSoon in code |
+| `arcade_wizard` | ARCADE WIZARD | hold: comingSoon in code |
+| `tinas_challenger` | TINA'S CHALLENGER | hold: comingSoon in code |
 
 ## Stats To Publish
 
@@ -183,7 +185,7 @@ Upload `steam/inventory_schema_hunker_bunker.json` to Steam Inventory Service.
 | Field | Value |
 | --- | --- |
 | Schema appid | `4957040` |
-| ItemDefs | 125 |
+| ItemDefs | 126 |
 | Hosted Item Store URL | `https://store.steampowered.com/itemstore/4957040/` |
 | Hosted Item Store beta URL | `https://store.steampowered.com/itemstore/4957040/?beta=1` |
 

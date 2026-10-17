@@ -3,7 +3,7 @@ export const ACHIEVEMENT_STORAGE_KEY = 'hb_achievements_v1';
 export const ACHIEVEMENT_SCHEMA_VERSION = 4;
 export const ARCHIVIST_TARGET = 12;
 
-const CLASS_IDS = Object.freeze(['SCOUT', 'TANK', 'ENGINEER', 'MEDIC', 'DEMOLITIONIST', 'INFILTRATOR']);
+const CLASS_IDS = Object.freeze(['SCOUT', 'TANK', 'ENGINEER']);
 const ENDING_FAMILIES = Object.freeze([
     ['full_brood', 'FULL BROOD'],
     ['clean_escape', 'CLEAN ESCAPE'],
@@ -199,6 +199,27 @@ export const ACHIEVEMENT_DEFS = freezeDeep([
         secret: true,
         comingSoon: true,
         check: (state) => Boolean(state.stats.queenDefeated)
+    },
+    // SUB-CRUST PROTOCOL: 1984 (src/arcadeCabinetMinigame.js). comingSoon
+    // until they exist in Steamworks (steamAchievementCatalog.test.js); the
+    // best score is saved meanwhile, so publishing unlocks them for anyone
+    // who already earned them.
+    {
+        key: 'arcade_wizard',
+        title: 'ARCADE WIZARD',
+        blurb: 'Score 65,000 or higher on the camp arcade cabinet.',
+        icon: 'arcade_wizard',
+        comingSoon: true,
+        check: (state) => (state.stats.arcadeBestScore ?? 0) >= 65000
+    },
+    {
+        key: 'tinas_challenger',
+        title: "TINA'S CHALLENGER",
+        blurb: "Beat Mayor Tina's arcade record of 104,200.",
+        icon: 'tinas_challenger',
+        secret: true,
+        comingSoon: true,
+        check: (state) => (state.stats.arcadeBestScore ?? 0) > 104200
     }
 ]);
 
@@ -256,7 +277,8 @@ export function createDefaultAchievementState() {
             deathlessReveal: false,
             hiveHarmFreeReveal: false,
             reyesLetterDelivered: false,
-            queenDefeated: false
+            queenDefeated: false,
+            arcadeBestScore: 0
         },
         currentRun: createDefaultRunState(),
         unlocked: {}
@@ -409,6 +431,11 @@ function updateStatsForEvent(state, name, detail = {}) {
         }
         case 'reyes-letter-delivered': {
             state.stats.reyesLetterDelivered = true;
+            break;
+        }
+        case 'arcade-score-recorded': {
+            const score = Math.max(0, Math.floor(Number(detail.score) || 0));
+            state.stats.arcadeBestScore = Math.max(Number(state.stats.arcadeBestScore) || 0, score);
             break;
         }
         case 'reveal-reached': {
@@ -584,35 +611,3 @@ export class AchievementEngine {
     }
 }
 
-export const EXPANDED_ACHIEVEMENT_DEFS = freezeDeep([
-    {
-        key: 'medic_field_oath',
-        title: 'FIELD OATH',
-        blurb: 'Reach any ending as the Field Medic.',
-        icon: 'victory_medic'
-    },
-    {
-        key: 'demolition_expert',
-        title: 'BREACH AND CLEAR',
-        blurb: 'Reach any ending as the Demolitionist.',
-        icon: 'victory_demolitionist'
-    },
-    {
-        key: 'infiltrator_ghost',
-        title: 'SHADOW RECON',
-        blurb: 'Reach any ending as the Infiltrator.',
-        icon: 'victory_infiltrator'
-    },
-    {
-        key: 'arcade_wizard',
-        title: 'ARCADE WIZARD',
-        blurb: 'Score 65,000 or higher on the arcade cabinet.',
-        icon: 'arcade_wizard'
-    },
-    {
-        key: 'tinas_challenger',
-        title: "TINA'S CHALLENGER",
-        blurb: "Surpass Mayor Tina's legendary high score of 104,200 on SUB-CRUST PROTOCOL.",
-        icon: 'tinas_challenger'
-    }
-]);

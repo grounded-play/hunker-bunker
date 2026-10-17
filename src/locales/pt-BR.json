@@ -1153,7 +1153,10 @@
     "arcade": {
       "thrust": "[W/A/D · ANALÓGICO] PROPULSÃO/GIRO",
       "fire": "[ESPAÇO · A] ATIRAR",
-      "exit": "[ESC · B] SAIR DO FLIPERAMA"
+      "exit": "[ESC · B] SAIR DO FLIPERAMA",
+      "reflexes": "REFLEXOS DE FLIPERAMA: recargas 10% mais rápidas pelo resto desta expedição.",
+      "sheen_unlocked": "BRILHO DE ARMA DESBLOQUEADO: {name}",
+      "tina_radio": "PREFEITA TINA: Ora, ora, fera... finalmente alguém quebrou meu recorde. Passa no posto da deriva; as bebidas são por minha conta."
     },
     "interstitial": {
       "track": "FAIXA {id}"

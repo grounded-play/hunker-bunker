@@ -1153,7 +1153,10 @@
     "arcade": {
       "thrust": "[W/A/D · STICK] SCHUB/DREHEN",
       "fire": "[LEERTASTE · A] FEUER",
-      "exit": "[ESC · B] AUTOMAT VERLASSEN"
+      "exit": "[ESC · B] AUTOMAT VERLASSEN",
+      "reflexes": "ARKADE-REFLEXE: Nachladen für den Rest dieser Expedition 10 % schneller.",
+      "sheen_unlocked": "WAFFENSCHIMMER FREIGESCHALTET: {name}",
+      "tina_radio": "BÜRGERMEISTERIN TINA: Sieh an, Großmaul... endlich hat jemand meinen Rekord geknackt. Komm beim Drift-Außenposten vorbei, die Drinks gehen auf mich."
     },
     "interstitial": {
       "track": "TITEL {id}"

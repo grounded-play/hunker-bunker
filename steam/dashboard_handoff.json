@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T19:13:01.630Z",
+  "generatedAt": "2026-10-17T14:13:08.850Z",
   "app": {
     "appId": 4957040,
     "title": "Hunker Bunker",
@@ -300,6 +300,26 @@
       "codeStatus": "hold: comingSoon in code",
       "icon": "public/ach_slay_the_queen.png",
       "lockedIcon": "public/ach_slay_the_queen_locked.png"
+    },
+    {
+      "apiName": "arcade_wizard",
+      "displayName": "ARCADE WIZARD",
+      "description": "Score 65,000 or higher on the camp arcade cabinet.",
+      "hidden": false,
+      "publishNow": false,
+      "codeStatus": "hold: comingSoon in code",
+      "icon": "",
+      "lockedIcon": "public/ach_locked.png"
+    },
+    {
+      "apiName": "tinas_challenger",
+      "displayName": "TINA'S CHALLENGER",
+      "description": "Beat Mayor Tina's arcade record of 104,200.",
+      "hidden": true,
+      "publishNow": false,
+      "codeStatus": "hold: comingSoon in code",
+      "icon": "",
+      "lockedIcon": "public/ach_locked.png"
     }
   ],
   "activeAchievementCount": 23,
@@ -313,6 +333,26 @@
       "codeStatus": "hold: comingSoon in code",
       "icon": "public/ach_slay_the_queen.png",
       "lockedIcon": "public/ach_slay_the_queen_locked.png"
+    },
+    {
+      "apiName": "arcade_wizard",
+      "displayName": "ARCADE WIZARD",
+      "description": "Score 65,000 or higher on the camp arcade cabinet.",
+      "hidden": false,
+      "publishNow": false,
+      "codeStatus": "hold: comingSoon in code",
+      "icon": "",
+      "lockedIcon": "public/ach_locked.png"
+    },
+    {
+      "apiName": "tinas_challenger",
+      "displayName": "TINA'S CHALLENGER",
+      "description": "Beat Mayor Tina's arcade record of 104,200.",
+      "hidden": true,
+      "publishNow": false,
+      "codeStatus": "hold: comingSoon in code",
+      "icon": "",
+      "lockedIcon": "public/ach_locked.png"
     }
   ],
   "stats": [
@@ -540,7 +580,7 @@
   },
   "inventory": {
     "appid": 4957040,
-    "itemCount": 125,
+    "itemCount": 126,
     "sellableItems": [
       {
         "itemdefid": 4001,

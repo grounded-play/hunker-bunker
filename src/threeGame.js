@@ -821,6 +821,11 @@ const PLAYER_COLORS = {
 const CHUNK_MOUNT_BATCH_BUDGET_MS = 8;
 // getSpawnTile() parks the menu showcase in this chunk (both axes).
 const MENU_SHOWCASE_CHUNK = 100;
+// Arcade Reflexes run buff: reload time x0.9.
+const ARCADE_REFLEXES_RELOAD_MULT = 0.9;
+function reloadDurationMultFor(game) {
+    return (game.reloadSpeedMult ?? 1.0) * (game.arcadeReflexesActive ? ARCADE_REFLEXES_RELOAD_MULT : 1.0);
+}
 // Choice tree (src/npcDialogueTrees.js) for each leader key (leaderKeyFromName).
 const LEADER_TREES = Object.freeze({
     martha: 'sister_val',
@@ -25860,6 +25865,23 @@ export class ThreeGame {
         return Math.max(1, Math.round(raw));
     }
 
+    // Reload time multiplier: the class passive, times any run buff.
+    getReloadDurationMult() {
+        return reloadDurationMultFor(this);
+    }
+
+    // "Arcade Reflexes" (AAA plan §7.4): 25,000+ at the camp cabinet makes
+    // reloads 10% faster for the rest of the expedition. Once per run.
+    grantArcadeReflexes() {
+        if (this.arcadeReflexesActive) return false;
+        this.arcadeReflexesActive = true;
+        return true;
+    }
+
+    clearRunBuffs() {
+        this.arcadeReflexesActive = false;
+    }
+
     resolveClassPassiveStats(playerType) {
         const bank = this.bank;
         const unlocked = (id) => Boolean(bank && bank.isSkillUnlocked && bank.isSkillUnlocked(id));
@@ -27482,7 +27504,10 @@ export class ThreeGame {
         // The menu-map preview (resetRunState: false) is not a deploy; keep
         // the death flag for the real one.
         const afterDeath = resetRunState && Boolean(this._diedSinceRespawn);
-        if (resetRunState) this._diedSinceRespawn = false;
+        if (resetRunState) {
+            this._diedSinceRespawn = false;
+            this.clearRunBuffs();
+        }
         window.dispatchEvent(new CustomEvent('player-respawned', {
             detail: {
                 hp: this.playerVitals.hp,
@@ -31455,7 +31480,7 @@ export class ThreeGame {
         // of future edits to this method's body).
         const wasEmptyReload = this.weaponClipAmmo <= 0;
         this.weaponReloading = true;
-        this.weaponReloadDuration = WEAPON_RELOAD_DURATION * (this.reloadSpeedMult ?? 1.0);
+        this.weaponReloadDuration = WEAPON_RELOAD_DURATION * reloadDurationMultFor(this);
         this.weaponReloadTimer = this.weaponReloadDuration;
         this.emitWeaponClipState();
         window.AudioManager?.play('weapon_reload', (this.audioAt?.(this.player?.position?.x, this.player?.position?.z, { volume: 0.52 }) ?? { volume: 0.52 }));

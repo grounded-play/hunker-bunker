@@ -344,6 +344,23 @@ export class ArcadeCabinetController {
         this._onKeyUp = this._onKeyUp.bind(this);
     }
 
+    // Every finished game is announced once, whether or not the score makes
+    // the table: main.js pays the rewards (AAA plan §7.4) and the
+    // achievements track the best score.
+    _announceGameEnd() {
+        const { state, score } = this.gameSim;
+        if (state === 'PLAYING') {
+            this._inGame = true;
+            return;
+        }
+        if (!this._inGame || (state !== 'GAME_OVER' && state !== 'ENTER_INITIALS')) return;
+        this._inGame = false;
+        this.onReward?.({ type: 'game_end', score });
+        if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+            window.dispatchEvent(new CustomEvent('arcade-score-recorded', { detail: { score, beatTina: score > TINA_HIGH_SCORE } }));
+        }
+    }
+
     heldInput() {
         const held = (set) => [...set].some((code) => this.heldKeys.has(code));
         return {
@@ -399,8 +416,12 @@ export class ArcadeCabinetController {
         window.removeEventListener('keydown', this._onKeyDown, { capture: true });
         window.removeEventListener('keyup', this._onKeyUp, { capture: true });
         this.heldKeys.clear();
+        const wasOpen = this.isOpen();
         if (this.overlayEl) {
             this.overlayEl.classList.add('hidden');
+        }
+        if (wasOpen && typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+            window.dispatchEvent(new CustomEvent('arcade-cabinet-closed'));
         }
         if (this.game?.setInputEnabled) {
             this.game.setInputEnabled(true);
@@ -506,16 +527,7 @@ export class ArcadeCabinetController {
         const score = this.gameSim.score;
         recordArcadeHighScore({ initials, score, role: 'OPERATOR' });
 
-        // Dispatch reward callbacks
-        if (score >= 25000) {
-            this.onReward?.({ type: 'arcade_reflexes', score });
-        }
-        if (score >= TINA_HIGH_SCORE) {
-            this.onReward?.({ type: 'tina_defeated', score });
-            if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('arcade-tina-beaten', { detail: { score } }));
-            }
-        }
+        // Rewards follow the game's end (_announceGameEnd), not the initials.
         this.gameSim.state = 'ATTRACT';
     }
 
@@ -538,6 +550,7 @@ export class ArcadeCabinetController {
             }, deltaSec);
         }
         this.gameSim.update(deltaSec);
+        this._announceGameEnd();
         this._render();
 
         if (this.isOpen()) {

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
     ACHIEVEMENT_DEFS,
-    EXPANDED_ACHIEVEMENT_DEFS,
     ACHIEVEMENT_STORAGE_KEY,
     AchievementEngine,
     applyAchievementEvent,
@@ -48,12 +47,26 @@ describe('achievements definitions', () => {
         expect(ACHIEVEMENT_DEFS.find((def) => def.key === 'tank_commander')?.icon).toBe('victory_tank');
         expect(ACHIEVEMENT_DEFS.find((def) => def.key === 'chief_engineer')?.icon).toBe('victory_engineer');
 
-        const expandedKeys = EXPANDED_ACHIEVEMENT_DEFS.map((def) => def.key);
-        expect(expandedKeys).toContain('arcade_wizard');
-        expect(expandedKeys).toContain('tinas_challenger');
-        expect(expandedKeys).toContain('medic_field_oath');
-        expect(expandedKeys).toContain('demolition_expert');
-        expect(expandedKeys).toContain('infiltrator_ghost');
+        // The arcade achievements wait for Steamworks (comingSoon); the three
+        // class achievements were dropped with the classes they named.
+        for (const key of ['arcade_wizard', 'tinas_challenger']) {
+            expect(ACHIEVEMENT_DEFS.find((def) => def.key === key)?.comingSoon).toBe(true);
+        }
+        expect(keys).not.toContain('medic_field_oath');
+    });
+
+    it('tracks the best arcade score so the arcade achievements unlock once published', () => {
+        let state = applyAchievementEvent(null, 'arcade-score-recorded', { score: 70_000 }).state;
+        state = applyAchievementEvent(state, 'arcade-score-recorded', { score: 30_000 }).state;
+        expect(state.stats.arcadeBestScore).toBe(70_000);
+        const wizard = ACHIEVEMENT_DEFS.find((def) => def.key === 'arcade_wizard');
+        const challenger = ACHIEVEMENT_DEFS.find((def) => def.key === 'tinas_challenger');
+        expect(wizard.check(state)).toBe(true);
+        expect(challenger.check(state)).toBe(false);
+        state = applyAchievementEvent(state, 'arcade-score-recorded', { score: 104_201 }).state;
+        expect(challenger.check(state)).toBe(true);
+        // Not unlocked while comingSoon: Steam has no such achievement yet.
+        expect(state.unlocked.arcade_wizard).toBeUndefined();
     });
 });
 

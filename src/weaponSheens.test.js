@@ -95,3 +95,23 @@ it('backfills sheens from real persisted career and world records without changi
     reconcileSheenUnlocks({}, storage);
     expect(getSelectedSheen(storage).id).toBe(10);
 });
+
+describe('arcade sheen', () => {
+    // AAA plan §7.4: beating Mayor Tina's arcade record (104,200) unlocks a
+    // sheen; existing careers that already beat it get it on reconcile.
+    it('unlocks CHROMA VECTOR 84 for beating Tina, and reconciles an old record', () => {
+        const chroma = WEAPON_SHEENS.find((sheen) => sheen.name === 'CHROMA VECTOR 84');
+        expect(chroma).toBeTruthy();
+        expect(SHEEN_UNLOCK_BY_MILESTONE['arcade:tinaBeaten']).toBe(chroma.id);
+        const fresh = memoryStorage();
+        expect(unlockSheenForMilestone('arcade:tinaBeaten', fresh)).toBe(true);
+        expect(getUnlockedSheenIds(fresh).has(chroma.id)).toBe(true);
+
+        const veteran = memoryStorage();
+        veteran.setItem('hb_arcade_scores_v1', JSON.stringify([{ rank: 1, initials: 'YOU', score: 110000, role: 'OPERATOR' }]));
+        expect(reconcileSheenUnlocks({}, veteran).has(chroma.id)).toBe(true);
+        const fan = memoryStorage();
+        fan.setItem('hb_arcade_scores_v1', JSON.stringify([{ rank: 1, initials: 'TINA', score: 104200, role: 'MAYOR' }]));
+        expect(reconcileSheenUnlocks({}, fan).has(chroma.id)).toBe(false);
+    });
+});
