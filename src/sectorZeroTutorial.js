@@ -126,7 +126,7 @@ export class SectorZeroTutorialManager {
                 if (eventName === 'salvage-collected') {
                     this.flags.hasCollectedSalvage = true;
                 }
-                if (eventName === 'console-deposited' && (this.flags.hasCollectedSalvage || payload.scrap >= 10)) {
+                if (eventName === 'console-deposited' && (this.flags.hasCollectedSalvage || (payload.scrap ?? payload.amount ?? 0) >= 10)) {
                     this.flags.hasBankedConsole = true;
                     this.unlockedDoors.add('salvage_bay_door');
                     return this._advancePhase(SECTOR_ZERO_PHASES.COMBAT);
@@ -135,7 +135,7 @@ export class SectorZeroTutorialManager {
 
             case SECTOR_ZERO_PHASES.COMBAT:
                 if ((eventName === 'enemy-killed' || (eventName === 'enemy-hit' && payload.hpRemaining <= 0))
-                    && ['alien_proto_crawler', 'tutorial_crawler'].includes(payload.enemyType)) {
+                    && ['alien_proto_crawler', 'tutorial_crawler'].includes(payload.enemyType ?? payload.type)) {
                     this.flags.hasDefeatedSnail = true;
                     this.unlockedDoors.add('perimeter_blast_gate');
                     return this._advancePhase(SECTOR_ZERO_PHASES.DEPARTURE);

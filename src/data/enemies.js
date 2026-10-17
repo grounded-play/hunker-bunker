@@ -23,7 +23,7 @@ export const ENEMY_STATS = Object.freeze({
     fungal_spore_vent: { maxHp: 6, speed: 0.0 },
     mycelium_stalker: { maxHp: 5, speed: 2.2 },
     bio_charger: { maxHp: 8, speed: 2.5 },
-    spore_mortar: { maxHp: 5, speed: 1.0 },
+    spore_mortar: { maxHp: 6, speed: 0.0 },
     // Built end to end in src/chitinScuttler.js (runs the crawler AI); the
     // other §6.2 archetypes wait until each has art, AI and a spawn path.
     chitin_scuttler: { maxHp: 1, speed: 3.2 }

@@ -100,7 +100,7 @@ import {
 } from './baseModuleDamage.js';
 import { buildRunResourceTelemetry } from './runTelemetry.js';
 import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
-import { TraumaManager, create3DMuzzleFlash, WEAPON_TRAUMA_TABLE } from './combatJuice.js';
+import { TraumaManager, create3DMuzzleFlash, WEAPON_TRAUMA_TABLE, computeDirectionalVignetteStyle } from './combatJuice.js';
 import { CombatSignal } from './combatSignal.js';
 import { PickupMagnet, PickupComboTracker } from './lootJuice.js';
 import { BiomeAtmosphereSystem } from './ambientDrift.js';
@@ -788,6 +788,8 @@ import {
 import { InteractionSequenceRunner } from './interactionSequenceRunner.js';
 import { advanceHitStop, extendHitStop, HIT_STOP_PRESETS } from './hitStop.js';
 import { CHITIN_SCUTTLER, planScuttlerPack, scuttlerTuning } from './chitinScuttler.js';
+import { SPORE_MORTAR, planSporeMortarPlacements, sporeMortarTuning } from './sporeMortar.js';
+import { SectorZeroTutorialManager } from './sectorZeroTutorial.js';
 
 const CAMP_PROBE_MISSION_ID = 'camp-quest:camp_meridian:lost_probe';
 const HIVE_MEMBRANE_MISSION_ID = 'hive-quest:hive_suture:host_mercy';
@@ -2786,6 +2788,8 @@ export class ThreeGame {
         this.bunkerDirector = new BunkerDirector();
         this.lineDirector = new LineDirector({ globalMinGapSeconds: 8 });
         if (typeof window !== 'undefined') window.lineDirector = this.lineDirector;
+        this.sectorZeroTutorial = new SectorZeroTutorialManager({ game: this });
+        this.activeMortarShells = [];
         this._syncedRunModifier = null;
 
         this.orthographicCamera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
@@ -25087,6 +25091,7 @@ export class ThreeGame {
         this._lastNoAmmoCueAt = 0;
         this._lastReloadBlockedCueAt = 0;
         this.activeProjectiles = [];
+        this.clearMortarShells?.();
         if (emit) {
             this.emitWeaponClipState();
         }
@@ -27111,14 +27116,22 @@ export class ThreeGame {
         const screenAngle = Math.atan2(dotRight, dotForward);
 
         const wedge = document.getElementById('hit-indicator-wedge');
+        const glow = document.getElementById('directional-vignette-glow');
         const container = document.getElementById('damage-vignette-layer');
-        if (wedge && container) {
+        if (container) {
             container.classList.remove('hidden');
-            wedge.style.transform = `rotate(${screenAngle}rad) translateY(-80px)`;
-            
-            wedge.classList.remove('flash');
-            void wedge.offsetWidth; // force reflow
-            wedge.classList.add('flash');
+            if (glow) {
+                glow.style.background = computeDirectionalVignetteStyle(screenAngle, 1.0);
+                glow.classList.remove('flash');
+                void glow.offsetWidth; // force reflow
+                glow.classList.add('flash');
+            }
+            if (wedge) {
+                wedge.style.transform = `rotate(${screenAngle}rad) translateY(-80px)`;
+                wedge.classList.remove('flash');
+                void wedge.offsetWidth; // force reflow
+                wedge.classList.add('flash');
+            }
         }
     }
 
@@ -29118,7 +29131,16 @@ export class ThreeGame {
                 moveDirX = dx / movedDist;
                 moveDirZ = dz / movedDist;
             }
-            this.totalDistanceTravelled += Math.sqrt(dx * dx + dz * dz);
+            const stepDist = Math.sqrt(dx * dx + dz * dz);
+            this.totalDistanceTravelled += stepDist;
+            if (this.sectorZeroTutorial?.isActive && stepDist > 0) {
+                this._sectorZeroMovedDistance = (this._sectorZeroMovedDistance || 0) + stepDist;
+                this._sectorZeroMovedMs = (this._sectorZeroMovedMs || 0) + delta * 1000;
+                this.sectorZeroTutorial.handleEvent('player-moved', {
+                    distance: this._sectorZeroMovedDistance,
+                    movedMs: this._sectorZeroMovedMs
+                });
+            }
         } else if (this.hasActiveAim) {
             moveDirX = this.aimDirX || 1;
             moveDirZ = this.aimDirZ || 0;
@@ -31774,20 +31796,20 @@ export class ThreeGame {
                     if (wall) {
                         const hx = hit.point?.x ?? spawnX;
                         const hz = hit.point?.z ?? spawnZ;
-                        this.spawnProjectileImpactEffect(hx, hz);
+                        let nx = -dx;
+                        let nz = -dz;
+                        if (hit.face && hit.object) {
+                            const worldNormal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+                            if (Number.isFinite(worldNormal.x) && Number.isFinite(worldNormal.z)) {
+                                nx = worldNormal.x;
+                                nz = worldNormal.z;
+                            }
+                        }
+                        this.spawnProjectileImpactEffect(hx, hz, 'wall', { normalX: nx, normalZ: nz });
                         this.spawnPhysicalBurst(hx, hz, { color: 0xffd27a, count: 5, upward: 0.16 });
                         const destroyedWall = this.damageWall(wall, damage, { source: 'player' });
                         if (destroyedWall) window.dispatchEvent(new CustomEvent('wall-breached'));
                         if (!destroyedWall && FEATURE_WALL_DECALS) {
-                            let nx = -dx;
-                            let nz = -dz;
-                            if (hit.face && hit.object) {
-                                const worldNormal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
-                                if (Number.isFinite(worldNormal.x) && Number.isFinite(worldNormal.z)) {
-                                    nx = worldNormal.x;
-                                    nz = worldNormal.z;
-                                }
-                            }
                             this.spawnWallDecal(hx, hz, nx, nz, {
                                 wallKey: wall?.userData?.wallKey ?? null
                             });
@@ -31797,7 +31819,11 @@ export class ThreeGame {
                 }
             }
 
-            this.spawnMuzzleFlash?.(spawnX, spawnZ);
+            const activeWeaponKey = this.fieldWeapon?.type
+                ?? globalThis.window?.inventory?.activeWeapon?.type
+                ?? globalThis.window?.loadout?.activeWeapon
+                ?? 'rifle';
+            this.spawnMuzzleFlash?.(spawnX, spawnZ, activeWeaponKey);
             this.spawnProjectile({
                 x: spawnX,
                 z: spawnZ,
@@ -31990,7 +32016,8 @@ export class ThreeGame {
             isEnemy,
             attackerId,
             tracerMaterial,
-            pierceRemaining: (!isEnemy && this.loadoutMods?.kineticPierceBonus) ? this.loadoutMods.kineticPierceBonus : 0
+            pierceRemaining: (!isEnemy && this.loadoutMods?.kineticPierceBonus) ? this.loadoutMods.kineticPierceBonus : 0,
+            onExpire: options.onExpire
         });
     }
 
@@ -32267,15 +32294,17 @@ export class ThreeGame {
         });
     }
 
-    // Season 0 Cryo Shockwave Muzzle Flare mutator (itemdef 4153, docs/season-zero-protocol/03 §5)
-    spawnMuzzleFlash(x, z) {
+    spawnMuzzleFlash(x, z, weaponType = null) {
         const muzzleFxId = window.loadout?.state?.muzzleFxId;
         const isCryo = muzzleFxId === '4153' || muzzleFxId === 'fx_cryo_shockwave_muzzle';
         const color = isCryo ? 0x9beaff : 0xffd27a;
+        const activeWeapon = weaponType || window.inventory?.activeWeapon?.type || window.loadout?.activeWeapon || 'rifle';
 
         const effect = create3DMuzzleFlash({
             color,
             isCryo,
+            weaponType: activeWeapon,
+            tracerFxId: window.loadout?.state?.tracerFxId,
             camera: this.camera
         });
         effect.position.set(x, 0.45, z);
@@ -32283,11 +32312,15 @@ export class ThreeGame {
         this.scene.add(effect);
         registerTransientEffect(this, effect);
 
-        this.traumaManager?.addTrauma(WEAPON_TRAUMA_TABLE.rifle || 0.12);
+        const traumaVal = WEAPON_TRAUMA_TABLE[activeWeapon] || WEAPON_TRAUMA_TABLE.rifle || 0.12;
+        this.traumaManager?.addTrauma(traumaVal);
+        if (traumaVal >= 0.3) {
+            this.triggerCameraFovPunch(traumaVal * 3.5);
+        }
     }
 
-    spawnProjectileImpactEffect(x, z, surface = 'metal') {
-        const effect = createImpactBurst();
+    spawnProjectileImpactEffect(x, z, surface = 'metal', options = {}) {
+        const effect = createImpactBurst({ normalX: options.normalX, normalZ: options.normalZ });
         effect.position.set(x, (this.getTerrainHeightAt?.(x, z) ?? 0), z);
         this.scene.add(effect);
         registerTransientEffect(this, effect);
@@ -32340,13 +32373,16 @@ export class ThreeGame {
 
     // Ballistic debris: small boxes flung outward with gravity, drag, and a floor bounce.
     // Registered as a plain-object transient effect so it reuses updateTransientEffects().
-    spawnPhysicalBurst(x, z, { color = 0xffe08f, count = 6, upward = 0.18, spread = 1.4 } = {}) {
+    spawnPhysicalBurst(x, z, { color = 0xffe08f, count = 6, upward = 0.18, spread = 1.4, normalX = null, normalZ = null } = {}) {
         if (!this.scene) return;
         // Respect the adaptive-quality degrade signal.
         let n = this.visibleChunkRadius === 0 ? Math.max(2, Math.floor(count * 0.5)) : count;
         const group = new THREE.Group();
         const geo = new THREE.BoxGeometry(0.045, 0.045, 0.045);
         const particles = [];
+        const baseAngle = (normalX != null && normalZ != null && (normalX !== 0 || normalZ !== 0))
+            ? Math.atan2(normalZ, normalX)
+            : null;
         for (let i = 0; i < n; i++) {
             const mat = new THREE.MeshBasicMaterial({
                 color,
@@ -32358,7 +32394,7 @@ export class ThreeGame {
             mesh.position.set((Math.random() - 0.5) * 0.06, 0.3 + Math.random() * 0.12, (Math.random() - 0.5) * 0.06);
             mesh.renderOrder = 28;
             group.add(mesh);
-            const angle = Math.random() * Math.PI * 2;
+            const angle = baseAngle != null ? (baseAngle + (Math.random() - 0.5) * 1.4) : (Math.random() * Math.PI * 2);
             const sp = (0.6 + Math.random() * 1.4) * spread;
             particles.push({
                 mesh,
@@ -32624,6 +32660,7 @@ export class ThreeGame {
         for (const projectile of this.activeProjectiles) {
             projectile.ttl -= delta;
             if (projectile.ttl <= 0) {
+                projectile.onExpire?.(projectile.mesh.position.x, projectile.mesh.position.z);
                 toRemove.add(projectile);
                 continue;
             }
@@ -32643,6 +32680,7 @@ export class ThreeGame {
                     doors: this.getActiveDoors?.() ?? []
                 }
             )) {
+                projectile.onExpire?.(projectile.mesh.position.x, projectile.mesh.position.z);
                 this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
                 toRemove.add(projectile);
                 continue;
@@ -32652,9 +32690,10 @@ export class ThreeGame {
             if (wallHit) {
                 const hx = wallHit.point?.x ?? projectile.mesh.position.x;
                 const hz = wallHit.point?.z ?? projectile.mesh.position.z;
-                this.spawnProjectileImpactEffect(hx, hz, 'wall');
+                projectile.onExpire?.(hx, hz);
+                this.spawnProjectileImpactEffect(hx, hz, 'wall', { normalX: wallHit.normalX, normalZ: wallHit.normalZ });
                 const sparkColor = projectile.isEnemy ? 0xff6a4a : 0xffd27a;
-                this.spawnPhysicalBurst(hx, hz, { color: sparkColor, count: 5, upward: 0.16 });
+                this.spawnPhysicalBurst(hx, hz, { color: sparkColor, count: 6, upward: 0.16, normalX: wallHit.normalX, normalZ: wallHit.normalZ });
                 const destroyedWall = this.damageWall(wallHit.wall, projectile.damage, {
                     source: projectile.isEnemy ? 'enemy-projectile' : 'player'
                 });
@@ -32670,6 +32709,7 @@ export class ThreeGame {
 
             if (projectile.isEnemy) {
                 if (this.checkProjectilePlayerHit(projectile)) {
+                    projectile.onExpire?.(projectile.mesh.position.x, projectile.mesh.position.z);
                     if (projectile.attackerId && this.isMultiplayer && this.netSocket) {
                         // Sprint 24 Milestone A: server-authoritative PvP
                         // damage (docs/sprint24-multiplayer-runtime-2026-08-19.md).
@@ -33013,6 +33053,18 @@ export class ThreeGame {
             this.camera.rotation.z += trauma.roll;
             this.camera.rotation.x += trauma.pitch;
         }
+        if (this._cameraFovKick > 0.001) {
+            this._cameraFovKick = (this._cameraFovKick || 0) * Math.exp(-delta * 14);
+            if (this.camera?.isPerspectiveCamera) {
+                const baseFov = this.thirdPersonCameraConfig?.fieldOfView ?? THIRD_PERSON_CAMERA.fieldOfView;
+                this.camera.fov = baseFov - this._cameraFovKick;
+                this.camera.updateProjectionMatrix();
+            } else if (this.camera?.isOrthographicCamera) {
+                const baseZoom = this._baseOrthoZoom ?? 1.0;
+                this.camera.zoom = baseZoom + this._cameraFovKick * 0.02;
+                this.camera.updateProjectionMatrix();
+            }
+        }
 
         const lookAtX = cameraSubject.x + (this._menuParallaxX || 0) * 0.35;
         const lookAtY = cameraSubject.y + 0.4 + (this._menuParallaxY || 0) * 0.35;
@@ -33063,6 +33115,14 @@ export class ThreeGame {
             this.camera.position.z += trauma.offsetZ;
             this.camera.rotation.z += trauma.roll;
             this.camera.rotation.x += trauma.pitch;
+        }
+        if (this._cameraFovKick > 0.001) {
+            this._cameraFovKick = (this._cameraFovKick || 0) * Math.exp(-delta * 14);
+            if (this.camera?.isPerspectiveCamera) {
+                const baseFov = this.thirdPersonCameraConfig?.fieldOfView ?? THIRD_PERSON_CAMERA.fieldOfView;
+                this.camera.fov = baseFov - this._cameraFovKick;
+                this.camera.updateProjectionMatrix();
+            }
         }
         this.camera.lookAt(pose.lookAt);
     }
@@ -33153,7 +33213,14 @@ export class ThreeGame {
             this._cameraShakeIntensity = Math.max(this._cameraShakeIntensity, scaledIntensity);
             this._cameraShakeTimer = Math.max(this._cameraShakeTimer, duration);
             this.traumaManager?.addTrauma(Math.min(1.0, scaledIntensity * 2.2));
+            this.triggerCameraFovPunch?.(scaledIntensity * 2.2);
         }
+    }
+
+    triggerCameraFovPunch(amount = 1.0) {
+        const scale = this.cameraShakeScale ?? this.settings?.cameraShakeScale ?? 1.0;
+        if (scale <= 0.001) return;
+        this._cameraFovKick = Math.min(6.0, (this._cameraFovKick || 0) + amount * scale);
     }
 
     syncVisibleChunks(force = false, { prefetch = !force, processLimit = null } = {}) {
@@ -38429,6 +38496,7 @@ export class ThreeGame {
             ? rawSpawnBias
             : Number.isFinite(rawSpawnBias?.proto) ? rawSpawnBias.proto : 1;
         const scuttlerCandidates = [];
+        const sporeMortarCandidates = [];
         for (const p of placements) {
             // Re-verify after relaxation that it's still walkable
             if (!isWalkable(p.x, p.z)) continue;
@@ -38454,6 +38522,9 @@ export class ThreeGame {
             // the chunk's seeded stream (and every placement after) is unchanged.
             if (isChamber && !inAuthoredRoom && !templateNoEnemies && distFromSpawn > CHITIN_SCUTTLER.minDistFromSpawn) {
                 scuttlerCandidates.push(p);
+            }
+            if (isChamber && !inAuthoredRoom && !templateNoEnemies && distFromSpawn > 22) {
+                sporeMortarCandidates.push(p);
             }
             const loreChance = (templateCfg?.forceLore && !hasLoreTerminalThisChunk && isDeadEnd) ? 1.0 : (depthTierForScatter >= 2 ? 0.12 : 0.07);
             const canSpawnLore = isDeadEnd && !hasLoreTerminalThisChunk && distFromSpawn > 10;
@@ -38653,6 +38724,7 @@ export class ThreeGame {
                 z: point.z,
                 type: CHITIN_SCUTTLER.type,
                 scatterKey: `${chunkX},${chunkY}:scuttler:${index}`,
+                packIndex: point.packIndex,
                 scale: 1,
                 rotation: 0,
                 tiltX: 0,
@@ -38660,6 +38732,30 @@ export class ThreeGame {
                 elevation: 0.09,
                 groupType: 'scuttler-pack',
                 phase: index * 2.1,
+                opacity: 1
+            });
+        });
+
+        // Stationary bio-artillery mortar sentry (AAA plan §6.2 archetype 2).
+        const mortarPlacements = planSporeMortarPlacements({
+            seed: (this.hashTile(chunkX * 1013 + 37, chunkY * 709 + 43) ^ (this.runEntropy ?? 0)) >>> 0,
+            depthTier: depthTierForScatter,
+            biomeKey: chunkBiomeKey,
+            candidates: sporeMortarCandidates
+        });
+        mortarPlacements.forEach((point, index) => {
+            finalPlacements.push({
+                x: point.x,
+                z: point.z,
+                type: SPORE_MORTAR.type,
+                scatterKey: `${chunkX},${chunkY}:sporemortar:${index}`,
+                scale: 1.05,
+                rotation: 0,
+                tiltX: 0,
+                tiltZ: 0,
+                elevation: 0.1,
+                groupType: 'spore-mortar',
+                phase: index * 1.7,
                 opacity: 1
             });
         });
@@ -39099,7 +39195,7 @@ export class ThreeGame {
                 facingSign: 1,
                 phase: Math.random() * Math.PI * 2,
                 biomeTint: isScuttler ? CHITIN_SCUTTLER.tint : CRAWLER_TINT,
-                crawlerTuning: isScuttler ? scuttlerTuning() : null,
+                crawlerTuning: isScuttler ? scuttlerTuning(placement.packIndex) : null,
                 crawlerState: 'idle',
                 windupTimer: 0,
                 chargeTimer: 0,
@@ -39295,7 +39391,11 @@ export class ThreeGame {
                 biomeTint: isElite ? ELITE_IDENTITY.tint : tintColor,
                 sporesnailFight,
                 biomeBossFight,
-                staggerState
+                staggerState,
+                mortarTuning: placement.type === 'spore_mortar' ? sporeMortarTuning() : null,
+                mortarState: 'idle',
+                mortarChargeTimer: 0,
+                mortarCooldown: 1.0 + Math.random() * 2.0
             };
             if (isPreEnraged && !isBoss) {
                 clonedMat.color.setHex(SNAIL_ENRAGED_TINT);
@@ -42087,6 +42187,98 @@ export class ThreeGame {
         return stalker ?? null;
     }
 
+    updateSporeMortarBehavior(sprite, delta) {
+        const data = sprite.userData;
+        if (!data.mortarTuning) {
+            data.mortarTuning = sporeMortarTuning();
+        }
+        const tuning = data.mortarTuning;
+
+        // Stationary sentry: anchor position to prevent sliding
+        data.speed = 0;
+        if (data.anchorX === undefined) {
+            data.anchorX = sprite.position.x;
+            data.anchorZ = sprite.position.z;
+        } else {
+            sprite.position.x = data.anchorX;
+            sprite.position.z = data.anchorZ;
+        }
+
+        if (!this.player || this.isPlayerDead) return;
+
+        const dx = this.player.position.x - sprite.position.x;
+        const dz = this.player.position.z - sprite.position.z;
+        const distToPlayer = Math.hypot(dx, dz);
+
+        // Turn to face player horizontally
+        if (dx !== 0) {
+            data.facingSign = dx > 0 ? 1 : -1;
+            sprite.scale.x = (data.baseScaleX ?? 1.05) * data.facingSign;
+        }
+
+        const canTargetPlayer = this.canEnemyTargetPlayer?.(sprite) !== false;
+
+        if (data.mortarState === 'charging') {
+            data.mortarChargeTimer = (data.mortarChargeTimer ?? 0) - delta;
+
+            // Telegraph: throbbing scale and spore poofs
+            const chargeProgress = Math.max(0, 1 - (data.mortarChargeTimer / tuning.chargeDuration));
+            const pulse = 1.0 + Math.sin(chargeProgress * Math.PI * 6) * 0.16;
+            sprite.scale.y = (data.baseScaleY ?? 1.05) * pulse;
+
+            if (Math.random() < 0.22) {
+                this.spawnGearPoofEffect?.(sprite.position.x, sprite.position.z, 'bio_spores');
+            }
+
+            if (data.mortarChargeTimer <= 0) {
+                // Fire lobbed spore projectile
+                data.mortarState = 'idle';
+                data.mortarCooldown = tuning.cooldown + (Math.random() * 0.6 - 0.3);
+                sprite.scale.y = data.baseScaleY ?? 1.05;
+
+                const targetDist = Math.max(0.1, distToPlayer);
+                const flightTime = tuning.lobDuration ?? Math.max(0.6, Math.min(2.0, targetDist / (tuning.projectileSpeed ?? 10)));
+                const vx = dx / flightTime;
+                const vz = dz / flightTime;
+
+                this.spawnProjectile({
+                    x: sprite.position.x,
+                    z: sprite.position.z,
+                    vx,
+                    vz,
+                    ttl: flightTime,
+                    damage: tuning.directDamage ?? tuning.mortarDamage ?? 2,
+                    radius: tuning.explosionRadius ?? 0.38,
+                    isEnemy: true,
+                    options: {
+                        color: 0x76c843,
+                        glowColor: 0x44aa11,
+                        onExpire: (px, pz) => {
+                            this.spawnToxicSporePuddle(px, pz, true);
+                            this.spawnPhysicalBurst(px, pz, { color: 0x76c843, count: 10, upward: 0.28 });
+                            globalThis.window?.AudioManager?.play?.('enemy_attack_sporesnail', (this.audioAt?.(px, pz, { volume: 0.28, playbackRate: 0.75 }) ?? { volume: 0.28 }));
+                        }
+                    }
+                });
+
+                this.spawnPhysicalBurst(sprite.position.x, sprite.position.z, { color: 0x88e040, count: 7, upward: 0.25 });
+                globalThis.window?.AudioManager?.play?.('weapon_fire_shotgun', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.3, playbackRate: 0.6 }) ?? { volume: 0.3 }));
+            }
+        } else {
+            // Idle / cooling down
+            data.mortarCooldown = (data.mortarCooldown ?? 1.0) - delta;
+            sprite.scale.y = data.baseScaleY ?? 1.05;
+
+            const maxRange = tuning.maxRange ?? tuning.engageRange ?? 18;
+            const minRange = tuning.minRange ?? 3.5;
+            if (data.mortarCooldown <= 0 && canTargetPlayer && distToPlayer <= maxRange && distToPlayer >= minRange) {
+                data.mortarState = 'charging';
+                data.mortarChargeTimer = tuning.chargeDuration;
+                globalThis.window?.AudioManager?.play?.('ui_scan_ping', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.22, playbackRate: 0.5 }) ?? { volume: 0.22 }));
+            }
+        }
+    }
+
     updateChargerOrStalkerBehavior(sprite, delta, { isStalker = false } = {}) {
         const data = sprite.userData;
         if (!this.player || this.isPlayerDead) return;
@@ -44040,6 +44232,8 @@ export class ThreeGame {
                     // Nothing below may run for a held enemy.
                 } else if (child.userData.type === 'fungal_spore_vent') {
                     this.updateFungalSporeVentBehavior(child, delta);
+                } else if (child.userData.type === 'spore_mortar') {
+                    this.updateSporeMortarBehavior(child, delta);
                 } else if (child.userData.type === 'mycelium_stalker' || child.userData.type === 'bio_charger') {
                     this.updateChargerOrStalkerBehavior(child, delta, { isStalker: child.userData.type === 'mycelium_stalker' });
                 } else {
@@ -44056,7 +44250,9 @@ export class ThreeGame {
                 }
 
                 // A mark each stride: slime for snails, claw prints for walkers.
-                this.trackEnemyStep(child);
+                if (child.userData.type !== 'spore_mortar' && child.userData.type !== 'fungal_spore_vent') {
+                    this.trackEnemyStep(child);
+                }
 
                 // Sporesnail leaves slime puddles
                 if (child.userData.type === 'sporesnail' || child.userData.type === 'boss_sporesnail') {
@@ -47749,6 +47945,35 @@ export class ThreeGame {
     // out.
     isInTutorialRing(chunkX, chunkY) {
         return Math.max(Math.abs(chunkX), Math.abs(chunkY)) === 1;
+    }
+
+    startSectorZeroTutorial() {
+        if (!this.sectorZeroTutorial) {
+            this.sectorZeroTutorial = new SectorZeroTutorialManager({ game: this });
+        }
+        this._sectorZeroMovedDistance = 0;
+        this._sectorZeroMovedMs = 0;
+        this._setupSectorZeroEventListeners();
+        return this.sectorZeroTutorial.start();
+    }
+
+    _setupSectorZeroEventListeners() {
+        if (this._sectorZeroListenersBound || typeof window === 'undefined') return;
+        this._sectorZeroListenersBound = true;
+
+        const forwardEvent = (eventName) => (e) => {
+            this.sectorZeroTutorial?.handleEvent?.(eventName, e?.detail || {});
+        };
+
+        window.addEventListener('player-moved', forwardEvent('player-moved'));
+        window.addEventListener('weapon-equipped', forwardEvent('weapon-equipped'));
+        window.addEventListener('barrier-shot', forwardEvent('barrier-shot'));
+        window.addEventListener('obstacle-destroyed', forwardEvent('obstacle-destroyed'));
+        window.addEventListener('salvage-collected', forwardEvent('salvage-collected'));
+        window.addEventListener('console-deposited', forwardEvent('console-deposited'));
+        window.addEventListener('enemy-killed', forwardEvent('enemy-killed'));
+        window.addEventListener('gate-crossed', forwardEvent('gate-crossed'));
+        window.addEventListener('entered-procedural-sector', forwardEvent('entered-procedural-sector'));
     }
 
     // Seeded landform per chunk. The two-chunk ring around the crash site

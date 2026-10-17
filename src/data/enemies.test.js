@@ -23,6 +23,6 @@ describe('enemy stats', () => {
         expect(getEnemyStats('fungal_spore_vent', BASE)).toEqual({ maxHp: 6, speed: 0.0 });
         expect(getEnemyStats('mycelium_stalker', BASE)).toEqual({ maxHp: 5, speed: 2.2 });
         expect(getEnemyStats('bio_charger', BASE)).toEqual({ maxHp: 8, speed: 2.5 });
-        expect(getEnemyStats('spore_mortar', BASE)).toEqual({ maxHp: 5, speed: 1.0 });
+        expect(getEnemyStats('spore_mortar', BASE)).toEqual({ maxHp: 6, speed: 0.0 });
     });
 });

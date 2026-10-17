@@ -23,6 +23,7 @@
     "audit:world-emitters": "node scripts/audit-world-emitter-anchors.js",
     "audit:world-seeds:sweep": "node scripts/world-seed-portfolio-report.js --sweep-only --sweep=5000",
     "audit:combat-encounters": "node scripts/combat-encounter-report.js",
+    "audit:scuttler-balance": "node scripts/chitin-scuttler-balance-report.js",
     "audit:playtest-navigation": "node scripts/playtest-navigation-report.js",
     "audit:chroma-green": "node scripts/audit-chroma-green.js",
     "audit:armory-assets": "node scripts/audit-armory-assets.js",

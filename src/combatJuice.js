@@ -262,3 +262,38 @@ export function computeHitSquashStretch(_incomingHeading = 0, currentScale = { x
         duration: 0.12
     };
 }
+
+/**
+ * Calculates screen-space hit angle relative to camera planar forward.
+ * 0 rad = ahead/top, PI/2 = right, PI or -PI = behind/bottom, -PI/2 = left.
+ */
+export function computeScreenHitAngle(hitX, hitZ, playerPos, cameraForward) {
+    if (!playerPos || !cameraForward) return 0;
+    const dx = hitX - playerPos.x;
+    const dz = hitZ - playerPos.z;
+    if (dx === 0 && dz === 0) return 0;
+
+    const forwardX = cameraForward.x;
+    const forwardZ = cameraForward.y; // note Vector2 cameraPlanarForward: x is forwardX, y is forwardZ
+    const rightX = -forwardZ;
+    const rightZ = forwardX;
+
+    const dotForward = dx * forwardX + dz * forwardZ;
+    const dotRight = dx * rightX + dz * rightZ;
+
+    return Math.atan2(dotRight, dotForward);
+}
+
+/**
+ * Generates dynamic directional vignette gradient style for damage directionality.
+ * Positions a radial glow at the perimeter of the screen matching the hit direction.
+ */
+export function computeDirectionalVignetteStyle(screenAngle = 0, intensity = 1.0) {
+    const clampedIntensity = Math.min(1.0, Math.max(0.1, intensity));
+    const centerX = Math.round((50 + Math.sin(screenAngle) * 45) * 10) / 10;
+    const centerY = Math.round((50 - Math.cos(screenAngle) * 45) * 10) / 10;
+    const alphaCore = (0.55 * clampedIntensity).toFixed(2);
+    const alphaMid = (0.28 * clampedIntensity).toFixed(2);
+
+    return `radial-gradient(circle at ${centerX}% ${centerY}%, rgba(220, 38, 38, ${alphaCore}) 0%, rgba(185, 28, 28, ${alphaMid}) 40%, rgba(0, 0, 0, 0) 75%)`;
+}

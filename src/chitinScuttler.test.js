@@ -12,6 +12,14 @@ describe('chitin scuttler (AAA plan §6.2, built end to end)', () => {
         expect(CHITIN_SCUTTLER.maxHp).toBe(1);
     });
 
+    it('staggers pack telegraphs so followers cannot alpha-strike on one frame', () => {
+        const leader = scuttlerTuning(0);
+        const second = scuttlerTuning(1);
+        const third = scuttlerTuning(2);
+        expect(second.windup - leader.windup).toBeCloseTo(CHITIN_SCUTTLER.packWindupStagger);
+        expect(third.windup - second.windup).toBeCloseTo(CHITIN_SCUTTLER.packWindupStagger);
+    });
+
     it('plans a pack of up to three from nearby eligible floor points, deterministically', () => {
         const base = { depthTier: 2, biomeHasCrawlers: false, candidates: grid(12) };
         let hits = 0;
@@ -22,6 +30,7 @@ describe('chitin scuttler (AAA plan §6.2, built end to end)', () => {
             hits += 1;
             expect(pack.length).toBeGreaterThanOrEqual(2);
             expect(pack.length).toBeLessThanOrEqual(CHITIN_SCUTTLER.packSize);
+            expect(pack.map((point) => point.packIndex)).toEqual(pack.map((_, index) => index));
             const [leader, ...mates] = pack;
             for (const mate of mates) expect(Math.hypot(mate.x - leader.x, mate.z - leader.z)).toBeLessThanOrEqual(CHITIN_SCUTTLER.packRadius);
         }

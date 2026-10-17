@@ -4,7 +4,9 @@ import {
     TraumaManager,
     WEAPON_TRAUMA_TABLE,
     create3DMuzzleFlash,
-    computeHitSquashStretch
+    computeHitSquashStretch,
+    computeScreenHitAngle,
+    computeDirectionalVignetteStyle
 } from './combatJuice.js';
 
 describe('Combat Juice System', () => {
@@ -83,6 +85,43 @@ describe('Combat Juice System', () => {
             expect(result.targetScaleX).toBeGreaterThan(1);
             expect(result.targetScaleZ).toBeLessThan(1);
             expect(result.duration).toBeGreaterThan(0);
+        });
+    });
+
+    describe('directional damage vignette', () => {
+        it('computes screen hit angles correctly', () => {
+            const playerPos = { x: 0, z: 0 };
+            const forward = { x: 0, y: -1 }; // facing north (-z)
+            // Hit directly ahead (north, z = -5)
+            const angleAhead = computeScreenHitAngle(0, -5, playerPos, forward);
+            expect(angleAhead).toBeCloseTo(0);
+
+            // Hit directly from behind (south, z = +5)
+            const angleBehind = computeScreenHitAngle(0, 5, playerPos, forward);
+            expect(Math.abs(angleBehind)).toBeCloseTo(Math.PI);
+
+            // Hit from right (east, x = +5)
+            const angleRight = computeScreenHitAngle(5, 0, playerPos, forward);
+            expect(angleRight).toBeCloseTo(Math.PI / 2);
+
+            // Hit from left (west, x = -5)
+            const angleLeft = computeScreenHitAngle(-5, 0, playerPos, forward);
+            expect(angleLeft).toBeCloseTo(-Math.PI / 2);
+        });
+
+        it('computes directional radial gradient style positioned along screen edges', () => {
+            // Angle 0 (ahead) -> top edge (centerY ≈ 5)
+            const styleAhead = computeDirectionalVignetteStyle(0, 1.0);
+            expect(styleAhead).toContain('radial-gradient');
+            expect(styleAhead).toContain('50% 5%');
+
+            // Angle PI (behind) -> bottom edge (centerY ≈ 95)
+            const styleBehind = computeDirectionalVignetteStyle(Math.PI, 1.0);
+            expect(styleBehind).toContain('50% 95%');
+
+            // Angle PI / 2 (right) -> right edge (centerX ≈ 95, centerY ≈ 50)
+            const styleRight = computeDirectionalVignetteStyle(Math.PI / 2, 1.0);
+            expect(styleRight).toContain('95% 50%');
         });
     });
 });

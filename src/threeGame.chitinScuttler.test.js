@@ -46,6 +46,12 @@ describe('chitin scuttler in the game', () => {
         delete globalThis.window;
     });
 
+    it('preserves the lead attack but staggers follower windups', () => {
+        expect(scuttlerTuning(0).windup).toBe(CHITIN_SCUTTLER.windup);
+        expect(scuttlerTuning(1).windup).toBeGreaterThan(scuttlerTuning(0).windup);
+        expect(scuttlerTuning(2).windup).toBeGreaterThan(scuttlerTuning(1).windup);
+    });
+
     it('reports its own hits as a scuttler (death report, contact drops)', () => {
         const g = game();
         g.player.position = { x: 0.3, z: 0 };

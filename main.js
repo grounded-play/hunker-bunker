@@ -5258,6 +5258,7 @@ function generateDeathReport(stats, reason) {
         'sporesnail':         '> CAUSE: BIO-ENTITY CONTACT — SPORESNAIL IMPACT',
         'mycelium_stalker':   '> CAUSE: BIO-ENTITY AMBUSH — MYCELIUM STALKER IMPACT',
         'chitin_scuttler':    '> CAUSE: BIO-ENTITY SWARM — CHITIN SCUTTLER IMPACT',
+        'spore_mortar':       '> CAUSE: ARTILLERY BOMBARDMENT — SPORE MORTAR SHELL',
         'bio_charger':        '> CAUSE: BIO-ENTITY IMPACT — CHARGER HEAVY STRIKE',
         'combat':             '> CAUSE: BIO-ENTITY CLOSE-QUARTERS COMBAT',
         'enemy-projectile':   '> CAUSE: HOSTILE KINETIC IMPACT — ENEMY PROJECTILE',
@@ -9535,6 +9536,7 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
         window.AudioManager?.playVoiceCallout?.('comms_online', { volume: 0.95 });
 
         if (startTutorial) {
+            game?.startSectorZeroTutorial?.();
             await dialogueManager?.startTutorialSequence({ game });
         }
 

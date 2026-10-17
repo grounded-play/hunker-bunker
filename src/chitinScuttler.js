@@ -20,6 +20,7 @@ export const CHITIN_SCUTTLER = Object.freeze({
     // A point-blank pack of three killed a standing 3-HP operator in 2.5 s
     // at 0.18 / 0.9 (2026-10-17 run); these leave a beat to shoot first.
     windup: 0.28,             // crawler 0.35
+    packWindupStagger: 0.22,  // followers telegraph in sequence, not one alpha strike
     chargeSpeed: 9.0,         // crawler 7.0
     chargeMaxDuration: 0.7,   // crawler 1.0
     attackCooldown: 1.2,      // crawler 1.5
@@ -30,9 +31,16 @@ export const CHITIN_SCUTTLER = Object.freeze({
     packRadius: 5
 });
 
-export function scuttlerTuning() {
-    const { detectRadius, windup, chargeSpeed, chargeMaxDuration, attackCooldown } = CHITIN_SCUTTLER;
-    return { detectRadius, windup, chargeSpeed, chargeMaxDuration, attackCooldown };
+export function scuttlerTuning(packIndex = 0) {
+    const { detectRadius, windup, packWindupStagger, chargeSpeed, chargeMaxDuration, attackCooldown } = CHITIN_SCUTTLER;
+    const safeIndex = Number.isInteger(packIndex) ? Math.max(0, Math.min(CHITIN_SCUTTLER.packSize - 1, packIndex)) : 0;
+    return {
+        detectRadius,
+        windup: windup + safeIndex * packWindupStagger,
+        chargeSpeed,
+        chargeMaxDuration,
+        attackCooldown
+    };
 }
 
 // Deterministic [0, 1) from a seed and a salt (splitmix-style mixing).
@@ -63,5 +71,5 @@ export function planScuttlerPack({ seed = 0, depthTier = 0, biomeHasCrawlers = f
         .slice(0, CHITIN_SCUTTLER.packSize - 1)
         .map((entry) => entry.point);
     if (!mates.length) return [];
-    return [leader, ...mates].map((point) => ({ x: point.x, z: point.z }));
+    return [leader, ...mates].map((point, packIndex) => ({ x: point.x, z: point.z, packIndex }));
 }

@@ -1751,6 +1751,23 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
   overflow: hidden;
 }
 
+#directional-vignette-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s ease-out;
+}
+
+#directional-vignette-glow.flash {
+  animation: directional-vignette-fade 0.65s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+}
+
+@keyframes directional-vignette-fade {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 #hit-indicator-wedge {
   width: 0;
   height: 0;
