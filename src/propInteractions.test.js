@@ -366,6 +366,21 @@ describe('propInteractions', () => {
         expect(interactionSpecKeyFor({ type: 'prop_rock' })).toBe('prop_rock');
     });
 
+    it('prefers an installed module interaction over its shared catalogue model', () => {
+        const cabinet = {
+            position: { x: 1, z: 0 },
+            userData: {
+                type: 'life_arcade_cabinet',
+                world3dModelType: 'life_arcade_cabinet',
+                definitionId: 'arcade_blackjack_cabinet'
+            }
+        };
+        const game = { player: { position: { x: 0, z: 0 } }, scatterSprites: [cabinet] };
+
+        expect(interactionSpecKeyFor(cabinet.userData)).toBe('arcade_blackjack_cabinet');
+        expect(findNearestInteractableProp(game)?.spec.interactPrompt).toBe('[E] PLAY BLACK-ICE 21 (BLACKJACK)');
+    });
+
     // Health is three hearts. The coolant siphon dealt 10, a kill from full
     // health (session 2026-10-06). No interaction may cost more than a heart.
     it('never charges more than one heart for an interaction', () => {

@@ -20,6 +20,9 @@ describe('ThreeGame.collectSnailShell salvage multiplier (Depth Contract wiring)
         } };
         return {
             currentDepthTier,
+            dayState: { day: 1 },
+            blackjackDayPerks: { day: 1, highestTier: 0 },
+            getBlackjackDayPerks: ThreeGame.prototype.getBlackjackDayPerks,
             bank: { addShells: vi.fn(), getShells: vi.fn(() => 0) },
             spawnGearPoofEffect: vi.fn()
         };
@@ -59,6 +62,16 @@ describe('ThreeGame.collectSnailShell salvage multiplier (Depth Contract wiring)
         ThreeGame.prototype.collectSnailShell.call(fake, corpse);
 
         expect(fake.bank.addShells).toHaveBeenCalledWith(3);
+    });
+
+    it('stacks the tier-two Blackjack day reward after the depth multiplier', () => {
+        const fake = buildFakeGameInstance(2);
+        fake.blackjackDayPerks = { day: 1, highestTier: 2 };
+        const corpse = { userData: { shellValue: 10, collected: false }, position: { x: 0, z: 0 } };
+
+        ThreeGame.prototype.collectSnailShell.call(fake, corpse);
+
+        expect(fake.bank.addShells).toHaveBeenCalledWith(18);
     });
 });
 

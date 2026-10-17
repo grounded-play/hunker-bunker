@@ -1,9 +1,12 @@
 import { SURVIVOR_REWARDS } from './survivorContract.js';
 import { BANK_CURRENCY_KEYS, describeBankTransaction } from './economyReceipt.js';
 import { mergeSquadProgress } from './squadProgress.js';
+import { BASE_ARCADE_BANK_COST } from './data/baseModules.js';
 
 const STORAGE_KEY = 'hb_bank';
 const BANK_SCHEMA_VERSION = 8;
+
+export const BASE_ARCADE_BUILD_COST = BASE_ARCADE_BANK_COST;
 
 export function shellPriceOf(cost = {}) {
     const tech = Number(cost?.tech) || 0;
@@ -482,6 +485,7 @@ function toSerializableState(raw) {
         for (const key of GOAL_ORDER) {
             base.unlocks[key] = Boolean(raw.unlocks[key]);
         }
+        base.unlocks.baseArcadeBlackjack = Boolean(raw.unlocks.baseArcadeBlackjack);
         derivedLevel = deriveLegacyO2GeneratorLevel(base.unlocks);
     }
 
@@ -928,6 +932,22 @@ export class BankManager {
         this.save();
         emit('base-arcade-unlocked', { bank: this.getState() });
         return true;
+    }
+
+    purchaseBaseArcade(cost = BASE_ARCADE_BUILD_COST) {
+        if (this.isBaseArcadeUnlocked()) return { ok: true, alreadyUnlocked: true };
+        const requested = normalizeInventory(cost);
+        if (!this.canAfford(requested)) return { ok: false, reason: 'insufficient_funds', cost: requested };
+        const next = this.getState();
+        next.med -= requested.med;
+        next.ammo -= requested.ammo;
+        next.tech -= requested.tech;
+        next.coin -= requested.coin;
+        next.unlocks.baseArcadeBlackjack = true;
+        this.save(next);
+        emit('base-arcade-unlocked', { cost: requested, bank: this.getState() });
+        emit('bank-updated', { bank: this.getState() });
+        return { ok: true, cost: requested };
     }
 
     getGoalUpgradeCost(goalKey, level = 2) {

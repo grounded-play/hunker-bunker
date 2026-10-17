@@ -1157,7 +1157,24 @@
       "reflexes": "ARKADE-REFLEXE: Nachladen für den Rest dieser Expedition 10 % schneller.",
       "sheen_unlocked": "WAFFENSCHIMMER FREIGESCHALTET: {name}",
       "decal_unlocked": "DECAL FREIGESCHALTET: {name}",
-      "tina_radio": "BÜRGERMEISTERIN TINA: Sieh an, Großmaul... endlich hat jemand meinen Rekord geknackt. Komm beim Drift-Außenposten vorbei, die Drinks gehen auf mich."
+      "tina_radio": "BÜRGERMEISTERIN TINA: Sieh an, Großmaul... endlich hat jemand meinen Rekord geknackt. Komm beim Drift-Außenposten vorbei, die Drinks gehen auf mich.",
+      "blackjack_title": "BLACK-ICE 21",
+      "blackjack_prompt": "[E] BLACK-ICE 21 SPIELEN (BLACKJACK)",
+      "blackjack_built": "FREIZEITBEREICH ONLINE // BLACK-ICE-21-AUTOMAT GEBAUT",
+      "blackjack_wager": "AKTUELLER EINSATZ: {amount} MÜNZEN",
+      "blackjack_win": "OPERATOR GEWINNT: +{amount} MÜNZEN",
+      "blackjack_tier_clear": "STUFE {tier} GESCHAFFT: +{bonus} BONUSMÜNZEN",
+      "blackjack_module": "BASIS-FREIZEITMODUL",
+      "blackjack_module_desc": "ROGUELIKE-BLACKJACK-TERMINAL · FESTE INSTALLATION AN DER ABSTURZSTELLE",
+      "blackjack_installed": "AN DER ABSTURZSTELLE INSTALLIERT",
+      "blackjack_build": "BLACK-ICE-21-AUTOMAT BAUEN",
+      "blackjack_controls_wager": "[↑/↓] EINSATZ",
+      "blackjack_controls_deal": "[LEERTASTE] GEBEN/HALTEN",
+      "blackjack_controls_hit": "[1] KARTE",
+      "blackjack_controls_stand": "[2] HALTEN",
+      "blackjack_controls_double": "[3] VERDOPPELN",
+      "blackjack_controls_chips": "[4/5/6] KRYO / THERMAL / EMP",
+      "blackjack_controls_exit": "[ESC] VERLASSEN"
     },
     "interstitial": {
       "track": "TITEL {id}"

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { BankManager, FOUNDRY_ACTIVATION_COST, GOAL_COSTS, O2_GENERATOR_UPGRADES, shellPriceOf, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS } from './bank.js';
+import { BankManager, BASE_ARCADE_BUILD_COST, FOUNDRY_ACTIVATION_COST, GOAL_COSTS, O2_GENERATOR_UPGRADES, shellPriceOf, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS } from './bank.js';
 
 function createMemoryStorage() {
     const memory = new Map();
@@ -37,7 +37,8 @@ describe('BankManager', () => {
                 o2Bubble: false,
                 hullExpansion: false,
                 radarNode: false,
-                reactorCompressor: false
+                reactorCompressor: false,
+                baseArcadeBlackjack: false
             },
             hullExpansionLevel: 0,
             radarNodeLevel: 0,
@@ -137,8 +138,22 @@ describe('BankManager', () => {
             o2Bubble: true,
             hullExpansion: true,
             radarNode: true,
-            reactorCompressor: true
+            reactorCompressor: true,
+            baseArcadeBlackjack: false
         });
+    });
+
+    it('purchases the base arcade atomically and never charges twice', () => {
+        const storage = createMemoryStorage();
+        const bank = new BankManager({ storage });
+        bank.deposit(BASE_ARCADE_BUILD_COST);
+
+        expect(bank.purchaseBaseArcade()).toMatchObject({ ok: true, cost: BASE_ARCADE_BUILD_COST });
+        expect(bank.getState()).toMatchObject({ tech: 0, coin: 0, med: 0 });
+        expect(bank.isBaseArcadeUnlocked()).toBe(true);
+
+        expect(bank.purchaseBaseArcade()).toEqual({ ok: true, alreadyUnlocked: true });
+        expect(new BankManager({ storage }).isBaseArcadeUnlocked()).toBe(true);
     });
 
     it('loads persisted state from storage', () => {

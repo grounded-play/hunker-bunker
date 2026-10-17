@@ -1157,7 +1157,24 @@
       "reflexes": "REFLEJOS DE ARCADE: recargas 10 % más rápidas por el resto de esta expedición.",
       "sheen_unlocked": "BRILLO DE ARMA DESBLOQUEADO: {name}",
       "decal_unlocked": "CALCOMANÍA DESBLOQUEADA: {name}",
-      "tina_radio": "ALCALDESA TINA: Vaya, vaya, estrella... por fin alguien rompió mi récord. Pasa por el puesto de la deriva; las bebidas corren por mi cuenta."
+      "tina_radio": "ALCALDESA TINA: Vaya, vaya, estrella... por fin alguien rompió mi récord. Pasa por el puesto de la deriva; las bebidas corren por mi cuenta.",
+      "blackjack_title": "BLACK-ICE 21",
+      "blackjack_prompt": "[E] JUGAR BLACK-ICE 21 (BLACKJACK)",
+      "blackjack_built": "ÁREA RECREATIVA EN LÍNEA // GABINETE BLACK-ICE 21 CONSTRUIDO",
+      "blackjack_wager": "APUESTA ACTUAL: {amount} MONEDAS",
+      "blackjack_win": "GANA EL OPERADOR: +{amount} MONEDAS",
+      "blackjack_tier_clear": "NIVEL {tier} SUPERADO: +{bonus} MONEDAS EXTRA",
+      "blackjack_module": "MÓDULO RECREATIVO DE LA BASE",
+      "blackjack_module_desc": "TERMINAL DE BLACKJACK ROGUELIKE · INSTALACIÓN PERMANENTE EN EL SITIO DEL IMPACTO",
+      "blackjack_installed": "INSTALADO EN EL SITIO DEL IMPACTO",
+      "blackjack_build": "CONSTRUIR GABINETE BLACK-ICE 21",
+      "blackjack_controls_wager": "[↑/↓] APUESTA",
+      "blackjack_controls_deal": "[ESPACIO] REPARTIR/PLANTARSE",
+      "blackjack_controls_hit": "[1] PEDIR",
+      "blackjack_controls_stand": "[2] PLANTARSE",
+      "blackjack_controls_double": "[3] DOBLAR",
+      "blackjack_controls_chips": "[4/5/6] CRIO / TÉRMICO / PEM",
+      "blackjack_controls_exit": "[ESC] SALIR"
     },
     "interstitial": {
       "track": "PISTA {id}"

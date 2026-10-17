@@ -1157,7 +1157,24 @@
       "reflexes": "АРКАДНЫЕ РЕФЛЕКСЫ: перезарядка на 10% быстрее до конца экспедиции.",
       "sheen_unlocked": "ОТДЕЛКА ОРУЖИЯ ОТКРЫТА: {name}",
       "decal_unlocked": "ДЕКАЛЬ ОТКРЫТА: {name}",
-      "tina_radio": "МЭР ТИНА: Ну-ну, герой... кто-то наконец побил мой рекорд. Загляни на дрейфовый аванпост — выпивка за мой счёт."
+      "tina_radio": "МЭР ТИНА: Ну-ну, герой... кто-то наконец побил мой рекорд. Загляни на дрейфовый аванпост — выпивка за мой счёт.",
+      "blackjack_title": "BLACK-ICE 21",
+      "blackjack_prompt": "[E] ИГРАТЬ В BLACK-ICE 21 (БЛЭКДЖЕК)",
+      "blackjack_built": "ЗОНА ОТДЫХА В СЕТИ // АВТОМАТ BLACK-ICE 21 ПОСТРОЕН",
+      "blackjack_wager": "ТЕКУЩАЯ СТАВКА: {amount} МОНЕТ",
+      "blackjack_win": "ОПЕРАТОР ПОБЕЖДАЕТ: +{amount} МОНЕТ",
+      "blackjack_tier_clear": "УРОВЕНЬ {tier} ПРОЙДЕН: +{bonus} БОНУСНЫХ МОНЕТ",
+      "blackjack_module": "МОДУЛЬ ОТДЫХА БАЗЫ",
+      "blackjack_module_desc": "ТЕРМИНАЛ РОГАЛИК-БЛЭКДЖЕКА · ПОСТОЯННАЯ УСТАНОВКА НА МЕСТЕ КРУШЕНИЯ",
+      "blackjack_installed": "УСТАНОВЛЕНО НА МЕСТЕ КРУШЕНИЯ",
+      "blackjack_build": "ПОСТРОИТЬ АВТОМАТ BLACK-ICE 21",
+      "blackjack_controls_wager": "[↑/↓] СТАВКА",
+      "blackjack_controls_deal": "[ПРОБЕЛ] РАЗДАЧА/СТОП",
+      "blackjack_controls_hit": "[1] ЕЩЁ",
+      "blackjack_controls_stand": "[2] СТОП",
+      "blackjack_controls_double": "[3] УДВОИТЬ",
+      "blackjack_controls_chips": "[4/5/6] КРИО / ТЕРМО / ЭМИ",
+      "blackjack_controls_exit": "[ESC] ВЫХОД"
     },
     "interstitial": {
       "track": "ТРЕК {id}"

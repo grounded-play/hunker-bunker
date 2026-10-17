@@ -1672,6 +1672,11 @@ export function handleCustomPropDestruction(game, propKey, propPosition, propObj
  * acts like what the player sees.
  */
 export function interactionSpecKeyFor(data) {
+    // Installed base modules may reuse a catalogue model while providing a
+    // more specific interaction (the Blackjack cabinet renders with the
+    // ordinary arcade GLB). Prefer that authored identity when present.
+    const definition = data?.definitionId;
+    if (definition && PROP_INTERACTION_SPECS[definition]) return definition;
     const key = data?.type || data?.modelKey || data?.propKey;
     if (key && PROP_INTERACTION_SPECS[key]) return key;
     const model = data?.world3dModelType;

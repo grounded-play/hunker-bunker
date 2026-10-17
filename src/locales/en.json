@@ -1163,7 +1163,18 @@
       "blackjack_built": "RECREATION BAY ONLINE // BLACK-ICE 21 CABINET CONSTRUCTED",
       "blackjack_wager": "CURRENT WAGER: {amount} COIN",
       "blackjack_win": "OPERATOR WINS: +{amount} COIN",
-      "blackjack_tier_clear": "TIER {tier} CLEARED: +{bonus} BONUS COIN"
+      "blackjack_tier_clear": "TIER {tier} CLEARED: +{bonus} BONUS COIN",
+      "blackjack_module": "BASE RECREATION MODULE",
+      "blackjack_module_desc": "ROGUELIKE BLACKJACK TERMINAL · PERMANENT CRASH-SITE INSTALLATION",
+      "blackjack_installed": "INSTALLED AT CRASH SITE",
+      "blackjack_build": "BUILD BLACK-ICE 21 CABINET",
+      "blackjack_controls_wager": "[↑/↓] WAGER",
+      "blackjack_controls_deal": "[SPACE] DEAL/STAND",
+      "blackjack_controls_hit": "[1] HIT",
+      "blackjack_controls_stand": "[2] STAND",
+      "blackjack_controls_double": "[3] DOUBLE",
+      "blackjack_controls_chips": "[4/5/6] CRYO / THERMAL / EMP",
+      "blackjack_controls_exit": "[ESC] EXIT"
     },
     "interstitial": {
       "track": "TRACK {id}"

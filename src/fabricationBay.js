@@ -9,7 +9,7 @@
  * pieces are injected, so it is testable without a browser.
  */
 import { assetUrl } from './assetUrl.js';
-import { FOUNDRY_ACTIVATION_COST } from './bank.js';
+import { BASE_ARCADE_BUILD_COST, FOUNDRY_ACTIVATION_COST } from './bank.js';
 import { describeFieldWeapon } from './fieldWeapon.js';
 import {
     FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES,
@@ -208,6 +208,37 @@ export function createFabricationBay({
         return true;
     }
 
+    function renderBaseArcadePanel(grid, bank) {
+        const unlocked = bankManager.isBaseArcadeUnlocked?.() === true;
+        const affordable = bankManager.canAfford(BASE_ARCADE_BUILD_COST);
+        const panel = doc.createElement('div');
+        panel.className = 'fab-activation-panel fab-activation-panel--arcade';
+        panel.innerHTML = `
+        <div class="fab-activation-panel__kicker">${t('ui.arcade.blackjack_module')}</div>
+        <div class="fab-activation-panel__title">${t('ui.arcade.blackjack_title')}</div>
+        <div class="fab-activation-panel__desc">${t('ui.arcade.blackjack_module_desc')}</div>
+        <div class="fab-activation-panel__cost">${costText(BASE_ARCADE_BUILD_COST, bank, { showHaveNeed: !affordable })}</div>`;
+        const button = doc.createElement('button');
+        button.id = 'fab-build-blackjack-arcade';
+        button.className = 'fab-card__btn';
+        button.disabled = unlocked || !affordable || typeof getGame()?.purchaseBaseArcadeCabinet !== 'function';
+        button.textContent = unlocked
+            ? t('ui.arcade.blackjack_installed')
+            : affordable ? t('ui.arcade.blackjack_build') : missingText(BASE_ARCADE_BUILD_COST, bank);
+        button.addEventListener('click', () => {
+            const result = getGame()?.purchaseBaseArcadeCabinet?.();
+            if (result?.ok) {
+                playSound('upgrade_unlock', { volume: 0.65 });
+                showPrompt(t('ui.arcade.blackjack_built'));
+            } else {
+                playSound('ui_error', { volume: 0.5 });
+            }
+            render();
+        });
+        panel.appendChild(button);
+        grid.appendChild(panel);
+    }
+
     function renderRecipeCard(grid, recipe, bank) {
         const fabricated = fabricator.isFabricated(recipe.id);
         // These are real current-run outputs, not concept collection cards.
@@ -329,6 +360,8 @@ export function createFabricationBay({
             setTxt('fab-summary', `FOUNDRY ACTIVATION: ${costText(FOUNDRY_ACTIVATION_COST, bank, { showHaveNeed: !bankManager.canActivateFoundry() })}`);
             return;
         }
+
+        renderBaseArcadePanel(grid, bank);
 
         // Bay is online: show the roll panel and sync the roll button.
         rollPanel?.classList.remove('hidden');

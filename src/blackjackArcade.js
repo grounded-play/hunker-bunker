@@ -51,6 +51,56 @@ export const HACK_CHIP_SPECS = Object.freeze({
 
 export const BET_TIERS = Object.freeze([2, 5, 10, 25, 50]);
 export const BLACKJACK_STORAGE_KEY = 'hb_arcade_blackjack_stats_v1';
+export const BLACKJACK_HOUSE_PROFIT_CAP = 100;
+export const BLACKJACK_TIER_HANDS = 3;
+
+function clampWhole(value, fallback = 0) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? Math.max(0, Math.floor(numeric)) : fallback;
+}
+
+export function normalizeBlackjackStats(value = {}, day = 1) {
+    const currentDay = Math.max(1, clampWhole(day, 1));
+    const storedDay = Math.max(1, clampWhole(value?.houseDay, currentDay));
+    return {
+        bestStreak: clampWhole(value?.bestStreak),
+        totalHandsWon: clampWhole(value?.totalHandsWon),
+        totalCoinsWon: clampWhole(value?.totalCoinsWon),
+        houseDay: currentDay,
+        houseProfitPaid: storedDay === currentDay
+            ? Math.min(BLACKJACK_HOUSE_PROFIT_CAP, clampWhole(value?.houseProfitPaid))
+            : 0
+    };
+}
+
+export function loadBlackjackStats(storage = null, day = 1) {
+    const store = storage ?? (typeof window !== 'undefined' ? window.localStorage : null);
+    if (!store) return normalizeBlackjackStats({}, day);
+    try {
+        return normalizeBlackjackStats(JSON.parse(store.getItem(BLACKJACK_STORAGE_KEY) || '{}'), day);
+    } catch {
+        return normalizeBlackjackStats({}, day);
+    }
+}
+
+export function saveBlackjackStats(stats, storage = null, day = 1) {
+    const normalized = normalizeBlackjackStats(stats, day);
+    const store = storage ?? (typeof window !== 'undefined' ? window.localStorage : null);
+    try {
+        store?.setItem(BLACKJACK_STORAGE_KEY, JSON.stringify(normalized));
+    } catch {
+        // A blocked storage write must not interrupt an already-settled wager.
+    }
+    return normalized;
+}
+
+export function legalBlackjackBet(value, fallback = 5) {
+    const requested = Number(value);
+    if (BET_TIERS.includes(requested)) return requested;
+    return BET_TIERS.reduce((best, tier) => (
+        Math.abs(tier - requested) < Math.abs(best - requested) ? tier : best
+    ), BET_TIERS.includes(fallback) ? fallback : 5);
+}
 
 /**
  * Creates a standard shuffled 52-card deck.
@@ -109,21 +159,24 @@ export function calculateHandValue(hand = []) {
     };
 }
 
+export function calculatePlayerHandValue(hand = [], activeHacks = []) {
+    const base = calculateHandValue(hand);
+    if (!activeHacks.includes(HACK_CHIPS.THERMAL_ACE)) return base;
+    if (base.value === 19 || base.value === 20) {
+        return { ...base, value: 21, isBust: false, isBlackjack: false, isModified: true };
+    }
+    if (base.value > 21 && base.value - 2 <= 21) {
+        return { ...base, value: base.value - 2, isBust: false, isBlackjack: false, isModified: true };
+    }
+    return base;
+}
+
 /**
  * Evaluates round outcome and computes payout.
  */
 export function evaluateRoundOutcome(playerHand, dealerHand, bet = 5, activeHacks = []) {
-    let playerVal = calculateHandValue(playerHand);
-    let dealerVal = calculateHandValue(dealerHand);
-
-    // Apply Thermal Ace hack if active
-    if (activeHacks.includes(HACK_CHIPS.THERMAL_ACE)) {
-        if (playerVal.value === 19 || playerVal.value === 20) {
-            playerVal = { ...playerVal, value: 21 };
-        } else if (playerVal.value > 21 && playerVal.value - 2 <= 21) {
-            playerVal = { ...playerVal, value: playerVal.value - 2, isBust: false };
-        }
-    }
+    const playerVal = calculatePlayerHandValue(playerHand, activeHacks);
+    const dealerVal = calculateHandValue(dealerHand);
 
     if (playerVal.isBlackjack && dealerVal.isBlackjack) {
         return { result: 'PUSH', payout: bet, message: 'DOUBLE BLACKJACK — PUSH' };
@@ -152,10 +205,10 @@ export function evaluateRoundOutcome(playerHand, dealerHand, bet = 5, activeHack
 /**
  * Creates a new Blackjack game state.
  */
-export function createBlackjackGame({ bankCoins = 50 } = {}) {
+export function createBlackjackGame({ bankCoins = 50, stats = {} } = {}) {
     return {
         phase: 'BETTING', // 'BETTING' | 'PLAYER_TURN' | 'DEALER_TURN' | 'ROUND_OVER'
-        bankCoins,
+        bankCoins: clampWhole(bankCoins),
         currentBet: 5,
         deck: createBlackjackDeck(),
         playerHand: [],
@@ -168,9 +221,10 @@ export function createBlackjackGame({ bankCoins = 50 } = {}) {
         ],
         activeHacks: [],
         streak: 0,
-        bestStreak: 0,
-        totalHandsWon: 0,
-        totalCoinsWon: 0,
+        bestStreak: clampWhole(stats.bestStreak),
+        totalHandsWon: clampWhole(stats.totalHandsWon),
+        totalCoinsWon: clampWhole(stats.totalCoinsWon),
+        roundSerial: 0,
         lastOutcome: null,
         message: 'WELCOME TO BLACK-ICE 21. PLACE YOUR WAGER.'
     };
@@ -201,12 +255,13 @@ export function stepBlackjackGame(state, action = {}) {
 
     if (action.action === 'DEAL') {
         if (next.phase !== 'BETTING' && next.phase !== 'ROUND_OVER') return next;
-        const bet = Math.max(2, Number(action.bet ?? next.currentBet) || 5);
+        const bet = legalBlackjackBet(action.bet ?? next.currentBet, next.currentBet);
         if (next.deck.length < 15) {
             next.deck = createBlackjackDeck();
         }
 
         next.currentBet = bet;
+        next.roundSerial = clampWhole(next.roundSerial) + 1;
         next.activeHacks = [];
         next.dealerRevealed = false;
         next.playerHand = [next.deck.pop(), next.deck.pop()];
@@ -246,10 +301,11 @@ export function stepBlackjackGame(state, action = {}) {
             next.playerHand.pop();
             const safeCard = { rank: 'A', suit: drawn.suit };
             next.playerHand.push(safeCard);
-            pVal = calculateHandValue(next.playerHand);
             next.activeHacks = next.activeHacks.filter((h) => h !== HACK_CHIPS.EMP_SHIELD);
             next.message = 'EMP SHIELD DISCHARGED: BUST NEGATED.';
         }
+
+        pVal = calculatePlayerHandValue(next.playerHand, next.activeHacks);
 
         if (pVal.isBust) {
             next.dealerRevealed = true;
@@ -269,8 +325,16 @@ export function stepBlackjackGame(state, action = {}) {
         if (next.phase !== 'PLAYER_TURN' || next.playerHand.length !== 2) return next;
         next.currentBet *= 2;
         if (next.deck.length < 5) next.deck = createBlackjackDeck();
-        next.playerHand.push(next.deck.pop());
-        const pVal = calculateHandValue(next.playerHand);
+        const drawn = next.deck.pop();
+        next.playerHand.push(drawn);
+        let pVal = calculateHandValue(next.playerHand);
+
+        if (pVal.isBust && next.activeHacks.includes(HACK_CHIPS.EMP_SHIELD)) {
+            next.playerHand.pop();
+            next.playerHand.push({ rank: 'A', suit: drawn.suit });
+            next.activeHacks = next.activeHacks.filter((h) => h !== HACK_CHIPS.EMP_SHIELD);
+        }
+        pVal = calculatePlayerHandValue(next.playerHand, next.activeHacks);
 
         if (pVal.isBust) {
             next.dealerRevealed = true;
@@ -314,6 +378,7 @@ export function stepBlackjackGame(state, action = {}) {
     }
 
     if (action.action === 'USE_HACK') {
+        if (next.phase !== 'PLAYER_TURN') return next;
         const chip = next.chips.find((c) => c.id === action.chipId);
         if (!chip || chip.used) return next;
         chip.used = true;
@@ -329,19 +394,58 @@ export function stepBlackjackGame(state, action = {}) {
  * Controller managing the Black-Ice 21 CRT overlay, canvas rendering, and user input.
  */
 export class BlackjackArcadeController {
-    constructor({ game = null } = {}) {
+    constructor({ game = null, storage = null, dayProvider = null } = {}) {
         this.game = game;
-        this.state = createBlackjackGame({ bankCoins: this._getBankCoins() });
+        this.storage = storage ?? (typeof window !== 'undefined' ? window.localStorage : null);
+        this.dayProvider = dayProvider ?? (() => this.game?.dayState?.day ?? 1);
+        this.stats = loadBlackjackStats(this.storage, this._getDay());
+        this.state = createBlackjackGame({ bankCoins: this._getBankCoins(), stats: this.stats });
         this.overlayEl = null;
         this.canvasEl = null;
         this.ctx = null;
         this.isOpenFlag = false;
         this.rafId = null;
+        this.settledRounds = new Set();
         this._boundKeyDown = this._onKeyDown.bind(this);
     }
 
     _getBankCoins() {
-        return Number(this.game?.bank?.getState?.()?.coin ?? 50) || 50;
+        const coins = Number(this.game?.bank?.getState?.()?.coin ?? 0);
+        return Number.isFinite(coins) ? Math.max(0, Math.floor(coins)) : 0;
+    }
+
+    _getDay() {
+        return Math.max(1, clampWhole(this.dayProvider?.(), 1));
+    }
+
+    _syncDailyStats() {
+        this.stats = normalizeBlackjackStats(this.stats, this._getDay());
+        return this.stats;
+    }
+
+    _houseProfitRemaining() {
+        const stats = this._syncDailyStats();
+        return Math.max(0, BLACKJACK_HOUSE_PROFIT_CAP - stats.houseProfitPaid);
+    }
+
+    _persistStats() {
+        this.stats = saveBlackjackStats({
+            ...this.stats,
+            bestStreak: Math.max(this.stats.bestStreak, this.state.bestStreak),
+            totalHandsWon: this.state.totalHandsWon,
+            totalCoinsWon: this.state.totalCoinsWon
+        }, this.storage, this._getDay());
+    }
+
+    _applyAction(action) {
+        const previousPhase = this.state.phase;
+        const previousRound = this.state.roundSerial;
+        this.state = stepBlackjackGame(this.state, action);
+        if (this.state.phase === 'ROUND_OVER'
+            && (previousPhase !== 'ROUND_OVER' || this.state.roundSerial !== previousRound)) {
+            this._handleRoundPayout();
+        }
+        return this.state;
     }
 
     isOpen() {
@@ -349,7 +453,8 @@ export class BlackjackArcadeController {
     }
 
     open() {
-        this.state = createBlackjackGame({ bankCoins: this._getBankCoins() });
+        this._syncDailyStats();
+        this.state.bankCoins = this._getBankCoins();
         this._ensureDom();
         if (this.overlayEl) {
             this.overlayEl.classList.remove('hidden');
@@ -395,13 +500,13 @@ export class BlackjackArcadeController {
                         <div class="arcade-cabinet-crt-lines" aria-hidden="true"></div>
                     </div>
                     <div class="arcade-cabinet-controls-hint">
-                        <span>[↑/↓] WAGER</span>
-                        <span>[SPACE] DEAL/STAND</span>
-                        <span>[1] HIT</span>
-                        <span>[2] STAND</span>
-                        <span>[3] DOUBLE</span>
-                        <span>[4] HACK CHIP</span>
-                        <span>[ESC] EXIT</span>
+                        <span data-i18n="ui.arcade.blackjack_controls_wager">[↑/↓] WAGER</span>
+                        <span data-i18n="ui.arcade.blackjack_controls_deal">[SPACE] DEAL/STAND</span>
+                        <span data-i18n="ui.arcade.blackjack_controls_hit">[1] HIT</span>
+                        <span data-i18n="ui.arcade.blackjack_controls_stand">[2] STAND</span>
+                        <span data-i18n="ui.arcade.blackjack_controls_double">[3] DOUBLE</span>
+                        <span data-i18n="ui.arcade.blackjack_controls_chips">[4/5/6] CRYO / THERMAL / EMP</span>
+                        <span data-i18n="ui.arcade.blackjack_controls_exit">[ESC] EXIT</span>
                     </div>
                 </div>
             `;
@@ -438,35 +543,34 @@ export class BlackjackArcadeController {
                     this._render();
                     return;
                 }
+                if (this._houseProfitRemaining() <= 0) {
+                    this.state.message = 'HOUSE CREDIT FLOAT EXHAUSTED UNTIL NEXT MORNING.';
+                    this._render();
+                    return;
+                }
                 if (bank) bank.spend({ coin: this.state.currentBet });
-                this.state = stepBlackjackGame(this.state, { action: 'DEAL', bet: this.state.currentBet });
+                this._applyAction({ action: 'DEAL', bet: this.state.currentBet });
                 this.state.bankCoins = this._getBankCoins();
             }
         } else if (this.state.phase === 'PLAYER_TURN') {
             if (e.key === '1' || e.key === 'h' || e.key === 'H') {
-                this.state = stepBlackjackGame(this.state, { action: 'HIT' });
+                this._applyAction({ action: 'HIT' });
             } else if (e.key === '2' || e.key === 's' || e.key === 'S' || e.code === 'Space') {
-                this.state = stepBlackjackGame(this.state, { action: 'STAND' });
-                // Check payout if round ended
-                if (this.state.phase === 'ROUND_OVER') {
-                    this._handleRoundPayout();
-                }
+                this._applyAction({ action: 'STAND' });
             } else if (e.key === '3' || e.key === 'd' || e.key === 'D') {
                 const bank = this.game?.bank;
                 if (bank && !bank.canAfford({ coin: this.state.currentBet })) {
                     this.state.message = 'CANNOT AFFORD DOUBLE DOWN WAGER!';
                 } else {
                     if (bank) bank.spend({ coin: this.state.currentBet });
-                    this.state = stepBlackjackGame(this.state, { action: 'DOUBLE_DOWN' });
-                    if (this.state.phase === 'ROUND_OVER') {
-                        this._handleRoundPayout();
-                    }
+                    this._applyAction({ action: 'DOUBLE_DOWN' });
                 }
-            } else if (e.key === '4' || e.key === 'k' || e.key === 'K') {
-                const avail = this.state.chips.find((c) => !c.used);
-                if (avail) {
-                    this.state = stepBlackjackGame(this.state, { action: 'USE_HACK', chipId: avail.id });
-                }
+            } else if (['4', '5', '6', 'k', 'K'].includes(e.key)) {
+                const requestedIndex = e.key === '5' ? 1 : e.key === '6' ? 2 : null;
+                const chip = requestedIndex == null
+                    ? this.state.chips.find((entry) => !entry.used)
+                    : this.state.chips[requestedIndex];
+                if (chip && !chip.used) this._applyAction({ action: 'USE_HACK', chipId: chip.id });
             }
         }
         this._render();
@@ -474,12 +578,37 @@ export class BlackjackArcadeController {
 
     _handleRoundPayout() {
         const outcome = this.state.lastOutcome;
-        if (!outcome || outcome.payout <= 0) return;
+        const roundSerial = clampWhole(this.state.roundSerial);
+        if (!outcome || this.settledRounds.has(roundSerial)) return false;
+        this.settledRounds.add(roundSerial);
+
+        const grossPayout = clampWhole(outcome.payout);
+        const returnedStake = Math.min(this.state.currentBet, grossPayout);
+        const grossProfit = Math.max(0, grossPayout - returnedStake);
+        const creditedProfit = Math.min(grossProfit, this._houseProfitRemaining());
+        const creditedPayout = returnedStake + creditedProfit;
+        const withheldProfit = grossProfit - creditedProfit;
         const bank = this.game?.bank;
-        if (bank) {
-            bank.deposit({ coin: outcome.payout });
+        if (bank && creditedPayout > 0) {
+            bank.deposit({ coin: creditedPayout });
             this.state.bankCoins = this._getBankCoins();
         }
+        this.stats.houseProfitPaid += creditedProfit;
+        if (withheldProfit > 0) {
+            this.state.totalCoinsWon = Math.max(0, this.state.totalCoinsWon - withheldProfit);
+            this.state.message = `${outcome.message} // HOUSE FLOAT CAPPED PAYOUT AT ${creditedPayout}.`;
+        }
+
+        if (this.state.streak > 0 && this.state.streak % BLACKJACK_TIER_HANDS === 0) {
+            const tier = this.state.streak / BLACKJACK_TIER_HANDS;
+            this.state.chips = this.state.chips.map((chip) => ({ ...chip, used: false }));
+            globalThis.window?.dispatchEvent?.(new CustomEvent('arcade-blackjack-tier-cleared', {
+                detail: { tier, streak: this.state.streak }
+            }));
+            this.game?.grantBlackjackTierPerk?.(tier);
+        }
+        this._persistStats();
+        return true;
     }
 
     _render() {
@@ -506,6 +635,11 @@ export class BlackjackArcadeController {
         ctx.textAlign = 'right';
         ctx.fillText(`CURRENT WAGER: ${this.state.currentBet} COIN`, w - 28, 64);
 
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(`HOUSE FLOAT: ${this._houseProfitRemaining()} PROFIT`, w - 28, 82);
+
         // Streak & Tier Badge
         ctx.textAlign = 'center';
         const stars = '★'.repeat(this.state.streak % 3) || '☆';
@@ -531,8 +665,10 @@ export class BlackjackArcadeController {
         this._renderCards(ctx, this.state.dealerHand, 32, 118, !this.state.dealerRevealed);
 
         // Player Section
-        const pVal = calculateHandValue(this.state.playerHand);
-        const playerScoreText = this.state.playerHand.length ? `[${pVal.value}${pVal.isSoft ? ' SOFT' : ''}]` : '[--]';
+        const pVal = calculatePlayerHandValue(this.state.playerHand, this.state.activeHacks);
+        const playerScoreText = this.state.playerHand.length
+            ? `[${pVal.value}${pVal.isSoft ? ' SOFT' : ''}${pVal.isModified ? ' MOD' : ''}]`
+            : '[--]';
         ctx.fillStyle = '#55d9ff';
         ctx.fillText(`OPERATOR (YOU) — ${playerScoreText}`, 32, 235);
 
@@ -619,6 +755,8 @@ let sharedBlackjackController = null;
 export function getBlackjackController(opts = {}) {
     if (!sharedBlackjackController) {
         sharedBlackjackController = new BlackjackArcadeController(opts);
+    } else if (opts.game) {
+        sharedBlackjackController.game = opts.game;
     }
     return sharedBlackjackController;
 }

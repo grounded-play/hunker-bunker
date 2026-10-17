@@ -1157,7 +1157,24 @@
       "reflexes": "アーケード反射神経：この遠征中、リロードが10%速くなる。",
       "sheen_unlocked": "武器シーン解除：{name}",
       "decal_unlocked": "デカール解除：{name}",
-      "tina_radio": "ティナ市長：へえ、やるじゃない……ついに誰かが私の記録を破ったわね。ドリフト前哨基地に寄りなさい。一杯おごるわ。"
+      "tina_radio": "ティナ市長：へえ、やるじゃない……ついに誰かが私の記録を破ったわね。ドリフト前哨基地に寄りなさい。一杯おごるわ。",
+      "blackjack_title": "BLACK-ICE 21",
+      "blackjack_prompt": "[E] BLACK-ICE 21（ブラックジャック）をプレイ",
+      "blackjack_built": "レクリエーション区画オンライン // BLACK-ICE 21筐体建造完了",
+      "blackjack_wager": "現在のベット：{amount}コイン",
+      "blackjack_win": "オペレーター勝利：+{amount}コイン",
+      "blackjack_tier_clear": "ティア{tier}クリア：ボーナスコイン+{bonus}",
+      "blackjack_module": "基地レクリエーションモジュール",
+      "blackjack_module_desc": "ローグライク・ブラックジャック端末 · 墜落地点に常設",
+      "blackjack_installed": "墜落地点に設置済み",
+      "blackjack_build": "BLACK-ICE 21筐体を建造",
+      "blackjack_controls_wager": "[↑/↓] ベット",
+      "blackjack_controls_deal": "[SPACE] ディール/スタンド",
+      "blackjack_controls_hit": "[1] ヒット",
+      "blackjack_controls_stand": "[2] スタンド",
+      "blackjack_controls_double": "[3] ダブル",
+      "blackjack_controls_chips": "[4/5/6] クライオ / サーマル / EMP",
+      "blackjack_controls_exit": "[ESC] 終了"
     },
     "interstitial": {
       "track": "トラック {id}"

@@ -150,6 +150,14 @@ import { setClothFlutterTime } from './clothFlutter.js';
 import { setCableSwayTime } from './cableSway.js';
 import { UmbilicalAttacker } from './3d/umbilicalAttacker.js';
 import { handleCriticalServiceDestruction } from './criticalServiceRecovery.js';
+import {
+    applyBlackjackCriticalDamage,
+    applyBlackjackSalvageYield,
+    awardBlackjackTier,
+    loadBlackjackDayPerks,
+    normalizeBlackjackDayPerks,
+    saveBlackjackDayPerks
+} from './blackjackPerks.js';
 
 import * as THREE from 'three';
 import { fitWallShaderSamplerBudget, INSTANCED_WORLD_POSITION } from './wallShaderCompatibility.js';
@@ -250,7 +258,7 @@ import { createSkyRig } from './sky/skyDome.js';
 import { SKY_SHEETS } from './sky/skySheets.js';
 import { MULTIPLAYER_SPAWN_MODES, hashSeed, partitionCrashPlanPlayers } from './multiplayerCrashPlanner.js';
 import { multiplayerLobby } from './multiplayerLobby.js';
-import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, BASE_TURRET_BUILD_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
+import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, BASE_TURRET_BUILD_COST, BASE_ARCADE_BUILD_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 import {
     addCanyonVoidAroundWalkable,
@@ -2523,6 +2531,7 @@ export class ThreeGame {
         // Campaign day/rest is distinct from the cosmetic time-of-day clock.
         // It survives runs and only advances through an explicit camp sleep.
         this.dayState = this.loadDayCycleState();
+        this.blackjackDayPerks = loadBlackjackDayPerks(null, this.dayState.day);
         this.fatigueState = this.loadFatigueState();
         this.overnightState = this.loadOvernightState();
         // Weather (Note 9): pooled Points field, biome/time-biased state machine.
@@ -16749,20 +16758,41 @@ export class ThreeGame {
     }
 
     purchaseBaseArcadeCabinet() {
-        const cost = { tech: 25, coin: 30, med: 5 };
-        if (!this.bank?.canAfford?.(cost)) {
+        const cost = BASE_ARCADE_BUILD_COST;
+        const purchase = this.bank?.purchaseBaseArcade?.(cost);
+        if (!purchase?.ok) {
             window.AudioManager?.play?.('ui_error', { volume: 0.58 });
             return { ok: false, reason: 'insufficient_funds', cost };
         }
-        if (this.bank.isBaseArcadeUnlocked()) {
-            return { ok: true, alreadyUnlocked: true };
-        }
-        this.bank.spend(cost);
-        this.bank.unlockBaseArcade();
+        if (purchase.alreadyUnlocked) return purchase;
         this.reconcileInstalledBaseModuleVisuals?.();
-        window.AudioManager?.play?.('upgrade_unlock', { volume: 0.65 });
+        saveInstalledBaseModules(this.carryState?.installed ?? []);
+        window.AudioManager?.play?.('ui_confirm', { volume: 0.65, playbackRate: 0.86 });
         this.showBunkerLine?.('RECREATION BAY ONLINE // BLACK-ICE 21 CABINET CONSTRUCTED');
-        return { ok: true, cost };
+        return purchase;
+    }
+
+    getBlackjackDayPerks() {
+        this.blackjackDayPerks = normalizeBlackjackDayPerks(this.blackjackDayPerks, this.dayState?.day ?? 1);
+        return this.blackjackDayPerks;
+    }
+
+    grantBlackjackTierPerk(tier) {
+        const result = awardBlackjackTier(this.blackjackDayPerks, tier, this.dayState?.day ?? 1);
+        this.blackjackDayPerks = result.perks;
+        if (!result.granted) return result;
+        saveBlackjackDayPerks(this.blackjackDayPerks);
+        if (result.rewardId === 'cold_calculation') {
+            this.showBunkerLine?.('BLACK-ICE TIER CLEARED // COLD CALCULATION: +15% CRITICAL CHANCE TODAY');
+        } else if (result.rewardId === 'salvage_yield') {
+            this.showBunkerLine?.('BLACK-ICE TIER CLEARED // SALVAGE YIELD: +10% SHELL VALUE TODAY');
+        }
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('blackjack-day-perk-granted', {
+                detail: { ...result, perks: this.blackjackDayPerks }
+            }));
+        }
+        return result;
     }
 
     attemptTier2Unlock(ship, key) {
@@ -31852,6 +31882,11 @@ export class ThreeGame {
             damage *= 1.15; // Neural Sovereignty +15% damage bonus
         }
 
+        const activeBlackjackPerks = this.getBlackjackDayPerks?.()
+            ?? normalizeBlackjackDayPerks(this.blackjackDayPerks, this.dayState?.day ?? 1);
+        const blackjackCritical = applyBlackjackCriticalDamage(damage, activeBlackjackPerks);
+        damage = blackjackCritical.damage;
+
         // Stacked multipliers (reload, overclocks, high-ground) can land on a
         // fractional value — round to a whole hit, never dealing less than 1.
         damage = Math.max(1, Math.round(damage * (this.fieldWeapon?.damageMultiplier ?? 1)));
@@ -31859,7 +31894,7 @@ export class ThreeGame {
         let speed = PROJECTILE_SPEED + (bonuses?.speedAdd ?? 0);
 
         this.recoilBloom = Math.min(0.8, (this.recoilBloom ?? 0) + 0.15);
-        this.triggerCameraShake?.(0.04, 0.08);
+        this.triggerCameraShake?.(blackjackCritical.critical ? 0.075 : 0.04, blackjackCritical.critical ? 0.12 : 0.08);
 
         if (this.fieldWeapon?.isSweptCone) {
             this.spawnSweptFlame(normX, normZ, damage);
@@ -41470,7 +41505,10 @@ export class ThreeGame {
         // this, specifically to avoid double-scaling the same reward with
         // two systems. Rounded since shells are an integer currency.
         const baseGained = corpse.userData.shellValue ?? 1;
-        const gained = Math.round(applySalvageMultiplier(baseGained, (this.currentDepthTier ?? 0) + 1));
+        const depthAdjusted = applySalvageMultiplier(baseGained, (this.currentDepthTier ?? 0) + 1);
+        const activeBlackjackPerks = this.getBlackjackDayPerks?.()
+            ?? normalizeBlackjackDayPerks(this.blackjackDayPerks, this.dayState?.day ?? 1);
+        const gained = applyBlackjackSalvageYield(depthAdjusted, activeBlackjackPerks);
         this.bank?.addShells?.(gained);
         window.AudioManager?.play?.('ui_click_confirm', {
             volume: 0.5,

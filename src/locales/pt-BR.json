@@ -1157,7 +1157,24 @@
       "reflexes": "REFLEXOS DE FLIPERAMA: recargas 10% mais rápidas pelo resto desta expedição.",
       "sheen_unlocked": "BRILHO DE ARMA DESBLOQUEADO: {name}",
       "decal_unlocked": "DECAL DESBLOQUEADO: {name}",
-      "tina_radio": "PREFEITA TINA: Ora, ora, fera... finalmente alguém quebrou meu recorde. Passa no posto da deriva; as bebidas são por minha conta."
+      "tina_radio": "PREFEITA TINA: Ora, ora, fera... finalmente alguém quebrou meu recorde. Passa no posto da deriva; as bebidas são por minha conta.",
+      "blackjack_title": "BLACK-ICE 21",
+      "blackjack_prompt": "[E] JOGAR BLACK-ICE 21 (BLACKJACK)",
+      "blackjack_built": "ÁREA DE RECREAÇÃO ONLINE // GABINETE BLACK-ICE 21 CONSTRUÍDO",
+      "blackjack_wager": "APOSTA ATUAL: {amount} MOEDAS",
+      "blackjack_win": "OPERADOR VENCE: +{amount} MOEDAS",
+      "blackjack_tier_clear": "NÍVEL {tier} CONCLUÍDO: +{bonus} MOEDAS BÔNUS",
+      "blackjack_module": "MÓDULO DE RECREAÇÃO DA BASE",
+      "blackjack_module_desc": "TERMINAL DE BLACKJACK ROGUELIKE · INSTALAÇÃO PERMANENTE NO LOCAL DA QUEDA",
+      "blackjack_installed": "INSTALADO NO LOCAL DA QUEDA",
+      "blackjack_build": "CONSTRUIR GABINETE BLACK-ICE 21",
+      "blackjack_controls_wager": "[↑/↓] APOSTA",
+      "blackjack_controls_deal": "[ESPAÇO] DAR/PARAR",
+      "blackjack_controls_hit": "[1] PEDIR",
+      "blackjack_controls_stand": "[2] PARAR",
+      "blackjack_controls_double": "[3] DOBRAR",
+      "blackjack_controls_chips": "[4/5/6] CRIO / TÉRMICO / PEM",
+      "blackjack_controls_exit": "[ESC] SAIR"
     },
     "interstitial": {
       "track": "FAIXA {id}"

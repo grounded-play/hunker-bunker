@@ -46,7 +46,7 @@ const IDS = ['fab-recipe-grid', 'fab-roll-panel', 'fab-roll-btn', 'fab-odds', 'f
     'fab-bank-tech', 'fab-bank-coin', 'fab-bank-med', 'fab-bank-shells', 'fab-reveal', 'fab-reveal-strip',
     'fab-reveal-card', 'fab-reveal-strip-wrap'];
 
-function setup({ activated = true, canRoll = true, hub = false } = {}) {
+function setup({ activated = true, canRoll = true, hub = false, arcadeUnlocked = false } = {}) {
     vi.useFakeTimers();
     const els = new Map(IDS.map((id) => [id, new FakeElement('div', id)]));
     els.get('fabrication-modal').classList.add('hidden');
@@ -71,6 +71,7 @@ function setup({ activated = true, canRoll = true, hub = false } = {}) {
         getState: () => bank,
         canAfford: () => true,
         isFoundryActivated: () => activated,
+        isBaseArcadeUnlocked: () => arcadeUnlocked,
         canActivateFoundry: () => true,
         activateFoundry: vi.fn(() => { activated = true; return true; })
     };
@@ -80,13 +81,22 @@ function setup({ activated = true, canRoll = true, hub = false } = {}) {
         getClassLoadout: () => ({ archetypeId: 'talon', charmId: null, mod1Id: null, mod2Id: null }),
         equip: vi.fn()
     };
+    const finishCampRest = vi.fn();
+    const game = {
+        finishCampRest,
+        revealFoundry: vi.fn(),
+        purchaseBaseArcadeCabinet: vi.fn(() => {
+            arcadeUnlocked = true;
+            return { ok: true };
+        })
+    };
     const deps = {
         doc,
         t: (key) => key,
         fabricator,
         bankManager,
         loadout,
-        getGame: () => ({ finishCampRest: finishCampRest, revealFoundry: vi.fn() }),
+        getGame: () => game,
         playSound: vi.fn(),
         log: vi.fn(),
         focus: vi.fn(),
@@ -102,9 +112,8 @@ function setup({ activated = true, canRoll = true, hub = false } = {}) {
         getComputedStyle: () => ({ gap: '0', paddingLeft: '0' }),
         eventTarget: new FakeElement('window')
     };
-    const finishCampRest = vi.fn();
     const bay = createFabricationBay(deps);
-    return { bay, els, deps, fabricator, bankManager, printing, finishCampRest };
+    return { bay, els, deps, fabricator, bankManager, printing, finishCampRest, game };
 }
 
 afterEach(() => vi.useRealTimers());
@@ -146,6 +155,22 @@ describe('fabrication bay', () => {
         expect(els.get('fab-recipe-grid').children.filter((c) => c.className.includes('fab-card'))).toHaveLength(FAB_RECIPES.length);
         expect(els.get('fab-odds').innerHTML).toContain('ui.fab.odds');
         expect(els.get('fab-bank-tech').textContent).toBe(50);
+    });
+
+    it('exposes the permanent BLACK-ICE cabinet build and installs it through the game', () => {
+        const { bay, els, game, deps } = setup();
+        bay.render();
+        const button = els.get('fab-recipe-grid').children
+            .flatMap((child) => child.children)
+            .find((child) => child.id === 'fab-build-blackjack-arcade');
+        expect(button.disabled).toBe(false);
+        button.click();
+        expect(game.purchaseBaseArcadeCabinet).toHaveBeenCalledTimes(1);
+        expect(deps.showPrompt).toHaveBeenCalledWith('ui.arcade.blackjack_built');
+        const installedButton = els.get('fab-recipe-grid').children
+            .flatMap((child) => child.children)
+            .find((child) => child.id === 'fab-build-blackjack-arcade');
+        expect(installedButton.disabled).toBe(true);
     });
 
     it('ticks prints every half second and stops the ticker when nothing is printing', () => {

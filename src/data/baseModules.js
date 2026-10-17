@@ -12,6 +12,8 @@ export const BASE_MODULE_CATEGORIES = Object.freeze({
     SHIP_PART: 'ship_part'
 });
 
+export const BASE_ARCADE_BANK_COST = Object.freeze({ tech: 25, coin: 30, med: 5 });
+
 export const BASE_MODULE_CATALOG = Object.freeze({
     // Structural panels
     floor_plate_1x1: Object.freeze({
@@ -181,6 +183,7 @@ export const BASE_MODULE_CATALOG = Object.freeze({
         footprint: { w: 1.0, d: 1.0, h: 1.8 },
         socketTypes: ['interior_floor_snap', 'recreation_socket', 'arcade'],
         buildCost: { tech: 25, coin: 30, scrap: 15 },
+        bankBuildCost: BASE_ARCADE_BANK_COST,
         massClass: 'heavy',
         buildTags: ['furniture', 'arcade', 'minigame', 'blackjack']
     }),

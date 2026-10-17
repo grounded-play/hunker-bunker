@@ -1157,7 +1157,24 @@
       "reflexes": "街机反应：本次远征剩余时间内装弹速度加快10%。",
       "sheen_unlocked": "武器涂装已解锁：{name}",
       "decal_unlocked": "贴花已解锁：{name}",
-      "tina_radio": "蒂娜镇长：哟，高手……终于有人破了我的纪录。来漂流前哨站吧，酒我请。"
+      "tina_radio": "蒂娜镇长：哟，高手……终于有人破了我的纪录。来漂流前哨站吧，酒我请。",
+      "blackjack_title": "BLACK-ICE 21",
+      "blackjack_prompt": "[E] 游玩 BLACK-ICE 21（二十一点）",
+      "blackjack_built": "娱乐区已上线 // BLACK-ICE 21 街机建造完成",
+      "blackjack_wager": "当前下注：{amount} 硬币",
+      "blackjack_win": "干员获胜：+{amount} 硬币",
+      "blackjack_tier_clear": "第 {tier} 层已完成：奖励硬币 +{bonus}",
+      "blackjack_module": "基地娱乐模块",
+      "blackjack_module_desc": "Roguelike 二十一点终端 · 坠毁点永久设施",
+      "blackjack_installed": "已安装于坠毁点",
+      "blackjack_build": "建造 BLACK-ICE 21 街机",
+      "blackjack_controls_wager": "[↑/↓] 下注",
+      "blackjack_controls_deal": "[空格] 发牌/停牌",
+      "blackjack_controls_hit": "[1] 要牌",
+      "blackjack_controls_stand": "[2] 停牌",
+      "blackjack_controls_double": "[3] 加倍",
+      "blackjack_controls_chips": "[4/5/6] 冷冻 / 热能 / EMP",
+      "blackjack_controls_exit": "[ESC] 退出"
     },
     "interstitial": {
       "track": "曲目 {id}"
