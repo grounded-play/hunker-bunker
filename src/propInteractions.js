@@ -218,7 +218,18 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
     life_arcade_cabinet: statefulInteraction(
         '[E] PLAY ARCADE CABINET',
         () => 'ARCADE CABINET: HIGH SCORE TABLE RECOVERED. INITIALS: T.I.N.A.',
-        { nextState: () => 'working', sound: 'terminal_beep' }
+        {
+            nextState: () => 'working',
+            sound: 'terminal_beep',
+            onUse: (game) => {
+                if (typeof window !== 'undefined') {
+                    import('./arcadeCabinetMinigame.js').then(({ getArcadeController }) => {
+                        const controller = getArcadeController({ game });
+                        controller.open();
+                    }).catch(() => {});
+                }
+            }
+        }
     ),
     life_surgical_lamp: statefulInteraction(
         '[E] TOGGLE SURGICAL LAMP',

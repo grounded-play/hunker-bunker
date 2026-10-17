@@ -3,7 +3,7 @@ export const ACHIEVEMENT_STORAGE_KEY = 'hb_achievements_v1';
 export const ACHIEVEMENT_SCHEMA_VERSION = 4;
 export const ARCHIVIST_TARGET = 12;
 
-const CLASS_IDS = Object.freeze(['SCOUT', 'TANK', 'ENGINEER']);
+const CLASS_IDS = Object.freeze(['SCOUT', 'TANK', 'ENGINEER', 'MEDIC', 'DEMOLITIONIST', 'INFILTRATOR']);
 const ENDING_FAMILIES = Object.freeze([
     ['full_brood', 'FULL BROOD'],
     ['clean_escape', 'CLEAN ESCAPE'],
@@ -583,3 +583,36 @@ export class AchievementEngine {
         return this.state;
     }
 }
+
+export const EXPANDED_ACHIEVEMENT_DEFS = freezeDeep([
+    {
+        key: 'medic_field_oath',
+        title: 'FIELD OATH',
+        blurb: 'Reach any ending as the Field Medic.',
+        icon: 'victory_medic'
+    },
+    {
+        key: 'demolition_expert',
+        title: 'BREACH AND CLEAR',
+        blurb: 'Reach any ending as the Demolitionist.',
+        icon: 'victory_demolitionist'
+    },
+    {
+        key: 'infiltrator_ghost',
+        title: 'SHADOW RECON',
+        blurb: 'Reach any ending as the Infiltrator.',
+        icon: 'victory_infiltrator'
+    },
+    {
+        key: 'arcade_wizard',
+        title: 'ARCADE WIZARD',
+        blurb: 'Score 65,000 or higher on the arcade cabinet.',
+        icon: 'arcade_wizard'
+    },
+    {
+        key: 'tinas_challenger',
+        title: "TINA'S CHALLENGER",
+        blurb: "Surpass Mayor Tina's legendary high score of 104,200 on SUB-CRUST PROTOCOL.",
+        icon: 'tinas_challenger'
+    }
+]);

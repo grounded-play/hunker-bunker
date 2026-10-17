@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     ACHIEVEMENT_DEFS,
+    EXPANDED_ACHIEVEMENT_DEFS,
     ACHIEVEMENT_STORAGE_KEY,
     AchievementEngine,
     applyAchievementEvent,
@@ -46,6 +47,13 @@ describe('achievements definitions', () => {
         expect(ACHIEVEMENT_DEFS.find((def) => def.key === 'scouts_honor')?.icon).toBe('victory_scout');
         expect(ACHIEVEMENT_DEFS.find((def) => def.key === 'tank_commander')?.icon).toBe('victory_tank');
         expect(ACHIEVEMENT_DEFS.find((def) => def.key === 'chief_engineer')?.icon).toBe('victory_engineer');
+
+        const expandedKeys = EXPANDED_ACHIEVEMENT_DEFS.map((def) => def.key);
+        expect(expandedKeys).toContain('arcade_wizard');
+        expect(expandedKeys).toContain('tinas_challenger');
+        expect(expandedKeys).toContain('medic_field_oath');
+        expect(expandedKeys).toContain('demolition_expert');
+        expect(expandedKeys).toContain('infiltrator_ghost');
     });
 });
 

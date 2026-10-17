@@ -23,7 +23,11 @@ export const ENEMY_STATS = Object.freeze({
     fungal_spore_vent: { maxHp: 6, speed: 0.0 },
     mycelium_stalker: { maxHp: 5, speed: 2.2 },
     bio_charger: { maxHp: 8, speed: 2.5 },
-    spore_mortar: { maxHp: 5, speed: 1.0 }
+    spore_mortar: { maxHp: 5, speed: 1.0 },
+    chitin_scuttler: { maxHp: 1, speed: 3.2 },
+    subcrust_crusher: { maxHp: 12, speed: 1.1 },
+    tesla_leech: { maxHp: 2, speed: 2.8 },
+    biolume_shrieker: { maxHp: 3, speed: 2.6 }
 });
 
 export const ALIEN_MUTATIONS = Object.freeze({
