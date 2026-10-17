@@ -60,7 +60,11 @@ describe('song interstitial manifest', () => {
         expect(selectCampInterstitial({ campId: 'camp_meridian', campState: { status: 'alive' } }).id).toBe('02');
         expect(selectCampInterstitial({ campId: 'camp_tallow', campState: { status: 'robbed' } }).id).toBe('22');
         expect(selectCampInterstitial({ campId: 'camp_vesper', campState: { status: 'turned' } }).id).toBe('23');
-        expect(selectCampInterstitial({ hiveId: 'hive_suture', campState: { status: 'awakened' } }).id).toBe('11');
+        // Hive first contact: Nahl's Suture has its own song; 11 belongs to
+        // Aria's first whisper (src/cinematicBeats.js); other hives have none.
+        expect(selectCampInterstitial({ hiveId: 'hive_suture', campState: { status: 'awakened' } }).id).toBe('08');
+        expect(selectCampInterstitial({ hiveId: 'hive_relay', campState: { status: 'awakened' } })).toBeNull();
+        expect(selectCampInterstitial({ hiveId: 'hive_relay', campState: { status: 'turned' } }).id).toBe('23');
     });
 
     it('keeps the incoming scene covered until the doors finish closing', async () => {

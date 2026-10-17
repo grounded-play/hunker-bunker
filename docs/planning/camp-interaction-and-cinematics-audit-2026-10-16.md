@@ -706,12 +706,13 @@ Glue gaps found by reading the diff:
 1. §13.1 door bookends + the backdrop change, and route `camp-first-contact` through them (02/04/06 already exist, so the owner sees the beat in the first camp visit). **Done** (see §13.6).
 2. §13.3 node interstitials, using the same call. **Done** (see §13.6).
 3. §13.4 glue fixes, so the runner's lines and resumes are real. **Partly done** (see §13.6): perk, lines and persistence are real. Still open: `resumeConversationAfterSequence` dispatches an event nothing hears, S-1 still races the window it fires beside, and walk, camera and FX are still Meridian-hardcoded stubs. Those matter only once the anchors resolve (today every sequence takes the fallback).
-4. §13.2 beat table, in two passes: first the conversation rows (03, 07, 08, 11, 16, 19–21, 28–30), then the gameplay rows. **Pass 1 done** (see §13.6): 16 beats in `src/cinematicBeats.js`. Not mapped yet:
-   - 05 and 09: they would land on the first-night tutorial and the death cutscene.
-   - 08: there is no hive first-contact hook.
-   - 12 and 31: the Queen fight has its own flow.
-   - 16: needs a "non-violent" classification of hive actions.
-   - 24: it would collide with the ending flow.
+4. §13.2 beat table, in two passes: first the conversation rows (03, 07, 08, 11, 16, 19–21, 28–30), then the gameplay rows. **Done** (see §13.6). Every video now has a home:
+   - **Event beats** (`src/cinematicBeats.js`): 03, 05, 07, 09, 10, 11, 14, 15, 16, 17, 18, 19, 20, 21, 25, 28, 29, 30, 31, 32.
+   - **Inside their own flow**, claimed once per save with `director.claim()`:
+     - 08 on Suture's first contact, before its window;
+     - 12 when the boarding choice (the Queen's offer) first opens;
+     - 24 at the start of the departure.
+   - **Unchanged:** camp first contact (01, 02, 04, 06, 22, 23) and the snail bosses (13, 26, 27).
 5. Verify in the dev server (vite + system Chrome). Capture the Meridian first visit: doors → 02 → doors → Kaelen's window over the live camp.
 
 
@@ -727,9 +728,21 @@ Glue gaps found by reading the diff:
 | 2026-10-16 | 4 (pass 1) | `src/cinematicBeats.js`: 16 beats (03, 07, 10, 11, 14, 15, 17, 18, 19, 20, 21, 25, 28, 29, 30, 32), each with the doors in and out. Rules: once per save (`beats` in `hb_cinematics_v1`, shared with the runner's `sequences`); wait out a fight, keeping the higher-priority beat; boss beats (17, 25) play at spawn; co-op gets a toast with the title instead of doors; a flavour beat within 20 s of another card is dropped (not spent). `then: 'camp-conversation'` opens the leader only if the player stands at that camp. **11 → Aria**: the first `queen-hallucination` plays int_11, and the doors open on Aria's window ("Why do you tremble so, sweet contractor?"). At bond 0 she offers only *Resist psychic pull*. A song card now **freezes play** (`#song-interstitial` joined `hasBlockingGameplayOverlay`). Before this, enemies kept simulating behind every card, first contact included. | Unit: `cinematicBeats.test.js` (9: each card maps once to a shipped webm on disk, int_11 → Aria, detail matching, once per save, combat deferral, boss, co-op, spacing, shared record), `threeGame.blockingOverlay.test.js` (+1). Full suite 6,346 / 745 files pass. Browser: one whisper → `int_11_her_voice_inside_your_helmet_motion_v1.webm` played in full with play blocked → doors → Aria's window → `aria_resist`. A second whisper does nothing. |
 | 2026-10-16 | 4 (bug) | The browser run found card 14 already spent at boot. `depth-tier-changed` re-announces the current tier on spawn and respawn. Card 14 now needs a real crossing (`detail.crossing`). | Unit: "matches on the event detail". |
 | 2026-10-16 | 4 (pass 2) | All 7 remaining videos mapped in `src/cinematicBeats.js`: **05** (`ship-module-activated`), **08** (`hive-first-contact` for Suture hive), **09** (`player-respawned`), **12** (`queen-fight-started`), **16** (`hive-choice-resolved` non-violent options), **24** (`act2-departed`), **31** (`act2-milestone` Queen defeated). All 32 shipped song cards now have explicit triggers. Side-story cards now use `status: 'still'` with Ken Burns camera pan and their OST music (no borrowed videos). Swapped in `_v2` stills for Briggs (`int_briggs_scorched_rig_key_v2.webp`), Kaelen (`int_kaelen_diagnostic_cradle_key_v2.webp` and new `int_kaelen_frequency_overclock_key_v2.webp` featuring Kaelen at the breaker gallery), Nahl (`int_nahl_mind_link_key_v2.webp`), and Martha (`int_val_hearth_warmth_key_v2.webp`). Moved side-story cards off greetings onto Trusted nodes (`kaelen_trusted`, `briggs_trusted`, `val_trusted`) so they play on non-intimate trust paths. Aria's title resolved to `Specimen 0047-B` (`HIVE MIMIC`). | Unit: `cinematicBeats.test.js`, `songInterstitials.test.js`, `leaderIdentity.test.js`, `npcDialogueTrees.test.js`. 117 tests pass across 14 suites; 0 unlocalized strings. |
+| 2026-10-16 | 4 (review) | Review fixes to pass 2:
+- **08:** the card played over the hive window that had already opened, then reopened it. Now `openHiveChoice` holds the window, and `hive-first-contact` plays the card first and opens the window behind the doors. `selectCampInterstitial` gives Suture 08 and other hives no card; 11 stays Aria's.
+- **12:** it fired on Queen-fight start, on top of `event-queen-encounter`. It now plays when the boarding choice first opens.
+- **24:** it fired on `act2-departed`, alongside the ending sequence. It is now the first step of `runAct2DepartureSequence`.
+- **31:** it now needs `combat: true`. The boarding purge/bargain also reports `queenKilled`, right before departure.
+- **16:** `hive-parley` doesn't exist, and the bond fallback matched almost every action, including `hive-talk`, whose window the card would cover. It now lists real actions, and `then` is gameplay.
+- **09:** `player-respawned` fires on **every deploy**. Card 09 now needs `afterDeath`, which `respawnPlayer` reports after a `player-death`.
+- **New rule:** a beat also waits while any other cutscene, dialogue, window or card is up (`isBusy`, polled every 1.5 s).
+- **Game bug:** every deploy recorded a fake **tier-3 ABYSS crossing**. The profile turns `gameplay` one frame before the player leaves the menu showcase chunk (100, 100). That inflated `maxDepthTierReached` and the arc's `deepestDepthTier`, fired the survivor contract and a camera shake, and spent card 14 at boot. `updateDepthTierProgress` now ignores the showcase chunk. | Unit: `cinematicBeats.test.js` (11), `songInterstitials.test.js`, `threeGame.campConversation.test.js` (+1 hive order), `threeGame.depthShowcase.test.js` (new). Full suite 6,352 / 746 pass. Browser:
+- the boarding choice → card 12 → doors → the boarding window behind them, and no replay;
+- a respawn beat fired during a conversation waited, then played 0.1 s after the window closed;
+- deploy now records tier 1, where the player stands (it was 3). |
 
 **Resolved from owner review:**
-- **All 32 song videos mapped:** No cards left unmapped. Each fires once per save, pauses simulation, respects combat lock, and triggers doors in/out.
+- **All 32 song videos mapped:** no card is left unmapped. Each plays once per save, pauses play and waits out fights and other cutscenes, with doors in and out. Where each lives: §13.5 step 4.
 - **Side-story art & Ken Burns ladder:** Cards 33–38 and all 15 side-story scenes run rung 2 (key-art still + Ken Burns pan + audio) without borrowing other clips. `int_kaelen_frequency_overclock_key_v2.webp` generated and committed to depict Kaelen.
 - **Unshadowed side stories:** `briggs_scorched_rig`, `kaelen_diagnostic_cradle`, and `val_hearth_warmth` now trigger from their respective Trusted nodes instead of being shadowed by camp first-contact greetings.
 - **Aria title:** Window header displays "Specimen 0047-B // HIVE MIMIC" instead of generic "SCOUT".

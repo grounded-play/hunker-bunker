@@ -225,7 +225,12 @@ export function getSongInterstitial(id) {
 export function selectCampInterstitial(detail = {}) {
     const id = detail.campId ?? detail.hiveId;
     const status = detail.campState?.status;
-    if (detail.hiveId) return getSongInterstitial(status === 'turned' ? 23 : 11);
+    // Hive first contact: only Nahl's Suture has its own song (08). Card 11
+    // is Aria's first whisper (src/cinematicBeats.js).
+    if (detail.hiveId) {
+        if (status === 'turned') return getSongInterstitial(23);
+        return detail.hiveId === 'hive_suture' ? getSongInterstitial(8) : null;
+    }
     if (status === 'robbed') return getSongInterstitial(22);
     if (status === 'turned') return getSongInterstitial(23);
     if (id === 'camp_meridian') return getSongInterstitial(2);

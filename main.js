@@ -14603,14 +14603,33 @@ window.showCardThenScene = showCardThenScene;
 
 // The camp's title card plays once, on first contact (owner, 2026-10-08:
 // "first contact only"); the decision opens straight away.
+// The boarding decision is the Queen's offer: the first time it opens, card
+// 12 (The Queen Makes a Reasonable Offer) plays and the doors open on it.
 window.addEventListener('camp-choice-open', (event) => {
-    renderCampChoice(event?.detail ?? {});
+    const detail = event?.detail ?? {};
+    const boarding = (detail.options ?? []).some((option) => option.action === 'board');
+    if (boarding && cinematicBeats.claim('queen_offer')) {
+        void showCardThenScene('12', () => renderCampChoice(detail));
+        return;
+    }
+    renderCampChoice(detail);
 });
 
 // First contact with a camp (any act) gets the same song title card as the
 // choice modal, without opening the choice modal itself.
 window.addEventListener('camp-first-contact', async (event) => {
     await showCardThenScene(selectCampInterstitial(event?.detail ?? {}), event?.detail?.onComplete);
+});
+// Hive first contact: Suture plays Nahl's song (08); a hive without a song
+// opens its window straight away. Never a card in co-op.
+window.addEventListener('hive-first-contact', async (event) => {
+    const detail = event?.detail ?? {};
+    const card = selectCampInterstitial(detail);
+    if (card && cinematicBeats.claim(`hive_first_contact:${detail.hiveId}`)) {
+        await showCardThenScene(card, detail.onComplete);
+    } else {
+        detail.onComplete?.();
+    }
 });
 
 const leaderConversationModal = document.getElementById('leader-conversation-modal');
@@ -14986,11 +15005,6 @@ function openCinematicBeatScene(beat, detail = {}) {
     const game = window.game;
     if (!game || !leaderConversationModal?.classList.contains('hidden')) return;
     if (beat.then === 'camp-conversation') {
-        if (detail.hiveId) {
-            const hive = game.getHiveById?.(detail.hiveId);
-            if (hive) game.openHiveChoice?.(hive);
-            return;
-        }
         const camp = game.getCampById?.(detail.campId);
         const here = game.player
             ? game.getActionableCampAt?.(game.player.position.x, game.player.position.z)?.camp
@@ -15026,6 +15040,8 @@ const cinematicBeats = new CinematicBeatDirector({
     play: (beat, detail) => showCardThenScene(beat.card, () => openCinematicBeatScene(beat, detail)),
     isInCombat: () => Boolean(window.game?.inCombat),
     isMultiplayer: () => Boolean(window.game?.isMultiplayer),
+    // Another cutscene, dialogue, window or card is up: wait it out.
+    isBusy: () => Boolean(window.game?.hasBlockingGameplayOverlay?.()),
     toast: (title) => window.showToastNotification?.(title, { tone: 'info', duration: 5000 }),
     titleFor: (beat) => getSongInterstitial(beat.card)?.title ?? beat.card
 });
@@ -15038,6 +15054,9 @@ for (const type of CINEMATIC_BEAT_EVENTS) {
 window.addEventListener('combat-state-changed', (event) => {
     cinematicBeats.onCombatChanged(Boolean(event?.detail?.active));
 });
+setInterval(() => {
+    if (cinematicBeats.pending && isGameplayPhase()) cinematicBeats.retryPending();
+}, 1500);
 window.cinematicBeats = cinematicBeats;
 
 // Act 1 camp support + the Act 2 payoff (defended culls).
@@ -15369,6 +15388,9 @@ async function runAct2DepartureSequence(detail = {}) {
             });
     }
     game?.setCinematicLock?.(true);
+    // First departure of a save opens on card 24 (Nobody Says Goodbye); the
+    // doors then open on the ending transmission.
+    if (cinematicBeats.claim('act2_departure')) await showCardThenScene('24', () => {});
     AudioManager.play('door_gears_spin', { volume: 0.5, playbackRate: 0.7 });
     await dialogueManager?.openBriefTransmission({
         playerType: classType,

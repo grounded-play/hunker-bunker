@@ -93,4 +93,28 @@ describe('one conversation per camp', () => {
         expect(fake.showBunkerLine).toHaveBeenCalledWith('MOTHERSHIP: Rest infrastructure verified.');
         delete globalThis.window;
     });
+
+    // First contact with a hive: card first (main.js), then the choice window
+    // behind the closed doors -- never the window with a card over it.
+    it('holds the hive choice window until first contact has played', () => {
+        const events = [];
+        globalThis.window = { dispatchEvent: (event) => events.push(event) };
+        globalThis.CustomEvent = class CustomEvent {
+            constructor(type, options = {}) { this.type = type; this.detail = options.detail; }
+        };
+        const fake = Object.create(ThreeGame.prototype);
+        Object.assign(fake, {
+            getHiveRecord: () => ({ id: 'hive_suture', status: 'awakened', extractionLevel: 0 }),
+            act2: { getPhase: () => 'act2', getEndingVector: () => ({}) },
+            buildHiveChoiceOptions: () => []
+        });
+        const hive = { id: 'hive_suture', label: 'SUTURE HIVE' };
+        expect(fake.openHiveChoice(hive)).toBe(true);
+        expect(events.map((e) => e.type)).toEqual(['hive-first-contact']);
+        events[0].detail.onComplete();
+        expect(events.map((e) => e.type)).toEqual(['hive-first-contact', 'camp-choice-open']);
+        fake.openHiveChoice(hive);
+        expect(events.map((e) => e.type)).toEqual(['hive-first-contact', 'camp-choice-open', 'camp-choice-open']);
+        delete globalThis.window;
+    });
 });

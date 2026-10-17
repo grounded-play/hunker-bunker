@@ -818,6 +818,8 @@ const PLAYER_COLORS = {
 // Half of a 16.6ms (60fps) frame, leaving headroom for the rest of the
 // render/game loop that still has to run in the same frame.
 const CHUNK_MOUNT_BATCH_BUDGET_MS = 8;
+// getSpawnTile() parks the menu showcase in this chunk (both axes).
+const MENU_SHOWCASE_CHUNK = 100;
 // Choice tree (src/npcDialogueTrees.js) for each leader key (leaderKeyFromName).
 const LEADER_TREES = Object.freeze({
     martha: 'sister_val',
@@ -20409,17 +20411,21 @@ export class ThreeGame {
         const record = this.getHiveRecord(hive.id);
         if (!record) return false;
         const character = ACT2_HIVE_SITES.find((s) => s.id === hive.id);
+        // First contact plays the hive's song card (if it has one) before the
+        // choice window, doors bookending it like a camp's first contact
+        // (audit 2026-10-16 §13.1); the window opens behind the closed doors.
         this._seenHiveFirstContact ??= new Set();
         if (!this._seenHiveFirstContact.has(hive.id)) {
             this._seenHiveFirstContact.add(hive.id);
             window.dispatchEvent(new CustomEvent('hive-first-contact', {
                 detail: {
                     hiveId: hive.id,
-                    campId: hive.id,
-                    campLabel: hive.label,
-                    campState: record
+                    hiveLabel: hive.label,
+                    campState: record,
+                    onComplete: () => this.openHiveChoice(hive)
                 }
             }));
+            return true;
         }
         window.dispatchEvent(new CustomEvent('camp-choice-open', {
             detail: {
@@ -27134,6 +27140,8 @@ export class ThreeGame {
             getDialogueLine('death', Math.random, this.buildLineDirectorContext().register)
             ?? 'SUIT FAILURE LOGGED. BLACK BOX ARMED.'
         );
+        // The next deploy is a redeploy after a death (cinematic beat 09).
+        this._diedSinceRespawn = true;
         window.dispatchEvent(new CustomEvent('player-death', {
             detail: { reason, blackBox: blackBoxState }
         }));
@@ -27468,11 +27476,16 @@ export class ThreeGame {
                 seq: this._coopLifeSeq
             });
         }
+        // The menu-map preview (resetRunState: false) is not a deploy; keep
+        // the death flag for the real one.
+        const afterDeath = resetRunState && Boolean(this._diedSinceRespawn);
+        if (resetRunState) this._diedSinceRespawn = false;
         window.dispatchEvent(new CustomEvent('player-respawned', {
             detail: {
                 hp: this.playerVitals.hp,
                 maxHp: this.playerVitals.maxHp,
-                o2: this.playerVitals.o2
+                o2: this.playerVitals.o2,
+                afterDeath
             }
         }));
         window.setTimeout(() => this.updateLoopStep(true), 0);
@@ -31068,7 +31081,11 @@ export class ThreeGame {
         // is what put "DEPTH ABYSS" on an otherwise all-zero operator profile.
         // currentDepthTier above stays truthful for live systems; only the
         // career signal is gated on actually being in a run.
-        if (depthTier > this.maxDepthTierReached && this.performanceProfile === 'gameplay') {
+        // The profile flips to 'gameplay' a frame before the deploy moves the
+        // player out of the showcase chunk, which sits at ABYSS depth: that
+        // frame recorded a tier-3 crossing on every run (2026-10-16 probe).
+        const parkedInShowcase = chunkX === MENU_SHOWCASE_CHUNK && chunkY === MENU_SHOWCASE_CHUNK;
+        if (depthTier > this.maxDepthTierReached && this.performanceProfile === 'gameplay' && !parkedInShowcase) {
             this.maxDepthTierReached = depthTier;
             this.arcManager?.recordSignal?.({ deepestDepthTier: depthTier });
             this.arcManager?.evaluate?.();
@@ -47940,8 +47957,8 @@ export class ThreeGame {
         if (this.performanceProfile === 'menu') {
             // Spawn in chunk (100, 100) to keep the showcase completely blank
             return {
-                x: 100 * this.chunkSize + centerCell * 2 + 1,
-                y: 100 * this.chunkSize + centerCell * 2 + 1
+                x: MENU_SHOWCASE_CHUNK * this.chunkSize + centerCell * 2 + 1,
+                y: MENU_SHOWCASE_CHUNK * this.chunkSize + centerCell * 2 + 1
             };
         }
         if (this.isMultiplayer) {

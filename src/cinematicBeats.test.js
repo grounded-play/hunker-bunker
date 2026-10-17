@@ -17,7 +17,9 @@ function memoryStorage() {
 }
 
 // Cards that already play from their own trigger (first contact, snail bosses).
-const LIVE_ELSEWHERE = ['01', '02', '04', '06', '13', '22', '23', '26', '27'];
+// 08 (Suture first contact), 12 (boarding offer) and 24 (departure) play
+// inside their own flows via director.claim().
+const LIVE_ELSEWHERE = ['01', '02', '04', '06', '08', '12', '13', '22', '23', '24', '26', '27'];
 
 describe('cinematic beat table (audit 2026-10-16 §13.2)', () => {
     it('maps each card once, to a shipped video, and never a card that already plays elsewhere', () => {
@@ -49,13 +51,21 @@ describe('cinematic beat table (audit 2026-10-16 §13.2)', () => {
         // crossing): that is not the player going deeper.
         expect(matchBeat('depth-tier-changed', { tier: 3 })).toBeNull();
         expect(matchBeat('ship-module-activated', {})?.card).toBe('05');
-        expect(matchBeat('hive-first-contact', { hiveId: 'hive_suture' })?.card).toBe('08');
-        expect(matchBeat('player-respawned', {})?.card).toBe('09');
-        expect(matchBeat('queen-fight-started', {})?.card).toBe('12');
+        // Every deploy reports player-respawned; 09 is the redeploy after a death.
+        expect(matchBeat('player-respawned', {})).toBeNull();
+        expect(matchBeat('player-respawned', { afterDeath: true })?.card).toBe('09');
+        // The Queen fight opens on its own authored video; the departure on
+        // the ending sequence: no event beat may stack a card on either.
+        expect(matchBeat('queen-fight-started', {})).toBeNull();
+        expect(matchBeat('act2-departed', {})).toBeNull();
+        expect(matchBeat('hive-first-contact', { hiveId: 'hive_suture' })).toBeNull();
         expect(matchBeat('hive-choice-resolved', { action: 'hive-tend' })?.card).toBe('16');
-        expect(matchBeat('hive-choice-resolved', { action: 'hive-harvest' })).toBeNull();
-        expect(matchBeat('act2-departed', {})?.card).toBe('24');
-        expect(matchBeat('act2-milestone', { key: 'queenKilled' })?.card).toBe('31');
+        expect(matchBeat('hive-choice-resolved', { action: 'hive-harvest', bond: 3 })).toBeNull();
+        // hive-talk opens a conversation; a card would cover the window.
+        expect(matchBeat('hive-choice-resolved', { action: 'hive-talk', bond: 3 })).toBeNull();
+        expect(matchBeat('act2-milestone', { key: 'queenKilled', combat: true })?.card).toBe('31');
+        // A boarding purge/bargain is not the kill; departure follows it.
+        expect(matchBeat('act2-milestone', { key: 'queenKilled', source: 'boarding-choice', combat: false })).toBeNull();
         expect(CINEMATIC_BEAT_EVENTS).toContain('queen-hallucination');
         expect(CINEMATIC_BEAT_EVENTS).toContain('ship-module-activated');
     });
@@ -123,5 +133,27 @@ describe('CinematicBeatDirector', () => {
         const record = JSON.parse(storage.getItem(CINEMATIC_STORAGE_KEY));
         expect(record.beats).toEqual(['aria_voice', 'console_dead']);
         expect(record.sequences).toEqual(['base_cot_first_night']);
+    });
+
+    it('waits while another cutscene or window is up, then plays once it clears', () => {
+        const play = vi.fn();
+        let busy = true;
+        const director = new CinematicBeatDirector({ play, storage: memoryStorage(), isBusy: () => busy });
+        expect(director.handle('player-respawned', { afterDeath: true })).toBe('deferred');
+        expect(director.retryPending()).toBeNull();
+        busy = false;
+        expect(director.retryPending()).toBe('played');
+        expect(play.mock.calls[0][0].card).toBe('09');
+        expect(director.retryPending()).toBeNull();
+    });
+
+    it('lets a flow claim its own card once per save (and never in co-op)', () => {
+        const storage = memoryStorage();
+        const director = new CinematicBeatDirector({ play: vi.fn(), storage });
+        expect(director.claim('queen_offer')).toBe(true);
+        expect(director.claim('queen_offer')).toBe(false);
+        expect(new CinematicBeatDirector({ play: vi.fn(), storage }).claim('queen_offer')).toBe(false);
+        const coop = new CinematicBeatDirector({ play: vi.fn(), storage: memoryStorage(), isMultiplayer: () => true });
+        expect(coop.claim('act2_departure')).toBe(false);
     });
 });

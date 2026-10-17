@@ -5,9 +5,11 @@
  * be mapped and triggered, bookended by doors, and lead into a conversation
  * where someone is there to talk to.
  *
- * Cards already triggered elsewhere stay there: first contact (01, 02, 04,
- * 06, 22, 23 via camp-first-contact) and the snail bosses (13, 26, 27 via the
- * cutscene path). Not yet mapped, see the audit: 05, 08, 09, 12, 16, 24, 31.
+ * Cards triggered elsewhere stay there: camp first contact (01, 02, 04, 06,
+ * 22, 23), the snail bosses (13, 26, 27, cutscene path). Three play inside
+ * their own flow, claimed once per save through `director.claim()`: 08 on
+ * Suture's first contact (hive-first-contact), 12 when the boarding choice
+ * first opens (the Queen's offer), 24 at the start of the departure.
  */
 
 export const CINEMATIC_STORAGE_KEY = 'hb_cinematics_v1';
@@ -44,12 +46,15 @@ export const CINEMATIC_BEATS = Object.freeze([
     { id: 'snail_friend', on: 'snail-befriended', card: '18', then: 'gameplay', priority: 'flavour' },
 
     { id: 'ship_module_online', on: 'ship-module-activated', card: '05', then: 'gameplay', priority: 'flavour' },
-    { id: 'nahl_tissue', on: 'hive-first-contact', when: (d) => d?.hiveId === 'hive_suture' || d?.campId === 'hive_suture', card: '08', then: 'camp-conversation', priority: 'camp' },
-    { id: 'first_respawn', on: 'player-respawned', card: '09', then: 'gameplay', priority: 'flavour' },
-    { id: 'queen_offer', on: 'queen-fight-started', card: '12', then: 'gameplay', priority: 'story', boss: true },
-    { id: 'hive_nonviolent', on: 'hive-choice-resolved', when: (d) => ['hive-tend', 'hive-talk', 'hive-quest', 'hive-parley'].includes(d?.action) || (d?.bond > 0 && d?.action !== 'hive-harvest' && d?.action !== 'hive-sacrifice'), card: '16', then: 'camp-conversation', priority: 'camp' },
-    { id: 'act2_departure', on: 'act2-departed', card: '24', then: 'gameplay', priority: 'story' },
-    { id: 'queen_defeated', on: 'act2-milestone', when: (d) => d?.key === 'queenKilled', card: '31', then: 'gameplay', priority: 'story' }
+    // Every deploy reports player-respawned; this is the first redeploy after
+    // a death (the Mothership reprints you).
+    { id: 'first_respawn', on: 'player-respawned', when: (d) => d?.afterDeath === true, card: '09', then: 'gameplay', priority: 'flavour' },
+    // A peaceful hive resolution. Not hive-talk: it opens a conversation, and
+    // a card would cover the window.
+    { id: 'hive_nonviolent', on: 'hive-choice-resolved', when: (d) => ['hive-tend', 'hive-quest', 'hive-network', 'hive-rescue', 'hive-final'].includes(d?.action), card: '16', then: 'gameplay', priority: 'camp' },
+    // The fought kill only: a boarding purge/bargain also reports queenKilled,
+    // and the departure sequence follows it immediately.
+    { id: 'queen_defeated', on: 'act2-milestone', when: (d) => d?.key === 'queenKilled' && d?.combat === true, card: '31', then: 'gameplay', priority: 'story' }
 ].map((beat) => Object.freeze(beat)));
 
 export const CINEMATIC_BEAT_EVENTS = Object.freeze([...new Set(CINEMATIC_BEATS.map((beat) => beat.on))]);
@@ -96,8 +101,9 @@ export function writeCinematicsField(storage, field, values) {
 /**
  * Decides when a matched beat plays. Rules (audit §13.2):
  * - once per save;
- * - never mid-fight, except boss beats, which play at spawn (the card
- *   freezes the sim, like any blocking overlay);
+ * - never mid-fight or over another cutscene, dialogue or window, except
+ *   boss beats, which play at spawn (the card freezes the sim, like any
+ *   blocking overlay); a deferred beat waits in `pending` for retryPending();
  * - co-op: the doors never close on a squad, so the beat is a toast;
  * - a flavour beat within BEAT_SPACING_MS of another card is dropped;
  * - while waiting for a fight to end, the higher-priority beat is kept.
@@ -108,6 +114,7 @@ export class CinematicBeatDirector {
         storage = defaultStorage(),
         isInCombat = () => false,
         isMultiplayer = () => false,
+        isBusy = () => false,
         toast = null,
         now = () => Date.now(),
         titleFor = (beat) => beat.card
@@ -116,6 +123,7 @@ export class CinematicBeatDirector {
         this.storage = storage;
         this.isInCombat = isInCombat;
         this.isMultiplayer = isMultiplayer;
+        this.isBusy = isBusy;
         this.toast = toast;
         this.now = now;
         this.titleFor = titleFor;
@@ -137,7 +145,7 @@ export class CinematicBeatDirector {
             this.toast?.(this.titleFor(beat));
             return 'toast';
         }
-        if (!beat.boss && this.isInCombat()) {
+        if (!beat.boss && (this.isInCombat() || this.isBusy())) {
             if (!this.pending || rank(beat) < rank(this.pending.beat)) this.pending = { beat, detail };
             return 'deferred';
         }
@@ -146,11 +154,26 @@ export class CinematicBeatDirector {
     }
 
     onCombatChanged(active) {
-        if (active || !this.pending) return null;
+        return active ? null : this.retryPending();
+    }
+
+    // Polled by the host: a deferred beat plays once no fight, cutscene,
+    // dialogue or other card is up.
+    retryPending() {
+        if (!this.pending || this.isInCombat() || this.isBusy()) return null;
         const { beat, detail } = this.pending;
         this.pending = null;
         if (this.seen.has(beat.id)) return null;
         return this.start(beat, detail);
+    }
+
+    // A flow that stages its own card (first contact, boarding, departure)
+    // takes it here: true once per save, never in co-op (no doors on a squad).
+    claim(beatId) {
+        if (this.isMultiplayer() || this.seen.has(beatId)) return false;
+        this.seen.add(beatId);
+        writeCinematicsField(this.storage, 'beats', this.seen);
+        return true;
     }
 
     start(beat, detail) {
