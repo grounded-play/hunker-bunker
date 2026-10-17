@@ -17,10 +17,12 @@ export const CHITIN_SCUTTLER = Object.freeze({
     tint: 0xffb347,
     spriteScale: 0.55,        // vs the crawler's 0.72
     detectRadius: 6.0,        // crawler 7.0
-    windup: 0.18,             // crawler 0.35
+    // A point-blank pack of three killed a standing 3-HP operator in 2.5 s
+    // at 0.18 / 0.9 (2026-10-17 run); these leave a beat to shoot first.
+    windup: 0.28,             // crawler 0.35
     chargeSpeed: 9.0,         // crawler 7.0
     chargeMaxDuration: 0.7,   // crawler 1.0
-    attackCooldown: 0.9,      // crawler 1.5
+    attackCooldown: 1.2,      // crawler 1.5
     minDepthTier: 2,
     minDistFromSpawn: 24,
     packChance: 0.3,          // per eligible chunk

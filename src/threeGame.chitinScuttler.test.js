@@ -39,8 +39,8 @@ describe('chitin scuttler in the game', () => {
         globalThis.window = { dispatchEvent: vi.fn() };
         const crawler = sprite('crawler');
         const scuttler = sprite('chitin_scuttler', { crawlerTuning: scuttlerTuning() });
-        g.updateCrawlerBehavior(crawler, 0.2);
-        g.updateCrawlerBehavior(scuttler, 0.2);
+        g.updateCrawlerBehavior(crawler, 0.3);
+        g.updateCrawlerBehavior(scuttler, 0.3);
         expect(crawler.userData.crawlerState).toBe('alert');
         expect(scuttler.userData.crawlerState).toBe('charging');
         delete globalThis.window;

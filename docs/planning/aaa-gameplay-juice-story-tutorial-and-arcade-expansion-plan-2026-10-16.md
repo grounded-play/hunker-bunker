@@ -482,12 +482,12 @@ Checked against the code and in the test suite (all 749 test files, 6,368 tests 
 | Hit-stop (§2.2 A) | **Single unified system, live** | `src/hitStop.js` defines the game's one freeze system (`ThreeGame.hitstopTimer`), preserving shipped feel: `HIT_CONFIRM` 60ms, `KILL` 45ms, `BOSS_KILL` 90ms. `extendHitStop` ensures a kill landing during a hit's freeze extends rather than shortens the pause. |
 | Audio juice (§2.2, §9.2) | **Partly live** | Pitch variance active (±5% on every SFX, `audio.js`). Low-O2 panic graded: `survivalTension.js` smoothly muffles from 700 Hz at 20% O2 down to 380 Hz at empty. |
 | Sector 0 tutorial (§4) | **Module only** | `sectorZeroTutorial.js` and its tests exist. Wiring requires owner product decision on whether/when Sector 0 replaces the procedural crash-site first-night layout. |
-| Enemy archetypes (§6.2) | **Chitin Scuttler live end-to-end** | The first archetype (`chitin_scuttler`) is completely implemented end-to-end: swarmer pack AI with custom scuttler tuning (0.18s windup, 9.0 charge speed, 0.9s cooldown), deterministic pack spawning in deep tier 2+ chambers, 3D model scaling (0.85 height, amber tint `0xffb347`), crawler sprite sharing, dedicated death reports, contact drops, and debug console spawn support. |
+| Enemy archetypes (§6.2) | **Chitin scuttler live end to end** | `src/chitinScuttler.js`. A swarmer: the crawler AI (`isCrawler`) with its own tuning (wind-up 0.28 s, charge 9 m/s for 0.7 s, recovery 1.2 s). It spawns in packs of up to three, in tier 2+ chambers outside the bio biome (where the lone crawler lives), on a 30% per-chunk roll. The pack comes from its own hash, so the chunk's seeded scatter stream is unchanged. It reuses the crawler's sprite and parasite model, at 0.8 height in amber `0xffb347`, and has a death-report name (7 locales), a death cause, contact-drop and bio-enemy membership, and a debug `spawn chitin_scuttler`. Verified headed on Vulkan (Xvfb :77): smaller amber scuttlers beside a crawler, wind-up → charge at 0.29 s. A point-blank pack at the first tuning (0.18 s / 0.9 s) killed a standing 3-HP operator in 2.5 s, so it was softened; balance still needs a playtest. The other three §6.2 rows were removed until each is built the same way. |
 | Classes 4–6 (§8.1) | **Plan only** | Socket offsets dropped in `cb5f80da` to keep code clean until class rigs and skill trees are authored. |
 
 **Next, in value order:**
 1. Owner decision on Sector 0 tutorial integration replacing the crash site first night.
 2. Publish `arcade_wizard` and `tinas_challenger` achievements in Steamworks partner dashboard.
-3. Second enemy archetype end-to-end (`spore_mortar` stationary artillery turret).
+3. A second §6.2 archetype end to end (`subcrust_crusher`, `tesla_leech` or `biolume_shrieker`; `spore_mortar` already ships). Each needs art first.
 
 
