@@ -1,6 +1,6 @@
 # Hunker Bunker AAA Master Expansion Plan: Game Feel, Narrative, Tutorial, Economy, Enemies & Arcade Minigame
 
-**Status:** Architecture & Design Specification · **Target Milestone:** Sprints 54–57 (v2.5.0–v3.0.0) · **Date:** 2026-10-16  
+**Status:** Architecture & Design Specification, partly built (see §11, verified 2026-10-16 evening) · **Target Milestone:** Sprints 54–57 (v2.5.0–v3.0.0) · **Date:** 2026-10-16  
 **Document ID:** `PLAN-20261016-AAA-EXPANSION` · **Author:** Antigravity Engineering & Design Lead  
 **Scope:** Complete game feel audit, narrative unification, gated interactive tutorial, AAA polish roadmap, economy & trading market audit, enemy archetype suite, playable arcade cabinet minigame with scoreboard, new operator classes, new biomes, and achievement suite.
 
@@ -467,3 +467,28 @@ gantt
 - **E2E Integration Probes:**
   - `tests/e2e/gameJuiceImpact.spec.js`: Verifies camera shake, audio bus ducking, and spark emissions.
   - `tests/e2e/arcadeCabinetFlow.spec.js`: Simulates player walking to cabinet, pressing E, playing 1 wave, submitting initials, and returning to 3D world.
+
+---
+
+## 11. Implementation status (verified 2026-10-16 evening)
+
+Checked against the code and, where marked, in the running game (vite no-HMR, system Chrome, a real deploy). The first build of this plan landed as `4b052801`. Fixes landed in `21d28fd6` and the next commit.
+
+| Item | State | What is true in play |
+|---|---|---|
+| Arcade cabinet (§7) | **Live, fixed** | Before the fix the overlay had no CSS: a bare 320×240 canvas in the page corner with the world running. Esc also opened Settings, Tab opened the map, and steering moved only on key-repeat taps. Now: a full-screen CRT that freezes the world; held keys and gamepad steer; it owns input until Esc or B. A snail shot dead no longer also costs a life. Verified in game. |
+| Arcade rewards (§7.4) | **Not wired** | Nothing passes `onReward`, so the `arcade_reflexes` buff never applies. `arcade-tina-beaten` fires, and nothing listens. |
+| Achievements (§8.3) | **Not wired** | `EXPANDED_ACHIEVEMENT_DEFS` (5 entries) is in no list the engine reads, and nothing unlocks them. They also need Steamworks entries first: the parity test only checks the published catalog. Three of them name classes that don't exist. |
+| Hit-stop (§2.2 A) | **Duplicate, unwired** | The game already freezes on hits: `hitstopTimer` is 45 ms per kill, 90 ms per boss, 60 ms elsewhere, in the frame loop. `src/hitStop.js` adds presets and slow-motion, but nothing calls it. Wire it by replacing `hitstopTimer`, never alongside it (that double-freezes). |
+| Audio juice (§2.2, §9.2) | **Partly live** | Pitch variance already existed (±5% on every SFX, `audio.js`), and the module's ±10% isn't wired. Changing the spread is an owner taste call. The low-O2 panic is now graded: `survivalTension.js` uses `computeBiometricAudioState`, so the world muffles from 700 Hz at 20% O2 down to 380 Hz at empty, instead of snapping to 380. 700 Hz keeps suffocation more muffled than the deepest fatigue (900 Hz). Heartbeat and music duck are not wired: there is no heartbeat sound asset, and music already passes through the same low-pass. |
+| Sector 0 tutorial (§4) | **Module only** | `sectorZeroTutorial.js` and its tests exist. Nothing imports it. Wiring it replaces the current first-night flow (`docs/` crash-site first-night layout), so it is a design decision for the owner, not a hookup. |
+| Enemy archetypes (§6.2) | **Stats only** | Four rows in `src/data/enemies.js`. No sprite, model, AI or spawn table uses them, so none can appear. |
+| Classes 4–6 (§8.1) | **Sockets only** | MEDIC / DEMOLITIONIST / INFILTRATOR socket offsets for classes that don't exist (no rig, stats, selection or achievements path). |
+
+**Next, in value order:**
+1. Arcade rewards, so a high score pays something real (or drop the promise from the hint).
+2. Publish and wire the two arcade achievements (owner: Steamworks first).
+3. Fold `hitStop.js` presets into the existing `hitstopTimer` (one freeze system).
+4. Owner decision on Sector 0 replacing the first night.
+5. Enemies: one archetype end to end (sprite, AI, spawn) before adding more stat rows.
+

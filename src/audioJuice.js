@@ -12,6 +12,9 @@ export const AUDIO_JUICE_CONFIG = Object.freeze({
     DEFAULT_PITCH_VARIANCE: 0.10, // ±10%
     LOW_O2_THRESHOLD: 0.20,       // 20% O2 triggers panic audio
     MIN_LPF_HERTZ: 380,           // 380Hz heavy muffled underwater sound
+    // Cutoff at the 20% threshold. Below the deepest fatigue muffle (900 Hz,
+    // survivalTension.js) so suffocation always sounds worse than exhaustion.
+    CRITICAL_ONSET_HERTZ: 700,
     MAX_LPF_HERTZ: 20000,         // Clean open filter
     HEARTBEAT_MIN_BPM: 65,
     HEARTBEAT_MAX_BPM: 135
@@ -47,7 +50,7 @@ export function computeBiometricAudioState(o2Percent = 1.0) {
     // Ratio from 0.0 (empty) to 1.0 (at 20% threshold)
     const ratio = clampedO2 / AUDIO_JUICE_CONFIG.LOW_O2_THRESHOLD;
     const cutoffHertz = Math.round(
-        AUDIO_JUICE_CONFIG.MIN_LPF_HERTZ + ratio * (1200 - AUDIO_JUICE_CONFIG.MIN_LPF_HERTZ)
+        AUDIO_JUICE_CONFIG.MIN_LPF_HERTZ + ratio * (AUDIO_JUICE_CONFIG.CRITICAL_ONSET_HERTZ - AUDIO_JUICE_CONFIG.MIN_LPF_HERTZ)
     );
     const musicDuckDb = -4.0 - (1.0 - ratio) * 8.0; // -4dB down to -12dB
     const heartbeatBpm = Math.round(

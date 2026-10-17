@@ -10,11 +10,18 @@ describe('Survival Tension System', () => {
         expect(state.muffleTargetFreq).toBe(22000);
     });
 
-    it('triggers deep suffocation muffle when oxygen drops to 20% or below', () => {
-        const state = evaluateSurvivalTension({ o2: 20, maxO2: 100, hp: 100, maxHp: 100 });
-        expect(state.isCritical).toBe(true);
-        expect(state.isO2Critical).toBe(true);
-        expect(state.muffleTargetFreq).toBe(380);
+    it('triggers suffocation muffle at 20% oxygen and deepens it to 380 Hz at empty', () => {
+        const onset = evaluateSurvivalTension({ o2: 20, maxO2: 100, hp: 100, maxHp: 100 });
+        expect(onset.isCritical).toBe(true);
+        expect(onset.isO2Critical).toBe(true);
+        const half = evaluateSurvivalTension({ o2: 10, maxO2: 100, hp: 100, maxHp: 100 });
+        const empty = evaluateSurvivalTension({ o2: 0, maxO2: 100, hp: 100, maxHp: 100 });
+        // Graded (src/audioJuice.js): each step down in O2 sounds worse.
+        expect(onset.muffleTargetFreq).toBeGreaterThan(half.muffleTargetFreq);
+        expect(half.muffleTargetFreq).toBeGreaterThan(empty.muffleTargetFreq);
+        expect(empty.muffleTargetFreq).toBe(380);
+        // Even the onset is more muffled than the deepest fatigue (900 Hz).
+        expect(onset.muffleTargetFreq).toBeLessThan(900);
     });
 
     it('triggers daze muffle when hp drops to 25% or below', () => {
@@ -35,7 +42,8 @@ describe('Survival Tension System', () => {
         });
 
         expect(state.isCritical).toBe(true);
-        expect(audioManager.setLowPassMuffle).toHaveBeenCalledWith(true, 380);
+        expect(audioManager.setLowPassMuffle).toHaveBeenCalledWith(true, state.muffleTargetFreq);
+        expect(state.muffleTargetFreq).toBeLessThan(900);
         expect(targetElement.classList.toggle).toHaveBeenCalledWith('vitals-critical', true);
     });
 });
@@ -61,7 +69,9 @@ describe('fatigue muffling', () => {
     // Exhaustion must never make a suffocating operator sound CLEARER.
     it('lets the most muffled state win when both apply', () => {
         const state = evaluateSurvivalTension({ o2: 5, maxO2: 100, hp: 100, maxHp: 100, fatigueStageId: 'LONG_DARK' });
-        expect(state.muffleTargetFreq).toBe(380);
+        const suffocating = evaluateSurvivalTension({ o2: 5, maxO2: 100, hp: 100, maxHp: 100 });
+        expect(state.muffleTargetFreq).toBe(suffocating.muffleTargetFreq);
+        expect(state.muffleTargetFreq).toBeLessThan(900);
     });
 
     it('opens the filter for fatigue even when vitals are fine', () => {

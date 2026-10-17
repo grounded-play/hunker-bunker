@@ -3,6 +3,8 @@
  * Manages low-oxygen and near-death audio suffocation and pulsing visual states.
  */
 
+import { computeBiometricAudioState } from './audioJuice.js';
+
 /**
  * How muffled the world sounds at each fatigue stage.
  *
@@ -30,8 +32,11 @@ export function evaluateSurvivalTension({
     const isHpCritical = hpFraction <= 0.25;
     const isCritical = isO2Critical || isHpCritical;
 
-    // Deep suffocation (380Hz) on O2 deprivation, heavy heartbeat daze (520Hz) on HP critical
-    const vitalsFreq = isO2Critical ? 380 : (isHpCritical ? 520 : 22000);
+    // Suffocation deepens as O2 falls (700 Hz at 20% down to 380 Hz empty,
+    // src/audioJuice.js) instead of snapping to 380 at the threshold; HP
+    // critical is a heavy daze (520 Hz). The most muffled vitals state wins.
+    const o2Freq = isO2Critical ? computeBiometricAudioState(o2Fraction).cutoffHertz : 22000;
+    const vitalsFreq = Math.min(o2Freq, isHpCritical ? 520 : 22000);
     const fatigueFreq = FATIGUE_MUFFLE_HZ[fatigueStageId] ?? 22000;
     // The most muffled state wins, so exhaustion can never make a suffocating
     // operator sound clearer than they did a moment ago.
