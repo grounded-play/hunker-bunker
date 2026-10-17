@@ -21,6 +21,9 @@ test('a camp has one conversation and a short prompt', async ({ page }) => {
     const started = await page.evaluate(() => {
         const g = window.game;
         const camp = g.getCampById('camp_meridian');
+        // Meridian's first meeting (S-1) would play before the window; this
+        // spec is about the window itself.
+        g.interactionSequenceRunner?.markSequenceCompleted?.('meridian_first_meeting');
         return camp ? g.talkToLeader('camp', camp) : null;
     });
     expect(started).toBe(true);
@@ -119,7 +122,9 @@ test('first contact plays the title card once, then the conversation', async ({ 
     expect(await visible('leader-conversation-modal')).toBe(false);
     await page.screenshot({ path: 'playwright-report/screenshots/camp-first-contact-card.png' });
     await expect.poll(() => visible('leader-conversation-modal'), { timeout: 20000 }).toBe(true);
-    expect(await visible('song-interstitial')).toBe(false);
+    // The window mounts behind the exit doors (audit 2026-10-16 §13.1); the
+    // card clears once they have opened on it.
+    await expect.poll(() => visible('song-interstitial'), { timeout: 3000 }).toBe(false);
     expect(await page.locator('#leader-conversation-name').textContent()).toMatch(/Martha/i);
     await page.locator('#leader-conversation-leave').click();
     await page.waitForTimeout(300);

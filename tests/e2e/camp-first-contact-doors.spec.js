@@ -32,6 +32,11 @@ test('camp first contact bookends the video with doors and opens the conversatio
         sample();
         const g = window.game;
         const camp = g.getCampById('camp_meridian');
+        // Meridian's first meeting (S-1) plays between the doors and the
+        // window when its anchor is placed; this spec covers the bookend
+        // itself, so S-1 is spent here (S-1 order: threeGame.campConversation
+        // and interactionSequenceRunner unit tests).
+        g.interactionSequenceRunner?.markSequenceCompleted?.('meridian_first_meeting');
         window.dispatchEvent(new CustomEvent('camp-first-contact', {
             detail: {
                 campId: camp.id,
@@ -61,8 +66,11 @@ test('camp first contact bookends the video with doors and opens the conversatio
     console.log('DOOR LOG', JSON.stringify(log));
     const firstModal = log.findIndex((entry) => entry.modal);
     expect(firstModal).toBeGreaterThan(0);
-    // The window mounted behind closed doors...
-    expect(log[firstModal].root).toContain('is-closing-out');
+    // The window mounted behind closed doors: the frame before it appears had
+    // the doors shut (the reveal starts in the same task as the mount, so the
+    // first frame showing the window already reads is-revealing).
+    expect(log[firstModal - 1].root).toContain('is-closing-out');
+    expect(log[firstModal].root).toMatch(/is-closing-out|is-revealing|hidden/);
     // ...and was never visible while the video showed without doors.
     expect(log.slice(0, firstModal).some((entry) => entry.root.includes('is-open'))).toBe(true);
     expect(log.some((entry) => entry.modal && entry.root.includes('is-open') && !entry.root.includes('is-closing-out') && !entry.root.includes('is-revealing'))).toBe(false);

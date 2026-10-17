@@ -93,7 +93,11 @@ export async function bootToOperatorMenu(page) {
 // Keeping this in one shared helper prevents gameplay specs from silently
 // measuring a hidden 0x0 menu/Armory canvas after the flow gains a new gate.
 export async function startRunAndSkipIntro(page) {
-    extendTestTimeout(120_000);
+    // 2026-10-17 probe on the shared dev box: gameplay was ready 133 s into a
+    // passing run, past the old 120 s deadline. Budget 210 s;
+    // HB_E2E_BOOT_BUDGET_MS overrides.
+    const bootBudgetMs = Number(process.env.HB_E2E_BOOT_BUDGET_MS) || 210_000;
+    extendTestTimeout(bootBudgetMs);
     const oneShotActions = [
         '#title-newrun-btn',
         '#start-game',
@@ -105,7 +109,7 @@ export async function startRunAndSkipIntro(page) {
     // 75s was tuned on a quieter machine. This repo now routinely has several
     // agents building and testing at once, and a cold boot walks a class intro,
     // a cutscene, a Mothership dialogue and a door transition before gameplay.
-    const deadline = Date.now() + 120_000;
+    const deadline = Date.now() + bootBudgetMs;
     let ready = false;
     while (Date.now() < deadline) {
         ready = await page.evaluate(() => {
@@ -131,7 +135,11 @@ export async function startRunAndSkipIntro(page) {
             const actionable = await button.isVisible().catch(() => false)
                 && await button.isEnabled().catch(() => false);
             if (!actionable) continue;
-            const clicked = await button.click({ timeout: 2_000 })
+            // The Armory renders at 2.5-5 fps headless (software GL); a click's
+            // stability/hit-target checks need several frames, so a 2 s timeout
+            // failed every attempt and runs "stalled at the Armory" (2026-10-17
+            // probe: a 10 s trial click passes where 2 s never does).
+            const clicked = await button.click({ timeout: 10_000 })
                 .then(() => true)
                 .catch(() => false);
             if (clicked) completedActions.add(selector);
