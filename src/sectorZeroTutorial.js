@@ -57,6 +57,10 @@ export class SectorZeroTutorialManager {
         this.game = game;
         this.onPhaseChange = onPhaseChange;
         this.onComplete = onComplete;
+        this._resetState();
+    }
+
+    _resetState() {
         this.currentPhase = SECTOR_ZERO_PHASES.BOOT;
         this.isActive = false;
         this.phaseProgress = 0;
@@ -73,9 +77,9 @@ export class SectorZeroTutorialManager {
     }
 
     start() {
+        // A manager may survive a redeploy. Tutorial state may not.
+        this._resetState();
         this.isActive = true;
-        this.currentPhase = SECTOR_ZERO_PHASES.BOOT;
-        this.phaseProgress = 0;
         this._syncObjective(this.currentPhase);
         this.onPhaseChange?.(this.currentPhase);
         return this.currentPhase;
@@ -109,7 +113,9 @@ export class SectorZeroTutorialManager {
                 if (eventName === 'weapon-equipped') {
                     this.flags.hasEquippedWeapon = true;
                 }
-                if (eventName === 'obstacle-destroyed' || (eventName === 'barrier-shot' && this.flags.hasEquippedWeapon)) {
+                if (this.flags.hasEquippedWeapon
+                    && (eventName === 'barrier-shot'
+                        || (eventName === 'obstacle-destroyed' && payload.obstacleId === 'jammed_hydraulic_cable'))) {
                     this.flags.hasClearedBarrier = true;
                     this.unlockedDoors.add('airlock_door_1');
                     return this._advancePhase(SECTOR_ZERO_PHASES.SALVAGE);
@@ -128,7 +134,8 @@ export class SectorZeroTutorialManager {
                 break;
 
             case SECTOR_ZERO_PHASES.COMBAT:
-                if (eventName === 'enemy-killed' || (eventName === 'enemy-hit' && payload.hpRemaining <= 0)) {
+                if ((eventName === 'enemy-killed' || (eventName === 'enemy-hit' && payload.hpRemaining <= 0))
+                    && ['alien_proto_crawler', 'tutorial_crawler'].includes(payload.enemyType)) {
                     this.flags.hasDefeatedSnail = true;
                     this.unlockedDoors.add('perimeter_blast_gate');
                     return this._advancePhase(SECTOR_ZERO_PHASES.DEPARTURE);

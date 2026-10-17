@@ -7,6 +7,14 @@
 
 export const ARCADE_STORAGE_KEY = 'hb_arcade_scores_v1';
 export const TINA_HIGH_SCORE = 104200;
+export const ARCADE_LEADERBOARD_LIMIT = 10;
+export const ARCADE_INITIALS_CUTOFF = 5;
+
+export const ARCADE_SIMULATION = Object.freeze({
+    fixedDeltaSec: 1 / 60,
+    maxFrameDeltaSec: 0.1,
+    maxSubSteps: 6
+});
 
 export const DEFAULT_LEADERBOARD = Object.freeze([
     { rank: 1, initials: 'TINA', score: 104200, role: 'MAYOR' },
@@ -16,24 +24,59 @@ export const DEFAULT_LEADERBOARD = Object.freeze([
     { rank: 5, initials: 'MAR',  score: 25000,  role: 'SALLOW' }
 ]);
 
+function defaultLeaderboard() {
+    // Callers render and sort score rows. Never hand out references to the
+    // authored defaults or one accidental mutation poisons every later load.
+    return DEFAULT_LEADERBOARD.map((entry) => ({ ...entry }));
+}
+
+function normalizeLeaderboard(value) {
+    if (!Array.isArray(value)) return [];
+    return value
+        .map((entry) => {
+            const score = Number(entry?.score);
+            if (!Number.isFinite(score) || score < 0) return null;
+            const initials = String(entry?.initials ?? '')
+                .trim()
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, '')
+                .slice(0, 4);
+            if (!initials) return null;
+            const role = String(entry?.role || 'OPERATOR')
+                .trim()
+                .toUpperCase()
+                .replace(/[^A-Z0-9 -]/g, '')
+                .slice(0, 16) || 'OPERATOR';
+            const timestamp = Number(entry?.timestamp);
+            return {
+                initials,
+                score: Math.floor(score),
+                role,
+                ...(Number.isFinite(timestamp) ? { timestamp } : {})
+            };
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, ARCADE_LEADERBOARD_LIMIT)
+        .map((entry, index) => ({ ...entry, rank: index + 1 }));
+}
+
 /**
  * Loads high scores from storage or falls back to authored defaults.
  */
 export function getArcadeHighScores(storage = null) {
     const store = storage ?? (typeof window !== 'undefined' ? window.localStorage : null);
-    if (!store) return [...DEFAULT_LEADERBOARD];
+    if (!store) return defaultLeaderboard();
 
     try {
         const raw = store.getItem(ARCADE_STORAGE_KEY);
-        if (!raw) return [...DEFAULT_LEADERBOARD];
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
-        }
+        if (!raw) return defaultLeaderboard();
+        const parsed = normalizeLeaderboard(JSON.parse(raw));
+        if (parsed.length > 0) return parsed;
     } catch {
         // Fall back on error
     }
-    return [...DEFAULT_LEADERBOARD];
+    return defaultLeaderboard();
 }
 
 /**
@@ -43,20 +86,16 @@ export function recordArcadeHighScore({ initials = 'AAA', score = 0, role = 'OPE
     const store = storage ?? (typeof window !== 'undefined' ? window.localStorage : null);
     const scores = getArcadeHighScores(store);
 
-    const cleanInitials = String(initials || 'AAA').trim().toUpperCase().slice(0, 4) || 'AAA';
+    const cleanInitials = String(initials || 'AAA').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4) || 'AAA';
+    const numericScore = Number(score);
     const entry = {
         initials: cleanInitials,
-        score: Math.max(0, Math.floor(score)),
-        role: String(role || 'OPERATOR').toUpperCase(),
+        score: Number.isFinite(numericScore) ? Math.max(0, Math.floor(numericScore)) : 0,
+        role: String(role || 'OPERATOR').trim().toUpperCase().replace(/[^A-Z0-9 -]/g, '').slice(0, 16) || 'OPERATOR',
         timestamp: Date.now()
     };
 
-    scores.push(entry);
-    scores.sort((a, b) => b.score - a.score);
-    const topScores = scores.slice(0, 10).map((item, index) => ({
-        ...item,
-        rank: index + 1
-    }));
+    const topScores = normalizeLeaderboard([...scores, entry]);
 
     if (store) {
         try {
@@ -70,9 +109,11 @@ export function recordArcadeHighScore({ initials = 'AAA', score = 0, role = 'OPE
 }
 
 export function isQualifyingHighScore(score, storage = null) {
-    const scores = getArcadeHighScores(storage);
-    if (scores.length < 5) return true;
-    return score > scores[scores.length - 1].score;
+    const scores = getArcadeHighScores(storage).slice(0, ARCADE_INITIALS_CUTOFF);
+    const numericScore = Number(score);
+    if (!Number.isFinite(numericScore) || numericScore < 0) return false;
+    if (scores.length < ARCADE_INITIALS_CUTOFF) return true;
+    return numericScore > scores[scores.length - 1].score;
 }
 
 /**
@@ -292,6 +333,28 @@ export function applyArcadeInput(sim, input = {}, deltaSec = 0) {
     }
 }
 
+/**
+ * Advances the cabinet on a fixed 60 Hz clock. The remainder is returned to
+ * the controller for the next rendered frame, keeping play identical at
+ * 60/120/144 Hz while bounding catch-up work after a suspended tab.
+ */
+export function advanceArcadeSimulation(sim, input = {}, accumulatorSec = 0, elapsedSec = 0) {
+    let accumulator = Math.min(
+        Math.max(0, Number(accumulatorSec) || 0)
+            + Math.max(0, Math.min(ARCADE_SIMULATION.maxFrameDeltaSec, Number(elapsedSec) || 0)),
+        ARCADE_SIMULATION.fixedDeltaSec * ARCADE_SIMULATION.maxSubSteps
+    );
+    let subSteps = 0;
+    while (accumulator >= ARCADE_SIMULATION.fixedDeltaSec
+        && subSteps < ARCADE_SIMULATION.maxSubSteps) {
+        applyArcadeInput(sim, input, ARCADE_SIMULATION.fixedDeltaSec);
+        sim.update(ARCADE_SIMULATION.fixedDeltaSec);
+        accumulator -= ARCADE_SIMULATION.fixedDeltaSec;
+        subSteps += 1;
+    }
+    return { accumulatorSec: accumulator, subSteps };
+}
+
 const PAD_DEADZONE = 0.25;
 
 /**
@@ -340,6 +403,7 @@ export class ArcadeCabinetController {
         this.initialsIndex = 0;
         this.heldKeys = new Set();
         this.prevPad = null;
+        this.simulationAccumulatorSec = 0;
         this._onKeyDown = this._onKeyDown.bind(this);
         this._onKeyUp = this._onKeyUp.bind(this);
     }
@@ -403,6 +467,7 @@ export class ArcadeCabinetController {
         this.heldKeys.clear();
         this.prevPad = null;
         this.gameSim.reset();
+        this.simulationAccumulatorSec = 0;
         this.lastTime = performance.now();
         this._loop = this._loop.bind(this);
         this.rafId = requestAnimationFrame(this._loop);
@@ -532,24 +597,24 @@ export class ArcadeCabinetController {
     }
 
     _loop(now) {
-        const deltaSec = Math.min(0.1, (now - this.lastTime) / 1000);
+        const elapsedSec = Math.max(0, Math.min(
+            ARCADE_SIMULATION.maxFrameDeltaSec,
+            (now - this.lastTime) / 1000
+        ));
         this.lastTime = now;
 
         const pad = typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function'
             ? readArcadePad(navigator.getGamepads())
             : null;
         const keys = this.heldInput();
-        const playingBefore = this.gameSim.state === 'PLAYING';
         this._handlePad(pad);
         if (!this.isOpen()) return;
-        if (playingBefore) {
-            applyArcadeInput(this.gameSim, {
-                turn: keys.turn || pad?.turn || 0,
-                thrust: keys.thrust || Boolean(pad?.thrust),
-                fire: keys.fire || Boolean(pad?.fire)
-            }, deltaSec);
-        }
-        this.gameSim.update(deltaSec);
+        const step = advanceArcadeSimulation(this.gameSim, {
+            turn: keys.turn || pad?.turn || 0,
+            thrust: keys.thrust || Boolean(pad?.thrust),
+            fire: keys.fire || Boolean(pad?.fire)
+        }, this.simulationAccumulatorSec, elapsedSec);
+        this.simulationAccumulatorSec = step.accumulatorSec;
         this._announceGameEnd();
         this._render();
 

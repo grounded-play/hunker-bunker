@@ -22,6 +22,11 @@ describe('audioJuice', () => {
             const highBase = getModulatedPlaybackRate(1.5, 0.10, () => 0.0);
             expect(highBase).toBeCloseTo(1.35);
         });
+
+        it('contains invalid or out-of-range modulation inputs', () => {
+            expect(getModulatedPlaybackRate(Number.NaN, -1, () => 2)).toBe(1);
+            expect(getModulatedPlaybackRate(1, 0.1, () => Number.NaN)).toBe(1);
+        });
     });
 
     describe('biometric audio state', () => {
@@ -48,6 +53,11 @@ describe('audioJuice', () => {
             expect(empty.cutoffHertz).toBe(AUDIO_JUICE_CONFIG.MIN_LPF_HERTZ);
             expect(empty.musicDuckDb).toBe(-12.0);
             expect(empty.heartbeatBpm).toBe(AUDIO_JUICE_CONFIG.HEARTBEAT_MAX_BPM);
+        });
+
+        it('fails healthy when telemetry is missing or invalid', () => {
+            expect(computeBiometricAudioState(Number.NaN).isCritical).toBe(false);
+            expect(computeBiometricAudioState(undefined).cutoffHertz).toBe(AUDIO_JUICE_CONFIG.MAX_LPF_HERTZ);
         });
     });
 });

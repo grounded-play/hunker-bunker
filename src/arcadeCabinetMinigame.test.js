@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
     ARCADE_INPUT,
+    ARCADE_INITIALS_CUTOFF,
+    ARCADE_SIMULATION,
     ArcadeCabinetController,
     ArcadeGameState,
+    advanceArcadeSimulation,
     applyArcadeInput,
     readArcadePad,
     DEFAULT_LEADERBOARD,
@@ -57,6 +60,52 @@ describe('arcadeCabinetMinigame', () => {
             const entry = updated.find((s) => s.score === 50000);
             expect(entry.initials).toBe('LONG');
         });
+
+        it('sanitizes corrupt persisted rows and returns detached defaults', () => {
+            const storage = new MockStorage();
+            storage.setItem('hb_arcade_scores_v1', JSON.stringify([
+                { initials: '<b>x</b>', score: '900', role: '<script>' },
+                { initials: '', score: 1000 },
+                { initials: 'BAD', score: 'not-a-number' }
+            ]));
+            expect(getArcadeHighScores(storage)).toEqual([
+                { initials: 'BXB', score: 900, role: 'SCRIPT', rank: 1 }
+            ]);
+
+            const defaults = getArcadeHighScores(new MockStorage());
+            defaults[0].initials = 'NOPE';
+            expect(getArcadeHighScores(new MockStorage())[0].initials).toBe('TINA');
+        });
+
+        it('offers initials only for the visible top five, not the hidden top ten', () => {
+            const storage = new MockStorage();
+            const ten = Array.from({ length: 10 }, (_, index) => ({
+                initials: `P${index}`,
+                score: 10_000 - index * 1_000,
+                role: 'OPERATOR'
+            }));
+            storage.setItem('hb_arcade_scores_v1', JSON.stringify(ten));
+            expect(ARCADE_INITIALS_CUTOFF).toBe(5);
+            expect(isQualifyingHighScore(5_500, storage)).toBe(false);
+            expect(isQualifyingHighScore(6_000, storage)).toBe(false);
+            expect(isQualifyingHighScore(6_001, storage)).toBe(true);
+        });
+    });
+
+    it('advances gameplay on a bounded fixed timestep across uneven render frames', () => {
+        const sim = new ArcadeGameState();
+        sim.startNewGame();
+        let accumulatorSec = 0;
+        for (const elapsedSec of [0.005, 0.011, 0.024, 0.01]) {
+            ({ accumulatorSec } = advanceArcadeSimulation(sim, { thrust: true }, accumulatorSec, elapsedSec));
+        }
+        // 50ms of render time consumes exactly three 60Hz simulation ticks.
+        expect(accumulatorSec).toBeCloseTo(0);
+        expect(Math.hypot(sim.player.vx, sim.player.vy)).toBeGreaterThan(0);
+
+        const stalled = advanceArcadeSimulation(sim, {}, 0, 5);
+        expect(stalled.subSteps).toBe(ARCADE_SIMULATION.maxSubSteps);
+        expect(stalled.accumulatorSec).toBeCloseTo(0);
     });
 
     describe('ArcadeGameState Simulation', () => {

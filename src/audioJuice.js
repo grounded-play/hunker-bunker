@@ -25,8 +25,12 @@ export const AUDIO_JUICE_CONFIG = Object.freeze({
  * Returns a modulated playbackRate within [base * (1 - variance), base * (1 + variance)].
  */
 export function getModulatedPlaybackRate(baseRate = 1.0, variance = AUDIO_JUICE_CONFIG.DEFAULT_PITCH_VARIANCE, random = Math.random) {
-    const spread = (random() * 2 - 1) * variance;
-    return Math.max(0.2, Math.min(2.5, baseRate * (1 + spread)));
+    const safeBase = Number.isFinite(Number(baseRate)) ? Number(baseRate) : 1;
+    const safeVariance = Number.isFinite(Number(variance)) ? Math.max(0, Number(variance)) : AUDIO_JUICE_CONFIG.DEFAULT_PITCH_VARIANCE;
+    const sample = Number(random?.());
+    const safeSample = Number.isFinite(sample) ? Math.max(0, Math.min(1, sample)) : 0.5;
+    const spread = (safeSample * 2 - 1) * safeVariance;
+    return Math.max(0.2, Math.min(2.5, safeBase * (1 + spread)));
 }
 
 /**
@@ -35,7 +39,10 @@ export function getModulatedPlaybackRate(baseRate = 1.0, variance = AUDIO_JUICE_
  * @returns {Object} Audio DSP parameters for music ducking, low-pass filter, and heartbeat tempo.
  */
 export function computeBiometricAudioState(o2Percent = 1.0) {
-    const clampedO2 = Math.max(0.0, Math.min(1.0, o2Percent));
+    const numericO2 = Number(o2Percent);
+    // Missing/invalid telemetry must fail healthy; propagating NaN into Web
+    // Audio parameters can throw and silence the whole graph.
+    const clampedO2 = Number.isFinite(numericO2) ? Math.max(0.0, Math.min(1.0, numericO2)) : 1.0;
     const isCritical = clampedO2 <= AUDIO_JUICE_CONFIG.LOW_O2_THRESHOLD;
 
     if (!isCritical) {

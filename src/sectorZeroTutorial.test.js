@@ -90,7 +90,7 @@ describe('SectorZeroTutorialManager', () => {
         manager.handleEvent('barrier-shot', {});
         manager.handleEvent('salvage-collected', {});
         manager.handleEvent('console-deposited', {});
-        manager.handleEvent('enemy-killed', {});
+        manager.handleEvent('enemy-killed', { enemyType: 'alien_proto_crawler' });
 
         expect(manager.handleEvent('gate-crossed', {})).toBe(true);
         expect(manager.getCurrentPhase()).toBe(SECTOR_ZERO_PHASES.COMPLETE);
@@ -105,5 +105,32 @@ describe('SectorZeroTutorialManager', () => {
             expect(SECTOR_ZERO_OBJECTIVES[phase].label).toBeTruthy();
             expect(SECTOR_ZERO_OBJECTIVES[phase].hint).toBeTruthy();
         }
+    });
+
+    it('does not let unrelated world events bypass authored gates', () => {
+        const manager = new SectorZeroTutorialManager();
+        manager.start();
+        manager.handleEvent('player-moved', { distance: 3.5 });
+        expect(manager.handleEvent('obstacle-destroyed', { obstacleId: 'random_crate' })).toBe(false);
+        manager.handleEvent('weapon-equipped');
+        expect(manager.handleEvent('obstacle-destroyed', { obstacleId: 'random_crate' })).toBe(false);
+        expect(manager.handleEvent('obstacle-destroyed', { obstacleId: 'jammed_hydraulic_cable' })).toBe(true);
+        manager.handleEvent('salvage-collected');
+        manager.handleEvent('console-deposited');
+        expect(manager.handleEvent('enemy-killed', { enemyType: 'cybersnail' })).toBe(false);
+        expect(manager.handleEvent('enemy-killed', { enemyType: 'tutorial_crawler' })).toBe(true);
+    });
+
+    it('resets completion flags and unlocked doors when restarted', () => {
+        const manager = new SectorZeroTutorialManager();
+        manager.start();
+        manager.handleEvent('player-moved', { distance: 3.5 });
+        manager.handleEvent('weapon-equipped');
+        manager.handleEvent('barrier-shot');
+        expect(manager.isDoorUnlocked('airlock_door_1')).toBe(true);
+        manager.start();
+        expect(manager.getCurrentPhase()).toBe(SECTOR_ZERO_PHASES.BOOT);
+        expect(manager.flags.hasEquippedWeapon).toBe(false);
+        expect(manager.isDoorUnlocked('airlock_door_1')).toBe(false);
     });
 });
