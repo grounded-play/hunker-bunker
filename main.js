@@ -116,7 +116,8 @@ import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.j
 import { explainEnding, explainLinchpinResolution, formatManifestBlocker } from './src/endingExplanations.js';
 import { getResolution, previewCampLeaderLinchpin } from './src/storyLinchpins.js';
 import { buildEndingArchive, getLeaderReaction } from './src/storyArchive.js';
-import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
+import { SongInterstitialController, selectCampInterstitial, getSongInterstitial } from './src/songInterstitials.js';
+import { CinematicBeatDirector, CINEMATIC_BEAT_EVENTS } from './src/cinematicBeats.js';
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
 import { getLocale, setLocale, t, t as i18nT, getAvailableLocales, applyStaticTranslations } from './src/i18n.js';
 import { mountDeferredMarkup, onDeferredMarkupMounted, setDeferredMarkupDecorator, watchDeferredMarkup } from './src/deferredMarkup.js';
@@ -14979,6 +14980,60 @@ window.addEventListener('song-interstitial-open', async (event) => {
         detail: { trackId, ...result }
     }));
 });
+
+// Every shipped song video has a beat (src/cinematicBeats.js, audit
+// 2026-10-16 §13.2): doors shut over play, the card, doors shut again, then
+// open on play, or on a conversation when someone is there to talk to.
+function openCinematicBeatScene(beat, detail = {}) {
+    const game = window.game;
+    if (!game || !leaderConversationModal?.classList.contains('hidden')) return;
+    if (beat.then === 'camp-conversation') {
+        const camp = game.getCampById?.(detail.campId);
+        const here = game.player
+            ? game.getActionableCampAt?.(game.player.position.x, game.player.position.z)?.camp
+            : null;
+        if (camp && here?.id === camp.id) game.talkToLeader?.('camp', camp);
+        return;
+    }
+    if (beat.then === 'aria') {
+        // Aria speaks only in a Queen context (audit §10.5): her first whisper
+        // is this beat. At low bond her tree offers only "resist".
+        const whisper = NPC_DIALOGUE_TREES.aria_queen_mimic?.nodes?.aria_whisper;
+        const firstLine = String(whisper?.dialogue ?? '').split(/(?<=[?.!])\s/)[0];
+        if (!firstLine) return;
+        window.dispatchEvent(new CustomEvent('leader-dialogue', {
+            detail: {
+                kind: 'queen',
+                id: 'aria',
+                treeId: 'aria_queen_mimic',
+                lines: [`ARIA: ${firstLine}`],
+                beatType: 'beat',
+                stage: 0,
+                leaderName: 'Aria',
+                relationship: { bond: 0 },
+                progress: { stage: 0 }
+            }
+        }));
+    }
+}
+
+const cinematicBeats = new CinematicBeatDirector({
+    play: (beat, detail) => showCardThenScene(beat.card, () => openCinematicBeatScene(beat, detail)),
+    isInCombat: () => Boolean(window.game?.inCombat),
+    isMultiplayer: () => Boolean(window.game?.isMultiplayer),
+    toast: (title) => window.showToastNotification?.(title, { tone: 'info', duration: 5000 }),
+    titleFor: (beat) => getSongInterstitial(beat.card)?.title ?? beat.card
+});
+for (const type of CINEMATIC_BEAT_EVENTS) {
+    window.addEventListener(type, (event) => {
+        if (!isGameplayPhase()) return;
+        cinematicBeats.handle(type, event?.detail ?? {});
+    });
+}
+window.addEventListener('combat-state-changed', (event) => {
+    cinematicBeats.onCombatChanged(Boolean(event?.detail?.active));
+});
+window.cinematicBeats = cinematicBeats;
 
 // Act 1 camp support + the Act 2 payoff (defended culls).
 window.addEventListener('camp-supported', (event) => {

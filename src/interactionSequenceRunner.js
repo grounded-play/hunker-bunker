@@ -4,6 +4,8 @@
  * Built according to docs/planning/camp-interaction-and-cinematics-audit-2026-10-16.md §8.
  */
 
+import { CINEMATIC_STORAGE_KEY, readCinematicsRecord, writeCinematicsField } from './cinematicBeats.js';
+
 export const INTERACTION_SEQUENCES = Object.freeze({
     meridian_first_meeting: Object.freeze({
         id: 'meridian_first_meeting',
@@ -78,8 +80,9 @@ export const INTERACTION_SEQUENCES = Object.freeze({
 });
 
 // Saved per campaign (src/profile.js CAMPAIGN_SPECIFIC_STORAGE_KEYS): a
-// sequence plays once per save, not once per page load (audit §8.3).
-export const INTERACTION_SEQUENCE_STORAGE_KEY = 'hb_cinematics_v1';
+// sequence plays once per save, not once per page load (audit §8.3). The
+// record is shared with the cinematic beats (src/cinematicBeats.js).
+export const INTERACTION_SEQUENCE_STORAGE_KEY = CINEMATIC_STORAGE_KEY;
 
 function defaultStorage() {
     try {
@@ -100,12 +103,8 @@ export class InteractionSequenceRunner {
     }
 
     loadCompleted() {
-        try {
-            const parsed = JSON.parse(this.storage?.getItem?.(INTERACTION_SEQUENCE_STORAGE_KEY) ?? 'null');
-            return Array.isArray(parsed?.sequences) ? parsed.sequences : [];
-        } catch {
-            return [];
-        }
+        const { sequences } = readCinematicsRecord(this.storage);
+        return Array.isArray(sequences) ? sequences : [];
     }
 
     isSequenceCompleted(id) {
@@ -114,11 +113,7 @@ export class InteractionSequenceRunner {
 
     markSequenceCompleted(id) {
         this.completedSequences.add(id);
-        try {
-            this.storage?.setItem?.(INTERACTION_SEQUENCE_STORAGE_KEY, JSON.stringify({ sequences: [...this.completedSequences] }));
-        } catch {
-            // best effort: the sequence still won't replay this session
-        }
+        writeCinematicsField(this.storage, 'sequences', this.completedSequences);
     }
 
     async runSequence(specOrId, context = {}) {

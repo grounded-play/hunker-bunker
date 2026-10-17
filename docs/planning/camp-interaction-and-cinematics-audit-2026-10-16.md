@@ -627,7 +627,7 @@ Skip rules (ties to D-3): the skip press jumps to step 3. It never cuts to the w
 
 ### 13.2 Every video gets a trigger
 
-**Today only 10 of the 32 videos ever play**: 01, 02, 04, 06, 11 and 22/23 through `camp-first-contact`; 04 (O2 upgrade) and 13/26/27 (snail bosses) through the cutscene path in `main.js:8800`. The other 22 ship and never trigger. `int_11` plays today only as the generic card for *any* hive's first contact.
+**Before this work only 9 of the 32 videos ever played** (corrected 2026-10-16 evening): 01, 02, 04, 06 and 22/23 through `camp-first-contact`; 04 (O2 upgrade) and 13/26/27 (snail bosses) through the cutscene path in `main.js:8800`. `selectCampInterstitial` returns 11 for a hive, but `camp-first-contact` is only ever dispatched for camps, so **`int_11` played nowhere**. Nothing opened Aria's tree either. Now: see the **Live** column below and §13.6.
 
 Proposal: one table, `src/cinematicBeats.js`, `{ beat, when, card, then, once }`, listened to in `main.js`. All events below already fire in the code. Rows marked *live* keep their current trigger.
 
@@ -706,7 +706,12 @@ Glue gaps found by reading the diff:
 1. §13.1 door bookends + the backdrop change, and route `camp-first-contact` through them (02/04/06 already exist, so the owner sees the beat in the first camp visit). **Done** (see §13.6).
 2. §13.3 node interstitials, using the same call. **Done** (see §13.6).
 3. §13.4 glue fixes, so the runner's lines and resumes are real. **Partly done** (see §13.6): perk, lines and persistence are real. Still open: `resumeConversationAfterSequence` dispatches an event nothing hears, S-1 still races the window it fires beside, and walk, camera and FX are still Meridian-hardcoded stubs. Those matter only once the anchors resolve (today every sequence takes the fallback).
-4. §13.2 beat table, in two passes: first the conversation rows (03, 07, 08, 11, 16, 19–21, 28–30), then the gameplay rows.
+4. §13.2 beat table, in two passes: first the conversation rows (03, 07, 08, 11, 16, 19–21, 28–30), then the gameplay rows. **Pass 1 done** (see §13.6): 16 beats in `src/cinematicBeats.js`. Not mapped yet:
+   - 05 and 09: they would land on the first-night tutorial and the death cutscene.
+   - 08: there is no hive first-contact hook.
+   - 12 and 31: the Queen fight has its own flow.
+   - 16: needs a "non-violent" classification of hive actions.
+   - 24: it would collide with the ending flow.
 5. Verify in the dev server (vite + system Chrome). Capture the Meridian first visit: doors → 02 → doors → Kaelen's window over the live camp.
 
 
@@ -719,10 +724,13 @@ Glue gaps found by reading the diff:
 | 2026-10-16 | 2 | Tree choices whose node names a side-story card play it first: doors shut over the window → still + music (7 s, skippable) → doors shut → the node renders behind them → doors open on the window. `NpcDialogueTreeManager.cardForChoice()` / `markCardPlayed()` decide: once per save (`playedCards` in `hb_side_stories_v1`), never the opening node. Number keys and Esc are ignored by the tree while a card is up. The card caption reads "Overseer Kaelen // Camp Meridian" instead of "TRACK kaelen_…". | Unit: `npcDialogueTrees.test.js` (+3), `songInterstitials.test.js` (10). Browser: Kaelen at bond 3 / stage 1, choice `kaelen_bio_link`, Esc mid-card → the log shows the line change to `kaelen_biolink_response` while `is-closing-out`; the window stays open; `playedCards` saved. |
 | 2026-10-16 | 2 (bug) | Esc used to skip the card **and** close the conversation behind it. Space/Enter would have pressed the window's focused choice. Any other key first (W) silently removed the skip listener (`once: true`). Fix: the card listens in the capture phase and swallows only Space/Enter/Esc. | Unit: "owns its skip keys". Browser re-run: the window survives Esc. |
 | 2026-10-16 | 3 (part) | The sequence perk is real: `SideStoryManager.grantPerk()` records it on the owning story (saved), adds it to the tree manager's live perks, and shows the toast. `bank.addPerk` never existed, and the `perk-unlocked` event had no listener. Sequence lines show as a bunker line ("MOTHERSHIP: …") and hold for a reading beat. Completions are saved in `hb_cinematics_v1` (reset with the campaign), not in memory. | Unit: `sideStorySystem.test.js` (+2), `interactionSequenceRunner.test.js` (+1), `threeGame.campConversation.test.js` (+2). Full suite 6,336 / 744 files pass; i18n audit unchanged. |
+| 2026-10-16 | 4 (pass 1) | `src/cinematicBeats.js`: 16 beats (03, 07, 10, 11, 14, 15, 17, 18, 19, 20, 21, 25, 28, 29, 30, 32), each with the doors in and out. Rules: once per save (`beats` in `hb_cinematics_v1`, shared with the runner's `sequences`); wait out a fight, keeping the higher-priority beat; boss beats (17, 25) play at spawn; co-op gets a toast with the title instead of doors; a flavour beat within 20 s of another card is dropped (not spent). `then: 'camp-conversation'` opens the leader only if the player stands at that camp. **11 → Aria**: the first `queen-hallucination` plays int_11, and the doors open on Aria's window ("Why do you tremble so, sweet contractor?"). At bond 0 she offers only *Resist psychic pull*. A song card now **freezes play** (`#song-interstitial` joined `hasBlockingGameplayOverlay`). Before this, enemies kept simulating behind every card, first contact included. | Unit: `cinematicBeats.test.js` (9: each card maps once to a shipped webm on disk, int_11 → Aria, detail matching, once per save, combat deferral, boss, co-op, spacing, shared record), `threeGame.blockingOverlay.test.js` (+1). Full suite 6,346 / 745 files pass. Browser: one whisper → `int_11_her_voice_inside_your_helmet_motion_v1.webm` played in full with play blocked → doors → Aria's window → `aria_resist`. A second whisper does nothing. |
+| 2026-10-16 | 4 (bug) | The browser run found card 14 already spent at boot. `depth-tier-changed` re-announces the current tier on spawn and respawn. Card 14 now needs a real crossing (`detail.crossing`). | Unit: "matches on the event detail". |
 
 **Found while verifying step 2 (owner):**
 - The 9 human-leader cards: 7 sit on intimate `close`-tier nodes, so in play they show only past the intimacy gate (bond 3, stage 1). `briggs_scorched_rig` and `kaelen_diagnostic_cradle` sit **only** on greetings, so they never play (first contact plays the camp card instead). Two of the new `_v2` stills are exactly those. To use them, attach them to a Stranger or Trusted node.
 - The art of `int_kaelen_frequency_overclock_key_v1.webp` shows a young short-haired woman and a man, not Kaelen (older man, goggles). Check the other side-story stills against the busts before they go out.
+- Aria's window shows the role "SCOUT": `leaderIdentity.js` gives her `classId: 'SCOUT'`. She needs a title (e.g. "Specimen 0047-B").
 - The 2026-10-08 rule ("no music video per choice; first contact only") still holds in spirit. A card never plays behind the window, plays once per save, and never on a greeting.
 
 ---

@@ -11648,6 +11648,9 @@ export class ThreeGame {
             || isVisible('base-turret-modal')
             || isVisible('demo-end-modal')
             || isVisible('camp-choice-modal')
+            // A song card (doors + video) freezes play behind it (audit
+            // 2026-10-16 §13.2); field beats would otherwise let enemies act.
+            || isVisible('song-interstitial')
             || isVisible('leader-conversation-modal')
             || isVisible('archive-sims-modal')
             || isVisible('steam-vault-modal')
