@@ -46,27 +46,46 @@ describe('one conversation per camp', () => {
         expect(events.find((event) => event.type === 'leader-dialogue').detail.treeId).toBe('sister_val');
     });
 
-    it('triggers meridian_first_meeting sequence when talking at Camp Meridian', () => {
+    // S-1 plays before the conversation and opens it when done; it used to
+    // start beside an already-open window (audit 2026-10-16 §13.4).
+    it('plays Meridian\'s first meeting before the conversation when its anchor exists', () => {
         const events = [];
         globalThis.window = { dispatchEvent: (event) => events.push(event), openNpcDialogueTree: vi.fn(), achievementEngine: null };
         globalThis.CustomEvent = class CustomEvent {
             constructor(type, options = {}) { this.type = type; this.detail = options.detail; }
         };
-        const fake = Object.create(ThreeGame.prototype);
         const runSequence = vi.fn();
-        Object.assign(fake, {
-            interactionSequenceRunner: {
-                isSequenceCompleted: vi.fn().mockReturnValue(false),
-                runSequence
-            },
-            act2: { recordDialogueTalk: vi.fn(), advanceDialogueStage: vi.fn() },
-            getCampRecord: () => ({ status: 'alive', bond: 1, level: 1, dialogueStage: 0, stageTalks: 0 }),
-            peekDialogueBeat: () => ({ type: 'beat', stage: 0, lines: ['KAELEN: ANOTHER SUIT FROM THE SURFACE.'] }),
-            getDialogueContext: () => ({})
-        });
-        fake.talkToLeader('camp', { id: 'camp_meridian', leaderName: 'Overseer Kaelen' });
+        const make = (canRun) => {
+            const fake = Object.create(ThreeGame.prototype);
+            Object.assign(fake, {
+                interactionSequenceRunner: { canRun: () => canRun, runSequence },
+                act2: { recordDialogueTalk: vi.fn(), advanceDialogueStage: vi.fn() },
+                getCampRecord: () => ({ status: 'alive', bond: 1, level: 1, dialogueStage: 0, stageTalks: 0 }),
+                peekDialogueBeat: () => ({ type: 'beat', stage: 0, lines: ['KAELEN: ANOTHER SUIT FROM THE SURFACE.'] }),
+                getDialogueContext: () => ({})
+            });
+            return fake;
+        };
+        expect(make(true).talkToLeader('camp', { id: 'camp_meridian', leaderName: 'Overseer Kaelen' })).toBe(true);
         expect(runSequence).toHaveBeenCalledWith('meridian_first_meeting');
+        expect(events.some((event) => event.type === 'leader-dialogue')).toBe(false);
+        make(false).talkToLeader('camp', { id: 'camp_meridian', leaderName: 'Overseer Kaelen' });
+        expect(runSequence).toHaveBeenCalledTimes(1);
+        expect(events.some((event) => event.type === 'leader-dialogue')).toBe(true);
         delete globalThis.window;
+    });
+
+    it('resolves sequence anchors to real places: the camp\'s dressing and the installed cot', () => {
+        const fake = Object.create(ThreeGame.prototype);
+        Object.assign(fake, {
+            camps: [{ id: 'camp_meridian', pos: { x: 100, z: 50 } }],
+            carryState: { installed: [{ definitionId: 'cot_bed', x: 7, z: -3 }] }
+        });
+        expect(fake.resolveSequenceAnchor('meridian_logic_core_drum', { campId: 'camp_meridian' })).toEqual({ x: 98.8, z: 53.2 });
+        expect(fake.resolveSequenceAnchor('meridian_grid_covenant_seal', { campId: 'camp_meridian' })).toEqual({ x: 101.4, z: 46.6 });
+        expect(fake.resolveSequenceAnchor('base_cot_installed', {})).toEqual({ x: 7, z: -3 });
+        expect(fake.resolveSequenceAnchor('meridian_logic_core_drum', { campId: 'camp_tallow' })).toBeNull();
+        expect(fake.resolveSequenceAnchor('not_a_prop', { campId: 'camp_meridian' })).toBeNull();
     });
 
     // Audit 2026-10-16 §13.4: the runner's reward and line hooks were silent

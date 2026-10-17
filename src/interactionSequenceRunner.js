@@ -9,6 +9,7 @@ import { CINEMATIC_STORAGE_KEY, readCinematicsRecord, writeCinematicsField } fro
 export const INTERACTION_SEQUENCES = Object.freeze({
     meridian_first_meeting: Object.freeze({
         id: 'meridian_first_meeting',
+        campId: 'camp_meridian',
         trigger: { event: 'act2-milestone', key: 'campDiscovered', campId: 'camp_meridian', on: 'firstTalk' },
         anchors: { core: 'meridian_logic_core_drum' },
         actors: { leader: 'campLeader', player: true },
@@ -33,6 +34,7 @@ export const INTERACTION_SEQUENCES = Object.freeze({
 
     meridian_grid_covenant: Object.freeze({
         id: 'meridian_grid_covenant',
+        campId: 'camp_meridian',
         trigger: { quest: 'grid_covenant', when: 'accepted' },
         anchors: { seal: 'meridian_grid_covenant_seal' },
         actors: { leader: 'campLeader', player: true },
@@ -116,43 +118,62 @@ export class InteractionSequenceRunner {
         writeCinematicsField(this.storage, 'sequences', this.completedSequences);
     }
 
+    // Every anchor resolved to a world position, or null when one is missing.
+    resolveAnchors(spec) {
+        const anchors = {};
+        for (const [key, anchorName] of Object.entries(spec.anchors ?? {})) {
+            const position = this.game?.resolveSequenceAnchor?.(anchorName, spec) ?? null;
+            if (!position) return null;
+            anchors[key] = { name: anchorName, ...position };
+        }
+        return anchors;
+    }
+
+    canRun(specOrId) {
+        const spec = typeof specOrId === 'string' ? INTERACTION_SEQUENCES[specOrId] : specOrId;
+        return Boolean(spec && !this.isSequenceCompleted(spec.id) && this.resolveAnchors(spec));
+    }
+
     async runSequence(specOrId, context = {}) {
         const spec = typeof specOrId === 'string' ? INTERACTION_SEQUENCES[specOrId] : specOrId;
         if (!spec) {
             return { ok: false, reason: 'Sequence not found' };
         }
 
-        if (this.isSequenceCompleted(spec.id)) {
-            return { ok: false, reason: 'Sequence already completed' };
+        if (this.isSequenceCompleted(spec.id) || this.activeSequence) {
+            return { ok: false, reason: this.activeSequence ? 'Another sequence is playing' : 'Sequence already completed' };
         }
+        // Spent before anything runs: an end state that reopens a conversation
+        // can call back into the trigger, which must not start it again.
+        this.markSequenceCompleted(spec.id);
+        this._rewardGranted = false;
 
         // A missing anchor applies the end state. A sequence may name its own
         // placeholder card, never another beat's song card: those play at
         // their own beats (audit 2026-10-16 §13.2), and borrowing one here
         // doubled the first-contact card at Meridian.
-        if (spec.anchors && this.game?.findPropAnchor) {
-            for (const [key, anchorName] of Object.entries(spec.anchors)) {
-                const anchorExists = this.game.findPropAnchor(anchorName);
-                if (!anchorExists) {
-                    if (spec.placeholder?.card && this.game.playInterstitialCard) {
-                        this.game.playInterstitialCard(spec.placeholder.card);
-                    }
-                    this.applyEndState(spec, context);
-                    this.markSequenceCompleted(spec.id);
-                    return { ok: true, fallback: true };
-                }
+        const anchors = this.resolveAnchors(spec);
+        if (!anchors) {
+            if (spec.placeholder?.card && this.game?.playInterstitialCard) {
+                this.game.playInterstitialCard(spec.placeholder.card);
             }
+            this.applyEndState(spec, context);
+            return { ok: true, fallback: true };
         }
 
         this.activeSequence = spec;
         this.currentStepIndex = 0;
         this.isSkipped = false;
+        const stepContext = { ...context, anchors };
+        // Never under a card, window or cutscene: wait for the stage to clear.
+        await this.game?.waitForClearStage?.();
+        this.bindSkip();
 
         try {
             for (let i = 0; i < spec.steps.length; i++) {
                 if (this.isSkipped) break;
                 this.currentStepIndex = i;
-                await this.executeStep(spec.steps[i], spec, context);
+                await this.executeStep(spec.steps[i], spec, stepContext);
             }
 
             if (!this.isSkipped) {
@@ -162,7 +183,7 @@ export class InteractionSequenceRunner {
             this.applyEndState(spec, context);
             return { ok: false, error: error.message };
         } finally {
-            this.markSequenceCompleted(spec.id);
+            this.unbindSkip();
             this.activeSequence = null;
             this.currentStepIndex = -1;
             this.isSkipped = false;
@@ -171,8 +192,32 @@ export class InteractionSequenceRunner {
         return { ok: true, completed: true };
     }
 
+    // Esc / Space / Enter skip a playing sequence (its end state still lands).
+    bindSkip() {
+        if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
+        this._onSkipKey ??= (event) => {
+            if (!this.activeSequence || !['Escape', 'Space', 'Enter'].includes(event.code)) return;
+            event.preventDefault?.();
+            event.stopImmediatePropagation?.();
+            this.skip();
+        };
+        window.addEventListener('keydown', this._onSkipKey, { capture: true });
+    }
+
+    unbindSkip() {
+        if (!this._onSkipKey || typeof window === 'undefined' || typeof window.removeEventListener !== 'function') return;
+        window.removeEventListener('keydown', this._onSkipKey, { capture: true });
+    }
+
+    // A step's target: an anchor key, 'leader' or 'player'.
+    resolveTarget(target, spec, anchors = {}) {
+        if (anchors[target]) return { x: anchors[target].x, z: anchors[target].z };
+        return this.game?.getSequenceActorPosition?.(target, spec) ?? null;
+    }
+
     async executeStep(step, spec, context) {
         if (!step || typeof step !== 'object') return;
+        const anchors = context.anchors ?? {};
 
         switch (step.do) {
             case 'lockInput':
@@ -185,54 +230,52 @@ export class InteractionSequenceRunner {
                 this.game?.setInputEnabled?.(true);
                 break;
 
-            case 'camera':
-                if (this.game?.transitionCamera) {
-                    await this.game.transitionCamera(step.shot, step.target, step.ms ?? 500);
-                }
+            case 'camera': {
+                const position = step.shot === 'gameplay' || step.shot === 'conversation'
+                    ? null
+                    : this.resolveTarget(step.target, spec, anchors);
+                await this.game?.transitionCamera?.(step.shot, position, step.ms ?? 500);
                 break;
+            }
 
-            case 'walk':
-                if (this.game?.walkActorToAnchor) {
-                    await this.game.walkActorToAnchor(step.actor, step.to?.anchor, step.to?.offset);
-                }
+            case 'walk': {
+                const anchor = anchors[step.to?.anchor];
+                if (!anchor) break;
+                const [dx = 0, , dz = 0] = step.to?.offset ?? [];
+                await this.game?.walkActorTo?.(step.actor, { x: anchor.x + dx, z: anchor.z + dz }, spec);
                 break;
+            }
 
             case 'face':
-                this.game?.faceActorToward?.(step.actor, step.toward);
+                this.game?.faceActorToward?.(step.actor, this.resolveTarget(step.toward, spec, anchors), spec);
                 break;
 
             case 'gesture':
-                this.game?.playActorGesture?.(step.actor, step.clip);
+                this.game?.playActorGesture?.(step.actor, step.clip, spec);
                 break;
 
             case 'prop':
-                if (this.game?.setWorldPropState) {
-                    this.game.setWorldPropState(step.anchor, step.state ?? 'active', step);
-                }
+                this.game?.setWorldPropState?.(anchors[step.anchor]?.name ?? step.anchor, step.state ?? 'active', anchors[step.anchor] ?? null);
                 break;
 
             case 'fx':
-                this.game?.spawnPropFx?.(step.anchor, step.effect, step.color);
+                this.game?.spawnPropFx?.(anchors[step.anchor] ?? null, step.effect, step.color);
                 break;
 
             case 'line':
-                if (this.game?.displaySequenceSubtitle) {
-                    await this.game.displaySequenceSubtitle(step.speaker, step.key, step.text);
-                }
+                await this.game?.displaySequenceSubtitle?.(step.speaker, step.key, step.text, { campId: spec.campId });
                 break;
 
-            case 'grantReward':
-                if (context.grantReward) {
-                    context.grantReward(step);
-                } else if (this.game?.grantSequenceReward) {
-                    this.game.grantSequenceReward(step);
-                }
+            case 'grantReward': {
+                this._rewardGranted = true;
+                const reward = { ...step, campId: spec.campId };
+                if (context.grantReward) context.grantReward(reward);
+                else this.game?.grantSequenceReward?.(reward);
                 break;
+            }
 
             case 'resumeConversation':
-                if (this.game?.resumeConversationAfterSequence) {
-                    this.game.resumeConversationAfterSequence(step.offer);
-                }
+                this.game?.resumeConversationAfterSequence?.(step.offer, spec);
                 break;
 
             default:
@@ -250,18 +293,19 @@ export class InteractionSequenceRunner {
     applyEndState(spec, context = {}) {
         if (!spec) return;
 
-        // Apply world prop states
         if (spec.endState?.propStates && this.game?.setWorldPropState) {
             for (const [prop, state] of Object.entries(spec.endState.propStates)) {
-                this.game.setWorldPropState(prop, state);
+                this.game.setWorldPropState(prop, state, null);
             }
         }
 
-        // Apply rewards
-        if (spec.endState?.perk || spec.endState?.bondDelta) {
+        // The end state pays only what a grantReward step has not already paid
+        // (Grid Covenant listed its +2 bond and perk in both).
+        if ((spec.endState?.perk || spec.endState?.bondDelta) && !this._rewardGranted) {
             const reward = {
                 perk: spec.endState.perk,
                 bondDelta: spec.endState.bondDelta,
+                campId: spec.campId,
                 toast: true
             };
             if (context.grantReward) {
@@ -271,14 +315,12 @@ export class InteractionSequenceRunner {
             }
         }
 
-        // Restore camera and input
         this.game?.clearCinematicCameraFocus?.();
         this.game?.setCinematicLock?.(false);
         this.game?.setInputEnabled?.(true);
 
-        // Resume conversation if pending
         if (spec.endState?.questOffer) {
-            this.game?.resumeConversationAfterSequence?.(spec.endState.questOffer);
+            this.game?.resumeConversationAfterSequence?.(spec.endState.questOffer, spec);
         }
     }
 }

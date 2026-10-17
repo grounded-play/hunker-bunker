@@ -61,7 +61,12 @@ export const CAMP_DRESSING_MODELS = Object.freeze({
         // chair and devotion tree every camp shares.
         { type: 'life_lookout_perch', x: -5.9, z: 0.6, yaw: Math.PI / 2 },
         { type: 'life_barber_chair', x: 5.8, z: -0.7, yaw: -Math.PI / 2 },
-        { type: 'life_devotion_tree', x: 0.1, z: -5.9, yaw: 0 }
+        { type: 'life_devotion_tree', x: 0.1, z: -5.9, yaw: 0 },
+        // Interaction-sequence anchors (src/interactionSequenceRunner.js):
+        // the grid drum Kaelen shows on the first meeting (S-1) and the seal
+        // both palms sign for the Grid Covenant (S-3).
+        { type: 'meridian_logic_core_drum', x: -1.2, z: 3.2, yaw: 0.3 },
+        { type: 'meridian_grid_covenant_seal', x: 1.4, z: -3.4, yaw: -0.4 }
     ]),
     camp_tallow: Object.freeze([
         { type: 'prop_fungal_resin_basin', x: -3.0, z: 2.6, yaw: 0.2 },

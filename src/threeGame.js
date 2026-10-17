@@ -22898,6 +22898,14 @@ export class ThreeGame {
     }
 
     talkToLeader(kind, entity) {
+        // Meridian's first meeting plays before the conversation and opens it
+        // when done (audit §8, S-1); it used to start beside the open window.
+        // Without its anchor the conversation simply opens.
+        if (kind === 'camp' && entity?.id === 'camp_meridian'
+            && this.interactionSequenceRunner?.canRun?.('meridian_first_meeting')) {
+            void this.interactionSequenceRunner.runSequence('meridian_first_meeting');
+            return true;
+        }
         const record = kind === 'hive' ? this.getHiveRecord(entity.id)
             : kind === 'scientist' ? this.getScientistRecord()
                 : this.getCampRecord(entity.id);
@@ -22983,98 +22991,119 @@ export class ThreeGame {
             }
         }
 
-        if (kind === 'camp' && entity.id === 'camp_meridian' && this.interactionSequenceRunner) {
-            if (!this.interactionSequenceRunner.isSequenceCompleted('meridian_first_meeting')) {
-                void this.interactionSequenceRunner.runSequence('meridian_first_meeting');
-            }
-        }
-
         return true;
     }
 
-    findPropAnchor(anchorName) {
+    // ── Interaction-sequence hooks (src/interactionSequenceRunner.js) ──
+    // Anchors are real places: a prop in the sequence camp's own dressing
+    // (camp.js CAMP_DRESSING_MODELS, offsets from the camp centre) or the
+    // installed cot. The first draft checked a registry that never existed,
+    // so every sequence fell back.
+    resolveSequenceAnchor(anchorName, spec = {}) {
         if (!anchorName) return null;
-        if (this.carryState?.installed?.some((item) => item.definitionId === anchorName || item.modelType === anchorName || item.socketId === anchorName)) {
-            return true;
+        if (anchorName === 'base_cot_installed') {
+            const cot = this.carryState?.installed?.find((item) => item.definitionId === 'cot_bed');
+            return Number.isFinite(cot?.x) && Number.isFinite(cot?.z) ? { x: cot.x, z: cot.z } : null;
         }
-        if (this.worldDressingNetwork?.has?.(anchorName)) return true;
-        if (this.props?.some((p) => p.propType === anchorName || p.id === anchorName)) return true;
-        return false;
+        const camp = this.camps?.find((entry) => entry.id === spec.campId);
+        const placed = camp ? CAMP_DRESSING_MODELS?.[camp.id]?.find((entry) => entry.type === anchorName) : null;
+        if (!camp?.pos || !placed) return null;
+        return { x: camp.pos.x + placed.x, z: camp.pos.z + placed.z };
     }
 
+    // A sequence's own placeholder card (never another beat's song card).
     playInterstitialCard(cardId) {
-        if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('song-interstitial-open', {
-                detail: { trackId: String(cardId).padStart(2, '0') }
-            }));
-        }
+        if (typeof window === 'undefined') return;
+        window.dispatchEvent(new CustomEvent('song-interstitial-open', { detail: { trackId: cardId } }));
     }
 
-    async transitionCamera(_shot, target, ms = 500) {
-        let pos = null;
-        if (target === 'leader') {
-            const camp = this.camps?.find((c) => c.id === 'camp_meridian') ?? this.camps?.[0];
-            if (camp) pos = { x: camp.pos.x, z: camp.pos.z };
-        } else if (target === 'player' && this.player) {
-            pos = { x: this.player.position.x, z: this.player.position.z };
-        } else if (typeof target === 'string') {
-            const camp = this.camps?.find((c) => c.id === 'camp_meridian') ?? this.camps?.[0];
-            if (camp) pos = { x: camp.pos.x + 1.0, z: camp.pos.z };
+    getSequenceActorPosition(actor, spec = {}) {
+        if (actor === 'player' && this.player) return { x: this.player.position.x, z: this.player.position.z };
+        if (actor === 'leader') {
+            const camp = this.camps?.find((entry) => entry.id === spec.campId);
+            const at = camp?.npcSprite?.position ?? camp?.npcPos ?? camp?.pos;
+            return at ? { x: at.x, z: at.z } : null;
         }
-        if (pos) {
-            this.focusCinematicCamera(pos);
-        }
-        if (ms > 0) {
-            await new Promise((resolve) => setTimeout(resolve, Math.min(ms, 100)));
-        }
+        return null;
     }
 
-    async walkActorToAnchor(actor, _anchor, offset = [0, 0, 0]) {
-        const camp = this.camps?.find((c) => c.id === 'camp_meridian') ?? this.camps?.[0];
-        const baseX = camp ? camp.pos.x : (this.player?.position.x ?? 0);
-        const baseZ = camp ? camp.pos.z : (this.player?.position.z ?? 0);
-        const targetX = baseX + (offset[0] ?? 0);
-        const targetZ = baseZ + (offset[2] ?? 0);
+    // Resolves once nothing blocks the stage (a song card, window or
+    // cutscene), or after a cap so a stuck overlay can't strand a sequence.
+    waitForClearStage({ timeoutMs = 15000 } = {}) {
+        const started = Date.now();
+        return new Promise((resolve) => {
+            const check = () => {
+                if (!this.hasBlockingGameplayOverlay?.() || Date.now() - started > timeoutMs) return resolve(true);
+                setTimeout(check, 200);
+            };
+            check();
+        });
+    }
 
-        if (actor === 'player' && this.player) {
-            this.player.position.x = targetX;
-            this.player.position.z = targetZ;
+    async transitionCamera(shot, position, ms = 500) {
+        if (position) this.focusCinematicCamera?.(position);
+        else this.clearCinematicCameraFocus?.();
+        if (ms > 0) await new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    // The player walks (not teleports) to the mark over a short beat. The
+    // leader holds position and gestures: camp leaders have no walk cycle.
+    walkActorTo(actor, target, spec = {}, { ms = 700 } = {}) {
+        if (actor !== 'player' || !this.player || !target) {
+            if (actor === 'leader') this.faceActorToward?.('leader', target, spec);
+            return Promise.resolve(false);
         }
+        const from = { x: this.player.position.x, z: this.player.position.z };
+        const started = performance.now();
+        return new Promise((resolve) => {
+            const step = () => {
+                const t = Math.min(1, (performance.now() - started) / ms);
+                const eased = t * t * (3 - 2 * t);
+                this.player.position.x = from.x + (target.x - from.x) * eased;
+                this.player.position.z = from.z + (target.z - from.z) * eased;
+                if (t >= 1) return resolve(true);
+                setTimeout(step, 16);
+            };
+            step();
+        });
     }
 
-    faceActorToward(_actor, _toward) {
-        // Orient actor toward target
+    faceActorToward(actor, target, spec = {}) {
+        if (actor !== 'leader' || !target) return;
+        const camp = this.camps?.find((entry) => entry.id === spec.campId);
+        const sprite = camp?.npcSprite;
+        if (sprite) this.faceSpriteFromDir?.(sprite, target.x - sprite.position.x);
     }
 
-    playActorGesture(actor, _clip) {
+    playActorGesture(actor) {
         if (actor === 'leader') {
             window.AudioManager?.play?.('ui_scan_ping', { volume: 0.35, playbackRate: 1.1 });
         }
     }
 
-    setWorldPropState(anchor, _state, _step = {}) {
-        if (anchor === 'meridian_logic_core_drum') {
-            this.spawnPhysicalBurst?.(this.player?.position.x ?? 0, this.player?.position.z ?? 0, { color: 0x22d3ee, count: 8, upward: 0.1 });
-        }
+    // State per sequence prop (this session), with a burst at the prop when
+    // its place is known.
+    setWorldPropState(anchorName, state, position = null) {
+        (this._sequencePropStates ??= new Map()).set(anchorName, state);
+        if (position) this.spawnPhysicalBurst?.(position.x, position.z, { color: 0x22d3ee, count: 8, upward: 0.1 });
     }
 
-    spawnPropFx(_anchor, _effect, color = '#22d3ee') {
-        const hex = parseInt(color.replace('#', '0x'), 16) || 0x22d3ee;
-        const x = this.player?.position.x ?? 0;
-        const z = this.player?.position.z ?? 0;
-        this.spawnPhysicalBurst?.(x, z, { color: hex, count: 12, upward: 0.25 });
+    spawnPropFx(position, effect, color = '#22d3ee') {
+        if (!position) return;
+        const hex = parseInt(String(color).replace('#', '0x'), 16) || 0x22d3ee;
+        this.spawnPhysicalBurst?.(position.x, position.z, { color: hex, count: 12, upward: 0.25 });
         window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 1.2 });
     }
 
     // Nothing listened for 'narrative-sequence-subtitle', so sequence lines
     // never showed. They go out as a bunker line (subtitle strip, co-op
     // broadcast) and hold for a reading beat.
-    async displaySequenceSubtitle(speaker, key, text, { holdMs = null } = {}) {
+    async displaySequenceSubtitle(speaker, key, text, { holdMs = null, campId = null } = {}) {
         const line = t(key, {}, text ?? '');
         if (!line) return;
         const name = speaker === 'mothership'
             ? 'MOTHERSHIP'
-            : (speaker === 'leader' ? (this.camps?.find((c) => c.id === 'camp_meridian')?.leaderName ?? null) : speaker);
+            : (speaker === 'leader' ? (this.camps?.find((c) => c.id === campId)?.leaderName ?? null) : speaker);
         this.showBunkerLine?.(name ? `${name}: ${line}` : line);
         const wait = holdMs ?? Math.min(4000, 1200 + line.length * 30);
         if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
@@ -23090,18 +23119,23 @@ export class ThreeGame {
                 window.showToastNotification?.(`${granted.perk.name} — ${granted.perk.desc ?? ''}`.replace(/ — $/, ''), { tone: 'info', duration: 7000 });
             }
         }
-        if (reward.bondDelta && this.act2) {
-            const campRecord = this.getCampRecord?.('camp_meridian');
+        if (reward.bondDelta && reward.campId) {
+            const campRecord = this.getCampRecord?.(reward.campId);
             if (campRecord) {
                 campRecord.bond = Math.min(5, (campRecord.bond ?? 0) + reward.bondDelta);
             }
         }
     }
 
-    resumeConversationAfterSequence(offer) {
-        if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('leader-dialogue-resume', { detail: { offer } }));
+    // Opens the sequence camp's conversation unless one is already open
+    // (nothing listened for the old 'leader-dialogue-resume' event).
+    resumeConversationAfterSequence(offer, spec = {}) {
+        if (typeof document !== 'undefined') {
+            const modal = document.getElementById('leader-conversation-modal');
+            if (modal && !modal.classList.contains('hidden')) return false;
         }
+        const camp = this.camps?.find((entry) => entry.id === spec.campId);
+        return camp ? this.talkToLeader('camp', camp) : false;
     }
 
     getActionableCampAt(x, z, phase = this.act2?.getPhase(), { skip = null } = {}) {
