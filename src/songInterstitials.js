@@ -315,7 +315,12 @@ export class SongInterstitialController {
         this.root.classList.add('is-closing');
         this.root.setAttribute('aria-hidden', 'false');
         if (this.title) this.title.textContent = spec.title;
-        if (this.track) this.track.textContent = t('ui.interstitial.track', { id: spec.id });
+        if (this.track) {
+            // Side-story cards are scenes, not soundtrack tracks.
+            this.track.textContent = spec.character
+                ? [spec.character, spec.camp].filter(Boolean).join(' // ')
+                : t('ui.interstitial.track', { id: spec.id });
+        }
         const [loaded, motionLoaded] = await Promise.all([
             this.loadStill(spec),
             this.loadMotion(spec)
@@ -366,15 +371,24 @@ export class SongInterstitialController {
 
         await new Promise((resolve) => {
             let timer = null;
+            // The card owns its skip keys while it is on screen. Listen in the
+            // capture phase and swallow them: otherwise Esc also reached the
+            // modal handler and closed the conversation behind the doors, and
+            // Space/Enter pressed the window's focused choice. Not `once`: a
+            // movement key used to remove the listener and strand the skip.
             const onSkip = (e) => {
-                if (e.type === 'keydown' && e.code !== 'Space' && e.code !== 'Escape' && e.code !== 'Enter') return;
+                if (e.type === 'keydown') {
+                    if (e.code !== 'Space' && e.code !== 'Escape' && e.code !== 'Enter') return;
+                    e.preventDefault?.();
+                    e.stopImmediatePropagation?.();
+                }
                 cleanup();
                 resolve();
             };
             const cleanup = () => {
                 if (timer) clearTimeout(timer);
                 if (typeof window !== 'undefined') {
-                    window.removeEventListener('keydown', onSkip);
+                    window.removeEventListener('keydown', onSkip, { capture: true });
                     this.root?.removeEventListener('pointerup', onSkip);
                 }
                 if (this.video) {
@@ -382,7 +396,7 @@ export class SongInterstitialController {
                 }
             };
             if (typeof window !== 'undefined') {
-                window.addEventListener('keydown', onSkip, { once: true });
+                window.addEventListener('keydown', onSkip, { capture: true });
                 this.root?.addEventListener('pointerup', onSkip, { once: true });
             }
             if (motionLoaded && this.video) {

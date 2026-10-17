@@ -12193,6 +12193,8 @@ function setupNpcDialogueEvents() {
 
     window.addEventListener('keydown', (e) => {
         if (!npcDialogueTreeManager.activeTree || !npcDialogueTreeManager.currentNode) return;
+        // A side-story card is on screen: its own skip keys own the input.
+        if (treeCardInFlight) return;
 
         if (e.key === 'Escape') {
             e.preventDefault();
@@ -12207,7 +12209,7 @@ function setupNpcDialogueEvents() {
             const selected = choices[num - 1];
             if (selected) {
                 window.AudioManager?.play?.('ui_click', { volume: 0.3 });
-                npcDialogueTreeManager.selectChoice(selected.id);
+                chooseTreeChoice(selected.id);
             }
         }
     });
@@ -14776,11 +14778,30 @@ function renderLeaderConversationTree(state = {}) {
                 ms: Math.round(performance.now() - (leaderConversationLog?.nodeShownAt ?? performance.now()))
             });
             if (leaderConversationLog) leaderConversationLog.choices += 1;
-            npcDialogueTreeManager.selectChoice(choice.id);
+            chooseTreeChoice(choice.id);
         });
         leaderConversationChoices.append(button);
     });
     leaderConversationChoices.querySelector('button')?.focus();
+}
+
+// A choice whose node carries a side-story card plays it first: doors shut
+// over the window, the card, doors shut again, the node renders behind them,
+// doors open on the window (audit 2026-10-16 §13.3). Once per save; never on
+// a greeting (npcDialogueTrees.cardForChoice).
+let treeCardInFlight = false;
+function chooseTreeChoice(choiceId) {
+    if (treeCardInFlight) return;
+    const card = npcDialogueTreeManager.cardForChoice?.(choiceId);
+    if (!card) {
+        npcDialogueTreeManager.selectChoice(choiceId);
+        return;
+    }
+    treeCardInFlight = true;
+    npcDialogueTreeManager.markCardPlayed(card);
+    logDialogue('card', { card, choice: choiceId });
+    void showCardThenScene(card, () => npcDialogueTreeManager.selectChoice(choiceId), { holdMs: 7000 })
+        .finally(() => { treeCardInFlight = false; });
 }
 
 function resetLeaderConversationTree() {

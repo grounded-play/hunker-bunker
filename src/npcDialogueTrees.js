@@ -946,6 +946,26 @@ export class NpcDialogueTreeManager {
         this.stories?.save?.();
     }
 
+    // The side-story card to play behind doors before this choice's node
+    // (audit 2026-10-16 §13.3), or null. A card plays once per save and never
+    // on the opening node: first contact already played the camp's card.
+    cardForChoice(choiceId) {
+        const tree = this.activeTree;
+        const choice = (this.currentNode?.choices ?? []).find((c) => c.id === choiceId);
+        if (!tree || !choice?.nextNode || choice.nextNode === tree.initialNode) return null;
+        const card = tree.nodes[choice.nextNode]?.interstitial;
+        if (!card) return null;
+        return this.memoryFor(tree.id).playedCards?.includes(card) ? null : card;
+    }
+
+    markCardPlayed(card) {
+        if (!this.activeTree || !card) return;
+        const memory = this.memoryFor(this.activeTree.id);
+        memory.playedCards ??= [];
+        if (!memory.playedCards.includes(card)) memory.playedCards.push(card);
+        this.saveMemory();
+    }
+
     // The side-story store this manager was given, when it is a full one
     // (tests pass a plain { state } record); otherwise the shared manager.
     get storyManager() {

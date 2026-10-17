@@ -14,6 +14,40 @@ describe('NpcDialogueTreeManager & Sensual Storyline Trees', () => {
         expect(NPC_DIALOGUE_TREES).toHaveProperty('aria_queen_mimic');
     });
 
+    // Owner 2026-10-16: a stage's side-story card plays behind doors before
+    // its node (audit §13.3), once per save, never on a greeting (first
+    // contact already played the camp's card) and never behind the window.
+    it('names the side-story card a choice should play, once', () => {
+        const manager = new NpcDialogueTreeManager({ stories: { state: {} } });
+        manager.startDialogue('sister_val', { context: { bond: 3, stage: 1 } });
+        expect(manager.cardForChoice('val_lore_spores')).toBeNull();
+        expect(manager.cardForChoice('val_leave')).toBeNull();
+        expect(manager.cardForChoice('no_such_choice')).toBeNull();
+        expect(manager.cardForChoice('val_warmth_touch')).toBe('val_spore_communion');
+        manager.markCardPlayed('val_spore_communion');
+        expect(manager.cardForChoice('val_warmth_touch')).toBeNull();
+    });
+
+    it('remembers played cards with the side stories, across conversations', () => {
+        const stories = { state: {} };
+        new NpcDialogueTreeManager({ stories }).startDialogue('sister_val', { context: { bond: 3, stage: 1 } });
+        const first = new NpcDialogueTreeManager({ stories });
+        first.startDialogue('sister_val', { context: { bond: 3, stage: 1 } });
+        first.markCardPlayed('val_spore_communion');
+        const later = new NpcDialogueTreeManager({ stories });
+        later.startDialogue('sister_val', { context: { bond: 3, stage: 1 } });
+        expect(later.cardForChoice('val_warmth_touch')).toBeNull();
+    });
+
+    it('never plays a card on a tree\'s opening node', () => {
+        for (const tree of Object.values(NPC_DIALOGUE_TREES)) {
+            const manager = new NpcDialogueTreeManager({ stories: { state: {} } });
+            manager.activeTree = tree;
+            manager.currentNode = { id: 'probe', choices: [{ id: 'to_start', nextNode: tree.initialNode }] };
+            expect(manager.cardForChoice('to_start')).toBeNull();
+        }
+    });
+
     it('starts dialogue and transitions through choices correctly', () => {
         const stateCallback = vi.fn();
         const manager = new NpcDialogueTreeManager({ onStateChanged: stateCallback, stories: { state: {} } });

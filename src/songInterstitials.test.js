@@ -165,6 +165,66 @@ describe('song interstitial manifest', () => {
         await expect(second).resolves.toMatchObject({ shown: true });
     });
 
+    it('owns its skip keys: captured before menus, swallowed, and kept across other keys', async () => {
+        vi.useFakeTimers();
+        const listeners = [];
+        const previousWindow = globalThis.window;
+        globalThis.window = {
+            addEventListener: (type, fn, opts) => listeners.push({ type, fn, opts }),
+            removeEventListener: (type, fn) => {
+                const index = listeners.findIndex((entry) => entry.type === type && entry.fn === fn);
+                if (index >= 0) listeners.splice(index, 1);
+            }
+        };
+        try {
+            const root = {
+                classList: { add() {}, remove() {}, toggle() {} },
+                setAttribute() {},
+                addEventListener() {},
+                removeEventListener() {}
+            };
+            const controller = new SongInterstitialController({ root, reducedMotion: false });
+            controller.loadStill = async () => true;
+            controller.loadMotion = async () => false;
+            controller.startSong = async () => true;
+            let done = false;
+            const transition = controller.show(1, { holdMs: 60_000 }).then(() => { done = true; });
+            await vi.advanceTimersByTimeAsync(600);
+            const keydown = listeners.find((entry) => entry.type === 'keydown');
+            expect(keydown?.opts?.capture).toBe(true);
+            const key = (code) => ({ type: 'keydown', code, preventDefault: vi.fn(), stopImmediatePropagation: vi.fn() });
+            const walk = key('KeyW');
+            keydown.fn(walk);
+            expect(walk.stopImmediatePropagation).not.toHaveBeenCalled();
+            expect(listeners.some((entry) => entry.type === 'keydown')).toBe(true);
+            const escape = key('Escape');
+            keydown.fn(escape);
+            expect(escape.preventDefault).toHaveBeenCalled();
+            expect(escape.stopImmediatePropagation).toHaveBeenCalled();
+            await vi.advanceTimersByTimeAsync(400);
+            await transition;
+            expect(done).toBe(true);
+            expect(listeners.some((entry) => entry.type === 'keydown')).toBe(false);
+        } finally {
+            globalThis.window = previousWindow;
+        }
+    });
+
+    it('labels a side-story card by character and camp, not as a track number', async () => {
+        vi.useFakeTimers();
+        const root = { classList: { add() {}, remove() {}, toggle() {} }, setAttribute() {} };
+        const track = { textContent: '' };
+        const controller = new SongInterstitialController({ root, track, reducedMotion: true });
+        controller.loadStill = async () => true;
+        controller.loadMotion = async () => false;
+        controller.startSong = async () => true;
+        const transition = controller.show('kaelen_frequency_overclock');
+        await vi.advanceTimersByTimeAsync(1);
+        expect(track.textContent).toBe('Overseer Kaelen // Camp Meridian');
+        await vi.runAllTimersAsync();
+        await transition;
+    });
+
     it('still reveals gameplay when the behind-doors callback throws', async () => {
         vi.useFakeTimers();
         const classes = new Set();

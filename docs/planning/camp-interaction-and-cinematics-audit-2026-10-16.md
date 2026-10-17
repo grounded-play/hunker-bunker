@@ -704,7 +704,7 @@ Glue gaps found by reading the diff:
 ### 13.5 Order of work
 
 1. §13.1 door bookends + the backdrop change, and route `camp-first-contact` through them (02/04/06 already exist, so the owner sees the beat in the first camp visit). **Done** (see §13.6).
-2. §13.3 node interstitials, using the same call.
+2. §13.3 node interstitials, using the same call. **Done** (see §13.6).
 3. §13.4 glue fixes, so the runner's lines and resumes are real.
 4. §13.2 beat table, in two passes: first the conversation rows (03, 07, 08, 11, 16, 19–21, 28–30), then the gameplay rows.
 5. Verify in the dev server (vite + system Chrome). Capture the Meridian first visit: doors → 02 → doors → Kaelen's window over the live camp.
@@ -716,6 +716,13 @@ Glue gaps found by reading the diff:
 |---|---|---|---|
 | 2026-10-16 | 1 | `SongInterstitialController.show(spec, { onBehindDoors })`: doors shut over the last frame, the callback mounts the window, the doors open on play (`is-closing-out` → `is-revealing`). `main.js` `showCardThenScene()` runs the scene exactly once, even if the card can't show. `camp-first-contact` uses it. `#leader-conversation-modal` backdrop is 0.38 with a 2 px blur (was 0.88 / 14 px). | Unit: `songInterstitials.test.js` (8). Browser, :5211 no-HMR: the Meridian class log reads `is-closing` → `is-open` (int_02 webm, audio on) → `is-closing-out` → window mounts → `is-revealing` → `hidden`, and nothing follows in the next 8 s. Spec: `tests/e2e/camp-first-contact-doors.spec.js`. It failed twice at the boot helper (stuck at the armory, ahead of this beat). A hand-driven boot passed the same checks. |
 | 2026-10-16 | 1 (bug) | Browser run caught the §13.4 double card. S-1's fallback played card 19 while the doors were revealing Kaelen's window. Fix: the controller queues cards (one at a time), and the runner's three borrowed placeholders (19, 30, 01) are gone. | Unit: `interactionSequenceRunner.test.js` "never borrows another beat's song card". Browser re-run is clean. |
+| 2026-10-16 | 2 | Tree choices whose node names a side-story card play it first: doors shut over the window → still + music (7 s, skippable) → doors shut → the node renders behind them → doors open on the window. `NpcDialogueTreeManager.cardForChoice()` / `markCardPlayed()` decide: once per save (`playedCards` in `hb_side_stories_v1`), never the opening node. Number keys and Esc are ignored by the tree while a card is up. The card caption reads "Overseer Kaelen // Camp Meridian" instead of "TRACK kaelen_…". | Unit: `npcDialogueTrees.test.js` (+3), `songInterstitials.test.js` (10). Browser: Kaelen at bond 3 / stage 1, choice `kaelen_bio_link`, Esc mid-card → the log shows the line change to `kaelen_biolink_response` while `is-closing-out`; the window stays open; `playedCards` saved. |
+| 2026-10-16 | 2 (bug) | Esc used to skip the card **and** close the conversation behind it. Space/Enter would have pressed the window's focused choice. Any other key first (W) silently removed the skip listener (`once: true`). Fix: the card listens in the capture phase and swallows only Space/Enter/Esc. | Unit: "owns its skip keys". Browser re-run: the window survives Esc. |
+
+**Found while verifying step 2 (owner):**
+- The 9 human-leader cards: 7 sit on intimate `close`-tier nodes, so in play they show only past the intimacy gate (bond 3, stage 1). `briggs_scorched_rig` and `kaelen_diagnostic_cradle` sit **only** on greetings, so they never play (first contact plays the camp card instead). Two of the new `_v2` stills are exactly those. To use them, attach them to a Stranger or Trusted node.
+- The art of `int_kaelen_frequency_overclock_key_v1.webp` shows a young short-haired woman and a man, not Kaelen (older man, goggles). Check the other side-story stills against the busts before they go out.
+- The 2026-10-08 rule ("no music video per choice; first contact only") still holds in spirit. A card never plays behind the window, plays once per save, and never on a greeting.
 
 ---
 
