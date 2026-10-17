@@ -1150,6 +1150,11 @@
       "no_ranks": "SIN CLASIFICACIONES",
       "anonymous_agent": "Agente"
     },
+    "arcade": {
+      "thrust": "[W/A/D · STICK] EMPUJE/GIRO",
+      "fire": "[ESPACIO · A] DISPARAR",
+      "exit": "[ESC · B] SALIR DE LA MÁQUINA"
+    },
     "interstitial": {
       "track": "PISTA {id}"
     },

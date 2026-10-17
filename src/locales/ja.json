@@ -1150,6 +1150,11 @@
       "no_ranks": "ランキングなし",
       "anonymous_agent": "エージェント"
     },
+    "arcade": {
+      "thrust": "[W/A/D・スティック] 推進/旋回",
+      "fire": "[スペース・A] 発射",
+      "exit": "[ESC・B] 筐体を離れる"
+    },
     "interstitial": {
       "track": "トラック {id}"
     },

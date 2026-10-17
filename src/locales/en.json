@@ -1150,6 +1150,11 @@
       "no_ranks": "NO RANKS AVAILABLE",
       "anonymous_agent": "Agent"
     },
+    "arcade": {
+      "thrust": "[W/A/D · STICK] THRUST/TURN",
+      "fire": "[SPACE · A] FIRE",
+      "exit": "[ESC · B] EXIT CABINET"
+    },
     "interstitial": {
       "track": "TRACK {id}"
     },

@@ -1150,6 +1150,11 @@
       "no_ranks": "KEINE RÄNGE VERFÜGBAR",
       "anonymous_agent": "Agent"
     },
+    "arcade": {
+      "thrust": "[W/A/D · STICK] SCHUB/DREHEN",
+      "fire": "[LEERTASTE · A] FEUER",
+      "exit": "[ESC · B] AUTOMAT VERLASSEN"
+    },
     "interstitial": {
       "track": "TITEL {id}"
     },

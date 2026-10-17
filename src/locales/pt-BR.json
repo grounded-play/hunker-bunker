@@ -1150,6 +1150,11 @@
       "no_ranks": "SEM CLASSIFICAÇÕES",
       "anonymous_agent": "Agente"
     },
+    "arcade": {
+      "thrust": "[W/A/D · ANALÓGICO] PROPULSÃO/GIRO",
+      "fire": "[ESPAÇO · A] ATIRAR",
+      "exit": "[ESC · B] SAIR DO FLIPERAMA"
+    },
     "interstitial": {
       "track": "FAIXA {id}"
     },

@@ -51,4 +51,16 @@ describe('ThreeGame blocking gameplay overlay gate', () => {
         elements.set('song-interstitial', elementWithClasses('song-interstitial', 'is-open'));
         expect(ThreeGame.prototype.hasBlockingGameplayOverlay()).toBe(true);
     });
+
+    it('freezes play while the arcade cabinet is open', () => {
+        const elements = new Map([['arcade-cabinet-overlay', elementWithClasses('arcade-cabinet-overlay', 'hidden')]]);
+        globalThis.document = {
+            body: elementWithClasses(),
+            getElementsByClassName: () => [],
+            getElementById: (id) => elements.get(id) ?? null
+        };
+        expect(ThreeGame.prototype.hasBlockingGameplayOverlay()).toBe(false);
+        elements.set('arcade-cabinet-overlay', elementWithClasses('arcade-cabinet-overlay'));
+        expect(ThreeGame.prototype.hasBlockingGameplayOverlay()).toBe(true);
+    });
 });

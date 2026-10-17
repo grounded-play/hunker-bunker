@@ -182,8 +182,10 @@ export class ArcadeGameState {
         // Update player inertia
         this.player.x += this.player.vx * deltaSec;
         this.player.y += this.player.vy * deltaSec;
-        this.player.vx *= 0.94;
-        this.player.vy *= 0.94;
+        // 0.94 per 60 Hz frame, independent of the display's refresh rate.
+        const damping = Math.pow(0.94, deltaSec * 60);
+        this.player.vx *= damping;
+        this.player.vy *= damping;
 
         // Screen boundary clamp
         this.player.x = Math.max(10, Math.min(310, this.player.x));
@@ -230,10 +232,13 @@ export class ArcadeGameState {
                         }
                         this.score += e.scoreValue * this.multiplier;
                         this.enemies.splice(i, 1);
+                        e.dead = true;
                         break;
                     }
                 }
             }
+            // A snail shot dead this frame can't also cost a life.
+            if (e.dead) continue;
 
             // Check player collision
             if (this.player.invulnerableMs <= 0 && Math.hypot(this.player.x - e.x, this.player.y - e.y) < this.player.radius + e.radius) {
@@ -261,6 +266,63 @@ export class ArcadeGameState {
     }
 }
 
+export const ARCADE_INPUT = Object.freeze({
+    TURN_RATE: 3.8,          // rad/s at full stick or a held key
+    THRUST_ACCEL: 260,       // px/s^2
+    FIRE_COOLDOWN_MS: 170    // held fire auto-repeats at this rate
+});
+
+/**
+ * Applies one frame of held input: { turn: -1..1, thrust, fire }.
+ * Held keys and sticks steer smoothly; the old controls moved only on
+ * key-repeat taps and never took a gamepad.
+ */
+export function applyArcadeInput(sim, input = {}, deltaSec = 0) {
+    if (!sim || sim.state !== 'PLAYING') return;
+    const player = sim.player;
+    const turn = Math.max(-1, Math.min(1, Number(input.turn) || 0));
+    player.angle += turn * ARCADE_INPUT.TURN_RATE * deltaSec;
+    if (input.thrust) {
+        player.vx += Math.cos(player.angle) * ARCADE_INPUT.THRUST_ACCEL * deltaSec;
+        player.vy += Math.sin(player.angle) * ARCADE_INPUT.THRUST_ACCEL * deltaSec;
+    }
+    sim.fireCooldownMs = Math.max(0, (sim.fireCooldownMs ?? 0) - deltaSec * 1000);
+    if (input.fire && sim.fireCooldownMs <= 0 && sim.fireBullet()) {
+        sim.fireCooldownMs = ARCADE_INPUT.FIRE_COOLDOWN_MS;
+    }
+}
+
+const PAD_DEADZONE = 0.25;
+
+/**
+ * Reads the first connected standard-mapping gamepad: left stick or d-pad
+ * turns, d-pad up / RT / X thrusts, A fires and starts, B backs out.
+ */
+export function readArcadePad(pads = []) {
+    const pad = Array.from(pads ?? []).find(Boolean);
+    if (!pad) return null;
+    const pressed = (index) => Boolean(pad.buttons?.[index]?.pressed);
+    const stick = Number(pad.axes?.[0]) || 0;
+    let turn = Math.abs(stick) > PAD_DEADZONE ? stick : 0;
+    if (pressed(14)) turn = -1;
+    if (pressed(15)) turn = 1;
+    return {
+        turn,
+        thrust: pressed(12) || pressed(2) || (pad.buttons?.[7]?.value ?? 0) > 0.3 || pressed(7),
+        fire: pressed(0),
+        back: pressed(1),
+        up: pressed(12),
+        down: pressed(13),
+        left: pressed(14),
+        right: pressed(15)
+    };
+}
+
+const KEY_TURN_LEFT = new Set(['KeyA', 'ArrowLeft']);
+const KEY_TURN_RIGHT = new Set(['KeyD', 'ArrowRight']);
+const KEY_THRUST = new Set(['KeyW', 'ArrowUp']);
+const KEY_FIRE = new Set(['Space']);
+
 /**
  * Controller to mount and present the arcade UI inside the browser DOM.
  */
@@ -276,7 +338,35 @@ export class ArcadeCabinetController {
         this.lastTime = 0;
         this.initialsInput = ['A', 'A', 'A'];
         this.initialsIndex = 0;
+        this.heldKeys = new Set();
+        this.prevPad = null;
         this._onKeyDown = this._onKeyDown.bind(this);
+        this._onKeyUp = this._onKeyUp.bind(this);
+    }
+
+    heldInput() {
+        const held = (set) => [...set].some((code) => this.heldKeys.has(code));
+        return {
+            turn: (held(KEY_TURN_RIGHT) ? 1 : 0) - (held(KEY_TURN_LEFT) ? 1 : 0),
+            thrust: held(KEY_THRUST),
+            fire: held(KEY_FIRE)
+        };
+    }
+
+    // The cabinet owns the keyboard while open: capture phase, swallowed, so
+    // Esc doesn't also open Settings and Tab/M/E don't reach the game. Only
+    // F-keys and OS chords pass through.
+    _ownsKey(e) {
+        if (!this.isOpen()) return false;
+        if (/^F\d+$/.test(e.key ?? '') || e.ctrlKey || e.metaKey || e.altKey) return false;
+        e.preventDefault?.();
+        e.stopImmediatePropagation?.();
+        return true;
+    }
+
+    _onKeyUp(e) {
+        if (!this._ownsKey(e)) return;
+        this.heldKeys.delete(e.code);
     }
 
     isOpen() {
@@ -291,7 +381,10 @@ export class ArcadeCabinetController {
         if (this.game?.setInputEnabled) {
             this.game.setInputEnabled(false);
         }
-        window.addEventListener('keydown', this._onKeyDown);
+        window.addEventListener('keydown', this._onKeyDown, { capture: true });
+        window.addEventListener('keyup', this._onKeyUp, { capture: true });
+        this.heldKeys.clear();
+        this.prevPad = null;
         this.gameSim.reset();
         this.lastTime = performance.now();
         this._loop = this._loop.bind(this);
@@ -303,7 +396,9 @@ export class ArcadeCabinetController {
             cancelAnimationFrame(this.rafId);
             this.rafId = null;
         }
-        window.removeEventListener('keydown', this._onKeyDown);
+        window.removeEventListener('keydown', this._onKeyDown, { capture: true });
+        window.removeEventListener('keyup', this._onKeyUp, { capture: true });
+        this.heldKeys.clear();
         if (this.overlayEl) {
             this.overlayEl.classList.add('hidden');
         }
@@ -326,9 +421,9 @@ export class ArcadeCabinetController {
                         <div class="arcade-cabinet-crt-lines" aria-hidden="true"></div>
                     </div>
                     <div class="arcade-cabinet-controls-hint">
-                        <span data-i18n="ui.arcade.thrust">[W/A/D] THRUST/TURN</span>
-                        <span data-i18n="ui.arcade.fire">[SPACE] FIRE</span>
-                        <span data-i18n="ui.arcade.exit">[ESC] EXIT CABINET</span>
+                        <span data-i18n="ui.arcade.thrust">[W/A/D · STICK] THRUST/TURN</span>
+                        <span data-i18n="ui.arcade.fire">[SPACE · A] FIRE</span>
+                        <span data-i18n="ui.arcade.exit">[ESC · B] EXIT CABINET</span>
                     </div>
                 </div>
             `;
@@ -342,10 +437,13 @@ export class ArcadeCabinetController {
     }
 
     _onKeyDown(e) {
+        if (!this._ownsKey(e)) return;
         if (e.key === 'Escape') {
             this.close();
             return;
         }
+        this.heldKeys.add(e.code);
+        if (e.repeat) return;
 
         if (this.gameSim.state === 'ATTRACT' || this.gameSim.state === 'GAME_OVER') {
             if (e.code === 'Space' || e.code === 'Enter') {
@@ -375,17 +473,30 @@ export class ArcadeCabinetController {
             return;
         }
 
-        if (this.gameSim.state === 'PLAYING') {
-            if (e.key === 'a' || e.key === 'ArrowLeft') {
-                this.gameSim.player.angle -= 0.22;
-            } else if (e.key === 'd' || e.key === 'ArrowRight') {
-                this.gameSim.player.angle += 0.22;
-            } else if (e.key === 'w' || e.key === 'ArrowUp') {
-                const speed = 120;
-                this.gameSim.player.vx += Math.cos(this.gameSim.player.angle) * speed * 0.1;
-                this.gameSim.player.vy += Math.sin(this.gameSim.player.angle) * speed * 0.1;
-            } else if (e.code === 'Space') {
-                this.gameSim.fireBullet();
+        // PLAYING: steering and fire are held state, applied per frame.
+    }
+
+    // Gamepad edges for the non-playing screens (start, initials, back).
+    _handlePad(pad) {
+        const prev = this.prevPad ?? {};
+        this.prevPad = pad;
+        if (!pad) return;
+        const edge = (name) => pad[name] && !prev[name];
+        if (edge('back')) {
+            this.close();
+            return;
+        }
+        const state = this.gameSim.state;
+        if ((state === 'ATTRACT' || state === 'GAME_OVER') && edge('fire')) {
+            this.gameSim.startNewGame();
+        } else if (state === 'ENTER_INITIALS') {
+            const letter = this.initialsInput[this.initialsIndex].charCodeAt(0);
+            if (edge('up')) this.initialsInput[this.initialsIndex] = String.fromCharCode(letter >= 90 ? 65 : letter + 1);
+            if (edge('down')) this.initialsInput[this.initialsIndex] = String.fromCharCode(letter <= 65 ? 90 : letter - 1);
+            if (edge('left')) this.initialsIndex = Math.max(0, this.initialsIndex - 1);
+            if (edge('right') || edge('fire')) {
+                if (this.initialsIndex < 2) this.initialsIndex += 1;
+                else this._commitHighScore();
             }
         }
     }
@@ -412,6 +523,20 @@ export class ArcadeCabinetController {
         const deltaSec = Math.min(0.1, (now - this.lastTime) / 1000);
         this.lastTime = now;
 
+        const pad = typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function'
+            ? readArcadePad(navigator.getGamepads())
+            : null;
+        const keys = this.heldInput();
+        const playingBefore = this.gameSim.state === 'PLAYING';
+        this._handlePad(pad);
+        if (!this.isOpen()) return;
+        if (playingBefore) {
+            applyArcadeInput(this.gameSim, {
+                turn: keys.turn || pad?.turn || 0,
+                thrust: keys.thrust || Boolean(pad?.thrust),
+                fire: keys.fire || Boolean(pad?.fire)
+            }, deltaSec);
+        }
         this.gameSim.update(deltaSec);
         this._render();
 
@@ -458,7 +583,7 @@ export class ArcadeCabinetController {
         ctx.fillStyle = '#39ff14';
         const blink = Math.floor(Date.now() / 500) % 2 === 0;
         if (blink) {
-            ctx.fillText('PRESS [SPACE] TO PLAY', 160, 205);
+            ctx.fillText('PRESS [SPACE] OR (A) TO PLAY', 160, 205);
         }
     }
 
@@ -549,7 +674,7 @@ export class ArcadeCabinetController {
         ctx.fillStyle = '#a0e8af';
         ctx.font = '10px monospace';
         ctx.fillText(`FINAL SCORE: ${this.gameSim.score.toLocaleString()}`, 160, 125);
-        ctx.fillText('PRESS [SPACE] TO RESTART', 160, 175);
+        ctx.fillText('PRESS [SPACE] OR (A) TO RESTART', 160, 175);
     }
 }
 

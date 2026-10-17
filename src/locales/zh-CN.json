@@ -1150,6 +1150,11 @@
       "no_ranks": "暂无排名",
       "anonymous_agent": "特工"
     },
+    "arcade": {
+      "thrust": "[W/A/D · 摇杆] 推进/转向",
+      "fire": "[空格 · A] 开火",
+      "exit": "[ESC · B] 离开街机"
+    },
     "interstitial": {
       "track": "曲目 {id}"
     },

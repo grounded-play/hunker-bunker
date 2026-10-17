@@ -1150,6 +1150,11 @@
       "no_ranks": "НЕТ РЕЗУЛЬТАТОВ",
       "anonymous_agent": "Агент"
     },
+    "arcade": {
+      "thrust": "[W/A/D · СТИК] ТЯГА/ПОВОРОТ",
+      "fire": "[ПРОБЕЛ · A] ОГОНЬ",
+      "exit": "[ESC · B] ВЫЙТИ ИЗ АВТОМАТА"
+    },
     "interstitial": {
       "track": "ТРЕК {id}"
     },

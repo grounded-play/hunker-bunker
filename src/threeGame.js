@@ -11653,6 +11653,8 @@ export class ThreeGame {
             // A song card (doors + video) freezes play behind it (audit
             // 2026-10-16 §13.2); field beats would otherwise let enemies act.
             || isVisible('song-interstitial')
+            // The arcade cabinet freezes the world behind it.
+            || isVisible('arcade-cabinet-overlay')
             || isVisible('leader-conversation-modal')
             || isVisible('archive-sims-modal')
             || isVisible('steam-vault-modal')
