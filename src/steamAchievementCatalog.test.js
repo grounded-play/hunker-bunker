@@ -6,9 +6,12 @@ const require = createRequire(import.meta.url);
 const { PUBLISHED_ACHIEVEMENT_KEYS } = require('../electron/steam-achievement-catalog.cjs');
 
 describe('Steam achievement catalog parity', () => {
-    it('matches every live local definition and excludes coming-soon entries', () => {
+    it('matches every live local definition with published keys', () => {
         const local = ACHIEVEMENT_DEFS.filter((def) => !def.comingSoon).map((def) => def.key).sort();
         expect([...PUBLISHED_ACHIEVEMENT_KEYS].sort()).toEqual(local);
-        expect(PUBLISHED_ACHIEVEMENT_KEYS).not.toContain('slay_the_queen');
+        expect(PUBLISHED_ACHIEVEMENT_KEYS).toContain('slay_the_queen');
+        expect(PUBLISHED_ACHIEVEMENT_KEYS).toContain('arcade_wizard');
+        expect(PUBLISHED_ACHIEVEMENT_KEYS).toContain('tinas_challenger');
+        expect(PUBLISHED_ACHIEVEMENT_KEYS).toHaveLength(26);
     });
 });

@@ -197,19 +197,13 @@ export const ACHIEVEMENT_DEFS = freezeDeep([
         blurb: 'Defeat the Queen in single combat.',
         icon: 'slay_the_queen',
         secret: true,
-        comingSoon: true,
         check: (state) => Boolean(state.stats.queenDefeated)
     },
-    // SUB-CRUST PROTOCOL: 1984 (src/arcadeCabinetMinigame.js). comingSoon
-    // until they exist in Steamworks (steamAchievementCatalog.test.js); the
-    // best score is saved meanwhile, so publishing unlocks them for anyone
-    // who already earned them.
     {
         key: 'arcade_wizard',
         title: 'ARCADE WIZARD',
         blurb: 'Score 65,000 or higher on the camp arcade cabinet.',
         icon: 'arcade_wizard',
-        comingSoon: true,
         check: (state) => (state.stats.arcadeBestScore ?? 0) >= 65000
     },
     {
@@ -218,7 +212,6 @@ export const ACHIEVEMENT_DEFS = freezeDeep([
         blurb: "Beat Mayor Tina's arcade record of 104,200.",
         icon: 'tinas_challenger',
         secret: true,
-        comingSoon: true,
         check: (state) => (state.stats.arcadeBestScore ?? 0) > 104200
     }
 ]);

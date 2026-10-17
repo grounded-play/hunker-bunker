@@ -63,7 +63,7 @@ HB_STEAM_LEADERBOARD_IDS='best_run_score:20504740,daily_ops_score:20504746,faste
 
 ## Achievements To Publish
 
-Publish the 23 active achievements below. Keep
+Publish the 26 active achievements below. Keep
 `comingSoon` entries out of the live dashboard until their unlock paths are
 active in code.
 
@@ -92,14 +92,10 @@ active in code.
 | `chen_thirteenth` | CHEN'S THIRTEENTH | Yes | Yes | `public/ach_chen_thirteenth.png` | `public/ach_chen_thirteenth_locked.png` | Reach the cave reveal before any operator death is recorded. |
 | `reyes_courier` | REYES COURIER | Yes | Yes | `public/ach_reyes_courier.png` | `public/ach_reyes_courier_locked.png` | Carry Pvt. Reyes' letter to Commander Briggs. |
 | `hardened` | HARDENED | No | Yes | `public/ach_hardened.png` | `public/ach_hardened_locked.png` | Die five times and keep coming back. |
+| `slay_the_queen` | SLAY THE QUEEN | Yes | Yes | `public/ach_slay_the_queen.png` | `public/ach_slay_the_queen_locked.png` | Defeat the Queen in single combat. |
+| `arcade_wizard` | ARCADE WIZARD | No | Yes | `public/ach_arcade_wizard.png` | `public/ach_arcade_wizard_locked.png` | Score 65,000 or higher on the camp arcade cabinet. |
+| `tinas_challenger` | TINA'S CHALLENGER | Yes | Yes | `public/ach_tinas_challenger.png` | `public/ach_tinas_challenger_locked.png` | Beat Mayor Tina's arcade record of 104,200. |
 
-### Hold For Later
-
-| API Name | Display Name | Reason |
-| --- | --- | --- |
-| `slay_the_queen` | SLAY THE QUEEN | hold: comingSoon in code |
-| `arcade_wizard` | ARCADE WIZARD | hold: comingSoon in code |
-| `tinas_challenger` | TINA'S CHALLENGER | hold: comingSoon in code |
 
 ## Stats To Publish
 

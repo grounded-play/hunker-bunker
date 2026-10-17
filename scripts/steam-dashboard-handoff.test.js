@@ -61,10 +61,9 @@ describe('steam dashboard handoff', () => {
             'lore_drops_collected',
             'max_hive_bond'
         ]);
-        // Held until published in Steamworks: the Queen kill and the two
-        // camp arcade achievements (AAA plan §7.4).
-        expect(handoff.heldAchievements.map((row) => row.apiName)).toEqual(['slay_the_queen', 'arcade_wizard', 'tinas_challenger']);
-        expect(handoff.activeAchievementCount).toBeGreaterThan(20);
+        // All 26 achievements are published live in Steamworks.
+        expect(handoff.heldAchievements).toEqual([]);
+        expect(handoff.activeAchievementCount).toBe(26);
         expect(handoff.inventory.appid).toBe(4957040);
         expect(handoff.inventory.publicStoreFilters.map((row) => row.name)).toEqual(['Featured', 'Keys']);
         expect(handoff.steamInput.manifestInstallPath).toBe('steam_input_manifest.vdf');
