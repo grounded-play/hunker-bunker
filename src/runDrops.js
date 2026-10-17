@@ -414,7 +414,7 @@ export function getVesperDoctrineReloadEffect(wasEmpty, equippedOverclocks = [])
 //    to accidentally double-flip). Returns a positive damage amount for the
 //    caller to route through takeDamage() instead of healing, or null when
 //    the relic isn't equipped / there's nothing to flip.
-const QUEENS_MILK_ALIEN_CONTACT_REASONS = new Set(['crawler', 'mycelium_stalker', 'bio_charger']);
+const QUEENS_MILK_ALIEN_CONTACT_REASONS = new Set(['crawler', 'chitin_scuttler', 'mycelium_stalker', 'bio_charger']);
 
 export function getQueensMilkAlienContactHeal(reason, equippedRelics = []) {
     if (!QUEENS_MILK_ALIEN_CONTACT_REASONS.has(reason)) return null;
@@ -475,6 +475,7 @@ export function computeActiveSynergies(equippedItems = []) {
 }
 
 export const BIO_ENEMY_TYPES = Object.freeze(new Set([
+    'chitin_scuttler',
     'crawler',
     'alien_proto_crawler_A',
     'alien_proto_spitter',

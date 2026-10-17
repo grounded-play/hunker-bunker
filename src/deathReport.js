@@ -15,6 +15,7 @@ export const ENEMY_NAME_KEYS = Object.freeze({
     sporesnail: 'ui.death.enemy.sporesnail',
     sentinel: 'ui.death.enemy.sentinel',
     crawler: 'ui.death.enemy.crawler',
+    chitin_scuttler: 'ui.death.enemy.chitin_scuttler',
     alien_proto_crawler: 'ui.death.enemy.alien_proto_crawler',
     alien_proto_spitter: 'ui.death.enemy.alien_proto_spitter',
     mycelium_stalker: 'ui.death.enemy.mycelium_stalker',

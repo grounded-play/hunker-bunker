@@ -5257,6 +5257,7 @@ function generateDeathReport(stats, reason) {
         'cryosnail':          '> CAUSE: BIO-ENTITY CONTACT — CRYOSNAIL IMPACT',
         'sporesnail':         '> CAUSE: BIO-ENTITY CONTACT — SPORESNAIL IMPACT',
         'mycelium_stalker':   '> CAUSE: BIO-ENTITY AMBUSH — MYCELIUM STALKER IMPACT',
+        'chitin_scuttler':    '> CAUSE: BIO-ENTITY SWARM — CHITIN SCUTTLER IMPACT',
         'bio_charger':        '> CAUSE: BIO-ENTITY IMPACT — CHARGER HEAVY STRIKE',
         'combat':             '> CAUSE: BIO-ENTITY CLOSE-QUARTERS COMBAT',
         'enemy-projectile':   '> CAUSE: HOSTILE KINETIC IMPACT — ENEMY PROJECTILE',

@@ -787,6 +787,7 @@ import {
 } from './rewardCache.js';
 import { InteractionSequenceRunner } from './interactionSequenceRunner.js';
 import { advanceHitStop, extendHitStop, HIT_STOP_PRESETS } from './hitStop.js';
+import { CHITIN_SCUTTLER, planScuttlerPack, scuttlerTuning } from './chitinScuttler.js';
 
 const CAMP_PROBE_MISSION_ID = 'camp-quest:camp_meridian:lost_probe';
 const HIVE_MEMBRANE_MISSION_ID = 'hive-quest:hive_suture:host_mercy';
@@ -16393,7 +16394,9 @@ export class ThreeGame {
     spawnEnemyInstance(type = 'cybersnail', x = null, z = null) {
         if (!this.player) return null;
         const resolvedType = type === 'queen' ? 'boss_queen' : type;
-        if (!this.scatterMaterials[resolvedType]) return null;
+        // Crawler-family types (the chitin scuttler) share the crawler sprite.
+        const materialType = this.isCrawler(resolvedType) ? 'crawler' : resolvedType;
+        if (!this.scatterMaterials[materialType]) return null;
         this.snailsEnabled = true;
         const spawnX = Number.isFinite(x) ? x : this.player.position.x + 2;
         const spawnZ = Number.isFinite(z) ? z : this.player.position.z + 2;
@@ -38388,6 +38391,7 @@ export class ThreeGame {
         const protoSpawnBias = typeof rawSpawnBias === 'number'
             ? rawSpawnBias
             : Number.isFinite(rawSpawnBias?.proto) ? rawSpawnBias.proto : 1;
+        const scuttlerCandidates = [];
         for (const p of placements) {
             // Re-verify after relaxation that it's still walkable
             if (!isWalkable(p.x, p.z)) continue;
@@ -38409,6 +38413,11 @@ export class ThreeGame {
             const canSpawnProto = !templateNoEnemies && depthTierForScatter >= 1
                 && enemyRoomEligible && protoCount < PROTO_SPAWN_MAX_PER_CHUNK && distFromSpawn > 16 && !isDeadEnd
                 && (chunkLandform === LANDFORMS.RUINS || chunkLandform === LANDFORMS.CRATER);
+            // Chitin scuttler pack candidates: recorded, never rolled here, so
+            // the chunk's seeded stream (and every placement after) is unchanged.
+            if (isChamber && !inAuthoredRoom && !templateNoEnemies && distFromSpawn > CHITIN_SCUTTLER.minDistFromSpawn) {
+                scuttlerCandidates.push(p);
+            }
             const loreChance = (templateCfg?.forceLore && !hasLoreTerminalThisChunk && isDeadEnd) ? 1.0 : (depthTierForScatter >= 2 ? 0.12 : 0.07);
             const canSpawnLore = isDeadEnd && !hasLoreTerminalThisChunk && distFromSpawn > 10;
             let type;
@@ -38593,6 +38602,30 @@ export class ThreeGame {
                 })
             });
         }
+
+        // A pack, decided by its own per-chunk hash (src/chitinScuttler.js).
+        const scuttlerPack = planScuttlerPack({
+            seed: (this.hashTile(chunkX * 977 + 13, chunkY * 641 + 29) ^ (this.runEntropy ?? 0)) >>> 0,
+            depthTier: depthTierForScatter,
+            biomeHasCrawlers: chunkBiomeKey === BIOME_KEYS.BIO,
+            candidates: scuttlerCandidates
+        });
+        scuttlerPack.forEach((point, index) => {
+            finalPlacements.push({
+                x: point.x,
+                z: point.z,
+                type: CHITIN_SCUTTLER.type,
+                scatterKey: `${chunkX},${chunkY}:scuttler:${index}`,
+                scale: 1,
+                rotation: 0,
+                tiltX: 0,
+                tiltZ: 0,
+                elevation: 0.09,
+                groupType: 'scuttler-pack',
+                phase: index * 2.1,
+                opacity: 1
+            });
+        });
 
         for (const room of wfcMeta?.roomInstances ?? []) {
             for (const spawnPlan of room.encounter?.spawns ?? []) {
@@ -39000,10 +39033,12 @@ export class ThreeGame {
         if (this.isCrawler(placement.type)) {
             const mat = this.scatterMaterials.crawler;
             if (!mat) return null;
+            const isScuttler = placement.type === CHITIN_SCUTTLER.type;
             const clonedMat = mat.clone();
             clonedMat.alphaTest = 0.06;
-            const sx = scaleX * 0.72;
-            const sy = scaleY * 0.72;
+            const spriteScale = isScuttler ? CHITIN_SCUTTLER.spriteScale : 0.72;
+            const sx = scaleX * spriteScale;
+            const sy = scaleY * spriteScale;
             const sprite = new THREE.Sprite(clonedMat);
             sprite.center.set(0.5, 0);
             sprite.position.set(placement.x, anchoredY, placement.z);
@@ -39014,19 +39049,20 @@ export class ThreeGame {
                 isScatter: true,
                 isEnemy: true,
                 isBoss: false,
-                type: 'crawler',
+                type: isScuttler ? CHITIN_SCUTTLER.type : 'crawler',
                 scatterKey: placement.scatterKey,
                 baseY: anchoredY,
                 burstTriggered: false,
                 burstTimer: 0,
-                hp: CRAWLER_MAX_HP,
-                maxHp: CRAWLER_MAX_HP,
+                hp: isScuttler ? CHITIN_SCUTTLER.maxHp : CRAWLER_MAX_HP,
+                maxHp: isScuttler ? CHITIN_SCUTTLER.maxHp : CRAWLER_MAX_HP,
                 baseScaleX: sx,
                 baseScaleY: sy,
                 baseOpacity: 1,
                 facingSign: 1,
                 phase: Math.random() * Math.PI * 2,
-                biomeTint: CRAWLER_TINT,
+                biomeTint: isScuttler ? CHITIN_SCUTTLER.tint : CRAWLER_TINT,
+                crawlerTuning: isScuttler ? scuttlerTuning() : null,
                 crawlerState: 'idle',
                 windupTimer: 0,
                 chargeTimer: 0,
@@ -41791,6 +41827,14 @@ export class ThreeGame {
     updateCrawlerBehavior(sprite, delta) {
         const data = sprite.userData;
         if (!this.player) return;
+        const tuning = data.crawlerTuning ?? {};
+        const detectRadius = tuning.detectRadius ?? CRAWLER_DETECT_RADIUS;
+        const windupDuration = tuning.windup ?? CRAWLER_WINDUP_DURATION;
+        const chargeSpeed = tuning.chargeSpeed ?? CRAWLER_CHARGE_SPEED;
+        const chargeMaxDuration = tuning.chargeMaxDuration ?? CRAWLER_CHARGE_MAX_DURATION;
+        const attackCooldown = tuning.attackCooldown ?? CRAWLER_ATTACK_COOLDOWN;
+        const restTint = data.biomeTint ?? CRAWLER_TINT;
+        const hitReason = data.type ?? 'crawler';
 
         if (this.canEnemyTargetPlayer?.(sprite) === false) {
             data.crawlerState = 'idle';
@@ -41806,7 +41850,7 @@ export class ThreeGame {
         const distToPlayer = Math.hypot(dx, dz);
 
         if (data.crawlerState === 'idle') {
-            if (!this.isPlayerDead && distToPlayer <= CRAWLER_DETECT_RADIUS) {
+            if (!this.isPlayerDead && distToPlayer <= detectRadius) {
                 data.crawlerState = 'alert';
                 data.windupTimer = 0;
                 sprite.material.color.setHex(0xffffff);
@@ -41821,17 +41865,17 @@ export class ThreeGame {
             sprite.position.x += (Math.random() - 0.5) * 0.05;
             sprite.position.z += (Math.random() - 0.5) * 0.05;
 
-            if (distToPlayer > CRAWLER_DETECT_RADIUS * 1.6 || this.isPlayerDead) {
+            if (distToPlayer > detectRadius * 1.6 || this.isPlayerDead) {
                 data.crawlerState = 'idle';
-                sprite.material.color.setHex(CRAWLER_TINT);
-            } else if (data.windupTimer >= CRAWLER_WINDUP_DURATION) {
+                sprite.material.color.setHex(restTint);
+            } else if (data.windupTimer >= windupDuration) {
                 const dist = distToPlayer;
                 if (dist < 0.001) { data.crawlerState = 'idle'; return; }
                 data.chargeDirX = dx / dist;
                 data.chargeDirZ = dz / dist;
                 data.chargeTimer = 0;
                 data.crawlerState = 'charging';
-                sprite.material.color.setHex(CRAWLER_TINT);
+                sprite.material.color.setHex(restTint);
                 globalThis.window?.AudioManager?.playMetalStress?.({ volume: 0.26, playbackRate: 2.6, force: true });
             }
         } else if (data.crawlerState === 'charging') {
@@ -41842,8 +41886,8 @@ export class ThreeGame {
                 globalThis.window?.AudioManager?.play?.('enemy_skitter_crawler', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.18, playbackRate: 1.25 + (Math.random() * 0.3 - 0.15) }) ?? { volume: 0.18 }));
             }
 
-            const moveX = data.chargeDirX * CRAWLER_CHARGE_SPEED * delta;
-            const moveZ = data.chargeDirZ * CRAWLER_CHARGE_SPEED * delta;
+            const moveX = data.chargeDirX * chargeSpeed * delta;
+            const moveZ = data.chargeDirZ * chargeSpeed * delta;
             const nextX = sprite.position.x + moveX;
             const nextZ = sprite.position.z + moveZ;
             const containmentHit = shouldBlockAttackPath(
@@ -41857,10 +41901,10 @@ export class ThreeGame {
             const wallHit = containmentHit
                 || this.getTileType(Math.round(nextX), Math.round(nextZ)) === '#';
 
-            if (wallHit || data.chargeTimer >= CRAWLER_CHARGE_MAX_DURATION) {
+            if (wallHit || data.chargeTimer >= chargeMaxDuration) {
                 data.crawlerState = 'idle';
-                data.attackCooldown = CRAWLER_ATTACK_COOLDOWN;
-                sprite.material.color.setHex(CRAWLER_TINT);
+                data.attackCooldown = attackCooldown;
+                sprite.material.color.setHex(restTint);
                 return;
             }
 
@@ -41873,11 +41917,11 @@ export class ThreeGame {
             // Player hit check
             const newDist = Math.hypot(this.player.position.x - sprite.position.x, this.player.position.z - sprite.position.z);
             if (!this.isPlayerDead && newDist <= CRAWLER_ATTACK_RADIUS && data.attackCooldown <= 0 && !this.isHiveKinPassive(sprite)) {
-                data.attackCooldown = CRAWLER_ATTACK_COOLDOWN;
+                data.attackCooldown = attackCooldown;
                 data.crawlerState = 'idle';
-                const hitApplied = this.takeDamage(1, 'crawler', sprite.position.x, sprite.position.z);
+                const hitApplied = this.takeDamage(1, hitReason, sprite.position.x, sprite.position.z);
                 if (hitApplied) {
-                    window.dispatchEvent(new CustomEvent('player-hit', { detail: { reason: 'crawler' } }));
+                    window.dispatchEvent(new CustomEvent('player-hit', { detail: { reason: hitReason } }));
                     window.AudioManager?.play('ui_error', { volume: 0.5, playbackRate: 1.3, bus: 'sfx' });
                 }
             }
@@ -43494,15 +43538,16 @@ export class ThreeGame {
     }
 
     isEnemyType(type) {
-        return ['cybersnail', 'cryosnail', 'sporesnail', 'boss_cybersnail', 'boss_cryosnail', 'boss_sporesnail', 'sentinel', 'crawler', 'boss_corrupted_scout', 'boss_corrupted_tank', 'boss_corrupted_engineer', 'alien_proto_crawler', 'alien_proto_spitter', 'boss_queen', 'fungal_spore_vent', 'mycelium_stalker', 'bio_charger', 'spore_mortar'].includes(type);
+        return ['cybersnail', 'cryosnail', 'sporesnail', 'boss_cybersnail', 'boss_cryosnail', 'boss_sporesnail', 'sentinel', 'crawler', 'boss_corrupted_scout', 'boss_corrupted_tank', 'boss_corrupted_engineer', 'alien_proto_crawler', 'alien_proto_spitter', 'boss_queen', 'fungal_spore_vent', 'mycelium_stalker', 'bio_charger', 'spore_mortar', 'chitin_scuttler'].includes(type);
     }
 
     isSentinel(type) {
         return type === 'sentinel';
     }
 
+    // The chitin scuttler runs the crawler AI with its own tuning.
     isCrawler(type) {
-        return type === 'crawler';
+        return type === 'crawler' || type === CHITIN_SCUTTLER.type;
     }
 
     spawnFrostShockwaveEffect(x, z, maxRadius = 4.5) {

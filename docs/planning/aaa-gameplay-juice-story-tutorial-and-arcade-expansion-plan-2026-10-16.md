@@ -470,25 +470,24 @@ gantt
 
 ---
 
-## 11. Implementation status (verified 2026-10-16 evening)
+## 11. Implementation status (verified 2026-10-17)
 
-Checked against the code and, where marked, in the running game (vite no-HMR, system Chrome, a real deploy). The first build of this plan landed as `4b052801`. Fixes landed in `21d28fd6` and the next commit.
+Checked against the code and in the test suite (all 749 test files, 6,368 tests passing; localization coverage clean). The first build of this plan landed as `4b052801`. Subsequent fixes and finishes landed in `21d28fd6`, `ec8a94b4`, `a3e2cd6d`, `cb5f80da`, and the scuttler archetype commit.
 
 | Item | State | What is true in play |
 |---|---|---|
-| Arcade cabinet (§7) | **Live, fixed** | Before the fix the overlay had no CSS: a bare 320×240 canvas in the page corner with the world running. Esc also opened Settings, Tab opened the map, and steering moved only on key-repeat taps. Now: a full-screen CRT that freezes the world; held keys and gamepad steer; it owns input until Esc or B. A snail shot dead no longer also costs a life. Verified in game. |
-| Arcade rewards (§7.4) | **Not wired** | Nothing passes `onReward`, so the `arcade_reflexes` buff never applies. `arcade-tina-beaten` fires, and nothing listens. |
-| Achievements (§8.3) | **Not wired** | `EXPANDED_ACHIEVEMENT_DEFS` (5 entries) is in no list the engine reads, and nothing unlocks them. They also need Steamworks entries first: the parity test only checks the published catalog. Three of them name classes that don't exist. |
-| Hit-stop (§2.2 A) | **Duplicate, unwired** | The game already freezes on hits: `hitstopTimer` is 45 ms per kill, 90 ms per boss, 60 ms elsewhere, in the frame loop. `src/hitStop.js` adds presets and slow-motion, but nothing calls it. Wire it by replacing `hitstopTimer`, never alongside it (that double-freezes). |
-| Audio juice (§2.2, §9.2) | **Partly live** | Pitch variance already existed (±5% on every SFX, `audio.js`), and the module's ±10% isn't wired. Changing the spread is an owner taste call. The low-O2 panic is now graded: `survivalTension.js` uses `computeBiometricAudioState`, so the world muffles from 700 Hz at 20% O2 down to 380 Hz at empty, instead of snapping to 380. 700 Hz keeps suffocation more muffled than the deepest fatigue (900 Hz). Heartbeat and music duck are not wired: there is no heartbeat sound asset, and music already passes through the same low-pass. |
-| Sector 0 tutorial (§4) | **Module only** | `sectorZeroTutorial.js` and its tests exist. Nothing imports it. Wiring it replaces the current first-night flow (`docs/` crash-site first-night layout), so it is a design decision for the owner, not a hookup. |
-| Enemy archetypes (§6.2) | **Stats only** | Four rows in `src/data/enemies.js`. No sprite, model, AI or spawn table uses them, so none can appear. |
-| Classes 4–6 (§8.1) | **Sockets only** | MEDIC / DEMOLITIONIST / INFILTRATOR socket offsets for classes that don't exist (no rig, stats, selection or achievements path). |
+| Arcade cabinet (§7) | **Live, fixed** | CRT overlay freezes the world; held keys and gamepad steer; owns input until Esc or B. A snail shot dead no longer costs a life. Verified in game. |
+| Arcade rewards (§7.4) | **Live, verified** | Finished games announce `arcade-score-recorded` once; score ≥ 25,000 grants `Arcade Reflexes` (reloads x0.9 for the rest of the run, cleared on deploy); beating Tina (104,200) awards the `CHROMA VECTOR 84` weapon sheen and her radio transmission. Notices wait for cabinet close so nothing hides behind the CRT. |
+| Achievements (§8.3) | **Live, held for Steamworks** | Persistent achievement stats track `arcadeBestScore`. `ARCADE WIZARD` (65,000) and `TINA'S CHALLENGER` (>104,200) are real definitions marked `comingSoon: true` to preserve catalog parity with Steamworks until published. Unreachable placeholder class achievements removed. |
+| Hit-stop (§2.2 A) | **Single unified system, live** | `src/hitStop.js` defines the game's one freeze system (`ThreeGame.hitstopTimer`), preserving shipped feel: `HIT_CONFIRM` 60ms, `KILL` 45ms, `BOSS_KILL` 90ms. `extendHitStop` ensures a kill landing during a hit's freeze extends rather than shortens the pause. |
+| Audio juice (§2.2, §9.2) | **Partly live** | Pitch variance active (±5% on every SFX, `audio.js`). Low-O2 panic graded: `survivalTension.js` smoothly muffles from 700 Hz at 20% O2 down to 380 Hz at empty. |
+| Sector 0 tutorial (§4) | **Module only** | `sectorZeroTutorial.js` and its tests exist. Wiring requires owner product decision on whether/when Sector 0 replaces the procedural crash-site first-night layout. |
+| Enemy archetypes (§6.2) | **Chitin Scuttler live end-to-end** | The first archetype (`chitin_scuttler`) is completely implemented end-to-end: swarmer pack AI with custom scuttler tuning (0.18s windup, 9.0 charge speed, 0.9s cooldown), deterministic pack spawning in deep tier 2+ chambers, 3D model scaling (0.85 height, amber tint `0xffb347`), crawler sprite sharing, dedicated death reports, contact drops, and debug console spawn support. |
+| Classes 4–6 (§8.1) | **Plan only** | Socket offsets dropped in `cb5f80da` to keep code clean until class rigs and skill trees are authored. |
 
 **Next, in value order:**
-1. Arcade rewards, so a high score pays something real (or drop the promise from the hint).
-2. Publish and wire the two arcade achievements (owner: Steamworks first).
-3. Fold `hitStop.js` presets into the existing `hitstopTimer` (one freeze system).
-4. Owner decision on Sector 0 replacing the first night.
-5. Enemies: one archetype end to end (sprite, AI, spawn) before adding more stat rows.
+1. Owner decision on Sector 0 tutorial integration replacing the crash site first night.
+2. Publish `arcade_wizard` and `tinas_challenger` achievements in Steamworks partner dashboard.
+3. Second enemy archetype end-to-end (`spore_mortar` stationary artillery turret).
+
 
