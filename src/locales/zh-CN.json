@@ -1156,6 +1156,7 @@
       "exit": "[ESC · B] 离开街机",
       "reflexes": "街机反应：本次远征剩余时间内装弹速度加快10%。",
       "sheen_unlocked": "武器涂装已解锁：{name}",
+      "decal_unlocked": "贴花已解锁：{name}",
       "tina_radio": "蒂娜镇长：哟，高手……终于有人破了我的纪录。来漂流前哨站吧，酒我请。"
     },
     "interstitial": {
@@ -2141,6 +2142,7 @@
       "slay_the_queen": "击败女王后获得",
       "archivist": "完成“档案员”成就后获得",
       "reach_depth": "到达深度 {depth} 后获得",
+      "arcade_score": "在街机中获得 {score} 分后解锁",
       "class_runs": "以 {cls} 完成 {runs} 次出击后获得",
       "achievement": "完成成就后获得",
       "confirm_buy": "再次点击以购买",
@@ -2213,6 +2215,7 @@
       "night_body": "操作员睡着了。外面的某些东西没有。",
       "morning_title": "第 {day} 天 · 06:00",
       "morning_status": "{site} // 新的一天开始了",
+      "morning_objective": "目标: {objective}",
       "skip": "按任意键醒来"
     },
     "mystery": {
@@ -3773,6 +3776,10 @@
       "4167": {
         "desc": "下潜之锚，去过它本不该去的深度。",
         "name": "深渊之锚"
+      },
+      "4168": {
+        "desc": "在《SUB-CRUST PROTOCOL: 1984》中获得65,000分即可解锁。",
+        "name": "复古像素蜗牛贴花"
       },
       "4200": {
         "desc": "采用深霜风格的完整操作员底盘涂装。",

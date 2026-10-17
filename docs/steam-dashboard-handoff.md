@@ -185,7 +185,7 @@ Upload `steam/inventory_schema_hunker_bunker.json` to Steam Inventory Service.
 | Field | Value |
 | --- | --- |
 | Schema appid | `4957040` |
-| ItemDefs | 126 |
+| ItemDefs | 127 |
 | Hosted Item Store URL | `https://store.steampowered.com/itemstore/4957040/` |
 | Hosted Item Store beta URL | `https://store.steampowered.com/itemstore/4957040/?beta=1` |
 

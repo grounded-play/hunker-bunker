@@ -9537,7 +9537,6 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
 
         if (startTutorial) {
             game?.startSectorZeroTutorial?.();
-            await dialogueManager?.startTutorialSequence({ game });
         }
 
         // Show mission briefing after door transition
@@ -13982,14 +13981,23 @@ window.addEventListener('day-rest-open', (event) => {
 });
 function openMorningAfterRest(detail) {
     const site = detail.crashSiteName ? formatLocationName(detail.crashSiteName, t) : '';
+    const siteLine = site ? t('ui.sleep.morning_status', { site }) : '';
+    const objective = detail.objective
+        || (typeof objectiveRegistry !== 'undefined' ? objectiveRegistry.getActiveObjectives?.(1)?.[0]?.label : null)
+        || null;
+    const objectiveLine = objective ? `> ${t('ui.sleep.morning_objective', { objective })}` : '';
+    const status = [siteLine, objectiveLine].filter(Boolean).join('<br>');
     showTacticalOverlay({
         title: t('ui.sleep.morning_title', { day: detail.day ?? 1 }),
-        status: site ? t('ui.sleep.morning_status', { site }) : '',
+        status,
         progress: 100,
-        duration: 2600
+        duration: 2800
     });
     fabricationBay.beginCampRest();
     showBiomePrompt(`> DAY ${detail.day} // ${detail.campLabel ?? 'CAMP'} REST CYCLE COMPLETE // THREAT ${Number(detail.difficulty ?? 1).toFixed(2)}×`);
+    if (objective) {
+        showBiomePrompt(`> ${t('ui.sleep.morning_objective', { objective })}`);
+    }
     if (detail.expired?.length) {
         showBiomePrompt(`> MISSED SIGNALS CLOSED: ${detail.expired.join(', ').replaceAll('_', ' ').toUpperCase()}`);
     }
@@ -15010,6 +15018,20 @@ window.addEventListener('arcade-score-recorded', (event) => {
     const { score = 0, beatTina = false } = event?.detail ?? {};
     if (score >= 25000 && window.game?.grantArcadeReflexes?.()) {
         pendingArcadeNotices.push(() => window.showToastNotification?.(t('ui.arcade.reflexes'), { tone: 'info', duration: 7000 }));
+    }
+    if (score >= 65000) {
+        const noticeKey = 'hb_arcade_pixel_snail_notice_v1';
+        let alreadyAnnounced = false;
+        try {
+            alreadyAnnounced = localStorage.getItem(noticeKey) === '1';
+            if (!alreadyAnnounced) localStorage.setItem(noticeKey, '1');
+        } catch {
+            // Ownership is derived from the saved achievement score; a blocked
+            // storage notice must not affect the reward itself.
+        }
+        if (!alreadyAnnounced) {
+            pendingArcadeNotices.push(() => showBiomePrompt(`> ${t('ui.arcade.decal_unlocked', { name: 'RETRO PIXEL SNAIL' })}`));
+        }
     }
     if (beatTina) {
         if (unlockSheenForMilestone('arcade:tinaBeaten')) {

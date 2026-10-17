@@ -57,7 +57,7 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
         }
     });
 
-    it('removes authored props from the ship starting-room clear zone', () => {
+    it('removes procedural authored props from the ship clear zone but preserves Sector 0 fixtures', () => {
         const game = makeFakeGame();
         game.getSpawnTile = () => ({ x: 3, y: 3 });
         game.wfcMetadataCache = new Map([['0,0', {
@@ -78,7 +78,13 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
             buildTwoBlockGrid(17)
         );
 
-        expect(placements.map(({ scatterKey }) => scatterKey)).toEqual(['room_plan:far']);
+        const keys = placements.map(({ scatterKey }) => scatterKey);
+        expect(keys).not.toContain('room_plan:near');
+        expect(keys).toContain('room_plan:far');
+        expect(keys).toEqual(expect.arrayContaining([
+            'sector-zero:sector_zero_weapon_locker',
+            'sector-zero:sector_zero_salvage_console'
+        ]));
     });
 
     // Lived-in world M4: the key-art practical lights the signature anchor

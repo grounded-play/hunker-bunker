@@ -32,6 +32,15 @@ export function stampCrashSiteOrigin(grid, build = CRASH_SITE_BUILD, {
         grid[y][centerX - preHall.halfWidth - 1] = wallTile;
         grid[y][centerX + preHall.halfWidth + 1] = wallTile;
     }
+    for (const partition of build.sectorZero?.partitions ?? []) {
+        const openings = new Set(partition.openings ?? []);
+        for (let cursor = partition.from; cursor <= partition.to; cursor += 1) {
+            if (openings.has(cursor)) continue;
+            const x = partition.axis === 'vertical' ? partition.at : cursor;
+            const y = partition.axis === 'horizontal' ? partition.at : cursor;
+            if (grid[y]?.[x] !== undefined) grid[y][x] = wallTile;
+        }
+    }
     return true;
 }
 

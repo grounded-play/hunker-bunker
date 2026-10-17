@@ -38,6 +38,7 @@ describe('ThreeGame day-cycle runtime bridge', () => {
         expect(game.dayState.phase).toBe(REST_PHASES.RESTING);
         expect(game.setInputEnabled).toHaveBeenCalledWith(false);
         expect(events.some((event) => event.type === 'day-rest-open')).toBe(true);
+        expect(events.find((event) => event.type === 'day-rest-open')?.detail).toHaveProperty('objective');
         expect(JSON.parse(localStorage.getItem('hb_day_cycle')).day).toBe(2);
     });
 

@@ -35,6 +35,10 @@ export const CHROMA_GREEN_ALLOWLIST = new Set([
     'public/economy/fx_tracer_hive_chitin_large.png',
     'public/economy/hudtheme_hive_chitin.png',
     'public/economy/hudtheme_hive_chitin_large.png',
+    // The arcade decal intentionally uses an emerald CRT grid and neon shell;
+    // its transparent borders are already keyed correctly.
+    'public/economy/decal_retro_pixel_snail.png',
+    'public/economy/decal_retro_pixel_snail_large.png',
     'public/bio_spores_blue.png',
     'public/bio_spores.png',
     'public/bio_grunge_spores.png',

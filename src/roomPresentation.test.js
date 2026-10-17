@@ -6,6 +6,7 @@ import {
     planRoomBoundaryCells,
     planRoomCutawayCells,
     planRoomEnvironmentalDrips,
+    planChunkEnvironmentalDrips,
     planRoomPracticalLights,
     planRoomRoleDisplay,
     planRoomThresholdMarkings,
@@ -89,6 +90,27 @@ describe('room presentation planning', () => {
         expect(planRoomEnvironmentalDrips(serviceRoom)).toHaveLength(1);
         expect(planRoomEnvironmentalDrips(serviceRoom, { biome: 'bio' })[0].color).toBe(0x63e6a7);
         expect(planRoomEnvironmentalDrips(null)).toEqual([]);
+    });
+
+    it('plans environmental drips under prop 67, prop 62, and D17 mineral streak decals', () => {
+        const drips = planChunkEnvironmentalDrips({
+            rooms: [],
+            props: [
+                { type: 'life_drip_buckets', x: 12.5, z: 14.2 },
+                { type: 'life_hive_dew_funnel', x: 20.0, z: 22.0 }
+            ],
+            stickers: [
+                { family: 'decal_wall_mineral_streaks', x: 8.0, z: 10.0 }
+            ],
+            biome: 'cryo'
+        });
+        expect(drips).toHaveLength(3);
+        const buckets = drips.find((d) => d.source === 'life_drip_buckets');
+        expect(buckets).toMatchObject({ x: 12.5, z: 14.2, color: 0x9ddcff });
+        const funnel = drips.find((d) => d.source === 'life_hive_dew_funnel');
+        expect(funnel).toMatchObject({ x: 20.0, z: 22.0, color: 0x84cc16 });
+        const streak = drips.find((d) => d.source === 'decal_wall_mineral_streaks');
+        expect(streak).toMatchObject({ x: 8.0, z: 10.0, color: 0x9ddcff });
     });
 
     it('identifies only the east and south foreground walls for the default camera', () => {

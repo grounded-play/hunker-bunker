@@ -1156,6 +1156,7 @@
       "exit": "[ESC・B] 筐体を離れる",
       "reflexes": "アーケード反射神経：この遠征中、リロードが10%速くなる。",
       "sheen_unlocked": "武器シーン解除：{name}",
+      "decal_unlocked": "デカール解除：{name}",
       "tina_radio": "ティナ市長：へえ、やるじゃない……ついに誰かが私の記録を破ったわね。ドリフト前哨基地に寄りなさい。一杯おごるわ。"
     },
     "interstitial": {
@@ -2141,6 +2142,7 @@
       "slay_the_queen": "女王を倒すと入手",
       "archivist": "実績「アーキビスト」で入手",
       "reach_depth": "深度 {depth} に到達で入手",
+      "arcade_score": "アーケードで {score} 点を獲得すると解除",
       "class_runs": "{cls} で {runs} 回出撃すると入手",
       "achievement": "実績で入手",
       "confirm_buy": "もう一度クリックで購入",
@@ -2213,6 +2215,7 @@
       "night_body": "オペレーターは眠る。外の何かは眠らない。",
       "morning_title": "{day}日目 · 06:00",
       "morning_status": "{site} // 新しい一日が始まる",
+      "morning_objective": "目標: {objective}",
       "skip": "いずれかのキーで目覚める"
     },
     "mystery": {
@@ -3773,6 +3776,10 @@
       "4167": {
         "desc": "本来行くべきでない深さまで潜った降下用アンカー。",
         "name": "ディープ・アンカー"
+      },
+      "4168": {
+        "desc": "SUB-CRUST PROTOCOL: 1984 で65,000点を獲得すると解除。",
+        "name": "レトロ・ピクセルスネイル・デカール"
       },
       "4200": {
         "desc": "ディープフロスト のアイデンティティによるオペレーター・シャーシ全体の仕上げ。",

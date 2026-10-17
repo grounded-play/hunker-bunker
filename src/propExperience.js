@@ -21,12 +21,35 @@ const terminal = (color, options = {}) => freezeProfile({
 
 // Props with cut-out moving parts (scripts/blender/articulation_recipes.py):
 // E opens/closes their doors or starts/stops their rotors.
-const mechanism = (color, behaviors = ['use', 'damage']) => freezeProfile({
+const mechanism = (color, behaviors = ['use', 'damage'], options = {}) => freezeProfile({
     behaviors,
     dynamic: true,
     updateDistance: 18,
     articulated: true,
-    presentation: { acknowledgeColor: color, acknowledgeDuration: 0.45, acknowledgeIntensity: 1.2 }
+    presentation: {
+        acknowledgeColor: color,
+        acknowledgeDuration: options.duration ?? 0.45,
+        acknowledgeIntensity: options.intensity ?? 1.2,
+        ...(options.flicker != null ? {
+            flicker: options.flicker,
+            flickerSpeed: options.flickerSpeed ?? 1.0,
+            dropout: options.dropout ?? false
+        } : {})
+    }
+});
+
+const flickering = (color, options = {}) => freezeProfile({
+    behaviors: ['use', 'ambient', 'damage'],
+    dynamic: true,
+    updateDistance: 18,
+    presentation: {
+        acknowledgeColor: color,
+        acknowledgeDuration: options.duration ?? 0.45,
+        acknowledgeIntensity: options.intensity ?? 1.8,
+        flicker: options.flicker ?? 0.28,
+        flickerSpeed: options.flickerSpeed ?? 1.0,
+        dropout: options.dropout ?? false
+    }
 });
 
 const passive = (behaviors) => freezeProfile({ behaviors });
@@ -146,7 +169,7 @@ export const PROP_EXPERIENCE_PROFILES = Object.freeze({
     salvage_tagged_heap: mechanism(0xf59e0b, ['use', 'damage']),
     camp_canvas_tent: mechanism(0xfbbf24, ['use']),
     camp_water_barrel: mechanism(0x38bdf8),
-    life_ribcage_rescue_cabinet: mechanism(0xef4444),
+    life_ribcage_rescue_cabinet: mechanism(0xef4444, ['use', 'ambient', 'damage'], { flicker: 0.28, flickerSpeed: 0.9 }),
     life_confessional: mechanism(0xffb84d),
     life_seismic_drill: mechanism(0xffa648, ['use', 'ambient', 'damage']),
     life_ice_bore_winch: mechanism(0x5fe3ff, ['use', 'ambient', 'damage']),
@@ -156,12 +179,15 @@ export const PROP_EXPERIENCE_PROFILES = Object.freeze({
     prop_diagnostic_console: terminal(0x52ff9a),
     prop_fabricator_workstation: terminal(0x55d9ff),
     prop_liturgical_terminal_lectern: terminal(0xffb84d),
-    prop_terminal_ruptured: terminal(0xef4444, { duration: 0.42, intensity: 1.8 }),
+    prop_terminal_ruptured: flickering(0xef4444, { duration: 0.42, intensity: 1.8, flicker: 0.35, dropout: true }),
     prop_camp_meridian_radio: terminal(0xf59e0b, { intensity: 1.9 }),
+    prop_light_cluster_dripping: flickering(0x9ec8ba, { duration: 0.4, intensity: 1.6, flicker: 0.30, dropout: true }),
+    prop_overhead_cage_fluorescent: flickering(0xf59e0b, { duration: 0.35, intensity: 1.5, flicker: 0.25 }),
     life_route_map_table: terminal(0x55d9ff),
     life_tactile_console: terminal(0x76d95c),
     life_assimilated_desk: terminal(0x76d95c),
-    life_cochlear_intercom: terminal(0xf59e0b, { duration: 0.4, intensity: 1.8 }),
+    life_cochlear_intercom: flickering(0xf59e0b, { duration: 0.4, intensity: 1.8, flicker: 0.22, flickerSpeed: 1.0 }),
+    life_fuse_bypass_panel: flickering(0xff3b2f, { duration: 0.4, intensity: 2.0, flicker: 0.38, dropout: true }),
 
     // 2026-10-12 Rebuild cohort: Doors, base modules, ship salvage, weapons & barriers
     base_door_sealable_bulkhead: mechanism(0x38bdf8, ['use', 'ambient', 'damage']),
@@ -339,6 +365,10 @@ export function createPropExperience(root, model, type) {
 
     const pulseColor = new THREE.Color(presentation?.acknowledgeColor ?? 0xffffff);
     const duration = presentation?.acknowledgeDuration ?? 0;
+    const flickerAmount = presentation?.flicker ?? 0;
+    const flickerSpeed = presentation?.flickerSpeed ?? 1.0;
+    const hasDropout = Boolean(presentation?.dropout);
+    let elapsed = ((type.length * 79 + 31) % 4096) * 0.1;
     let remaining = 0;
     let declaredState = 'ready';
     let disposed = false;
@@ -383,15 +413,30 @@ export function createPropExperience(root, model, type) {
         update(delta = 0) {
             if (disposed) return;
             articulation?.update(delta);
-            if (remaining <= 0) return;
-            remaining = Math.max(0, remaining - Math.min(Math.max(Number(delta) || 0, 0), 0.1));
-            const progress = 1 - remaining / duration;
-            applyStrength(Math.sin(progress * Math.PI));
-            if (remaining === 0) applyStrength(0);
+            if (remaining > 0) {
+                remaining = Math.max(0, remaining - Math.min(Math.max(Number(delta) || 0, 0), 0.1));
+                const progress = 1 - remaining / duration;
+                applyStrength(Math.sin(progress * Math.PI));
+                if (remaining === 0) applyStrength(0);
+            } else if (flickerAmount > 0 && targets.length > 0) {
+                const dt = Math.min(Math.max(Number(delta) || 0, 0), 0.1);
+                elapsed += dt;
+                const smoothFlicker = Math.sin(elapsed * 11.7 * flickerSpeed) * 0.58
+                    + Math.sin(elapsed * 17.3 * flickerSpeed + 1.2) * 0.42;
+                let factor = 1 + smoothFlicker * flickerAmount;
+                if (hasDropout) {
+                    const drop = Math.sin(elapsed * 2.3 * flickerSpeed + 2.1);
+                    if (drop > 0.84) factor *= 0.12;
+                }
+                for (const target of targets) {
+                    target.material.emissiveIntensity = target.baseIntensity * Math.max(0.04, factor);
+                }
+            }
         },
         dispose() {
             if (disposed) return;
             disposed = true;
+            for (const target of targets) target.material.emissiveIntensity = target.baseIntensity;
             for (const assignment of assignments) assignment.object.material = assignment.original;
             for (const material of clones.values()) material.dispose();
             clones.clear();

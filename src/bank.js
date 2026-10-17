@@ -358,7 +358,8 @@ function createDefaultState() {
             o2Bubble: false,
             hullExpansion: false,
             radarNode: false,
-            reactorCompressor: false
+            reactorCompressor: false,
+            baseArcadeBlackjack: false
         },
         hullExpansionLevel: 0,
         radarNodeLevel: 0,
@@ -913,6 +914,19 @@ export class BankManager {
             bank: this.getState()
         });
 
+        return true;
+    }
+
+    isBaseArcadeUnlocked() {
+        return Boolean(this.state.unlocks?.baseArcadeBlackjack);
+    }
+
+    unlockBaseArcade() {
+        if (!this.state.unlocks) this.state.unlocks = {};
+        if (this.state.unlocks.baseArcadeBlackjack) return true;
+        this.state.unlocks.baseArcadeBlackjack = true;
+        this.save();
+        emit('base-arcade-unlocked', { bank: this.getState() });
         return true;
     }
 

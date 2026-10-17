@@ -104,4 +104,23 @@ describe('two-zone crash site build', () => {
             expect(socket.z * 2).toBe(Math.round(socket.z * 2));
         }
     });
+
+    it('authors five readable Sector 0 rooms without blocking the centre route', () => {
+        const grid = blank('.');
+        stampCrashSiteOrigin(grid);
+        const layout = CRASH_SITE_BUILD.sectorZero;
+
+        expect(layout.rooms.map(({ id }) => id)).toEqual([
+            'impact_cradle', 'pod_armory', 'salvage_bay', 'proving_ground', 'departure_airlock'
+        ]);
+        expect(layout.props.map(({ id }) => id)).toEqual(expect.arrayContaining([
+            'sector_zero_pod_rack', 'jammed_hydraulic_cable', 'sector_zero_airlock'
+        ]));
+        for (let y = CRASH_SITE_BUILD.northPreHall.top; y <= CRASH_SITE_BUILD.clearManeuverLane.toZ; y += 1) {
+            expect(grid[y][CRASH_SITE_BUILD.center.x], `centre route at y=${y}`).toBe('.');
+        }
+        expect(grid[9][6]).toBe('#');
+        expect(grid[10][6]).toBe('.');
+        expect(grid[7].slice(8, 11)).toEqual(['.', '.', '.']);
+    });
 });

@@ -1156,6 +1156,7 @@
       "exit": "[ESC · B] SALIR DE LA MÁQUINA",
       "reflexes": "REFLEJOS DE ARCADE: recargas 10 % más rápidas por el resto de esta expedición.",
       "sheen_unlocked": "BRILLO DE ARMA DESBLOQUEADO: {name}",
+      "decal_unlocked": "CALCOMANÍA DESBLOQUEADA: {name}",
       "tina_radio": "ALCALDESA TINA: Vaya, vaya, estrella... por fin alguien rompió mi récord. Pasa por el puesto de la deriva; las bebidas corren por mi cuenta."
     },
     "interstitial": {
@@ -2141,6 +2142,7 @@
       "slay_the_queen": "SE OBTIENE AL MATAR A LA REINA",
       "archivist": "SE OBTIENE CON EL LOGRO ARCHIVISTA",
       "reach_depth": "SE OBTIENE AL LLEGAR A PROFUNDIDAD {depth}",
+      "arcade_score": "SE OBTIENE AL LOGRAR {score} PUNTOS EN EL ARCADE",
       "class_runs": "SE OBTIENE TRAS {runs} PARTIDAS DE {cls}",
       "achievement": "SE OBTIENE CON UN LOGRO",
       "confirm_buy": "HAZ CLIC DE NUEVO PARA COMPRAR",
@@ -2213,6 +2215,7 @@
       "night_body": "El operador duerme. Algo allá afuera no.",
       "morning_title": "DÍA {day} · 06:00",
       "morning_status": "{site} // COMIENZA UN NUEVO DÍA",
+      "morning_objective": "OBJETIVO: {objective}",
       "skip": "Presiona cualquier tecla para despertar"
     },
     "mystery": {
@@ -3773,6 +3776,10 @@
       "4167": {
         "desc": "Ancla de descenso que ha bajado más de lo que debía.",
         "name": "Ancla profunda"
+      },
+      "4168": {
+        "desc": "Se obtiene al lograr 65,000 puntos en SUB-CRUST PROTOCOL: 1984.",
+        "name": "Calcomanía Caracol Píxel Retro"
       },
       "4200": {
         "desc": "Acabado completo del chasis del operador con la identidad Escarcha Profunda.",

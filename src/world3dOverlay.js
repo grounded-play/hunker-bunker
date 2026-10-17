@@ -8,6 +8,7 @@ import { KIT_SCALE, applyKitMaterials } from './kitMaterials.js';
 import { createPropFx } from './propFx.js';
 import { createPropExperience } from './propExperience.js';
 import { applyClothFlutter } from './clothFlutter.js';
+import { applyCableSway } from './cableSway.js';
 import { createGltfLoader as createSharedGltfLoader } from './gltfLoaderFactory.js';
 import { getModelPresentationProfile, getWallModelDepth } from './modelPresentationRegistry.js';
 import { WORLD_EXPANSION_80_MODELS } from './data/worldExpansion80.js';
@@ -700,6 +701,7 @@ export function prepareWorld3dModel(model, type, config, animations = null) {
     });
     useSinglePassForFlatMaterials(model);
     applyClothFlutter(model);
+    applyCableSway(model, type);
 
     let mixer = null;
     if (animations && animations.length > 0) {
@@ -751,6 +753,7 @@ function prepareUniformScaleModel(model, type, config, animations = null) {
         object.frustumCulled = true;
     });
     useSinglePassForFlatMaterials(model);
+    applyCableSway(model, type);
     // After the flat-material pass: shared materials must not be mutated per piece.
     applyKitMaterials(model, type, null, {
         skinOverride: config.skin || config.theme,

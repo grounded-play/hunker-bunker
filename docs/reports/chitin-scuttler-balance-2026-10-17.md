@@ -12,9 +12,13 @@ Run:
 
 ```bash
 npm run audit:scuttler-balance
+HB_PROBES=1 HB_PROBE_OUT=/tmp/hb-scuttler-probe xvfb-run -a \
+  npx playwright test tests/e2e/probes/chitin-scuttler-live.spec.js --headed --workers=1 --retries=0
 ```
 
 The probe executes the real `ThreeGame.updateCrawlerBehavior` state machine at 60 Hz with deterministic windup jitter. It covers close and room-edge formations, a stationary control, each base chassis's sidestep speed, and continuous return fire at the shipped base cadence.
+
+The headed browser probe also passed against the production boot, spawn, sprite, and AI paths. It verified a live three-member pack at 1 HP each, the reduced Scuttler silhouette, and ordered `alert` → `charging` transitions at the shipped 0.28/0.50/0.72-second windups. The shared Xvfb/SwiftShader environment still produces the known white-world capture, so that probe is runtime evidence rather than a substitute for judging animation, tint, and sound on a real GPU.
 
 ## Regression contract
 
@@ -24,7 +28,6 @@ The probe executes the real `ThreeGame.updateCrawlerBehavior` state machine at 6
 - Continuous return fire after 350 ms must clear the three-member pack before a three-heart operator dies.
 - The probe is modeled regression evidence, not a replacement for a headed human playtest.
 
-## Remaining manual acceptance
+## Real-GPU tuning follow-up
 
-Confirm in a headed GPU session that the stagger is perceptible through animation, tint, and sound; test packs in narrow corridors as well as chambers; and verify the 1 HP enemies remain satisfying rather than trivial with upgraded weapons.
-
+At the next hands-on balance session, compare narrow corridors with chambers and confirm that 1 HP remains satisfying with upgraded weapons. This is a subjective tuning follow-up; the timing, survivability, live spawn, and runtime-transition acceptance gates above now have executable coverage.

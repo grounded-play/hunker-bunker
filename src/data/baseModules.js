@@ -173,6 +173,17 @@ export const BASE_MODULE_CATALOG = Object.freeze({
         massClass: 'medium',
         buildTags: ['storage']
     }),
+    arcade_blackjack_cabinet: Object.freeze({
+        id: 'arcade_blackjack_cabinet',
+        label: 'BLACK-ICE 21 CABINET',
+        category: BASE_MODULE_CATEGORIES.FURNITURE,
+        modelType: 'life_arcade_cabinet',
+        footprint: { w: 1.0, d: 1.0, h: 1.8 },
+        socketTypes: ['interior_floor_snap', 'recreation_socket', 'arcade'],
+        buildCost: { tech: 25, coin: 30, scrap: 15 },
+        massClass: 'heavy',
+        buildTags: ['furniture', 'arcade', 'minigame', 'blackjack']
+    }),
 
     // Run-scoped objective cargo. These use the same two-hand reducer as base
     // modules but are delivered to characters/ship staging instead of sockets.

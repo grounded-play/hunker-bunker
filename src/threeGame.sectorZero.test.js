@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, it, expect } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 import { SECTOR_ZERO_PHASES } from './sectorZeroTutorial.js';
 
@@ -70,5 +70,41 @@ describe('ThreeGame Sector Zero Integration', () => {
         window.dispatchEvent(new CustomEvent('gate-crossed', { detail: {} }));
         expect(game.sectorZeroTutorial.getCurrentPhase()).toBe(SECTOR_ZERO_PHASES.COMPLETE);
         expect(game.sectorZeroTutorial.isActive).toBe(false);
+    });
+
+    it('turns each phase into a live world action and holds the exit until combat clears', () => {
+        const game = createMockGame();
+        game.fieldWeaponRunState = { runId: 'tutorial-run' };
+        game.bunkerBlastDoorState = { open: true, y: -2.4, targetY: -2.4 };
+        game.bunkerBlastDoorGroup = { position: { y: -2.4 } };
+        game.spawnFieldWeaponDrop = vi.fn(() => ({}));
+        const enemy = { userData: { hp: 3, maxHp: 3, speed: 1.5, attackCooldown: 0 } };
+        game.spawnEnemyInstance = vi.fn(() => enemy);
+        game.openBunkerBlastDoor = vi.fn();
+
+        game.startSectorZeroTutorial();
+        expect(game.bunkerBlastDoorState).toMatchObject({ open: false, y: 1.4, targetY: 1.4 });
+
+        game.sectorZeroTutorial.handleEvent('player-moved', { distance: 3.1 });
+        expect(game.spawnFieldWeaponDrop).toHaveBeenCalledWith(
+            'mk1_sidearm', 4.35, 10.4,
+            expect.objectContaining({ ammoInWeapon: 12, reserveAmmo: 36 })
+        );
+        game.sectorZeroTutorial.handleEvent('field-weapon-equipped');
+        game.sectorZeroTutorial.handleEvent('obstacle-destroyed', { obstacleId: 'jammed_hydraulic_cable' });
+        game.sectorZeroTutorial.handleEvent('salvage-collected', { amount: 10 });
+        game.sectorZeroTutorial.handleEvent('console-deposited', { scrap: 10 });
+
+        expect(game.spawnEnemyInstance).toHaveBeenCalledWith('alien_proto_crawler', 9, 5.25);
+        expect(enemy.userData).toMatchObject({
+            hp: 1,
+            maxHp: 1,
+            speed: 0.72,
+            attackCooldown: 2.5,
+            isSectorZeroTutorialEnemy: true
+        });
+        expect(game.openBunkerBlastDoor).not.toHaveBeenCalled();
+        game.sectorZeroTutorial.handleEvent('enemy-killed', { type: 'alien_proto_crawler' });
+        expect(game.openBunkerBlastDoor).toHaveBeenCalledOnce();
     });
 });

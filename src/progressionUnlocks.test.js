@@ -32,6 +32,15 @@ describe('what a save has earned', () => {
         expect(describeProgressionUnlock(scoutSkins[3])).toEqual({ key: 'ui.unlock.class_runs', params: { runs: 5, cls: 'SCOUT' } });
     });
 
+    it('earns the Retro Pixel Snail decal from the saved arcade score while its Steam achievement is held', () => {
+        expect(computeProgressionUnlocks({ unlocked: {}, stats: { arcadeBestScore: 64_999, byClass: {} } })).not.toContain('4168');
+        expect(computeProgressionUnlocks({ unlocked: {}, stats: { arcadeBestScore: 65_000, byClass: {} } })).toContain('4168');
+        expect(describeProgressionUnlock(4168)).toEqual({
+            key: 'ui.unlock.arcade_score',
+            params: { score: 65000 }
+        });
+    });
+
     it('sells purchasable rig modules for shells, once, and remembers them', () => {
         const storage = memoryStorage();
         const bank = new BankManager({ storage: memoryStorage() });

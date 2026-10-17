@@ -96,7 +96,8 @@ const poweredProfile = (options = {}) => profile({
         intensity: options.intensity ?? 0.42,
         distance: options.distance ?? 2.0,
         decay: 2,
-        pulse: options.pulse ?? 0.10
+        pulse: options.pulse ?? 0.10,
+        flicker: options.flicker ?? 0
     }
 });
 
@@ -503,10 +504,10 @@ const AMBIENT_PROFILES = {
         'life_tactile_console', 'life_bone_clamp_rig', 'life_fuel_probe_boom',
         'life_stigmata_inscriber'
     ], () => poweredProfile()),
-    prop_terminal_ruptured: poweredProfile({ sparks: true, pulse: 0.22 }),
+    prop_terminal_ruptured: poweredProfile({ sparks: true, pulse: 0.22, flicker: 0.35 }),
     prop_conduit_junction_box: poweredProfile({ sparks: true, lit: false }),
-    prop_overhead_cage_fluorescent: poweredProfile({ glowAt: [0.5, 0.5, 0.5], radius: 0.20, color: 0xb8e5d6 }),
-    prop_light_cluster_dripping: poweredProfile({ glowAt: [0.5, 0.58, 0.5], radius: 0.22, color: 0x9ec8ba, pulse: 0.18 }),
+    prop_overhead_cage_fluorescent: poweredProfile({ glowAt: [0.5, 0.5, 0.5], radius: 0.20, color: 0xb8e5d6, flicker: 0.25 }),
+    prop_light_cluster_dripping: poweredProfile({ glowAt: [0.5, 0.58, 0.5], radius: 0.22, color: 0x9ec8ba, pulse: 0.18, flicker: 0.30 }),
     prop_corporate_saint_reliquary: poweredProfile({ color: 0xffc56b, radius: 0.18, pulse: 0.08 }),
 
     ...profilesFor([
@@ -524,8 +525,8 @@ const AMBIENT_PROFILES = {
 
     // Lived-in pass 2 (props 41-79) and the older props that had no recipe.
     // Inert furniture (pews, crates, sandbags) and architecture get none.
-    life_cochlear_intercom: lampProfile({ glowAt: [0.75, 0.72, 0.7], color: 0xffa648 }),
-    life_ribcage_rescue_cabinet: lampProfile({ glowAt: [0.55, 0.86, 0.6], color: 0xff3b2f, pulse: 0.2 }),
+    life_cochlear_intercom: lampProfile({ glowAt: [0.75, 0.72, 0.7], color: 0xffa648, flicker: 0.20 }),
+    life_ribcage_rescue_cabinet: lampProfile({ glowAt: [0.55, 0.86, 0.6], color: 0xff3b2f, pulse: 0.2, flicker: 0.25 }),
     life_checkpoint_post: lampProfile({ glowAt: [0.72, 0.92, 0.5], color: 0xffa648 }),
     life_pneumatic_tube_node: profile({
         effects: [
@@ -565,7 +566,7 @@ const AMBIENT_PROFILES = {
     life_meat_smoking_rack: smoulderProfile({ at: [0.5, 0.75, 0.5], glowAt: [0.5, 0.12, 0.5], count: 8 }),
     life_welding_station: poweredProfile({ sparks: true, color: 0xffb45b, glowAt: [0.55, 0.62, 0.55], sparkAt: [0.55, 0.62, 0.55], sparkCount: 8 }),
     life_exosuit_teardown: poweredProfile({ sparks: true, lit: false, glowAt: [0.6, 0.6, 0.5] }),
-    life_fuse_bypass_panel: poweredProfile({ sparks: true, color: 0xff3b2f, glowAt: [0.5, 0.6, 0.65], sparkAt: [0.5, 0.55, 0.65], pulse: 0.3 }),
+    life_fuse_bypass_panel: poweredProfile({ sparks: true, color: 0xff3b2f, glowAt: [0.5, 0.6, 0.65], sparkAt: [0.5, 0.55, 0.65], pulse: 0.3, flicker: 0.35 }),
     life_janitor_cart: liquidProfile({ surfaceAt: [0.3, 0.5, 0.5], bubblesAt: [0.3, 0.35, 0.5], lit: false, count: 3, color: 0x7f8a6a }),
     life_suit_drying_rack: ventProfile({ at: [0.5, 0.8, 0.5], count: 5, color: 0xd9e2e0 }),
     life_pipe_hammock: ventProfile({ at: [0.2, 0.85, 0.5], count: 4 }),
@@ -892,7 +893,7 @@ function createRisingPoints(spec, uniforms, seed) {
 // own slow loop in the vertex shader and shows only where the light reaches,
 // twinkling as it turns. One draw per light; nothing per frame but the clock.
 const DUST_MOTE_COUNT = 48;
-function createDustMotes(lightSpec, lightPosition, uniforms, seed) {
+export function createDustMotes(lightSpec, lightPosition, uniforms = [], seed = 0) {
     const random = seededRandom(seed);
     const reach = (lightSpec.distance ?? 2) * 0.5;
     const top = Math.max(lightPosition.y + 0.25, 0.9);
@@ -957,7 +958,9 @@ function createDustMotes(lightSpec, lightPosition, uniforms, seed) {
     points.frustumCulled = false;
     points.renderOrder = 6;
     points.userData.propFxOwned = true;
-    uniforms.push(local.uTime);
+    points.userData.isDustMotes = true;
+    points.userData.uTime = local.uTime;
+    if (uniforms && typeof uniforms.push === 'function') uniforms.push(local.uTime);
     return points;
 }
 

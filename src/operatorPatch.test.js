@@ -40,14 +40,15 @@ describe('createOperatorPatch', () => {
         const backing = patch.root.getObjectByName('PatchClothBacking');
         const face = patch.root.getObjectByName('PatchArtwork');
 
-        expect(backing).toBeDefined();
+        expect(backing).toBeUndefined();
         expect(face).toBeDefined();
-        expect(backing.castShadow).toBe(true);
-        expect(backing.receiveShadow).toBe(true);
+        expect(face.castShadow).toBe(true);
+        expect(face.receiveShadow).toBe(true);
         expect(face.material.transparent).toBe(true);
         expect(face.material.depthTest).toBe(true);
         expect(face.material.depthWrite).toBe(true);
         expect(face.material.side).toBe(THREE.FrontSide);
+        expect(face.material.polygonOffset).toBe(true);
     });
 
     it('positions the patch snug against the chest', () => {

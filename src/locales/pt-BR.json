@@ -1156,6 +1156,7 @@
       "exit": "[ESC · B] SAIR DO FLIPERAMA",
       "reflexes": "REFLEXOS DE FLIPERAMA: recargas 10% mais rápidas pelo resto desta expedição.",
       "sheen_unlocked": "BRILHO DE ARMA DESBLOQUEADO: {name}",
+      "decal_unlocked": "DECAL DESBLOQUEADO: {name}",
       "tina_radio": "PREFEITA TINA: Ora, ora, fera... finalmente alguém quebrou meu recorde. Passa no posto da deriva; as bebidas são por minha conta."
     },
     "interstitial": {
@@ -2141,6 +2142,7 @@
       "slay_the_queen": "OBTIDO AO MATAR A RAINHA",
       "archivist": "OBTIDO COM A CONQUISTA ARQUIVISTA",
       "reach_depth": "OBTIDO AO ALCANÇAR A PROFUNDIDADE {depth}",
+      "arcade_score": "OBTIDO AO MARCAR {score} PONTOS NO ARCADE",
       "class_runs": "OBTIDO APÓS {runs} PARTIDAS DE {cls}",
       "achievement": "OBTIDO COM UMA CONQUISTA",
       "confirm_buy": "CLIQUE DE NOVO PARA COMPRAR",
@@ -2213,6 +2215,7 @@
       "night_body": "O operador dorme. Algo lá fora, não.",
       "morning_title": "DIA {day} · 06:00",
       "morning_status": "{site} // UM NOVO DIA COMEÇA",
+      "morning_objective": "OBJETIVO: {objective}",
       "skip": "Pressione qualquer tecla para acordar"
     },
     "mystery": {
@@ -3773,6 +3776,10 @@
       "4167": {
         "desc": "Âncora de descida que esteve mais fundo do que deveria.",
         "name": "Âncora profunda"
+      },
+      "4168": {
+        "desc": "Obtido ao marcar 65.000 pontos em SUB-CRUST PROTOCOL: 1984.",
+        "name": "Decal Caracol Pixel Retrô"
       },
       "4200": {
         "desc": "Acabamento completo do chassi do operador na identidade Gelo Profundo.",

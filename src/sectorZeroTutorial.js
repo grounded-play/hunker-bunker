@@ -82,6 +82,7 @@ export class SectorZeroTutorialManager {
         this.isActive = true;
         this._syncObjective(this.currentPhase);
         this.onPhaseChange?.(this.currentPhase);
+        this.game?.handleSectorZeroPhaseChanged?.(this.currentPhase);
         return this.currentPhase;
     }
 
@@ -101,6 +102,14 @@ export class SectorZeroTutorialManager {
             return false;
         }
 
+        // Remember real-world actions that can land just before the objective
+        // card advances; the player should never have to pick the same item up
+        // twice because two events resolved in one frame.
+        if (eventName === 'weapon-equipped' || eventName === 'field-weapon-equipped') {
+            this.flags.hasEquippedWeapon = true;
+        }
+        if (eventName === 'salvage-collected') this.flags.hasCollectedSalvage = true;
+
         switch (this.currentPhase) {
             case SECTOR_ZERO_PHASES.BOOT:
                 if (eventName === 'player-moved' && (payload.distance >= 3.0 || payload.movedMs >= 2000)) {
@@ -110,9 +119,6 @@ export class SectorZeroTutorialManager {
                 break;
 
             case SECTOR_ZERO_PHASES.WEAPON:
-                if (eventName === 'weapon-equipped') {
-                    this.flags.hasEquippedWeapon = true;
-                }
                 if (this.flags.hasEquippedWeapon
                     && (eventName === 'barrier-shot'
                         || (eventName === 'obstacle-destroyed' && payload.obstacleId === 'jammed_hydraulic_cable'))) {
@@ -123,9 +129,6 @@ export class SectorZeroTutorialManager {
                 break;
 
             case SECTOR_ZERO_PHASES.SALVAGE:
-                if (eventName === 'salvage-collected') {
-                    this.flags.hasCollectedSalvage = true;
-                }
                 if (eventName === 'console-deposited' && (this.flags.hasCollectedSalvage || (payload.scrap ?? payload.amount ?? 0) >= 10)) {
                     this.flags.hasBankedConsole = true;
                     this.unlockedDoors.add('salvage_bay_door');
@@ -162,6 +165,7 @@ export class SectorZeroTutorialManager {
         this.phaseProgress = 0;
         this._syncObjective(nextPhase);
         this.onPhaseChange?.(nextPhase);
+        this.game?.handleSectorZeroPhaseChanged?.(nextPhase);
         return true;
     }
 

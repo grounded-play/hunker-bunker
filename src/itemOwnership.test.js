@@ -37,6 +37,7 @@ describe('catalog lookup', () => {
         expect(getCatalogEntry(4100).type).toBe(ITEM_TYPE.SKIN);
         expect(getCatalogEntry(4114).type).toBe(ITEM_TYPE.CHASSIS);
         expect(getCatalogEntry(4120).type).toBe(ITEM_TYPE.DECAL);
+        expect(getCatalogEntry(4168).type).toBe(ITEM_TYPE.DECAL);
         expect(getCatalogEntry(4140).type).toBe(ITEM_TYPE.MOD);
     });
 

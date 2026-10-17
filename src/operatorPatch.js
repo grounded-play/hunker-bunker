@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { assetUrl } from './assetUrl.js';
 
 // Fit once in the model's bind pose, then inherit the chest bone's animation.
@@ -32,7 +31,6 @@ export function createOperatorPatch(root, { targetHeight = 1.85, loader = new TH
         return ray.intersectObjects(bodyMeshes, false)[0];
     };
     const width = targetHeight * 0.082;
-    const thickness = targetHeight * 0.0035;
     const gap = targetHeight * 0.004;
     // Corners also sample the armor, preventing a flat patch cutting into a
     // curved breastplate. Respect measured armor depth, with a small clearance for animation.
@@ -40,7 +38,7 @@ export function createOperatorPatch(root, { targetHeight = 1.85, loader = new TH
         .map(([x, y]) => sample(x * width, y * width)).filter(Boolean);
     const measuredDepth = hits.length ? Math.max(...hits.map((hit) => hit.point.clone().sub(anchor).dot(forward))) : targetHeight * 0.028;
     const depth = THREE.MathUtils.clamp(measuredDepth, targetHeight * 0.02, targetHeight * 0.16);
-    anchor.addScaledVector(forward, depth + gap + thickness / 2);
+    anchor.addScaledVector(forward, depth + gap);
 
     const mount = new THREE.Group();
     mount.name = 'OperatorChestPatch';
@@ -48,17 +46,6 @@ export function createOperatorPatch(root, { targetHeight = 1.85, loader = new TH
     mount.userData.surfaceFitted = hits.length > 0;
     mount.position.copy(anchor);
     mount.quaternion.copy(rotation);
-    const backing = new THREE.Mesh(
-        new RoundedBoxGeometry(width * 0.94, width * 0.94, thickness, 2, thickness * 0.35),
-        new THREE.MeshStandardMaterial({
-            color: 0x14181c,
-            roughness: 0.92,
-            metalness: 0.1,
-            depthTest: true,
-            depthWrite: true
-        })
-    );
-    backing.name = 'PatchClothBacking';
     const face = new THREE.Mesh(
         new THREE.PlaneGeometry(width, width),
         new THREE.MeshStandardMaterial({
@@ -68,19 +55,21 @@ export function createOperatorPatch(root, { targetHeight = 1.85, loader = new TH
             alphaTest: 0.05,
             side: THREE.FrontSide,
             depthTest: true,
-            depthWrite: true
+            depthWrite: true,
+            polygonOffset: true,
+            polygonOffsetFactor: -1,
+            polygonOffsetUnits: -1
         })
     );
     face.name = 'PatchArtwork';
-    face.position.z = thickness / 2 + 0.0006;
-    for (const mesh of [backing, face]) {
-        mesh.userData.isOperatorPatch = true;
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        mesh.renderOrder = 7;
-        mesh.frustumCulled = false;
-        mount.add(mesh);
-    }
+    face.position.z = 0.0006;
+    face.userData.isOperatorPatch = true;
+    face.castShadow = true;
+    face.receiveShadow = true;
+    face.renderOrder = 7;
+    face.frustumCulled = false;
+    mount.add(face);
+
     // attach() preserves the measured world pose and compensates inherited
     // centimeter rig scales, including community chassis with different units.
     mount.updateMatrixWorld(true);
@@ -112,7 +101,8 @@ export function createOperatorPatch(root, { targetHeight = 1.85, loader = new TH
             generation++;
             mount.removeFromParent();
             face.material.map?.dispose();
-            for (const mesh of [backing, face]) { mesh.geometry.dispose(); mesh.material.dispose(); }
+            face.geometry.dispose();
+            face.material.dispose();
         }
     };
 }

@@ -215,9 +215,8 @@ Every prompt below and every lighting change is checked against this list.
   | Infected, or out in the cryo ring | Cryo pod drift |
   | Bonded with a hive | Hive cocoon |
   | Co-op, both resting | Squad watch |
-- [ ] **S3. Morning card.** After the video: "DAY 4 · 06:00", the crash-site name and the day's objective.
-  Day/time and crash-site name shipped in `24e7c062`; adding the current objective
-  remains open.
+- [x] **S3. Morning card.** After the video: "DAY 4 · 06:00", the crash-site name and the day's objective.
+  Day/time, crash-site name, and current tracked objective shipped across all 7 languages in tactical morning card and biome prompt log.
 
 Prompts are in section C.
 

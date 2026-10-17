@@ -50,11 +50,12 @@ const FOOTPRINT = Object.freeze({
 // console and arrival wreckage takes slots along the walls. Its props are laid
 // out by hand in slots relative to the ship; the first slot that fits wins.
 const CRASH_SITE_PROPS = Object.freeze([
-    // Torn from the wreck and thrown west, tipped toward the door hall.
-    { type: 'life_pod_seat_row', slots: [{ dx: -5, dy: -1, yaw: Math.PI / 2 + 0.35 }, { dx: 4, dy: 5, yaw: -0.4 }] }
+    // Torn from the wreck and thrown into the south service bay. The earlier
+    // west/north slots are now authored Sector 0 armory partitions.
+    { type: 'life_pod_seat_row', slots: [{ dx: -6, dy: 9, yaw: 0 }] }
     // Prop 80 (life_hull_shard_smoldering) joins here when its model arrives.
 ]);
-const NON_BLOCKING = new Set(['life_dropped_kit_pile', 'life_drip_buckets', 'life_guide_rope_stakes', 'life_ceiling_collapse']);
+const NON_BLOCKING = new Set(['life_dropped_kit_pile', 'life_drip_buckets', 'life_guide_rope_stakes', 'life_ceiling_collapse', 'life_pod_seat_row']);
 const WALL_TILES = new Set(['#', 'W']);
 const FLOOR_TILES = new Set(['.', 'O']);
 const DIRS = Object.freeze([[1, 0], [-1, 0], [0, 1], [0, -1]]);

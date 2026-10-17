@@ -221,10 +221,32 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
         {
             nextState: () => 'working',
             sound: 'terminal_beep',
+            onUse: (game, prop) => {
+                if (typeof window !== 'undefined') {
+                    if (prop?.userData?.definitionId === 'arcade_blackjack_cabinet' || prop?.userData?.isBlackjackCabinet) {
+                        import('./blackjackArcade.js').then(({ getBlackjackController }) => {
+                            getBlackjackController({ game }).open();
+                        }).catch(() => {});
+                    } else {
+                        import('./arcadeCabinetMinigame.js').then(({ getArcadeController }) => {
+                            const controller = getArcadeController({ game });
+                            controller.open();
+                        }).catch(() => {});
+                    }
+                }
+            }
+        }
+    ),
+    arcade_blackjack_cabinet: statefulInteraction(
+        '[E] PLAY BLACK-ICE 21 (BLACKJACK)',
+        () => 'BLACK-ICE 21: DEALER C.H.I.P.-0 ONLINE. PLACE YOUR WAGER.',
+        {
+            nextState: () => 'working',
+            sound: 'terminal_beep',
             onUse: (game) => {
                 if (typeof window !== 'undefined') {
-                    import('./arcadeCabinetMinigame.js').then(({ getArcadeController }) => {
-                        const controller = getArcadeController({ game });
+                    import('./blackjackArcade.js').then(({ getBlackjackController }) => {
+                        const controller = getBlackjackController({ game });
                         controller.open();
                     }).catch(() => {});
                 }

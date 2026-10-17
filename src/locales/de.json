@@ -1156,6 +1156,7 @@
       "exit": "[ESC · B] AUTOMAT VERLASSEN",
       "reflexes": "ARKADE-REFLEXE: Nachladen für den Rest dieser Expedition 10 % schneller.",
       "sheen_unlocked": "WAFFENSCHIMMER FREIGESCHALTET: {name}",
+      "decal_unlocked": "DECAL FREIGESCHALTET: {name}",
       "tina_radio": "BÜRGERMEISTERIN TINA: Sieh an, Großmaul... endlich hat jemand meinen Rekord geknackt. Komm beim Drift-Außenposten vorbei, die Drinks gehen auf mich."
     },
     "interstitial": {
@@ -2141,6 +2142,7 @@
       "slay_the_queen": "FREIGESCHALTET DURCH DEN SIEG ÜBER DIE KÖNIGIN",
       "archivist": "FREIGESCHALTET DURCH DEN ERFOLG „ARCHIVAR“",
       "reach_depth": "FREIGESCHALTET AB TIEFE {depth}",
+      "arcade_score": "FREIGESCHALTET MIT {score} PUNKTEN AM ARCADE-AUTOMATEN",
       "class_runs": "FREIGESCHALTET NACH {runs} {cls}-EINSÄTZEN",
       "achievement": "FREIGESCHALTET DURCH EINEN ERFOLG",
       "confirm_buy": "ZUM KAUFEN ERNEUT KLICKEN",
@@ -2213,6 +2215,7 @@
       "night_body": "Der Operator schläft. Etwas da draußen nicht.",
       "morning_title": "TAG {day} · 06:00",
       "morning_status": "{site} // EIN NEUER TAG BEGINNT",
+      "morning_objective": "MISSIONSZIEL: {objective}",
       "skip": "Beliebige Taste zum Aufwachen"
     },
     "mystery": {
@@ -3773,6 +3776,10 @@
       "4167": {
         "desc": "Abstiegsanker, der tiefer war, als er sollte.",
         "name": "Tiefenanker"
+      },
+      "4168": {
+        "desc": "Freigeschaltet mit 65.000 Punkten in SUB-CRUST PROTOCOL: 1984.",
+        "name": "Retro-Pixelschnecken-Decal"
       },
       "4200": {
         "desc": "Vollständige Operator-Chassis-Lackierung im Tieffrost-Stil.",

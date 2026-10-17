@@ -76,4 +76,17 @@ describe('installed base module presentation', () => {
         expect(updateInstalledBaseModuleVisual(root, module, 0.2, true)).toBe(true);
         expect(root.position.set).toHaveBeenCalledWith(-4.1, 0.2, -0.9);
     });
+
+    it('loads base arcade blackjack cabinet as persistent installed GLB', async () => {
+        const root = rootStub();
+        createWorld3dModel.mockResolvedValue(root);
+        const module = {
+            instanceId: 'arcade-1', definitionId: 'arcade_blackjack_cabinet',
+            transform: { x: 4.5, z: 12.5, yaw: 0 }
+        };
+        expect(await createInstalledBaseModuleVisual(module)).toBe(root);
+        expect(createWorld3dModel).toHaveBeenCalledWith('life_arcade_cabinet');
+        expect(updateInstalledBaseModuleVisual(root, module, 0.5, true)).toBe(true);
+        expect(root.position.set).toHaveBeenCalledWith(4.5, 0.5, 12.5);
+    });
 });

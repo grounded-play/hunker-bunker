@@ -28,6 +28,8 @@ function mockGame() {
         spawnToxicSporePuddle: vi.fn(),
         spawnPhysicalBurst: vi.fn(),
         spawnGearPoofEffect: vi.fn(),
+        spawnTextureBurstEffect: vi.fn(),
+        takeDamage: vi.fn(),
         audioAt: vi.fn(() => ({ volume: 0.2 })),
         canEnemyTargetPlayer: () => true
     });
@@ -99,13 +101,97 @@ describe('spore mortar in ThreeGame', () => {
         const callArg = g.spawnProjectile.mock.calls[0][0];
         expect(callArg.isEnemy).toBe(true);
         expect(callArg.damage).toBe(SPORE_MORTAR.directDamage);
+        expect(callArg.radius).toBe(0.22);
+        expect(callArg.options).toMatchObject({
+            ignoreWalls: true,
+            ignoreContainment: true,
+            impactOnly: true,
+            arcHeight: 2.8,
+            impactEffect: 'spore-mortar',
+            impactRadius: SPORE_MORTAR.explosionRadius
+        });
         expect(typeof callArg.options?.onExpire).toBe('function');
 
         // Verify detonation creates toxic spore puddle and physical burst
         callArg.options.onExpire(10, 5);
         expect(g.spawnToxicSporePuddle).toHaveBeenCalledWith(10, 5, true);
         expect(g.spawnPhysicalBurst).toHaveBeenCalled();
+        expect(g.takeDamage).toHaveBeenCalledWith(SPORE_MORTAR.directDamage, 'spore-mortar', 10, 5);
 
         delete globalThis.window;
+    });
+
+    it('locks its telegraphed landing point instead of tracking the player through the charge', () => {
+        const g = mockGame();
+        const sprite = mortarSprite({ mortarState: 'idle', mortarCooldown: 0 });
+
+        g.updateSporeMortarBehavior(sprite, 0.1);
+        expect(sprite.userData.mortarTarget).toEqual({ x: 10, z: 5 });
+
+        g.player.position = { x: 5, z: 14 };
+        g.updateSporeMortarBehavior(sprite, SPORE_MORTAR.chargeDuration);
+
+        const projectile = g.spawnProjectile.mock.calls[0][0];
+        expect(projectile.vx * projectile.ttl).toBeCloseTo(5);
+        expect(projectile.vz * projectile.ttl).toBeCloseTo(0);
+    });
+
+    it('applies blast damage only inside the authored area and always leaves denial terrain', () => {
+        const g = mockGame();
+        g.playerRadius = 0.35;
+        g.player.position = { x: SPORE_MORTAR.explosionRadius + 0.34, z: 0 };
+
+        g.detonateSporeMortar(0, 0);
+        expect(g.takeDamage).toHaveBeenCalledTimes(1);
+
+        g.takeDamage.mockClear();
+        g.player.position.x = SPORE_MORTAR.explosionRadius + 0.36;
+        g.detonateSporeMortar(0, 0);
+        expect(g.takeDamage).not.toHaveBeenCalled();
+        expect(g.spawnToxicSporePuddle).toHaveBeenCalledTimes(2);
+    });
+
+    it('cancels a charged shot if the player becomes untargetable', () => {
+        const g = mockGame();
+        const sprite = mortarSprite({ mortarState: 'charging', mortarChargeTimer: 0.1 });
+        g.canEnemyTargetPlayer = () => false;
+
+        g.updateSporeMortarBehavior(sprite, 0.2);
+
+        expect(sprite.userData.mortarState).toBe('idle');
+        expect(sprite.userData.mortarTarget).toBeNull();
+        expect(g.spawnProjectile).not.toHaveBeenCalled();
+    });
+
+    it('keeps impact-only enemy shells out of both enemy and player hit branches', () => {
+        const g = mockGame();
+        g.checkProjectilePlayerHit = vi.fn();
+        g.checkProjectileShipHit = vi.fn();
+        g.checkProjectileSnailHit = vi.fn();
+        g.checkProjectileRivalHit = vi.fn();
+        g.destroyProjectile = vi.fn();
+        g.activeProjectiles = [{
+            mesh: { position: { x: 0, y: 0.42, z: 0 } },
+            vx: 1,
+            vz: 0,
+            ttl: 1,
+            duration: 1,
+            age: 0,
+            startY: 0.42,
+            arcHeight: 2.8,
+            ignoreWalls: true,
+            ignoreContainment: true,
+            impactOnly: true,
+            isEnemy: true
+        }];
+
+        g.updateProjectiles(0.25);
+
+        expect(g.activeProjectiles[0].mesh.position.x).toBeCloseTo(0.25);
+        expect(g.activeProjectiles[0].mesh.position.y).toBeGreaterThan(0.42);
+        expect(g.checkProjectilePlayerHit).not.toHaveBeenCalled();
+        expect(g.checkProjectileShipHit).not.toHaveBeenCalled();
+        expect(g.checkProjectileSnailHit).not.toHaveBeenCalled();
+        expect(g.checkProjectileRivalHit).not.toHaveBeenCalled();
     });
 });

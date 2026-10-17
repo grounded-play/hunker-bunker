@@ -1156,7 +1156,14 @@
       "exit": "[ESC · B] EXIT CABINET",
       "reflexes": "ARCADE REFLEXES: reloads 10% faster for the rest of this expedition.",
       "sheen_unlocked": "WEAPON SHEEN UNLOCKED: {name}",
-      "tina_radio": "MAYOR TINA: Well, well, hotshot... somebody finally cracked my record. Stop by the drift outpost; your drinks are on me."
+      "decal_unlocked": "DECAL UNLOCKED: {name}",
+      "tina_radio": "MAYOR TINA: Well, well, hotshot... somebody finally cracked my record. Stop by the drift outpost; your drinks are on me.",
+      "blackjack_title": "BLACK-ICE 21",
+      "blackjack_prompt": "[E] PLAY BLACK-ICE 21 (BLACKJACK)",
+      "blackjack_built": "RECREATION BAY ONLINE // BLACK-ICE 21 CABINET CONSTRUCTED",
+      "blackjack_wager": "CURRENT WAGER: {amount} COIN",
+      "blackjack_win": "OPERATOR WINS: +{amount} COIN",
+      "blackjack_tier_clear": "TIER {tier} CLEARED: +{bonus} BONUS COIN"
     },
     "interstitial": {
       "track": "TRACK {id}"
@@ -2141,6 +2148,7 @@
       "slay_the_queen": "EARNED BY KILLING THE QUEEN",
       "archivist": "EARNED BY THE ARCHIVIST ACHIEVEMENT",
       "reach_depth": "EARNED BY REACHING DEPTH {depth}",
+      "arcade_score": "EARNED BY SCORING {score} IN THE ARCADE",
       "class_runs": "EARNED AFTER {runs} {cls} RUNS",
       "achievement": "EARNED BY AN ACHIEVEMENT",
       "confirm_buy": "CLICK AGAIN TO BUY",
@@ -2213,6 +2221,7 @@
       "night_body": "The operator sleeps. Something out there does not.",
       "morning_title": "DAY {day} · 06:00",
       "morning_status": "{site} // A NEW DAY BEGINS",
+      "morning_objective": "OBJECTIVE: {objective}",
       "skip": "Press any key to wake"
     },
     "mystery": {
@@ -3773,6 +3782,10 @@
       "4167": {
         "desc": "Descent anchor that has been deeper than it should have.",
         "name": "Deep Anchor"
+      },
+      "4168": {
+        "desc": "Earned by scoring 65,000 points in SUB-CRUST PROTOCOL: 1984.",
+        "name": "Retro Pixel Snail Decal"
       },
       "4200": {
         "desc": "Full operator chassis finish in the Deep Frost identity.",

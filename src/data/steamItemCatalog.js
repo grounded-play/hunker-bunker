@@ -872,6 +872,17 @@ const catalog = {
         "localImg": "/economy/mod_deep_anchor.png",
         "localImgLarge": "/economy/mod_deep_anchor_large.png"
     },
+    "4168": {
+        "itemdefid": 4168,
+        "name": "Retro Pixel Snail Decal",
+        "rarity": "epic",
+        "desc": "Earned by scoring 65,000 points in SUB-CRUST PROTOCOL: 1984.",
+        "tradable": false,
+        "marketable": false,
+        "img": "https://hunkerbunker.netlify.app/economy/decal_retro_pixel_snail.png",
+        "localImg": "/economy/decal_retro_pixel_snail.png",
+        "localImgLarge": "/economy/decal_retro_pixel_snail_large.png"
+    },
     "4200": {
         "itemdefid": 4200,
         "name": "Deep Frost Operator Skin",

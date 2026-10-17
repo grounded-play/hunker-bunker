@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-17T14:13:08.850Z",
+  "generatedAt": "2026-10-17T15:48:38.123Z",
   "app": {
     "appId": 4957040,
     "title": "Hunker Bunker",
@@ -308,8 +308,8 @@
       "hidden": false,
       "publishNow": false,
       "codeStatus": "hold: comingSoon in code",
-      "icon": "",
-      "lockedIcon": "public/ach_locked.png"
+      "icon": "public/ach_arcade_wizard.png",
+      "lockedIcon": "public/ach_arcade_wizard_locked.png"
     },
     {
       "apiName": "tinas_challenger",
@@ -318,8 +318,8 @@
       "hidden": true,
       "publishNow": false,
       "codeStatus": "hold: comingSoon in code",
-      "icon": "",
-      "lockedIcon": "public/ach_locked.png"
+      "icon": "public/ach_tinas_challenger.png",
+      "lockedIcon": "public/ach_tinas_challenger_locked.png"
     }
   ],
   "activeAchievementCount": 23,
@@ -341,8 +341,8 @@
       "hidden": false,
       "publishNow": false,
       "codeStatus": "hold: comingSoon in code",
-      "icon": "",
-      "lockedIcon": "public/ach_locked.png"
+      "icon": "public/ach_arcade_wizard.png",
+      "lockedIcon": "public/ach_arcade_wizard_locked.png"
     },
     {
       "apiName": "tinas_challenger",
@@ -351,8 +351,8 @@
       "hidden": true,
       "publishNow": false,
       "codeStatus": "hold: comingSoon in code",
-      "icon": "",
-      "lockedIcon": "public/ach_locked.png"
+      "icon": "public/ach_tinas_challenger.png",
+      "lockedIcon": "public/ach_tinas_challenger_locked.png"
     }
   ],
   "stats": [
@@ -580,7 +580,7 @@
   },
   "inventory": {
     "appid": 4957040,
-    "itemCount": 126,
+    "itemCount": 127,
     "sellableItems": [
       {
         "itemdefid": 4001,

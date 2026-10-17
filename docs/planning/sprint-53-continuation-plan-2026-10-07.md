@@ -129,7 +129,7 @@ Perfectly seamless square tileable orthographic PBR base-color wall texture: glo
 
 Differs from the outline above:
 - **Dawn commits before the presentation.** The existing `beginCampRest` advances the day, simulates the night and pins the sky to dawn before `day-rest-open`, as it always has. The cutscene plays over that change, so play-to-end, skip, missing video and decode failure all resolve the same promise into the same morning, with no second commit path to keep idempotent. The day advances exactly once, inside `beginCampRest`, which a second confirm cannot re-enter (`beginSleep` refuses).
-- **The morning card** shows the day and the crash-site name, not yet the current objective.
+- **The morning card** shows the day, the crash-site name, and the current objective across tactical card and biome prompts.
 - **No videos yet:** a 2.6 s skippable night card plays until a style is listed in `SHIPPED_SLEEP_CUTSCENES`.
 
 ### 6. Final integration gate
