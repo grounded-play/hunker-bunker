@@ -523,7 +523,9 @@ export class AudioManager {
 
         // Subtle pitch variation for SFX if not explicitly disabled
         if (bus === 'sfx' && options.varyPitch !== false) {
-             pbRate *= (0.95 + Math.random() * 0.1); // +/- 5%
+            // One spread for every SFX (src/audioJuice.js), unclamped here:
+            // some calls deliberately run above the module's 2.5x clamp.
+            pbRate *= getModulatedPlaybackRate(1, AUDIO_JUICE_CONFIG.SFX_PITCH_VARIANCE);
         }
         source.playbackRate.value = pbRate;
         
@@ -1801,6 +1803,50 @@ export class AudioManager {
     /**
      * Procedural creature alert sound (chitter / insectoid screech / bio groan / boss roar).
      */
+    // Low-O2 heartbeat (survivalTension.js -> audioJuice tempo). There is no
+    // heartbeat asset, so each beat is a synthesized lub-dub. The loop reads
+    // the current tempo every beat; 0 stops it.
+    static setHeartbeat(bpm = 0) {
+        this._heartbeatBpm = Math.max(0, Number(bpm) || 0);
+        if (!this._heartbeatBpm) {
+            if (this._heartbeatTimer) clearTimeout(this._heartbeatTimer);
+            this._heartbeatTimer = null;
+            return;
+        }
+        if (!this._heartbeatTimer) this._heartbeatTick();
+    }
+
+    static _heartbeatTick() {
+        if (!this._heartbeatBpm) {
+            this._heartbeatTimer = null;
+            return;
+        }
+        this.playHeartbeatThump();
+        this._heartbeatTimer = setTimeout(() => this._heartbeatTick(), 60000 / this._heartbeatBpm);
+    }
+
+    static playHeartbeatThump({ volume = 0.32 } = {}) {
+        if (this.globalMuted || !this.isUnlocked || !this.sfxGain) return false;
+        const now = audioCtx.currentTime || 0;
+        const beat = (at, fromHz, toHz, length, level) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(fromHz, at);
+            osc.frequency.exponentialRampToValueAtTime(toHz, at + length);
+            gain.gain.setValueAtTime(0.0001, at);
+            gain.gain.linearRampToValueAtTime(level, at + 0.012);
+            gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            osc.start(at);
+            osc.stop(at + length + 0.02);
+        };
+        beat(now, 62, 40, 0.12, volume);          // lub
+        beat(now + 0.17, 54, 36, 0.1, volume * 0.7); // dub
+        return true;
+    }
+
     static playProceduralCreatureAlert(creatureType = 'crawler', options = {}) {
         if (this.globalMuted || !this.isUnlocked) return null;
         const spatial = this.resolveSpatial(options);
@@ -2516,6 +2562,7 @@ export class AudioManager {
 }
 
 AudioManager.init();
+import { AUDIO_JUICE_CONFIG, getModulatedPlaybackRate } from './audioJuice.js';
 import { assetUrl } from './assetUrl.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
 import { GAME_SOUNDSETS, selectSoundsetVariant } from './data/gameSoundsets.js';

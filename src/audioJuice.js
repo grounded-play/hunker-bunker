@@ -10,6 +10,7 @@
 
 export const AUDIO_JUICE_CONFIG = Object.freeze({
     DEFAULT_PITCH_VARIANCE: 0.10, // ±10%
+    SFX_PITCH_VARIANCE: 0.05,     // the shipped spread on every SFX (audio.js)
     LOW_O2_THRESHOLD: 0.20,       // 20% O2 triggers panic audio
     MIN_LPF_HERTZ: 380,           // 380Hz heavy muffled underwater sound
     // Cutoff at the 20% threshold. Below the deepest fatigue muffle (900 Hz,

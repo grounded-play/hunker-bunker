@@ -27204,6 +27204,9 @@ export class ThreeGame {
         );
         // The next deploy is a redeploy after a death (cinematic beat 09).
         this._diedSinceRespawn = true;
+        // The suffocation heartbeat stops with the operator.
+        window.AudioManager?.setHeartbeat?.(0);
+        this._survivalTensionKey = null;
         window.dispatchEvent(new CustomEvent('player-death', {
             detail: { reason, blackBox: blackBoxState }
         }));

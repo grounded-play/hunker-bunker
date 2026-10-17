@@ -94,3 +94,18 @@ describe('fatigue muffling', () => {
         expect(targetElement.classList.toggle).toHaveBeenCalledWith('vitals-critical', false);
     });
 });
+
+describe('heartbeat under suffocation (audioJuice tempo)', () => {
+    it('drives the heartbeat while O2 is critical and stops it when not', () => {
+        const audioManager = { setLowPassMuffle: vi.fn(), setHeartbeat: vi.fn() };
+        syncSurvivalTension({ vitals: { o2: 10, maxO2: 100, hp: 3, maxHp: 3 }, audioManager });
+        const bpm = audioManager.setHeartbeat.mock.calls.at(-1)[0];
+        expect(bpm).toBeGreaterThanOrEqual(65);
+        expect(bpm).toBeLessThanOrEqual(135);
+        syncSurvivalTension({ vitals: { o2: 2, maxO2: 100, hp: 3, maxHp: 3 }, audioManager });
+        expect(audioManager.setHeartbeat.mock.calls.at(-1)[0]).toBeGreaterThan(bpm);
+        syncSurvivalTension({ vitals: { o2: 80, maxO2: 100, hp: 3, maxHp: 3 }, audioManager });
+        expect(audioManager.setHeartbeat).toHaveBeenLastCalledWith(0);
+    });
+});
+

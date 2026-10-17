@@ -65,6 +65,10 @@ export function syncSurvivalTension({
     if (audioManager && typeof audioManager.setLowPassMuffle === 'function') {
         audioManager.setLowPassMuffle(state.isCritical || state.isFatigueMuffled, state.muffleTargetFreq);
     }
+    // Suffocation also brings a heartbeat that quickens as O2 runs out.
+    if (audioManager && typeof audioManager.setHeartbeat === 'function') {
+        audioManager.setHeartbeat(state.isO2Critical ? computeBiometricAudioState(state.o2Fraction).heartbeatBpm : 0);
+    }
 
     if (targetElement && targetElement.classList) {
         targetElement.classList.toggle('vitals-critical', state.isCritical);

@@ -51,3 +51,11 @@ describe('audioJuice', () => {
         });
     });
 });
+
+describe('one SFX pitch spread (audio.js uses this module)', () => {
+    it('keeps the shipped ±5% spread', () => {
+        expect(AUDIO_JUICE_CONFIG.SFX_PITCH_VARIANCE).toBe(0.05);
+        expect(getModulatedPlaybackRate(1, AUDIO_JUICE_CONFIG.SFX_PITCH_VARIANCE, () => 0)).toBeCloseTo(0.95);
+        expect(getModulatedPlaybackRate(1, AUDIO_JUICE_CONFIG.SFX_PITCH_VARIANCE, () => 0.999999)).toBeCloseTo(1.05);
+    });
+});
