@@ -14590,16 +14590,14 @@ async function showCardThenScene(specOrId, openScene, options = {}) {
         opened = true;
         await openScene?.();
     };
-    let result = { shown: false };
     try {
-        result = await songInterstitial.show(specOrId, {
+        return await songInterstitial.show(specOrId, {
             ...options,
             onBehindDoors: typeof openScene === 'function' ? open : null
         });
     } finally {
         await open();
     }
-    return result;
 }
 window.showCardThenScene = showCardThenScene;
 
@@ -14988,6 +14986,11 @@ function openCinematicBeatScene(beat, detail = {}) {
     const game = window.game;
     if (!game || !leaderConversationModal?.classList.contains('hidden')) return;
     if (beat.then === 'camp-conversation') {
+        if (detail.hiveId) {
+            const hive = game.getHiveById?.(detail.hiveId);
+            if (hive) game.openHiveChoice?.(hive);
+            return;
+        }
         const camp = game.getCampById?.(detail.campId);
         const here = game.player
             ? game.getActionableCampAt?.(game.player.position.x, game.player.position.z)?.camp
@@ -15010,6 +15013,8 @@ function openCinematicBeatScene(beat, detail = {}) {
                 beatType: 'beat',
                 stage: 0,
                 leaderName: 'Aria',
+                leaderTitle: 'Specimen 0047-B',
+                leaderClassId: 'HIVE MIMIC',
                 relationship: { bond: 0 },
                 progress: { stage: 0 }
             }

@@ -47,9 +47,10 @@ const LEADER_IDENTITIES = Object.freeze({
     aria: Object.freeze({
         id: 'aria',
         name: 'Aria',
+        title: 'Specimen 0047-B',
         portrait: '/lore_portraits/queen_00.webp',
         sprite: '/civilian_researcher_walk.png',
-        classId: 'SCOUT',
+        classId: 'HIVE MIMIC',
         accent: '#00f0ff',
         modelUrl: '/3d/runtime/new3ds/npc_aria.glb'
     })
@@ -88,7 +89,7 @@ export function resolveLeaderIdentity(detail = {}) {
     return {
         id: key ?? detail.id ?? 'unknown',
         name: detail.leaderName || known?.name || 'SURVIVOR',
-        title: detail.leaderTitle || '',
+        title: detail.leaderTitle || known?.title || '',
         callsign: detail.leaderCallsign || '',
         portrait: detail.portrait || known?.portrait || '/lore_portraits/survivor_00.webp',
         sprite: detail.sprite || known?.sprite || '/civilian_researcher_walk.png',

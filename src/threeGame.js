@@ -20409,6 +20409,18 @@ export class ThreeGame {
         const record = this.getHiveRecord(hive.id);
         if (!record) return false;
         const character = ACT2_HIVE_SITES.find((s) => s.id === hive.id);
+        this._seenHiveFirstContact ??= new Set();
+        if (!this._seenHiveFirstContact.has(hive.id)) {
+            this._seenHiveFirstContact.add(hive.id);
+            window.dispatchEvent(new CustomEvent('hive-first-contact', {
+                detail: {
+                    hiveId: hive.id,
+                    campId: hive.id,
+                    campLabel: hive.label,
+                    campState: record
+                }
+            }));
+        }
         window.dispatchEvent(new CustomEvent('camp-choice-open', {
             detail: {
                 hiveId: hive.id,

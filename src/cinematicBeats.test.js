@@ -48,8 +48,16 @@ describe('cinematic beat table (audit 2026-10-16 §13.2)', () => {
         // The tier is re-announced on spawn and respawn (forceEmit, no
         // crossing): that is not the player going deeper.
         expect(matchBeat('depth-tier-changed', { tier: 3 })).toBeNull();
-        expect(matchBeat('queen-hallucination', {}, new Set(['aria_voice']))).toBeNull();
+        expect(matchBeat('ship-module-activated', {})?.card).toBe('05');
+        expect(matchBeat('hive-first-contact', { hiveId: 'hive_suture' })?.card).toBe('08');
+        expect(matchBeat('player-respawned', {})?.card).toBe('09');
+        expect(matchBeat('queen-fight-started', {})?.card).toBe('12');
+        expect(matchBeat('hive-choice-resolved', { action: 'hive-tend' })?.card).toBe('16');
+        expect(matchBeat('hive-choice-resolved', { action: 'hive-harvest' })).toBeNull();
+        expect(matchBeat('act2-departed', {})?.card).toBe('24');
+        expect(matchBeat('act2-milestone', { key: 'queenKilled' })?.card).toBe('31');
         expect(CINEMATIC_BEAT_EVENTS).toContain('queen-hallucination');
+        expect(CINEMATIC_BEAT_EVENTS).toContain('ship-module-activated');
     });
 });
 

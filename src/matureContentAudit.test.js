@@ -98,10 +98,14 @@ describe('MatureContentAudit', () => {
         // in play each node with an interstitial plays its artwork first.
         const base = 'file:///C:/Steam/Hunker%20Bunker/resources/app.asar/dist/index.html';
         const blocks = buildDialogueReaderBlocks(NPC_DIALOGUE_TREES.sister_val, base);
+        // Greetings carry no card (first contact already played the camp's);
+        // the hearth card plays on the trusted node (audit 2026-10-16 §13.6).
         const greeting = blocks.find((b) => b.nodeId === 'val_greeting');
-        expect(greeting.image).toBe('file:///C:/Steam/Hunker%20Bunker/resources/app.asar/dist/interstitials/int_val_hearth_warmth_key_v1.webp');
-        expect(greeting.alt).toMatch(/Sister Martha/);
+        expect(greeting.image ?? null).toBeNull();
         expect(greeting.text).toContain(NPC_DIALOGUE_TREES.sister_val.nodes.val_greeting.dialogue);
+        const trusted = blocks.find((b) => b.nodeId === 'val_trusted');
+        expect(trusted.image).toBe('file:///C:/Steam/Hunker%20Bunker/resources/app.asar/dist/interstitials/int_val_hearth_warmth_key_v2.webp');
+        expect(trusted.alt).toMatch(/Sister Martha/);
         const climax = blocks.find((b) => b.nodeId === 'val_intimate_climax');
         expect(climax.image).toContain('/interstitials/');
         // Same reachable nodes, same text, as the plain transcript.

@@ -261,7 +261,7 @@ describe('song interstitial manifest', () => {
             const spec = getSongInterstitial(key);
             expect(spec).toBeTruthy();
             expect(spec.id).toBe(key);
-            expect(spec.image).toMatch(/^\/interstitials\/int_.*_key_v1\.webp$/);
+            expect(spec.image).toMatch(/^\/interstitials\/int_.*_key_v[12]\.webp$/);
             expect(spec.audio).toMatch(/^\/audio\/ost\/.*\.mp3$/);
             expect(spec.musicKey).toMatch(/^music_interstitial_\d\d$/);
             expect(getSideStoryInterstitial(key)).toBe(spec);

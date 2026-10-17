@@ -41,7 +41,15 @@ export const CINEMATIC_BEATS = Object.freeze([
 
     { id: 'deep_tier', on: 'depth-tier-changed', when: (d) => Boolean(d?.crossing) && Number(d?.tier) >= 2, card: '14', then: 'gameplay', priority: 'flavour' },
     { id: 'first_infection', on: 'infection-stage-changed', when: (d) => Number(d?.stage) >= 1, card: '15', then: 'gameplay', priority: 'flavour' },
-    { id: 'snail_friend', on: 'snail-befriended', card: '18', then: 'gameplay', priority: 'flavour' }
+    { id: 'snail_friend', on: 'snail-befriended', card: '18', then: 'gameplay', priority: 'flavour' },
+
+    { id: 'ship_module_online', on: 'ship-module-activated', card: '05', then: 'gameplay', priority: 'flavour' },
+    { id: 'nahl_tissue', on: 'hive-first-contact', when: (d) => d?.hiveId === 'hive_suture' || d?.campId === 'hive_suture', card: '08', then: 'camp-conversation', priority: 'camp' },
+    { id: 'first_respawn', on: 'player-respawned', card: '09', then: 'gameplay', priority: 'flavour' },
+    { id: 'queen_offer', on: 'queen-fight-started', card: '12', then: 'gameplay', priority: 'story', boss: true },
+    { id: 'hive_nonviolent', on: 'hive-choice-resolved', when: (d) => ['hive-tend', 'hive-talk', 'hive-quest', 'hive-parley'].includes(d?.action) || (d?.bond > 0 && d?.action !== 'hive-harvest' && d?.action !== 'hive-sacrifice'), card: '16', then: 'camp-conversation', priority: 'camp' },
+    { id: 'act2_departure', on: 'act2-departed', card: '24', then: 'gameplay', priority: 'story' },
+    { id: 'queen_defeated', on: 'act2-milestone', when: (d) => d?.key === 'queenKilled', card: '31', then: 'gameplay', priority: 'story' }
 ].map((beat) => Object.freeze(beat)));
 
 export const CINEMATIC_BEAT_EVENTS = Object.freeze([...new Set(CINEMATIC_BEATS.map((beat) => beat.on))]);

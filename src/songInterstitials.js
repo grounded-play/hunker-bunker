@@ -25,14 +25,18 @@ export const SONG_INTERSTITIALS = Object.freeze(Object.fromEntries(TITLES.map((t
     const number = index + 1;
     const id = String(number).padStart(2, '0');
     const slug = slugify(title);
+    const hasMotion = number <= 32;
     return [id, Object.freeze({
         id,
         title,
+        status: hasMotion ? 'final' : 'still',
         image: `/interstitials/int_${id}_${slug}_key_v1.webp`,
         // Full-quality pristine MP4 with native audio, plus WebM fallback
-        motionMp4: `/interstitials/int_${id}_${slug}_key_v1.mp4`,
-        motion: `/interstitials/motion/int_${id}_${slug}_motion_v1.webm`,
-        motionWebm: `/interstitials/motion/int_${id}_${slug}_motion_v1.webm`,
+        ...(hasMotion ? {
+            motionMp4: `/interstitials/int_${id}_${slug}_key_v1.mp4`,
+            motion: `/interstitials/motion/int_${id}_${slug}_motion_v1.webm`,
+            motionWebm: `/interstitials/motion/int_${id}_${slug}_motion_v1.webm`,
+        } : {}),
         audio: `/audio/ost/${title.replace(/:/g, '')}.mp3`,
         musicKey: `music_interstitial_${id}`,
         alt: `${title} interaction illustration`
@@ -45,7 +49,8 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         title: 'Warmth of the Suture',
         character: 'Sister Martha',
         camp: 'Camp Tallow',
-        image: '/interstitials/int_val_hearth_warmth_key_v1.webp',
+        status: 'still',
+        image: '/interstitials/int_val_hearth_warmth_key_v2.webp',
         audio: '/audio/ost/Warmth Beneath the Ice.mp3',
         musicKey: 'music_interstitial_04',
         alt: 'Sister Martha warming the survivor hands at the geothermal hearth'
@@ -55,6 +60,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         title: 'Botanical Spore Oil',
         character: 'Sister Martha',
         camp: 'Camp Tallow',
+        status: 'still',
         image: '/interstitials/int_val_spore_communion_key_v1.webp',
         audio: '/audio/ost/Tallow Keeps the Steam.mp3',
         musicKey: 'music_interstitial_20',
@@ -65,6 +71,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         title: 'The Eternal Hearth',
         character: 'Sister Martha',
         camp: 'Camp Tallow',
+        status: 'still',
         image: '/interstitials/int_val_eternal_hearth_key_v1.webp',
         audio: '/audio/ost/Warmth Beneath the Ice.mp3',
         musicKey: 'music_interstitial_04',
@@ -75,7 +82,8 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         title: 'The Scorched Rig',
         character: 'Commander Briggs',
         camp: 'Camp Vesper',
-        image: '/interstitials/int_briggs_scorched_rig_key_v1.webp',
+        status: 'still',
+        image: '/interstitials/int_briggs_scorched_rig_key_v2.webp',
         audio: '/audio/ost/Briggs Keeps the Ledger.mp3',
         musicKey: 'music_interstitial_06',
         alt: 'Commander Briggs resting at the smoking barricade'
@@ -85,6 +93,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         title: 'Scar Tissue',
         character: 'Commander Briggs',
         camp: 'Camp Vesper',
+        status: 'still',
         image: '/interstitials/int_briggs_scar_tissue_key_v1.webp',
         audio: '/audio/ost/Vesper Sleeps in Shifts.mp3',
         musicKey: 'music_interstitial_21',
@@ -95,6 +104,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         title: 'Vanguard Unyielding',
         character: 'Commander Briggs',
         camp: 'Camp Vesper',
+        status: 'still',
         image: '/interstitials/int_briggs_vanguard_fire_key_v1.webp',
         audio: '/audio/ost/Briggs Became the Barricade.mp3',
         musicKey: 'music_interstitial_29',
@@ -105,7 +115,8 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         title: 'Diagnostic Cradle',
         character: 'Overseer Kaelen',
         camp: 'Camp Meridian',
-        image: '/interstitials/int_kaelen_diagnostic_cradle_key_v1.webp',
+        status: 'still',
+        image: '/interstitials/int_kaelen_diagnostic_cradle_key_v2.webp',
         audio: "/audio/ost/Kaelen's Sleeping Machine.mp3",
         musicKey: 'music_interstitial_02',
         alt: 'Overseer Kaelen at the cyan neural diagnostic cradle'
@@ -115,7 +126,8 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         title: 'Frequency Overclock',
         character: 'Overseer Kaelen',
         camp: 'Camp Meridian',
-        image: '/interstitials/int_kaelen_frequency_overclock_key_v1.webp',
+        status: 'still',
+        image: '/interstitials/int_kaelen_frequency_overclock_key_v2.webp',
         audio: '/audio/ost/Meridian Remembers You.mp3',
         musicKey: 'music_interstitial_19',
         alt: 'Overseer Kaelen and player connecting bio-link terminal'
@@ -125,6 +137,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         title: 'Supercharged Matrix',
         character: 'Overseer Kaelen',
         camp: 'Camp Meridian',
+        status: 'still',
         image: '/interstitials/int_kaelen_supercharged_matrix_key_v1.webp',
         audio: '/audio/ost/Kaelen Is the Grid.mp3',
         musicKey: 'music_interstitial_30',
@@ -135,6 +148,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         title: 'Whispers in the Abyss',
         character: 'Specimen 0047-B Aria',
         camp: 'The Hive Brood',
+        status: 'still',
         image: '/interstitials/int_aria_whispers_abyss_key_v1.webp',
         audio: '/audio/ost/Her Voice Inside Your Helmet.mp3',
         musicKey: 'music_interstitial_11',
@@ -145,6 +159,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         title: 'The Silk Trance',
         character: 'Specimen 0047-B Aria',
         camp: 'The Hive Brood',
+        status: 'still',
         image: '/interstitials/int_aria_silk_trance_key_v1.webp',
         audio: '/audio/ost/The Queen Makes a Reasonable Offer.mp3',
         musicKey: 'music_interstitial_12',
@@ -155,6 +170,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         title: "The Queen's Mark",
         character: 'Specimen 0047-B Aria',
         camp: 'The Hive Brood',
+        status: 'still',
         image: '/interstitials/int_aria_queens_mark_key_v1.webp',
         audio: '/audio/ost/Mother of the Last World.mp3',
         musicKey: 'music_interstitial_31',
@@ -165,7 +181,8 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         title: 'Synaptic Inoculation',
         character: 'Dr. Nahl (Bio-Resonant)',
         camp: 'Renegade Bio-Resonant',
-        image: '/interstitials/int_nahl_mind_link_key_v1.webp',
+        status: 'still',
+        image: '/interstitials/int_nahl_mind_link_key_v2.webp',
         audio: '/audio/ost/Dr. Nahl Remembers the Tissue.mp3',
         musicKey: 'music_interstitial_08',
         alt: 'Dr. Nahl establishing voluntary neural handshake'
@@ -175,6 +192,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         title: 'Cellular Empathy',
         character: 'Dr. Nahl (Bio-Resonant)',
         camp: 'Renegade Bio-Resonant',
+        status: 'still',
         image: '/interstitials/int_nahl_co_evolution_key_v1.webp',
         audio: '/audio/ost/Dr. Nahl Remembers the Tissue.mp3',
         musicKey: 'music_interstitial_08',
@@ -185,6 +203,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         title: 'Neural Sovereignty',
         character: 'Dr. Nahl (Bio-Resonant)',
         camp: 'Renegade Bio-Resonant',
+        status: 'still',
         image: '/interstitials/int_nahl_transcendence_key_v1.webp',
         audio: '/audio/ost/We Escaped Together, Technically.mp3',
         musicKey: 'music_interstitial_36',
@@ -267,7 +286,7 @@ export class SongInterstitialController {
 
     loadMotion(spec) {
         return new Promise((resolve) => {
-            if (!this.video || (!spec.motion && !spec.motionWebm)) return resolve(false);
+            if (spec?.status === 'still' || !this.video || (!spec?.motion && !spec?.motionWebm)) return resolve(false);
             let settled = false;
             let triedFallback = false;
             const done = (loaded) => {

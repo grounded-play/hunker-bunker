@@ -36,6 +36,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
                 id: 'val_trusted',
                 tier: 'trusted',
                 speaker: "Sister Martha",
+                interstitial: 'val_hearth_warmth',
                 narration: "She hands you a bowl of warm balm and a roll of clean gauze and doesn't explain. You learn by watching her hands.",
                 dialogue: "Thin layer. Wrap it loose; the skin needs to breathe. ...Good. You have patient hands for someone who carries a gun. Take some of the balm with you. It keeps the cold out of your joints.",
                 bondDelta: 20,
@@ -89,7 +90,6 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             val_greeting: {
                 id: 'val_greeting',
                 speaker: 'Sister Martha',
-                interstitial: 'val_hearth_warmth',
                 narration: "Martha looks up from a kettle of warm resin balm, takes in the frost on your suit, and points to a stool by the pipes.",
                 dialogue: "Sit before you fall. That suit is bleeding heat. We keep the steam running in Tallow and the moss keeps us fed, and lately something red has been eating the hydro beds. Warm your hands first. Questions after.",
                 choices: [
@@ -252,6 +252,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
                 id: 'briggs_trusted',
                 tier: 'trusted',
                 speaker: "Commander Briggs",
+                interstitial: 'briggs_scorched_rig',
                 narration: "He lays two rifles on the oilcloth, stripped, and starts a timer.",
                 dialogue: "Strip, clean, assemble. Again. Faster. ...Not bad. You move like someone who's been shot at and decided to keep moving. Keep that. It'll carry you further than armor.",
                 bondDelta: 20,
@@ -300,7 +301,6 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             briggs_greeting: {
                 id: 'briggs_greeting',
                 speaker: 'Commander Briggs',
-                interstitial: 'briggs_scorched_rig',
                 narration: "Briggs looks you over from boots to visor without lowering his rifle, the way he would inspect a recruit.",
                 dialogue: "You walked the corridor gauntlet on your own. Either you're good or you're lucky. Vesper has a use for both. Ammunition is rationed, the barricade holds, and nobody sleeps on my watch without earning it.",
                 choices: [
@@ -462,6 +462,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
                 id: 'kaelen_trusted',
                 tier: 'trusted',
                 speaker: "Overseer Kaelen",
+                interstitial: 'kaelen_diagnostic_cradle',
                 narration: "He hesitates, then lowers himself into the half-ring diagnostic cradle and hands you the calibration probe.",
                 dialogue: "Left port, behind the ear. Gently. The grid talks back through it, and lately it's been saying things I don't like. ...There. That's the first quiet I've had in a week. Take this tuning profile. Your radar will reach further.",
                 bondDelta: 20,
@@ -510,7 +511,6 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             kaelen_greeting: {
                 id: 'kaelen_greeting',
                 speaker: 'Overseer Kaelen',
-                interstitial: 'kaelen_diagnostic_cradle',
                 narration: "Kaelen glances up from a gutted junction box, welding goggles pushed into his graying hair, and does not put the soldering iron down.",
                 dialogue: "Another suit from the surface. The grid is holding, barely, on jumper cables and stubbornness. If you're staying, make yourself useful. If you're not, mind the live cables on the way out.",
                 choices: [
