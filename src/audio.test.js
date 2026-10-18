@@ -252,3 +252,16 @@ describe('elite suit warning', () => {
         expect(AudioManager.playEliteWarning()).toBe(true);
     });
 });
+
+describe('stalker hiss telegraph', () => {
+    it('respects mute and audio-unlock settings', () => {
+        AudioManager.init();
+        AudioManager.isUnlocked = false;
+        expect(AudioManager.playStalkerHiss()).toBe(false);
+        AudioManager.isUnlocked = true;
+        AudioManager.globalMuted = true;
+        expect(AudioManager.playStalkerHiss()).toBe(false);
+        AudioManager.globalMuted = false;
+        expect(AudioManager.playStalkerHiss()).toBe(true);
+    });
+});

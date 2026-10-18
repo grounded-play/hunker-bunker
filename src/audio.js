@@ -1357,6 +1357,48 @@ export class AudioManager {
         return true;
     }
 
+    // Predatory biological hiss and mandible chitter for the Mycelium Stalker telegraph
+    static playStalkerHiss(options = {}) {
+        if (this.globalMuted || !this.isUnlocked || !audioCtx || !this.sfxGain) return false;
+        const now = audioCtx.currentTime;
+        const volume = Math.max(0.01, Math.min(0.4, Number(options.volume ?? 0.16)));
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const filter = typeof audioCtx.createBiquadFilter === 'function' ? audioCtx.createBiquadFilter() : null;
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(2600, now);
+        osc.frequency.exponentialRampToValueAtTime(950, now + 0.3);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(volume, now + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+
+        if (filter) {
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(2200, now);
+            filter.Q.setValueAtTime(3.5, now);
+            osc.connect(filter);
+            filter.connect(gain);
+        } else {
+            osc.connect(gain);
+        }
+
+        gain.connect(this.worldGain || this.sfxGain);
+        osc.onended = () => {
+            try {
+                osc.disconnect();
+                filter?.disconnect();
+                gain.disconnect();
+            } catch {
+                // Audio nodes may already be disconnected during teardown.
+            }
+        };
+        osc.start(now);
+        osc.stop(now + 0.34);
+        return true;
+    }
+
     static playProceduralHover(options = {}) {
         if (this.globalMuted || !this.isUnlocked) return;
         

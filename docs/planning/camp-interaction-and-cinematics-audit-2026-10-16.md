@@ -1,17 +1,19 @@
 # Camp Interactions, Dialogue, Cinematics and World Props: Audit and Plan
 
 **Document ID:** `HB-AUDIT-2026-10-16-CAMP-CINEMATICS`
-**Date:** 2026-10-16, revised the same evening against the live server logs.
+**Date:** 2026-10-16; revised 2026-10-18 against the live server logs and the Definitive First Expedition implementation.
 **Status:**
 - Live-play log review complete (§2).
 - Option gating, choice memory and the leader-tree fix have shipped (§5).
-- Everything from §6 on is a plan awaiting owner review, apart from the decisions in §0.2.
+- Door-bookended cards, all 32 song-card triggers, side-story still fallbacks and the first three in-engine interaction sequences have shipped (§13.6).
+- Sector 0 and safe-camp Field Recalibration are committed; the Mycelium Stalker redesign is present in the working tree but is not yet a committed/shipped baseline (§14).
+- Remaining work is summarized in §0 and §12. Do not read proposal-era wording in §8 or §13 as current status without checking their Status columns/logs.
 
 **Ingest paths:**
 
 | Kind | Paths |
 |---|---|
-| Code | `src/threeGame.js`, `src/npcDialogueTrees.js`, `src/data/campDialogue.js`, `src/act2.js`, `src/songInterstitials.js`, `src/propInteractions.js`, `src/propExperience.js`, `src/propFx.js` |
+| Code | `src/threeGame.js`, `src/npcDialogueTrees.js`, `src/data/campDialogue.js`, `src/act2.js`, `src/songInterstitials.js`, `src/cinematicBeats.js`, `src/interactionSequenceRunner.js`, `src/sectorZeroTutorial.js`, `src/fieldWorkbenchUi.js`, `src/fieldRecalibration.js`, `src/propInteractions.js`, `src/propExperience.js`, `src/propFx.js` |
 | Video | `public/cutscenes/`, `public/interstitials/`, `public/interstitials/motion/` |
 | Models | `public/3d/runtime/new3ds/` (the world-expansion props in §8 are registered) |
 
@@ -26,16 +28,18 @@
 | **P0** | ~~Gate intimate choices; remember choices; pay rewards once~~ **done** | 3 of 4 live conversations offered intimacy in the first 30 s and repeated it on the next visit (§2) | shipped `b4bedd83`, `be2bf7b8`, `63610473` |
 | **P0** | ~~Open the tree of the leader standing there~~ **done** | Deck 2026-10-07: "TALK — SISTER MARTHA" at Meridian opened Kaelen's lines | shipped `dfbe80c9` |
 | **P0** | Decide D-1 (leader rotation versus camp identity) | Martha can lead Meridian while its quest says "SIGN KAELEN'S LEDGER" | owner decision |
+| **P0** | Capture a fresh-profile packaged Proof Run after the 2026-10-17 changes | the newest hosted capture is 2026-10-16, so no live upload proves Sector 0, recalibration, the real sequence runner or the new Stalker | one desktop and one Deck upload show Sector 0 → Ring 1 → first safe camp → recalibration; attach video for visual judgments |
 | **P1** | Give Meridian's first meeting a real Stranger tier, for whichever leader is there | Meridian is the **only** camp any logged player reached (188 runs) | each leader's tree has Stranger content |
 | **P1** | Move perks off intimate branches | after gating, 4 of the 5 human perks are reachable only through intimacy | each leader has a perk on a non-intimate path |
 | **P1** | One conversation grammar: sentence case, chip tags, ≤ 4 choices; delete the dead standalone modal | lines clicked through about 2 s apart; staged line closed after 1 s | one layout at a camp |
 | **P1** | Dialogue telemetry: `DIALOGUE open/line/choice/close` with leader, node, ms on screen and close reason | the logs only show clicks; we inferred everything in §2 from button text | a session log answers "what did they read and pick" |
-| **P2** | Interaction-sequence runner + the first three sequences (§8): Meridian first meeting, Grid Covenant, first night on the cot | no in-world staging exists outside the O2 doors | skip applies the end state; a missing asset falls back to its card |
-| **P2** | Commission the clips in §10 (P1 rows first) | 14 of 15 side-story cards play another scene's video; 1 has none | each slot has its own clip or a still |
+| **Done** | Interaction-sequence runner + S-1, S-3 and S-11 (§8) | shipped `fe664c2e`; headed browser proof recorded in §13.6 | each plays once; skip applies the end state; missing anchor applies the end state |
+| **P2** | Commission the clips in §10 (P1 rows first) | borrowed clips are removed, but all 15 side stories and cards 33–38 still use their own stills rather than final motion | each commissioned slot is `final`; uncommissioned slots remain honest `still` fallbacks |
 | **P2** | Trees into i18n; voice the tree lines | 0 tree lines recorded or translated | the i18n audit passes; recorded lines play |
-| **P1** | Door bookends + every song video triggered (§13): doors shut → video → doors shut → conversation over gameplay | owner ask 2026-10-16; 22 of 32 videos never play; side-story cards have no caller | first Meridian visit plays doors → 02 → doors → Kaelen's window |
-| **P1** | Finish the other agent's runner glue (§13.4) | its subtitle/resume/perk events have no listener; S-1 double-cards | the runner's lines, resume and perk are visible in play |
-| **P3** | Vey and Rhun covenant trees; Aria only in a Queen context | no trees exist | each hive being has offered/accepted/refused |
+| **Done** | Door bookends + every song video triggered (§13): doors shut → video → doors shut → conversation over gameplay | shipped across §13.6; all 32 cards mapped | packaged Proof Run still required |
+| **P1** | Add first-expedition continuity telemetry (§14.3) | current logs cannot answer whether players completed Sector 0, used the skip, saw S-1, or understood recalibration | one upload reconstructs the complete onboarding-to-camp chain without inferring it from clicks |
+| **P2** | Add S-17, the Field Recalibration install beat (§14.2) | recalibration applies correctly but resolves as a menu selection plus bunker line | selection → close UI → walk to workbench socket → install chosen module → visible weapon/bench pulse → return control |
+| **P3** | Vey and Rhun covenant trees | Aria is now Queen-gated, but Vey and Rhun still have no trees | each hive being has offered/accepted/refused |
 | **P3** | Check the three `camp_fire_loop` plays at run start | three plays within 13 ms (one per camp?) | one loop per audible camp |
 
 ### 0.2 Decisions needed
@@ -109,7 +113,18 @@ The previous revision of §2 contained claims the logs do not support:
 | Players arrived "at Camp Tallow" | Tallow never appears |
 | A 35.6 s freeze "when closing the dialogue modal" | the co-op freeze was a shader-compile stall unrelated to dialogue (`qa-2026-10-15-pve-coop-session.md`) |
 | The §9 trigger items (`tallow_pipe_keepsake`, `meridian_logic_core`, `vanguard_dogtags`, `carapace_lifting_tether`, `pale_suture_resin`, `relic_frequency_crystal`) | none exists in the game; §8 now uses real hooks |
-| `src/interactionSequenceRunner.js` "utilizes" | the file doesn't exist; it is proposed |
+| `src/interactionSequenceRunner.js` "utilizes" | at the time of the first log review the file did not exist; it shipped afterward and is verified in §13.6 |
+
+### 2.4 Evidence boundary after the 2026-10-17 implementation
+
+The hosted server still lists 85 captures, and the newest upload is `2026-10-16T02:19:48.091Z`. Therefore:
+
+- §2.2 is valid evidence for the problems players saw before the fixes.
+- The shipped status in §5 and §13.6 is supported by code, unit tests and headed-browser checks, not by a later packaged live-play upload.
+- Sector 0, Field Recalibration and Sub-Zero Necrosis are committed implementation. They still need the packaged Proof Run in §14.4.
+- The Mycelium Stalker flanking/pounce redesign and its tests exist only as uncommitted working-tree changes as of this revision. Treat them as **implemented locally, not shipped** until committed and built.
+
+Do not use old logs to claim that a new flow is readable, paced correctly or controller-safe. Logs can prove event order and timing once telemetry exists; video and a human route are still required for camera composition, animation quality and player comprehension.
 
 ---
 
@@ -317,9 +332,9 @@ Every trigger below is a hook that already exists in the code. Every prop is reg
 
 | # | When (X) | Where (Y) | Who | Interaction (Z) | Fires | Status |
 |---|---|---|---|---|---|---|
-| S-1 | First TALK after `act2-milestone {key: campDiscovered}` at Meridian | `meridian_logic_core_drum` (Meridian core) | Leader + player | the leader walks the player to the grid drum, palm on the housing, lights steady; offers `lost_probe` | quest offer (`quest-offer`) | runner + lines |
+| S-1 | First TALK after `act2-milestone {key: campDiscovered}` at Meridian | `meridian_logic_core_drum` (Meridian core) | Leader + player | the leader holds position and gestures while the player walks to the grid drum; lights steady; offers `lost_probe` | quest offer (`quest-offer`) | **Shipped** `fe664c2e`; leader walk cycle remains an animation gap |
 | S-2 | `lost_probe` objective reached (quest object `quest_lost_probe`), then TALK | `meridian_probe_return_catchframe` | Leader + player | the player sets the probe in the catch-frame; the jaws close; the leader pulls the core | `camp-quest-progress` (lost_probe done), bond +1 | runner + place prop in a Meridian room |
-| S-3 | `grid_covenant` (signature) accepted | `meridian_grid_covenant_seal` | Leader + player | both palms on the witness plate; the bus bars swing shut; cyan crown | quest complete, bond +2; prop state `signed` | runner + prop states |
+| S-3 | `grid_covenant` (signature) accepted | `meridian_grid_covenant_seal` | Leader + player | the player walks to the seal; the leader gestures; the knife switch closes and arcs | quest complete, bond +2, Meridian Neural Overclock; prop state `signed` | **Shipped** `fe664c2e`; replace the current single-actor blocking with two-actor contact once leader locomotion exists |
 | S-4 | `reactor_venting` started | `meridian_reactor_vent_load_selector` (`reactor_vent_station` room) | Player (the leader on radio) | choose the branch that takes the surge; the vent shroud glows | quest complete; chosen branch room dims | runner + branch effect |
 | S-5 | `spore_cleansing` started at Tallow | `tallow_red_mold_quarantine_loom` | Leader + player | the leader draws the filter; the player clips the sample; seal | quest progress; loom `sealed` | runner |
 | S-6 | `lost_cultist` found (`quest_cultist_shrine` landmark) | `tallow_cultist_escort_tether_reel` | Player, cultist, leader | the player reels the line in; the cultist stumbles out; the leader catches them | quest complete; a camp resident is added | runner + escort follower |
@@ -327,16 +342,18 @@ Every trigger below is a hook that already exists in the code. Every prop is reg
 | S-8 | `armory_breach` cleared | `vesper_robbed_armory_shadowboard` (stocked state) | Leader + player | the player rehangs the rifles; the leader checks each outline | quest complete | runner + prop states |
 | S-9 | `bunker_holdout` wave survived | `vesper_defense_grid_fire_director` | Leader + player | the leader hands over the yoke; one tracking sweep | quest complete | runner |
 | S-10 | `iron_ledger` (signature) complete | `vesper_iron_ledger_totem` | Leader + player | the leader opens the witness lock and cuts the player's tally on the blank leaf | quest complete, bond +2; prop `amended` | runner |
-| S-11 | `base-module-installed` with `cot_bed` | the berth / `base_cot_installed` | Player (Mothership voice) | the player sits on the cot; the berth lamp warms; Mothership line | first-night prompt; `sleep-bunker` on rest | runner (short) |
+| S-11 | `base-module-installed` with `cot_bed` | the berth / `base_cot_installed` | Player (Mothership voice) | the player walks to the cot; the berth lamp warms; Mothership line | first-night prompt; `sleep-bunker` on rest | **Shipped** `fe664c2e`; sitting animation remains a polish gap |
 | S-12 | `ship-rebuild-progress` (life-support core installed) | ship life-support socket | Player | the player seats the core; ship lights cascade on | Mothership line; rebuild 1/4 | runner (short) |
 | S-13 | `black-box-recovered` | the black box | Player | the player kneels; the last moments replay as an **image cutscene** (3 stills + the death line) | the black-box codex entry | image cutscene |
 | S-14 | `hive-choice-resolved` (accept) at Suture / Relay / Carapace | `nahl_covenant_suture_knot` / `vey_covenant_twin_listening_cowl` / `rhun_covenant_weight_stone` | Hive being + player | bind the knot / stand in the cowl / lift the stone together | covenant state; tree tier | runner + trees for Vey and Rhun |
 | S-15 | `camp-choice-resolved` (grow / rob / recruit / turn) | the outcome prop (Meridian: `meridian_grid_restored_bus_crown` / `meridian_robbed_stripped_transformer_carcass` / `meridian_recruited_packdown_sled` / `meridian_turned_resin_choked_breaker_gallery`) | Leader (or the empty camp) + player | an aftermath walk to the changed prop | camp outcome state | runner + outcome props in rooms |
 | S-16 | Act 2 boarding, manifest open | `evac_passenger_muster_abacus` | Player + boarding NPCs | slide a bead per passenger; the stop drops at four | the manifest commits | runner |
 
-**First three to build:** S-1, S-3, S-11. Meridian is the only camp players reach (F-1), and the cot is every run's first night.
+**Next three to build:** S-2, S-7 and S-10. They establish the reusable pattern the owner asked for: retrieve a real quest object, return to the correct camp, walk with the leader to a named prop, place/use the object, apply the persistent prop state, grant the result once, and return to the conversation. S-1, S-3 and S-11 are already live.
 
 ### 8.2 Sequence format
+
+This is the target two-actor choreography. The shipped S-1 currently walks the player while the leader holds position and gestures; use this fuller form once camp leaders have locomotion clips.
 
 ```js
 {
@@ -353,10 +370,14 @@ Every trigger below is a hook that already exists in the code. Every prop is reg
         { do: 'fx', anchor: 'core', effect: 'grid_steady' },
         { do: 'line', speaker: 'leader', key: 'narrative.sequences.meridian_first_meeting.0' },
         { do: 'camera', shot: 'conversation', ms: 500 },
-        { do: 'resumeConversation', offer: 'lost_probe' }
+        { do: 'resumeConversation', offer: 'lost_probe' },
+        { do: 'unlockInput' }
     ],
-    skip: 'applyEndStateAndResume',
-    placeholder: { card: 'song:19' }
+    endState: {
+        propStates: { meridian_logic_core_drum: 'active' },
+        questOffer: 'lost_probe'
+    },
+    skip: 'applyEndStateAndResume'
 }
 ```
 
@@ -370,9 +391,9 @@ Every trigger below is a hook that already exists in the code. Every prop is reg
   - **effects:** `propFx`;
   - **choreography precedent:** the O2 doors.
 - Lines are i18n keys, so they can be voiced.
-- Each sequence plays once, and its completion is saved with the quest.
+- Each sequence plays once per campaign; completion is persisted in `hb_cinematics_v1` and reset with campaign-specific state.
 - If an actor model or anchor is missing, the sequence applies its end state. It may play its **own** placeholder card, never another beat's song card (§13.2). The three shipped sequences have none.
-- New runner: `src/interactionSequenceRunner.js` (to create).
+- Runner: `src/interactionSequenceRunner.js` (shipped). New sequences should be data entries plus real anchors, not bespoke modal code.
 
 ---
 
@@ -405,7 +426,7 @@ Every trigger below is a hook that already exists in the code. Every prop is reg
 
 Slots needing clips, in priority order:
 
-| Pri | Slot | Target file | Uses today |
+| Pri | Slot | Target file | Pre-fix borrowed motion (removed) |
 |---|---|---|---|
 | P1 | `kaelen_diagnostic_cradle` | `/interstitials/motion/int_kaelen_diagnostic_cradle_motion_v1.webm` | song 02 clip |
 | P1 | `kaelen_frequency_overclock` | `/interstitials/motion/int_kaelen_frequency_overclock_motion_v1.webm` | song 19 clip |
@@ -558,13 +579,13 @@ Use each card's existing key art (`int_3x_*_key_v1.webp`) as the first frame; on
 
 ## 11. Placeholders and asset status
 
-### 11.1 Status matrix (verified 2026-10-16)
+### 11.1 Status matrix (verified 2026-10-18)
 
 | Slot | Today | Target |
 |---|---|---|
-| Martha, Briggs and Kaelen side cards (9) | still + **another scene's** motion clip | own clip (§10.1–10.3) |
-| Nahl side cards (3) | 2 reuse song 08; `nahl_transcendence` has no clip | own clips (§10.4) |
-| Aria side cards (3) | reuse songs 11, 12 and 31 | own clips (§10.5) |
+| Martha, Briggs and Kaelen side cards (9) | each scene's own still + Ken Burns pan + its OST music; borrowed motion removed | own clip (§10.1–10.3) |
+| Nahl side cards (3) | each scene's own still + Ken Burns pan + its OST music | own clips (§10.4) |
+| Aria side cards (3) | each scene's own still + Ken Burns pan + its OST music; Aria entry is Queen-gated | own clips (§10.5) |
 | Song cards 33–38 | still + music | motion (§10.6) |
 | Sleep camp / cryo / hive / squad | night interstitial | video (§10.7) |
 | Vey, Rhun | no cards, no trees | in-engine covenants (S-14); stills later |
@@ -578,28 +599,26 @@ Every slot resolves down this ladder, and the manifest records which rung it is 
 3. **In-engine stand-in:** the 3D bust or prop, a camera move, the voiced line.
 4. **Title slate:** kicker, title, one line.
 
-> **Rule:** never use another character's or another scene's clip as a placeholder. Today 14 of 15 side-story cards do; until their clips exist, point them at rung 2.
+> **Rule:** never use another character's or another scene's clip as a placeholder. This is now enforced: all 15 side-story cards use rung 2 until their own clips exist.
 
 ---
 
 ## 12. Work plan
 
-| Step | Work | Files | Acceptance |
-|---|---|---|---|
-| 1 | Done: gating, memory, once-only rewards, perk toast, one bond readout, leader-based trees | `src/npcDialogueTrees.js`, `src/threeGame.js` | `npcDialogueTrees.test.js`, `threeGame.campConversation.test.js` |
-| 2 | D-1 decision, then camp identity follows the leader, or the order rotates | `src/act2.js`, `src/data/campQuests.js` | a quest never names a leader who isn't there |
-| 3 | Stranger tier for Kaelen, Martha and Briggs; perks moved to Trusted | `src/npcDialogueTrees.js` | each leader has a perk on a non-intimate path |
-| 4 | One grammar; delete `#npc-dialogue-modal`; residents and wanderers in the window; "DOOR" kicker | `main.js`, `index.html`, `src/data/campDialogue.js` | one layout; the controller path is unchanged |
-| 5 | `DIALOGUE` telemetry (open, line, choice, close, ms) | `main.js` | §2 can be measured, not inferred |
-| 6 | Sequence runner + S-1, S-3, S-11 | `src/interactionSequenceRunner.js` (new), `src/propExperience.js` | each plays once; skip applies the end state; missing asset falls back to its card |
-| 7 | Side-story manifest points at own stills until clips land; `status` field | `src/songInterstitials.js` | no slot plays another scene's clip |
-| 8 | Commission §10 clips (P1 first) | `public/interstitials/motion/`, `public/cutscenes/` | each slot `final` |
-| 9 | Trees into i18n; voice-render the tree lines | `src/npcDialogueTrees.js`, `scripts/voice/` | the i18n audit passes; lines voiced |
-| 10 | Vey and Rhun covenant trees; Aria behind Queen contact | `src/npcDialogueTrees.js` | every hive being has offered/accepted/refused |
-| 11 | Door bookends: doors shut → video → doors shut → open on the conversation (§13.1) | `src/songInterstitials.js`, `main.js`, `style.css` | a card with `then: 'conversation'` never cuts straight from video to a window |
-| 12 | One beat table: every one of the 32 song videos has a trigger (§13.2) | `src/cinematicBeats.js` (new), `main.js` | each row plays once per save; no two cards back to back |
-| 13 | Read `node.interstitial` in the tree choice handler (§13.3) | `main.js` | the 18 tree nodes that name a card play it |
-| 14 | Finish the runner glue (§13.4) | `src/threeGame.js`, `main.js` | lines show, conversation resumes, perk lands, no double card |
+| Order | State | Work | Files | Acceptance |
+|---|---|---|---|---|
+| 1 | **Decision** | Resolve D-1: fixed leader per camp, rotating camp order | `src/act2.js`, `src/data/campQuests.js` | a quest, prop, card and speaker never disagree about who owns the camp |
+| 2 | **Next** | Stranger tier for Kaelen, Martha and Briggs; move power perks to Trusted | `src/npcDialogueTrees.js` | every first meeting is non-intimate; every human perk has a non-intimate path |
+| 3 | **Next** | One grammar; delete `#npc-dialogue-modal`; residents and wanderers in the shared window; "DOOR" kicker | `main.js`, `index.html`, `src/data/campDialogue.js` | one person-facing layout; controller path unchanged |
+| 4 | **Next** | Add dialogue and first-expedition continuity telemetry (§14.3) | `main.js`, `src/threeGame.js`, `src/sectorZeroTutorial.js`, `src/fieldWorkbenchUi.js` | one capture reconstructs open → line → choice → close and Sector 0 → camp → recalibration |
+| 5 | **Next** | Build S-2 lost-probe return, S-7 warm-pipes return and S-10 iron-ledger signing | `src/interactionSequenceRunner.js`, camp dressing/anchors | item acquisition is preserved; skip applies identical quest, reward and prop state; conversation resumes once |
+| 6 | **Next** | Build S-17 Field Recalibration install beat (§14.2) | `src/interactionSequenceRunner.js`, `src/fieldWorkbenchUi.js`, camp workbench dressing | selected card closes into a 4–6 s install at the real bench; co-op peers receive state without forced camera |
+| 7 | **Next** | Move choice trees into i18n and voice-render NPC lines | `src/npcDialogueTrees.js`, `scripts/voice/` | i18n audit passes; narration and player choices remain silent |
+| 8 | **Asset** | Commission §10 motion clips, P1 first | `public/interstitials/motion/`, `public/cutscenes/` | each delivered slot changes from `still` to `final`; no borrowed media |
+| 9 | **Later** | Vey and Rhun covenant trees and S-14 variants | `src/npcDialogueTrees.js`, `src/interactionSequenceRunner.js` | offered, accepted and refused states exist for each hive being |
+| 10 | **Proof** | Fresh-profile packaged run on desktop and Deck, then paired co-op camp/workbench route | hosted session logs + capture video | gates in §14.4 pass; no claim relies on pre-fix logs |
+
+Already complete and no longer backlog: dialogue gating/memory/rewards; leader-based tree selection; door bookends; all 32 song-card triggers; side-story node triggers and own-still fallbacks; Aria Queen gating; persisted runner completions; S-1, S-3 and S-11.
 
 ---
 
@@ -629,7 +648,7 @@ Skip rules (ties to D-3): the skip press jumps to step 3. It never cuts to the w
 
 **Before this work only 9 of the 32 videos ever played** (corrected 2026-10-16 evening): 01, 02, 04, 06 and 22/23 through `camp-first-contact`; 04 (O2 upgrade) and 13/26/27 (snail bosses) through the cutscene path in `main.js:8800`. `selectCampInterstitial` returns 11 for a hive, but `camp-first-contact` is only ever dispatched for camps, so **`int_11` played nowhere**. Nothing opened Aria's tree either. Now: see the **Live** column below and §13.6.
 
-Proposal: one table, `src/cinematicBeats.js`, `{ beat, when, card, then, once }`, listened to in `main.js`. All events below already fire in the code. Rows marked *live* keep their current trigger.
+Implemented as one table in `src/cinematicBeats.js`, `{ beat, when, card, then, once }`, listened to in `main.js`. All events below already fire in the code. Rows marked *live* kept their original trigger.
 
 | Card | Title | When | Then |
 |---|---|---|---|
@@ -676,13 +695,13 @@ Table rules:
 - **Co-op:** doors never close on a player while others fight. A guest gets a toast with the card title, and the clip goes to the codex/museum.
 - A card plays **as itself**. A song clip is never re-used as another scene's side-story card (§11.2 still holds). So int_11 is mapped as track 11 at its own beat (Aria's voice), not borrowed for `aria_whispers_abyss`.
 
-### 13.3 Side-story cards never play today
+### 13.3 Historical gap: side-story cards did not play
 
-The other agent's note says the side-story cards showed borrowed clips on screen. In gameplay they show nothing at all:
+At audit time, the side-story cards did not show borrowed clips in gameplay; they showed nothing at all:
 - 18 tree nodes name an `interstitial:` (`npcDialogueTrees.js:92–853`), but only `matureContentAudit.js` reads the field.
 - `window.playSideStoryInterstitial` (`main.js:14574`) has no caller.
 
-Fix: when a chosen node has `interstitial`, run §13.1 with `then: 'conversation'`. The doors close on the chat, the still pans, and the doors reopen on the next line of the same tree.
+Shipped fix: when a chosen node has `interstitial`, run §13.1 with `then: 'conversation'`. The doors close on the chat, the still pans, and the doors reopen on the next line of the same tree. See §13.6 step 2.
 
 ### 13.4 What the other agent's work changes in this plan
 
@@ -752,6 +771,132 @@ Glue gaps found by reading the diff:
 - **Side-story art & Ken Burns ladder:** Cards 33–38 and all 15 side-story scenes run rung 2 (key-art still + Ken Burns pan + audio) without borrowing other clips. `int_kaelen_frequency_overclock_key_v2.webp` generated and committed to depict Kaelen.
 - **Unshadowed side stories:** `briggs_scorched_rig`, `kaelen_diagnostic_cradle`, and `val_hearth_warmth` now trigger from their respective Trusted nodes instead of being shadowed by camp first-contact greetings.
 - **Aria title:** Window header displays "Specimen 0047-B // HIVE MIMIC" instead of generic "SCOUT".
+
+---
+
+## 14. Definitive First Expedition integration (2026-10-18)
+
+### 14.1 The intended first-run chain
+
+This is the canonical handoff. It should feel like one expedition, not a tutorial followed by unrelated systems.
+
+`Fresh profile` → `Sector 0 phases 1–5` → `cross perimeter blast gate` → `Ring 1 live play` → `discover first safe camp` → `doors / camp card / doors` → `S-1 at the Meridian core` → `Stranger conversation` → `field workbench` → `one recalibration` → `return to expedition with a changed combat verb`
+
+| Beat | Player action | System response | Presentation rule |
+|---|---|---|---|
+| F-1 | Click DEPLOY on a fresh solo profile | `ProfileManager.shouldStartSectorZero()` routes to Sector 0 | no explanatory movie; teach through the playable room |
+| F-2 | Move, equip the sidearm, break the cable, bank salvage, kill the tutorial crawler | `SectorZeroTutorialManager` advances five authored phases | objective and world reaction only; never stack a song card over instruction |
+| F-3 | Cross `perimeter_blast_gate` | dispatch `sector-zero-completed`; persist `hasCompletedSectorZero`; continue into Ring 1 | continuous camera/audio; do not cut to menu or loading-card language |
+| F-4 | Returning player selects **SKIP ONBOARDING** | finish Sector 0 as skipped, open the gate, grant standard sidearm + 25 tech | one confirmation toast; no fake completion montage |
+| F-5 | Enter the first safe camp | existing first-contact card plays between doors | one card only, once per save; simulation blocked in solo |
+| F-6 | First TALK at Meridian | shipped S-1 walks the player to `meridian_logic_core_drum`, plays the line, then opens dialogue | this is the first deliberate story staging after the playable onboarding |
+| F-7 | Use the field workbench | show Supply Fabrication / Field Recalibration tabs; one recalibration per camp | keep this a choice UI until selection; do not play a movie merely for opening the menu |
+| F-8 | Confirm a recalibration | apply cost/mod/synergy, save it, broadcast `field-recalibration-applied` | add S-17 below: a short install animation, then immediate control |
+| F-9 | Trigger the new combat verb | Sub-Zero Necrosis nova, altered weapon behavior or another chosen modifier appears in real combat | feedback belongs in play: FX, audio, hit reaction and debrief telemetry, not another interruption |
+
+### 14.2 S-17: Field Recalibration install sequence
+
+This uses the runner rather than introducing another modal or full-screen movie. The selected card is **X**, the authored workbench socket is **Y**, and seating/calibrating the module is **Z**.
+
+| Field | Specification |
+|---|---|
+| Trigger | local `field-recalibration-applied` after payment and state commit; run only for the local selecting player |
+| X | `detail.choice.id` and its element/rarity; this is a selected module specification, not a world pickup unless a physical cassette model is added |
+| Y | new per-camp sequence anchor `field_recalibration_socket`; resolve it from the workbench the player actually used |
+| Actors | local player; camp leader may watch/gesture only if already present and idle |
+| Z | player walks to the socket, seats the module, workbench clamps close, light color follows the element, weapon emits one safe diagnostic pulse |
+| End state | selected overclock remains equipped, camp use remains spent, synergy toast/debrief record remains authoritative, input returns |
+| Skip | snap to the same equipped state and spent-camp state; never charge or broadcast twice |
+| Co-op | do not seize peer cameras; host-authoritative `field-recalibration-applied` updates peer state and plays a small bench pulse/toast |
+| Failure | if the anchor/model is missing, keep the committed selection and show the normal bunker line; do not roll back payment |
+
+Recommended spec-factory output (the caller fills `campId`, `choiceId` and `elementColor` before passing the object to the existing runner):
+
+```js
+{
+    id: `field_recalibration_install:${campId}:${choiceId}`,
+    trigger: { event: 'field-recalibration-applied', localOnly: true },
+    anchors: { socket: 'field_recalibration_socket' },
+    actors: { player: true },
+    steps: [
+        { do: 'lockInput' },
+        { do: 'camera', shot: 'medium', target: 'socket', ms: 400 },
+        { do: 'walk', actor: 'player', to: { anchor: 'socket', offset: [0, 0, 0.55] } },
+        { do: 'prop', anchor: 'socket', state: 'clamped' },
+        { do: 'fx', anchor: 'socket', effect: 'recalibration_pulse', color: elementColor },
+        { do: 'line', speaker: 'workbench', key: 'narrative.sequences.field_recalibration.installed' },
+        { do: 'camera', shot: 'gameplay', ms: 350 },
+        { do: 'unlockInput' }
+    ],
+    skip: 'applyEndStateAndResume'
+}
+```
+
+**Do not reapply the recalibration in the runner.** `recalibrateFieldWeapon` has already spent the currency, equipped the choice, recorded the synergy and broadcast the shared-world event. S-17 is presentation over committed state.
+
+### 14.3 Telemetry needed to prove the chain
+
+Use one structured category and stable ids; do not rely on button text.
+
+| Event | Required fields |
+|---|---|
+| `ONBOARDING sector-zero-started` | profile state, fresh/legacy, build, input mode |
+| `ONBOARDING phase-changed` | previous phase, next phase, elapsed ms, reason |
+| `ONBOARDING sector-zero-completed` | skipped, elapsed ms, previous phase |
+| `CINEMATIC sequence-started/completed/skipped/fallback` | sequence id, trigger, missing anchor if any, elapsed ms |
+| `DIALOGUE opened/line-shown/choice-selected/closed` | speaker id, tree/node/choice id, trust tier, elapsed ms, close reason |
+| `WORKBENCH recalibration-opened/rerolled/applied/closed` | camp id, offered ids, selected id, costs, synergy id, elapsed ms |
+| `COMBAT fusion-triggered` | fusion id, target, affected enemy count, damage, radius |
+| `ENEMY stalker-state-changed` | previous/next state, distance, line of sight, flashlight-lit, cause |
+
+Privacy/volume rule: record ids and timings, not rendered dialogue prose, free text or per-frame positions. Sample repeated enemy-state transitions so the Stalker does not flood uploads.
+
+### 14.4 Packaged Proof Run acceptance
+
+The next live-play upload should deliberately prove this route:
+
+1. Fresh profile automatically enters Sector 0; all five phases complete with controller and no coaching.
+2. Crossing the blast gate is continuous and sets `hasCompletedSectorZero`; redeploy does not replay it.
+3. A separate returning-profile run uses the explicit skip and receives exactly one sidearm and 25 tech.
+4. First camp contact shows exactly one door-bookended card, then S-1, then one Stranger-tier conversation over gameplay.
+5. No intimate option appears before trust 3 and stage 2; no completed option or reward repeats after return/reload.
+6. The workbench offers three deterministic recalibrations, charges rerolls once, allows one choice per camp and presents S-17 without double-applying state.
+7. The selected modifier changes the next combat encounter visibly; if Sub-Zero Necrosis is selected, the log records one nova with affected-target count.
+8. In paired co-op, recalibration state reaches the peer without closing the peer's doors or taking their camera.
+9. Upload the session log from every participating machine and retain a short video for camera, animation, text readability and player comprehension.
+
+### 14.5 Implementation truth versus the supplied execution summary
+
+| Claim | Repository truth on 2026-10-18 | Document action |
+|---|---|---|
+| Sector 0 is the fresh-profile first expedition | committed in `2a753f4a` | integrated into F-1–F-4 and the Proof Run |
+| Safe-camp Field Recalibration is live | committed in `2a753f4a` | integrated into F-7–F-9; S-17 is the missing presentation beat |
+| Three named cards: Cryo Overclock, Biometric Siphon, Kinetic Spalling | those names are not the current data. `RECALIBRATION_MODS` contains seven entries including `cryo_rime`, `caustic_payload`, `subzero_necrosis`, `kinetic_hollow_point`, `hyper_split_core`, `corrupted_overcharge` and `o2_siphon_chamber` | use runtime ids as canonical; rename only through a deliberate data/localization migration |
+| Sub-Zero Necrosis combat fusion is live | committed implementation exists in run drops/combat/death reporting | prove it in packaged play with `fusion-triggered` telemetry |
+| Mycelium Stalker redesign is shipped | implementation and tests are currently uncommitted working-tree changes | do not mark shipped until committed, built and proven in the same route |
+| `definitive_first_expedition_summary.md` exists | no file by that name is present | this §14 is the canonical execution summary unless a separate artifact is intentionally added |
+
+### 14.6 New movie/reference prompt: Field Recalibration install
+
+Runtime should use S-17 in engine. This prompt is for an optional codex/trailer insert or for generating a first/last-frame reference pair; it must not interrupt every workbench choice.
+
+**FR-1 `field_recalibration_install`, "The Weapon Learns a New Rule"**
+
+- **First Frame Prompt:** Hunker Bunker key art, 16:9 cinematic still, deep-space corporate industrial horror with restrained H.R. Giger biomechanics: a safe-camp field workbench under a focused amber task lamp, an armoured operator holding a palm-sized black-iron recalibration cassette just above an open weapon socket; three thin diagnostic bands glow cryo blue, toxic green and warm white around the socket; tool shadows and cable ribs frame the hands. Soot-black iron, bone ivory, bruised maroon tissue only at seams, amber practical light, sparse teal diagnostics; no readable text, logos or watermarks.
+- **Last Frame Prompt:** Hunker Bunker key art, 16:9 cinematic still, deep-space corporate industrial horror with restrained H.R. Giger biomechanics: the cassette locked flush inside the weapon housing, clamp petals closed around it, a controlled blue-green pulse traveling from the bench into the weapon while the operator's gauntleted hand steadies the receiver; the camp remains visible and safe behind the bench. Soot-black iron, bone ivory, bruised maroon tissue only at seams, amber practical light, sparse teal diagnostics; no readable text, logos or watermarks.
+- **Image-to-Video Action Prompt:** One continuous 6-second macro-to-medium pullback. The operator seats the cassette; three clamp petals close in sequence; the bench emits a low diagnostic pulse; blue frost races along one channel while green bioluminescent spores answer along another; both meet in a brief contained white-blue nova inside the transparent chamber, then settle into a steady status glow as the camera reveals the safe camp behind the operator. No explosion, no recoil, no cut, no text.
+
+### 14.7 Combat presentation rule for the Mycelium Stalker
+
+The Stalker is a gameplay grammar test, not a movie trigger. Preserve control and teach the counter through readable states:
+
+- darkness/occlusion → stalk/flank;
+- direct sight → lateral maneuver away from the center cone;
+- 3.8–7.2 m → 650 ms pre-pounce, cyan/green mandible glow and hiss;
+- flashlight or gunfire → flinch, retreat into shadow, 3.2 s pounce lockout;
+- committed pounce → 9.8 m/s lunge, one-heart damage, toxic puddle, short camera trauma, retreat.
+
+Add a codex replay only after the player survives or kills one. Never freeze the first encounter for an interstitial: the pounce telegraph itself is the authored scene.
 
 ---
 

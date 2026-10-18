@@ -31045,6 +31045,21 @@ export class ThreeGame {
         return FOG_OF_WAR_MIN_VISIBILITY;
     }
 
+    isEnemyLitByPlayerFlashlight(sprite) {
+        if (!this.player || !this.playerForwardDir || !sprite?.position) return false;
+        const dx = sprite.position.x - this.player.position.x;
+        const dz = sprite.position.z - this.player.position.z;
+        const distance = Math.hypot(dx, dz);
+        if (distance > SUIT_CONE_LIGHT_DISTANCE || distance < 0.1) return false;
+        const dot = (dx * this.playerForwardDir.x + dz * this.playerForwardDir.y) / distance;
+        const cosLimit = Math.cos(SUIT_CONE_LIGHT_ANGLE);
+        if (dot < cosLimit) return false;
+        if (this.hasWallBetween && this.hasWallBetween(this.player.position.x, this.player.position.z, sprite.position.x, sprite.position.z)) {
+            return false;
+        }
+        return true;
+    }
+
     applyFogOfWarOpacity(object, visibility, { captureCurrent = false } = {}) {
         if (!object) return;
         object.traverse?.((child) => {
@@ -41071,6 +41086,18 @@ export class ThreeGame {
         sprite.userData.shotByPlayer = true;
         sprite.userData.prioritizeShip = false;
 
+        if (sprite.userData.type === 'mycelium_stalker') {
+            sprite.userData.recentlyDamaged = true;
+            if (sprite.userData.stalkState !== 'pouncing') {
+                sprite.userData.stalkState = 'retreating';
+                sprite.userData.retreatTimer = 2.4;
+                sprite.userData.flinchTimer = 0.35;
+                sprite.userData.mandibleGlow = 0;
+                sprite.material?.color?.setHex?.(sprite.userData.baseMaterialTint ?? 0xffffff);
+                window.AudioManager?.playStalkerHiss?.(this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.45 }));
+            }
+        }
+
         const isBoss = Boolean(sprite.userData.isBoss);
         const isCrawler = this.isCrawler(sprite.userData.type);
         if (!isBoss && !isCrawler && sprite.userData.hp === 1 && !sprite.userData.enraged) {
@@ -42730,7 +42757,260 @@ export class ThreeGame {
         }
     }
 
+    updateMyceliumStalkerBehavior(sprite, delta) {
+        const data = sprite.userData;
+        if (!this.player || this.isPlayerDead) return;
+
+        if (data.holeEmergence) {
+            const emergence = data.holeEmergence;
+            emergence.elapsed = Math.min(emergence.duration, emergence.elapsed + delta);
+            const t = emergence.duration > 0 ? emergence.elapsed / emergence.duration : 1;
+            const eased = 1 - Math.pow(1 - t, 3);
+            sprite.position.x = THREE.MathUtils.lerp(emergence.startX, emergence.landingX, eased);
+            sprite.position.z = THREE.MathUtils.lerp(emergence.startZ, emergence.landingZ, eased);
+            sprite.position.y = (data.baseY ?? 0.08) + Math.sin(t * Math.PI) * 1.15;
+            const squash = 0.78 + Math.sin(t * Math.PI) * 0.3;
+            sprite.scale.set(
+                (data.baseScaleX ?? 1) * squash,
+                (data.baseScaleY ?? 1) * (0.9 + Math.sin(t * Math.PI) * 0.24),
+                1
+            );
+            this.faceSpriteFromDir?.(sprite, emergence.landingX - emergence.startX);
+            if (t >= 1) {
+                sprite.position.set(emergence.landingX, data.baseY ?? 0.08, emergence.landingZ);
+                sprite.scale.set(data.baseScaleX ?? 1, data.baseScaleY ?? 1, 1);
+                data.holeEmergence = null;
+                data.stalkState = 'stalking';
+                data.pounceCooldown = Math.max(data.pounceCooldown ?? 0, 1.2);
+            }
+            return;
+        }
+
+        if (data.staggerState) {
+            const events = tickStaggerState(data.staggerState, delta);
+            if (events.some((e) => e.type === 'stagger-end')) {
+                sprite.material?.color?.setHex?.(data.baseMaterialTint ?? (data.biomeTint ?? 0xffffff));
+            }
+            if (isStaggered(data.staggerState)) {
+                data.vx = 0;
+                data.vz = 0;
+                data.stalkState = 'retreating';
+                data.retreatTimer = 1.8;
+                return;
+            }
+        }
+
+        if (this.canEnemyTargetPlayer?.(sprite) === false) {
+            data.vx = (data.vx ?? 0) * 0.5;
+            data.vz = (data.vz ?? 0) * 0.5;
+            return;
+        }
+
+        if ((data.knockbackTimer ?? 0) > 0) {
+            const nextX = sprite.position.x + (data.knockbackVx ?? 0) * delta;
+            const nextZ = sprite.position.z + (data.knockbackVz ?? 0) * delta;
+            if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
+                sprite.position.x = nextX;
+                sprite.position.z = nextZ;
+            }
+            data.knockbackTimer = Math.max(0, data.knockbackTimer - delta);
+            data.vx = 0;
+            data.vz = 0;
+            return;
+        }
+
+        const dx = this.player.position.x - sprite.position.x;
+        const dz = this.player.position.z - sprite.position.z;
+        const distToPlayer = Math.hypot(dx, dz);
+        if (distToPlayer <= 0.001) return;
+        const dirX = dx / distToPlayer;
+        const dirZ = dz / distToPlayer;
+
+        data.stalkState ??= 'stalking';
+        data.flankSign ??= (Math.random() < 0.5 ? 1 : -1);
+        data.baseMaterialTint ??= (sprite.material?.color?.getHex?.() ?? 0xffffff);
+
+        const hasLineOfSight = !this.hasWallBetween?.(this.player.position.x, this.player.position.z, sprite.position.x, sprite.position.z);
+        const isLit = Boolean(this.isEnemyLitByPlayerFlashlight?.(sprite));
+        const wasShot = Boolean(data.shotByPlayer || data.recentlyDamaged);
+        data.recentlyDamaged = false;
+
+        // Flashlight detection or shot triggers instant flinch and retreat back into shadows
+        if ((isLit || wasShot) && data.stalkState !== 'retreating' && data.stalkState !== 'pouncing') {
+            data.stalkState = 'retreating';
+            data.retreatTimer = 2.4;
+            data.flinchTimer = 0.35;
+            data.mandibleGlow = 0;
+            sprite.material?.color?.setHex?.(data.baseMaterialTint);
+            window.AudioManager?.playStalkerHiss?.(this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.45 }));
+        }
+
+        if (data.stalkState === 'retreating') {
+            data.retreatTimer = Math.max(0, (data.retreatTimer ?? 2.4) - delta);
+            data.pounceCooldown = Math.max(data.pounceCooldown ?? 0, 3.2);
+
+            // Flinch visual recoil
+            if ((data.flinchTimer ?? 0) > 0) {
+                data.flinchTimer = Math.max(0, data.flinchTimer - delta);
+                sprite.scale.set((data.baseScaleX ?? 1) * 1.15, (data.baseScaleY ?? 1) * 0.78, 1);
+            } else {
+                sprite.scale.set(data.baseScaleX ?? 1, data.baseScaleY ?? 1, 1);
+            }
+
+            // Sprint away from player into shadow / wall corridors
+            const retreatX = -dirX * 0.75 + (-dirZ * data.flankSign) * 0.65;
+            const retreatZ = -dirZ * 0.75 + (dirX * data.flankSign) * 0.65;
+            const retreatLen = Math.hypot(retreatX, retreatZ) || 1;
+            const retreatSpeed = 4.2;
+            data.vx = (retreatX / retreatLen) * retreatSpeed;
+            data.vz = (retreatZ / retreatLen) * retreatSpeed;
+
+            if (data.retreatTimer <= 0 && (!isLit || distToPlayer > 8.5)) {
+                data.stalkState = 'stalking';
+                data.flinchTimer = 0;
+                sprite.scale.set(data.baseScaleX ?? 1, data.baseScaleY ?? 1, 1);
+            }
+        } else if (data.stalkState === 'stalking') {
+            data.pounceCooldown = Math.max(0, (data.pounceCooldown ?? 1.5) - delta);
+            sprite.scale.set(data.baseScaleX ?? 1, data.baseScaleY ?? 1, 1);
+
+            // Flanking movement: circlular/tangential flanking around cover
+            const tangentX = -dirZ * data.flankSign;
+            const tangentZ = dirX * data.flankSign;
+
+            let targetDirX = tangentX;
+            let targetDirZ = tangentZ;
+
+            if (hasLineOfSight) {
+                // In direct view: push away slightly towards fog/shadows
+                if (distToPlayer < 7.0) {
+                    targetDirX = targetDirX * 0.7 - dirX * 0.6;
+                    targetDirZ = targetDirZ * 0.7 - dirZ * 0.6;
+                } else if (distToPlayer > 9.5) {
+                    targetDirX = targetDirX * 0.7 + dirX * 0.6;
+                    targetDirZ = targetDirZ * 0.7 + dirZ * 0.6;
+                }
+            } else {
+                // Lurking behind cover: close in for ambush flank
+                if (distToPlayer > 5.5) {
+                    targetDirX = targetDirX * 0.6 + dirX * 0.7;
+                    targetDirZ = targetDirZ * 0.6 + dirZ * 0.7;
+                }
+            }
+
+            const targetLen = Math.hypot(targetDirX, targetDirZ) || 1;
+            const stalkSpeed = 2.4;
+            const desiredVx = (targetDirX / targetLen) * stalkSpeed;
+            const desiredVz = (targetDirZ / targetLen) * stalkSpeed;
+
+            data.vx = THREE.MathUtils.lerp(data.vx ?? 0, desiredVx, Math.min(1, delta * 6));
+            data.vz = THREE.MathUtils.lerp(data.vz ?? 0, desiredVz, Math.min(1, delta * 6));
+
+            // Trigger pre-pounce when in ambush range (3.8 to 7.2 units) and cooldown elapsed
+            if (data.pounceCooldown <= 0 && distToPlayer >= 3.8 && distToPlayer <= 7.2) {
+                data.stalkState = 'pre_pounce';
+                data.prePounceTimer = 0.65;
+                data.mandibleGlow = 1.0;
+                sprite.material?.color?.setHex?.(0x38ef7d); // Bioluminescent mandible glow
+                window.AudioManager?.playStalkerHiss?.(this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.5 }));
+            }
+        } else if (data.stalkState === 'pre_pounce') {
+            data.prePounceTimer = Math.max(0, (data.prePounceTimer ?? 0.65) - delta);
+            data.vx = (data.vx ?? 0) * 0.7;
+            data.vz = (data.vz ?? 0) * 0.7;
+            const coilProgress = 1 - (data.prePounceTimer / 0.65);
+            const squash = 1 - Math.sin(coilProgress * Math.PI * 0.5) * 0.22;
+            sprite.scale.set((data.baseScaleX ?? 1) * (1.18 / squash), (data.baseScaleY ?? 1) * squash, 1);
+
+            if (data.prePounceTimer <= 0) {
+                data.stalkState = 'pouncing';
+                data.pounceTimer = 0.45;
+                data.pounceDirX = dirX;
+                data.pounceDirZ = dirZ;
+                data.mandibleGlow = 0;
+                sprite.material?.color?.setHex?.(data.baseMaterialTint);
+                sprite.scale.set(data.baseScaleX ?? 1, data.baseScaleY ?? 1, 1);
+                const pounceSpeed = 9.8;
+                data.vx = dirX * pounceSpeed;
+                data.vz = dirZ * pounceSpeed;
+                window.AudioManager?.playMetalStress?.({ volume: 0.4, playbackRate: 2.1, force: true });
+            }
+        } else if (data.stalkState === 'pouncing') {
+            data.pounceTimer = Math.max(0, (data.pounceTimer ?? 0.45) - delta);
+            sprite.scale.set((data.baseScaleX ?? 1) * 0.85, (data.baseScaleY ?? 1) * 1.25, 1);
+
+            const contactDistance = Math.hypot(
+                this.player.position.x - sprite.position.x,
+                this.player.position.z - sprite.position.z
+            );
+            if (contactDistance <= SNAIL_ATTACK_RADIUS) {
+                const hitApplied = this.takeDamage(1, 'mycelium_stalker', sprite.position.x, sprite.position.z);
+                if (hitApplied) {
+                    this.applySnailContactKnockback?.(sprite, data);
+                    this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
+                    if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('player-hit', { detail: { reason: 'mycelium_stalker' } }));
+                    }
+                    this.triggerCameraShake?.(0.2, 0.32);
+                    window.AudioManager?.playMetalStress?.({ volume: 0.42, playbackRate: 1.45, force: true });
+                }
+                data.stalkState = 'retreating';
+                data.retreatTimer = 2.2;
+                data.pounceCooldown = 3.5;
+                data.flinchTimer = 0;
+                sprite.scale.set(data.baseScaleX ?? 1, data.baseScaleY ?? 1, 1);
+            } else if (data.pounceTimer <= 0) {
+                data.stalkState = 'retreating';
+                data.retreatTimer = 1.9;
+                data.pounceCooldown = 3.0;
+                data.flinchTimer = 0;
+                sprite.scale.set(data.baseScaleX ?? 1, data.baseScaleY ?? 1, 1);
+            }
+        }
+
+        // Apply movement physics and containment
+        const nextX = sprite.position.x + (data.vx ?? 0) * delta;
+        const nextZ = sprite.position.z + (data.vz ?? 0) * delta;
+        const containmentOptions = this.getCurrentContainmentOptions?.() ?? {
+            containmentZones: this.getActiveContainmentZones?.() ?? [],
+            doors: this.getActiveDoors?.() ?? []
+        };
+        const canMoveTo = (x, z) => !shouldBlockAttackPath(
+            { x: sprite.position.x, z: sprite.position.z },
+            { x, z },
+            containmentOptions
+        );
+
+        if (canMoveTo(nextX, nextZ) && this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
+            sprite.position.x = nextX;
+            sprite.position.z = nextZ;
+        } else {
+            if (canMoveTo(nextX, sprite.position.z) && this.isSnailTileWalkable(Math.round(nextX), Math.round(sprite.position.z))) {
+                sprite.position.x = nextX;
+                data.vz = (data.vz ?? 0) * 0.4;
+            } else if (canMoveTo(sprite.position.x, nextZ) && this.isSnailTileWalkable(Math.round(sprite.position.x), Math.round(nextZ))) {
+                sprite.position.z = nextZ;
+                data.vx = (data.vx ?? 0) * 0.4;
+            } else {
+                this.tryEnemyBreachDoor(sprite, Math.round(nextX), Math.round(nextZ));
+                data.vx = 0;
+                data.vz = 0;
+                if (data.stalkState === 'pouncing') {
+                    data.stalkState = 'retreating';
+                    data.retreatTimer = 1.8;
+                    data.pounceCooldown = 3.0;
+                    sprite.scale.set(data.baseScaleX ?? 1, data.baseScaleY ?? 1, 1);
+                }
+            }
+        }
+
+        this.faceSpriteFromDir(sprite, data.vx ?? dirX, dx);
+    }
+
     updateChargerOrStalkerBehavior(sprite, delta, { isStalker = false } = {}) {
+        if (isStalker) {
+            return this.updateMyceliumStalkerBehavior(sprite, delta);
+        }
         const data = sprite.userData;
         if (!this.player || this.isPlayerDead) return;
 
