@@ -30,7 +30,13 @@ function snapshot(overrides = {}) {
             inventory: { health: 1, ammo: 8, weapon: 3, coin: 2 },
             weapon: { clipAmmo: 4, clipSize: 6 }
         },
-        run: { missionState: { status: 'active' }, overclockIds: ['cryo_rime'], relicIds: ['shatter_engine'] },
+        run: {
+            missionState: { status: 'active' },
+            overclockIds: ['cryo_rime'],
+            relicIds: ['shatter_engine'],
+            recalibratedCampIds: ['camp-meridian'],
+            recalibrationRerolls: { 'camp-meridian': 1 }
+        },
         world: { killedEnemyScatterKeys: ['dead:1'], enemies: [{ scatterKey: 'live:1', type: 'cryosnail', x: 3, z: 4, hp: 2, maxHp: 4 }] },
         ...overrides
     };
@@ -42,7 +48,12 @@ describe('expedition suspend snapshot', () => {
         expect(value).toMatchObject({
             expedition: { campaignSeed: 42, expeditionIndex: 2 },
             player: { classType: 'ENGINEER', inventory: { ammo: 8 } },
-            run: { overclockIds: ['cryo_rime'], relicIds: ['shatter_engine'] },
+            run: {
+                overclockIds: ['cryo_rime'],
+                relicIds: ['shatter_engine'],
+                recalibratedCampIds: ['camp-meridian'],
+                recalibrationRerolls: { 'camp-meridian': 1 }
+            },
             world: { killedEnemyScatterKeys: ['dead:1'], enemies: [{ scatterKey: 'live:1', hp: 2 }] }
         });
         expect(normalizeExpeditionSuspendSnapshot(snapshot({ mode: 'coop' }))).toBeNull();
@@ -85,4 +96,3 @@ describe('expedition suspend snapshot', () => {
         expect(storage.values.size).toBe(0);
     });
 });
-

@@ -24,6 +24,13 @@ function stringArray(value) {
     return [...new Set((Array.isArray(value) ? value : []).filter((entry) => typeof entry === 'string'))];
 }
 
+function nonNegativeIntRecord(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+    return Object.fromEntries(Object.entries(value)
+        .filter(([key]) => typeof key === 'string' && key)
+        .map(([key, count]) => [key, nonNegativeInt(count)]));
+}
+
 function normalizeInventory(value = {}) {
     return {
         health: nonNegativeInt(value.health),
@@ -100,6 +107,8 @@ export function normalizeExpeditionSuspendSnapshot(raw) {
             modifier: jsonClone(raw.run?.modifier, null),
             overclockIds: stringArray(raw.run?.overclockIds),
             relicIds: stringArray(raw.run?.relicIds),
+            recalibratedCampIds: stringArray(raw.run?.recalibratedCampIds),
+            recalibrationRerolls: nonNegativeIntRecord(raw.run?.recalibrationRerolls),
             shardCount: nonNegativeInt(raw.run?.shardCount),
             depositedResources: normalizeInventory(raw.run?.depositedResources),
             kills: nonNegativeInt(raw.run?.kills),

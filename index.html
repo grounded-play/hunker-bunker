@@ -2413,8 +2413,18 @@
         <div data-i18n="ui.workbench.kicker" class="field-workbench-kicker" id="field-workbench-kicker">CAMP WORKBENCH // FIELD FABRICATION</div>
         <h2 data-i18n="ui.workbench.title" class="modal-title field-workbench-title" id="field-workbench-title">FIELD WORKBENCH</h2>
         <div class="field-workbench-stats-strip" id="field-workbench-stats-strip"></div>
-        <p data-i18n="ui.workbench.copy" class="field-workbench-copy" id="field-workbench-copy">Synthesize field supplies using banked materials. Effects apply immediately to your current expedition.</p>
-        <div class="field-workbench-recipes-grid" id="field-workbench-recipes-grid"></div>
+        <div class="field-workbench-tabs" id="field-workbench-tabs" role="tablist">
+          <button data-i18n="ui.workbench.tab_supplies" type="button" class="field-workbench-tab is-active" id="workbench-tab-supplies" role="tab" aria-selected="true" data-tab="supplies">SUPPLY FABRICATION</button>
+          <button data-i18n="ui.workbench.tab_recalibration" type="button" class="field-workbench-tab" id="workbench-tab-recalibration" role="tab" aria-selected="false" data-tab="recalibration">FIELD RECALIBRATION (1/CAMP)</button>
+        </div>
+        <div class="field-workbench-supplies-section" id="field-workbench-supplies-section">
+          <p data-i18n="ui.workbench.copy" class="field-workbench-copy" id="field-workbench-copy">Synthesize field supplies using banked materials. Effects apply immediately to your current expedition.</p>
+          <div class="field-workbench-recipes-grid" id="field-workbench-recipes-grid"></div>
+        </div>
+        <div class="field-workbench-recalibration-section hidden" id="field-workbench-recalibration-section">
+          <div class="field-workbench-recalibration-header" id="field-workbench-recalibration-header"></div>
+          <div class="field-workbench-recalibration-grid" id="field-workbench-recalibration-grid"></div>
+        </div>
         <div class="field-workbench-footer">
           <button data-i18n="ui.workbench.close" type="button" class="field-workbench-close-btn" id="field-workbench-footer-close">EXIT WORKBENCH</button>
         </div>
@@ -2492,6 +2502,10 @@
           <div class="setting-item setting-item--action">
             <span data-i18n="ui.settings.return_to_game">RETURN TO GAME</span>
             <button data-i18n="ui.settings.resume" type="button" class="calibrate-btn settings-action-btn" id="resume-settings">RESUME</button>
+          </div>
+          <div class="setting-item setting-item--action setting-item--danger hidden" id="skip-sector-zero-setting-row">
+            <span data-i18n="ui.settings.skip_onboarding_desc">OPEN SECTOR 1 WITH A STANDARD FIELD LOADOUT</span>
+            <button data-i18n="ui.settings.skip_onboarding" type="button" class="calibrate-btn settings-action-btn hidden" id="skip-sector-zero">SKIP ONBOARDING</button>
           </div>
           <!-- Stage Resolution was a developer layout label, not a renderer
                setting. Keep the internal dev-console preset, but do not offer

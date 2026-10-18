@@ -75,6 +75,7 @@ export function describeDeathCause(reason) {
 export const BUILD_LINE_KEYS = Object.freeze({
     cryo_shatter: 'ui.death.build.cryo_shatter',
     bio_predator: 'ui.death.build.bio_predator',
+    subzero_necrosis: 'ui.death.build.subzero_necrosis',
     equipped: 'ui.death.build.equipped',
     none: 'ui.death.build.none'
 });
@@ -87,6 +88,7 @@ export const BUILD_LINE_KEYS = Object.freeze({
 export function summarizeBuild({ equippedDropIds = [], telemetry = {} } = {}) {
     const shatter = telemetry.cryo_shatter ?? {};
     const predator = telemetry.bio_predator ?? {};
+    const necrosis = telemetry.subzero_necrosis ?? {};
     const fired = [
         (shatter.activations ?? 0) > 0 && {
             activations: shatter.activations,
@@ -95,6 +97,10 @@ export function summarizeBuild({ equippedDropIds = [], telemetry = {} } = {}) {
         (predator.activations ?? 0) > 0 && {
             activations: predator.activations,
             line: { key: BUILD_LINE_KEYS.bio_predator, params: { count: predator.activations, o2: Math.round(predator.o2 ?? 0), hearts: predator.hearts ?? 0 } }
+        },
+        (necrosis.activations ?? 0) > 0 && {
+            activations: necrosis.activations,
+            line: { key: BUILD_LINE_KEYS.subzero_necrosis, params: { count: necrosis.activations, damage: Math.round(necrosis.damage ?? 0) } }
         }
     ].filter(Boolean).sort((a, b) => b.activations - a.activations);
     if (fired.length) return fired[0].line;

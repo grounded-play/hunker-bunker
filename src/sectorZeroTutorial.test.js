@@ -95,7 +95,28 @@ describe('SectorZeroTutorialManager', () => {
         expect(manager.handleEvent('gate-crossed', {})).toBe(true);
         expect(manager.getCurrentPhase()).toBe(SECTOR_ZERO_PHASES.COMPLETE);
         expect(manager.isActive).toBe(false);
-        expect(onComplete).toHaveBeenCalled();
+        expect(onComplete).toHaveBeenCalledWith({
+            skipped: false,
+            previousPhase: SECTOR_ZERO_PHASES.DEPARTURE
+        });
+    });
+
+    it('supports an explicit skip and opens every authored gate', () => {
+        const onComplete = vi.fn();
+        const manager = new SectorZeroTutorialManager({ onComplete });
+        manager.start();
+
+        expect(manager.skip()).toBe(true);
+        expect(manager.getCurrentPhase()).toBe(SECTOR_ZERO_PHASES.COMPLETE);
+        expect(manager.isActive).toBe(false);
+        expect(manager.isDoorUnlocked('airlock_door_1')).toBe(true);
+        expect(manager.isDoorUnlocked('salvage_bay_door')).toBe(true);
+        expect(manager.isDoorUnlocked('perimeter_blast_gate')).toBe(true);
+        expect(onComplete).toHaveBeenCalledWith({
+            skipped: true,
+            previousPhase: SECTOR_ZERO_PHASES.BOOT
+        });
+        expect(manager.skip()).toBe(false);
     });
 
     it('exposes objective information for every authored phase', () => {

@@ -32,6 +32,8 @@ function savedSnapshot() {
             modifier: { key: 'blackout' },
             overclockIds: ['cryo_rime'],
             relicIds: ['shatter_engine'],
+            recalibratedCampIds: ['camp-meridian'],
+            recalibrationRerolls: { 'camp-meridian': 1 },
             shardCount: 2,
             depositedResources: { health: 1, weapon: 2, coin: 3 },
             kills: 9,
@@ -83,6 +85,8 @@ describe('ThreeGame expedition continuation', () => {
             currentRunModifier: { key: 'blackout' },
             runOverclocks: [{ id: 'cryo_rime' }],
             runRelics: [{ id: 'shatter_engine' }],
+            campRecalibrations: new Set(['camp-meridian']),
+            campRerolls: { 'camp-meridian': 1 },
             runDepositedResources: { med: 1, tech: 2, coin: 3 },
             killedEnemyScatterKeys: new Set(['dead:1']),
             depletedGearPileKeys: new Set(['junk:1']),
@@ -97,7 +101,12 @@ describe('ThreeGame expedition continuation', () => {
         const value = ThreeGame.prototype.createExpeditionSuspendSnapshot.call(fake);
         expect(value).toMatchObject({
             player: { x: 14, z: -9, inventory: { ammo: 11 } },
-            run: { missionState: { status: 'active', killCount: 4 }, overclockIds: ['cryo_rime'] },
+            run: {
+                missionState: { status: 'active', killCount: 4 },
+                overclockIds: ['cryo_rime'],
+                recalibratedCampIds: ['camp-meridian'],
+                recalibrationRerolls: { 'camp-meridian': 1 }
+            },
             world: { killedEnemyScatterKeys: ['dead:1'], enemies: [{ scatterKey: 'live:1', hp: 2 }] }
         });
     });
@@ -130,6 +139,8 @@ describe('ThreeGame expedition continuation', () => {
         expect(fake.missionState).toMatchObject({ status: 'active', killCount: 4 });
         expect(fake.runOverclocks.map((drop) => drop.id)).toEqual(['cryo_rime']);
         expect(fake.runRelics.map((drop) => drop.id)).toEqual(['shatter_engine']);
+        expect(fake.campRecalibrations).toEqual(new Set(['camp-meridian']));
+        expect(fake.campRerolls).toEqual({ 'camp-meridian': 1 });
         expect(fake.killedEnemyScatterKeys).toEqual(new Set(['dead:1']));
         expect(liveEnemy.userData.hp).toBe(2);
         expect(expeditionSuspendStore.save).toHaveBeenCalledOnce();

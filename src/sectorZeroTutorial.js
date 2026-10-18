@@ -148,15 +148,37 @@ export class SectorZeroTutorialManager {
             case SECTOR_ZERO_PHASES.DEPARTURE:
                 if (eventName === 'gate-crossed' || eventName === 'entered-procedural-sector') {
                     this.flags.hasPassedGate = true;
-                    this._advancePhase(SECTOR_ZERO_PHASES.COMPLETE);
-                    this.isActive = false;
-                    this.onComplete?.();
-                    return true;
+                    return this._finish({ skipped: false });
                 }
                 break;
         }
 
         return false;
+    }
+
+    /**
+     * Explicit player choice from the pause menu. Skipping permanently clears
+     * this onboarding gate, but does not pretend the current objective was
+     * completed through play.
+     */
+    skip() {
+        if (!this.isActive || this.currentPhase === SECTOR_ZERO_PHASES.COMPLETE) return false;
+        return this._finish({ skipped: true });
+    }
+
+    _finish({ skipped = false } = {}) {
+        const previousPhase = this.currentPhase;
+        this._resolveCurrentObjective(skipped ? 'abandoned' : 'complete');
+        this.currentPhase = SECTOR_ZERO_PHASES.COMPLETE;
+        this.phaseProgress = 0;
+        this.isActive = false;
+        this.unlockedDoors.add('airlock_door_1');
+        this.unlockedDoors.add('salvage_bay_door');
+        this.unlockedDoors.add('perimeter_blast_gate');
+        this.onPhaseChange?.(this.currentPhase);
+        this.game?.handleSectorZeroPhaseChanged?.(this.currentPhase);
+        this.onComplete?.({ skipped, previousPhase });
+        return true;
     }
 
     _advancePhase(nextPhase) {
@@ -184,11 +206,11 @@ export class SectorZeroTutorialManager {
         }
     }
 
-    _resolveCurrentObjective() {
+    _resolveCurrentObjective(outcome = 'complete') {
         const obj = SECTOR_ZERO_OBJECTIVES[this.currentPhase];
         if (!obj) return;
         if (typeof window !== 'undefined' && window.objectiveRegistry?.resolveObjective) {
-            window.objectiveRegistry.resolveObjective(obj.id, 'complete');
+            window.objectiveRegistry.resolveObjective(obj.id, outcome);
         }
     }
 

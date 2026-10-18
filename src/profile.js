@@ -25,6 +25,50 @@ function sanitizeCallsign(raw) {
         .slice(0, 16);
 }
 
+function nonNegativeInteger(value) {
+    const parsed = Number(value);
+    return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : 0;
+}
+
+function hasLegacyExpeditionEvidence(parsed, storage) {
+    const recordedRuns = [
+        parsed?.soloExpeditions,
+        parsed?.multiplayerMatches,
+        parsed?.coopExpeditions,
+        parsed?.pvpDuels,
+        parsed?.soloVictories,
+        parsed?.soloDeaths
+    ].some((value) => nonNegativeInteger(value) > 0);
+    if (recordedRuns) return true;
+
+    // Profiles created before Sector 0 did not carry an onboarding flag. Do
+    // not force an established campaign through a new first-run tutorial just
+    // because its older profile record has no explicit completion bit.
+    return [
+        'hb_campaign_world_v1',
+        'hb_campaign_ledger_v1',
+        'hb_arc_v1',
+        'hb_act2_v1',
+        'hb_day_cycle',
+        'hb_run_checkpoint_v1',
+        'hb_expedition_suspend_v1'
+    ].some((key) => {
+        try { return storage?.getItem(key) !== null; } catch { return false; }
+    });
+}
+
+export function shouldAutoStartSectorZero({
+    profile,
+    resumeSnapshot = null,
+    isMultiplayer = false,
+    isAct2 = false
+} = {}) {
+    return !resumeSnapshot
+        && !isMultiplayer
+        && !isAct2
+        && Boolean(profile?.shouldStartSectorZero?.());
+}
+
 export class ProfileManager {
     constructor({ storage = null } = {}) {
         this.storage = getStorage(storage);
@@ -39,18 +83,26 @@ export class ProfileManager {
             if (raw) {
                 const parsed = JSON.parse(raw);
                 if (parsed && typeof parsed === 'object') {
+                    const inferredExpeditionCount = nonNegativeInteger(parsed.soloExpeditions)
+                        + nonNegativeInteger(parsed.multiplayerMatches);
+                    const hasExplicitSectorZeroState = typeof parsed.hasCompletedSectorZero === 'boolean';
                     return {
                         callsign: sanitizeCallsign(parsed.callsign) || 'AGENT',
                         profileId: typeof parsed.profileId === 'string' ? parsed.profileId : randomId(),
                         createdAt: Number.isFinite(parsed.createdAt) ? parsed.createdAt : Date.now(),
-                        multiplayerMatches: Number(parsed.multiplayerMatches) || 0,
-                        multiplayerVictories: Number(parsed.multiplayerVictories) || 0,
-                        tradesCompleted: Number(parsed.tradesCompleted) || 0,
-                        coopExpeditions: Number(parsed.coopExpeditions) || 0,
-                        pvpDuels: Number(parsed.pvpDuels) || 0,
-                        soloExpeditions: Number(parsed.soloExpeditions) || 0,
-                        soloVictories: Number(parsed.soloVictories) || 0,
-                        soloDeaths: Number(parsed.soloDeaths) || 0
+                        multiplayerMatches: nonNegativeInteger(parsed.multiplayerMatches),
+                        multiplayerVictories: nonNegativeInteger(parsed.multiplayerVictories),
+                        tradesCompleted: nonNegativeInteger(parsed.tradesCompleted),
+                        coopExpeditions: nonNegativeInteger(parsed.coopExpeditions),
+                        pvpDuels: nonNegativeInteger(parsed.pvpDuels),
+                        soloExpeditions: nonNegativeInteger(parsed.soloExpeditions),
+                        soloVictories: nonNegativeInteger(parsed.soloVictories),
+                        soloDeaths: nonNegativeInteger(parsed.soloDeaths),
+                        expeditionCount: nonNegativeInteger(parsed.expeditionCount ?? inferredExpeditionCount),
+                        hasCompletedSectorZero: hasExplicitSectorZeroState
+                            ? parsed.hasCompletedSectorZero
+                            : hasLegacyExpeditionEvidence(parsed, this.storage),
+                        sectorZeroSkipped: Boolean(parsed.sectorZeroSkipped)
                     };
                 }
             }
@@ -68,7 +120,10 @@ export class ProfileManager {
             pvpDuels: 0,
             soloExpeditions: 0,
             soloVictories: 0,
-            soloDeaths: 0
+            soloDeaths: 0,
+            expeditionCount: 0,
+            hasCompletedSectorZero: false,
+            sectorZeroSkipped: false
         };
     }
 
@@ -82,6 +137,31 @@ export class ProfileManager {
 
     getCallsign() { return this.state.callsign; }
     getProfileId() { return this.state.profileId; }
+
+    getOnboardingState() {
+        return {
+            expeditionCount: nonNegativeInteger(this.state.expeditionCount),
+            hasCompletedSectorZero: Boolean(this.state.hasCompletedSectorZero),
+            sectorZeroSkipped: Boolean(this.state.sectorZeroSkipped)
+        };
+    }
+
+    shouldStartSectorZero() {
+        return !this.getOnboardingState().hasCompletedSectorZero;
+    }
+
+    recordExpeditionStarted() {
+        this.state.expeditionCount = nonNegativeInteger(this.state.expeditionCount) + 1;
+        this.save();
+        return this.getOnboardingState();
+    }
+
+    markSectorZeroCompleted({ skipped = false } = {}) {
+        this.state.hasCompletedSectorZero = true;
+        this.state.sectorZeroSkipped = Boolean(skipped);
+        this.save();
+        return this.getOnboardingState();
+    }
 
     setCallsign(raw) {
         const clean = sanitizeCallsign(raw) || 'AGENT';

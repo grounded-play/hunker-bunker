@@ -107,4 +107,32 @@ describe('ThreeGame Sector Zero Integration', () => {
         game.sectorZeroTutorial.handleEvent('enemy-killed', { type: 'alien_proto_crawler' });
         expect(game.openBunkerBlastDoor).toHaveBeenCalledOnce();
     });
+
+    it('skips into a viable run with a sidearm, 25 tech and an open gate', () => {
+        const game = createMockGame();
+        game.player = { position: { x: 4, z: 8 } };
+        game.fieldWeaponRunState = { runId: 'tutorial-run', equipped: null, worldDrops: [] };
+        const sidearm = { instanceId: 'skip-sidearm', profileId: 'mk1_sidearm' };
+        game.spawnFieldWeaponDrop = vi.fn(() => sidearm);
+        game.interactWithFieldWeaponDrop = vi.fn(() => true);
+        game.addScrap = vi.fn(() => true);
+        game.openBunkerBlastDoor = vi.fn();
+        game.showBunkerLine = vi.fn();
+        const completed = vi.fn();
+        window.addEventListener('sector-zero-completed', completed);
+
+        game.startSectorZeroTutorial();
+        expect(game.skipSectorZeroTutorial()).toBe(true);
+
+        expect(game.spawnFieldWeaponDrop).toHaveBeenCalledWith(
+            'mk1_sidearm', 4, 8,
+            expect.objectContaining({ ammoInWeapon: 12, reserveAmmo: 36 })
+        );
+        expect(game.interactWithFieldWeaponDrop).toHaveBeenCalledWith('skip-sidearm');
+        expect(game.addScrap).toHaveBeenCalledWith(25);
+        expect(game.openBunkerBlastDoor).toHaveBeenCalledOnce();
+        expect(completed).toHaveBeenCalledOnce();
+        expect(completed.mock.calls[0][0].detail).toMatchObject({ skipped: true });
+        expect(game.skipSectorZeroTutorial()).toBe(false);
+    });
 });

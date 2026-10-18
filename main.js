@@ -26,7 +26,7 @@ import { renderReturnManifest } from './src/returnManifest.js';
 import { loadoutCardViews, loadoutEffectSummaryHtml, renderLoadoutStrip } from './src/itemCard.js';
 import { FabricatorManager, FAB_RECIPES, getFabricatedOutputIds } from './src/fabricator.js';
 import { createFabricationBay, fabMissingResourceText as fabMissingResourceTextFor } from './src/fabricationBay.js';
-import { ProfileManager, exportSaveCode, importSaveCode, resetAllDataFactory, startNewCampaign } from './src/profile.js';
+import { ProfileManager, exportSaveCode, importSaveCode, resetAllDataFactory, shouldAutoStartSectorZero, startNewCampaign } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { getHeldWeaponLabel } from './src/heldWeaponLabel.js';
 import { CutsceneManager } from './src/cutscene.js';
@@ -3221,6 +3221,10 @@ window.fabricator = fabricator;
 
 const profile = new ProfileManager();
 window.profile = profile;
+
+window.addEventListener('sector-zero-completed', (event) => {
+    profile.markSectorZeroCompleted({ skipped: Boolean(event?.detail?.skipped) });
+});
 
 const achievementEngine = new AchievementEngine();
 window.achievementEngine = achievementEngine;
@@ -7816,6 +7820,7 @@ if (gameOverTryAgain) {
             window.game.requestPvpRematch?.();
             return;
         }
+        const restartSectorZero = !window.game?.isMultiplayer && profile.shouldStartSectorZero();
         triggerDoorTransition(
             () => {
                 hideGameOverScreen();
@@ -7840,11 +7845,13 @@ if (gameOverTryAgain) {
                     purgeSnails: false,
                     deferChunkMount: true
                 });
+                profile.recordExpeditionStarted();
                 document.getElementById('ui')?.classList.remove('hidden');
                 syncHudCompassVisibility();
                 return prepareGameplayForDialogue({ loaderOverDoor: true });
             },
             () => {
+                if (restartSectorZero) window.game?.startSectorZeroTutorial?.();
                 window.game?.setInputEnabled?.(true);
                 notifyGameplayReady();
             },
@@ -9412,7 +9419,7 @@ async function runAct2IntroSequence(game, playerType) {
     window.AudioManager?.startAmbience?.();
 }
 
-async function runMissionIntroSequence({ deploymentHold = null } = {}) {
+async function runMissionIntroSequence({ deploymentHold = null, forceSectorZero = false } = {}) {
     if (missionFlowRunning) {
         deploymentHold?.();
         return;
@@ -9508,7 +9515,10 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
 
         if (skipBtn) skipBtn.classList.add('hidden');
 
-        const startTutorial = choice === 'tutorial' && !window.skipAllIntro;
+        // Fresh profiles enter Sector 0 regardless of whether they skip the
+        // cinematic/dialogue layer. Returning operators retain the explicit
+        // Mothership tutorial choice.
+        const startTutorial = forceSectorZero || (choice === 'tutorial' && !window.skipAllIntro);
         if (!isSkippingWithDoor) {
             document.body.classList.add('hud-hidden');
             await new Promise((resolve) => {
@@ -9784,6 +9794,12 @@ async function openArmoryGate(embarkAction, { skipDoor = false } = {}) {
 
 function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapshot = null } = {}) {
     const playerType = resumeSnapshot?.player?.classType ?? getSelectedHeroType();
+    const forceSectorZero = shouldAutoStartSectorZero({
+        profile,
+        resumeSnapshot,
+        isMultiplayer: Boolean(window.game?.isMultiplayer),
+        isAct2: isAct2RunActive()
+    });
     saveHeroType(playerType);
     // Solo geography resumes the campaign. Fixed daily/multiplayer layouts
     // remain separate from the locally saved campaign seed and progression.
@@ -9804,6 +9820,7 @@ function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapsho
     const deploymentHold = playIntro ? suspendGameForFullscreenVideo() : null;
     triggerDoorTransition(
         () => {
+            if (!resumeSnapshot) profile.recordExpeditionStarted();
             showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
             splash?.classList.add('hidden');
             menu?.classList.add('hidden');
@@ -9834,6 +9851,7 @@ function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapsho
             });
         },
         () => {
+            if (!playIntro && forceSectorZero) window.game?.startSectorZeroTutorial?.();
             if (!playIntro) {
                 window.game?.setInputEnabled?.(true);
                 notifyGameplayReady();
@@ -9845,7 +9863,7 @@ function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapsho
             openingHoldMs: 160,
             onOpeningStart: () => {
                 if (playIntro) {
-                    void runMissionIntroSequence({ deploymentHold });
+                    void runMissionIntroSequence({ deploymentHold, forceSectorZero });
                 }
             }
         }
@@ -11292,6 +11310,7 @@ const closeSettings = document.getElementById('close-settings');
 const mainFsToggle = document.getElementById('main-fs-toggle');
 const settingsBtns = document.querySelectorAll('.open-settings-btn');
 const abortBtn = document.getElementById('abort-mission');
+const skipOnboardingBtn = document.getElementById('skip-sector-zero');
 
 function organizeSettingsPanels() {
     const panel = (name) => settingsPopup?.querySelector(`[data-settings-panel="${name}"]`);
@@ -11514,6 +11533,12 @@ function openSettingsModal() {
     if (abortBtn) {
         abortBtn.classList.toggle('hidden', !isHUD);
         abortBtn.closest('.setting-item')?.classList.toggle('hidden', !isHUD);
+    }
+    const canSkipOnboarding = appPhase === 'gameplay'
+        && Boolean(window.game?.sectorZeroTutorial?.isActive);
+    if (skipOnboardingBtn) {
+        skipOnboardingBtn.classList.toggle('hidden', !canSkipOnboarding);
+        skipOnboardingBtn.closest('.setting-item')?.classList.toggle('hidden', !canSkipOnboarding);
     }
 
     settingsPopup.classList.remove('hidden');
@@ -11847,6 +11872,11 @@ if (abortBtn) {
         if (confirmModal) confirmModal.classList.remove('hidden');
     });
 }
+
+skipOnboardingBtn?.addEventListener('click', () => {
+    if (!window.game?.skipSectorZeroTutorial?.()) return;
+    closeSettingsModal();
+});
 
 const confirmYes = document.getElementById('confirm-yes');
 const confirmNo = document.getElementById('confirm-no');

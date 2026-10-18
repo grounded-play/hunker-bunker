@@ -637,6 +637,7 @@ import {
     rollEnemyLootDrop,
     computeActiveSynergies,
     resolveCryoShatterNova,
+    resolveSubZeroNecrosisNova,
     resolveBioVampirismKill,
     getTurretElementalInheritance,
     isBioEnemy,
@@ -654,6 +655,12 @@ import {
     getQueensMilkHumanHealPenalty,
     applyIncomingDamageModifiers
 } from './runDrops.js';
+import {
+    generateRecalibrationChoices,
+    checkRecalibrationAffordability,
+    RECALIBRATION_REROLL_COST,
+    RECALIBRATION_MODS
+} from './fieldRecalibration.js';
 import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
 import {
@@ -2615,6 +2622,10 @@ export class ThreeGame {
         this.runOverclocks = [];
         this.runRelics = [];
         this.runShardCount = 0;
+        this.campRecalibrations = new Set();
+        this.campRerolls = {};
+        this.fieldRecalibrations = [];
+        this._fieldRecalibrationModId = null;
         this.activeSynergies = [];
         this.inRunLootDrops = [];
         this.fieldWeaponRunState = createFieldWeaponRunState();
@@ -2800,7 +2811,10 @@ export class ThreeGame {
         this.bunkerDirector = new BunkerDirector();
         this.lineDirector = new LineDirector({ globalMinGapSeconds: 8 });
         if (typeof window !== 'undefined') window.lineDirector = this.lineDirector;
-        this.sectorZeroTutorial = new SectorZeroTutorialManager({ game: this });
+        this.sectorZeroTutorial = new SectorZeroTutorialManager({
+            game: this,
+            onComplete: (detail) => this.handleSectorZeroCompleted(detail)
+        });
         this.activeMortarShells = [];
         this._syncedRunModifier = null;
 
@@ -16229,6 +16243,8 @@ export class ThreeGame {
                 modifier: this.currentRunModifier,
                 overclockIds: (this.runOverclocks ?? []).map((drop) => drop.id),
                 relicIds: (this.runRelics ?? []).map((drop) => drop.id),
+                recalibratedCampIds: [...(this.campRecalibrations ?? [])],
+                recalibrationRerolls: { ...(this.campRerolls ?? {}) },
                 shardCount: this.runShardCount,
                 depositedResources: {
                     health: this.runDepositedResources?.med,
@@ -16294,10 +16310,13 @@ export class ThreeGame {
         this.missionState = snapshot.run.missionState ?? this.missionState;
         this.currentRunModifier = snapshot.run.modifier;
         this.runStartTime = Date.now() - snapshot.run.elapsedMs;
-        const overclocks = new Map(WEAPON_OVERCLOCKS.map((drop) => [drop.id, drop]));
+        const overclocks = new Map([...WEAPON_OVERCLOCKS, ...RECALIBRATION_MODS].map((drop) => [drop.id, drop]));
         const relics = new Map(SUIT_RELICS.map((drop) => [drop.id, drop]));
         this.runOverclocks = snapshot.run.overclockIds.map((id) => overclocks.get(id)).filter(Boolean);
+        this._fieldRecalibrationModId = this.runOverclocks.find((drop) => RECALIBRATION_MODS.some((mod) => mod.id === drop.id))?.id ?? null;
         this.runRelics = snapshot.run.relicIds.map((id) => relics.get(id)).filter(Boolean);
+        this.campRecalibrations = new Set(snapshot.run.recalibratedCampIds);
+        this.campRerolls = { ...snapshot.run.recalibrationRerolls };
         this.activeSynergies = computeActiveSynergies([...this.runOverclocks, ...this.runRelics]);
         this.runShardCount = snapshot.run.shardCount;
         this.runDepositedResources = {
@@ -19354,11 +19373,13 @@ export class ThreeGame {
             }
 
             // Sprint 47 Lane 3 Status Procs (Cryo Rime & Caustic Payload)
+            const hasFusion = this.hasActiveOverclock?.('subzero_necrosis');
             const activeElement = element || (this.hasActiveOverclock?.('cryo_rime') ? 'cryo' : (this.hasActiveOverclock?.('caustic_payload') ? 'bio' : null));
-            if (activeElement === 'cryo') {
+            if (activeElement === 'cryo' || hasFusion) {
                 const freezeAmount = statusOptions?.freezePerHit ?? 34;
                 applyStatus(sprite, 'freeze', freezeAmount);
-            } else if (activeElement === 'bio') {
+            }
+            if (activeElement === 'bio' || hasFusion) {
                 const poisonDuration = statusOptions?.poisonDuration ?? 3.0;
                 applyStatus(sprite, 'corrosion', poisonDuration);
             }
@@ -24067,11 +24088,16 @@ export class ThreeGame {
         this.showBunkerLine?.(`FIELD WORKBENCH ACCESSED // SAFE HAVEN FABRICATION LINK`);
         window.AudioManager?.play?.('ui_scan_ping', { volume: 0.5, playbackRate: 1.2 });
 
+        const recalibrated = this.isCampRecalibrated?.(camp.id) ?? false;
+        const recalibrationChoices = this.getRecalibrationChoices?.(camp.id) ?? [];
+
         if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('open-field-workbench', {
                 detail: {
                     campId: camp.id,
                     campLabel: camp.label || 'Safe Haven',
+                    recalibrated,
+                    recalibrationChoices,
                     recipes: [
                         { id: 'ammo_pack', name: 'Standard Munitions Pack', cost: { scrap: 15, tech: 15 }, effect: 'Refills 30 Ammo' },
                         { id: 'med_patch', name: 'Emergency Bio-Suture', cost: { med: 20 }, effect: 'Restores 40 HP' },
@@ -24081,6 +24107,109 @@ export class ThreeGame {
             }));
         }
         return true;
+    }
+
+    isCampRecalibrated(campId) {
+        if (!campId) return false;
+        return Boolean(this.campRecalibrations?.has?.(campId));
+    }
+
+    getRecalibrationChoices(campId) {
+        const rerollCount = this.campRerolls?.[campId] || 0;
+        return generateRecalibrationChoices({
+            campId,
+            equippedOverclocks: this.runOverclocks?.length ? this.runOverclocks : (this.equippedOverclocks || []),
+            equippedRelics: this.runRelics?.length ? this.runRelics : (this.equippedRelics || []),
+            rerollCount,
+            runEntropy: this.runEntropy || 0
+        });
+    }
+
+    recalibrateFieldWeapon(choiceId, campId) {
+        if (!choiceId || !campId) return false;
+        this.campRecalibrations ??= new Set();
+        if (this.campRecalibrations.has(campId)) {
+            this.showBunkerLine?.('WORKBENCH: CAMP RECALIBRATION PROTOCOL ALREADY CONSUMED');
+            return false;
+        }
+
+        const choices = this.getRecalibrationChoices(campId);
+        const choice = choices.find((c) => c.id === choiceId);
+        if (!choice) return false;
+
+        const bank = this.bank?.getState?.() ?? {};
+        const { affordable } = checkRecalibrationAffordability(choice.cost, bank);
+        if (!affordable) {
+            this.showBunkerLine?.('WORKBENCH: INSUFFICIENT MATERIALS FOR RECALIBRATION');
+            return false;
+        }
+
+        const spendResult = this.bank?.spend?.(choice.cost);
+        if (spendResult === false) return false;
+
+        this.runOverclocks ??= [];
+        if (this._fieldRecalibrationModId) {
+            this.runOverclocks = this.runOverclocks.filter((mod) => mod?.id !== this._fieldRecalibrationModId);
+        }
+        this.runOverclocks.push(choice);
+        this._fieldRecalibrationModId = choice.id;
+        this.fieldRecalibrations ??= [];
+        this.fieldRecalibrations.push(choice);
+        this.campRecalibrations.add(campId);
+
+        const synergies = computeActiveSynergies([
+            ...this.runOverclocks,
+            ...(this.runRelics?.length ? this.runRelics : (this.equippedRelics || []))
+        ]);
+        this.activeSynergies = synergies;
+
+        if (this.runSummary) {
+            this.runSummary.recalibrations = (this.runSummary.recalibrations || []).concat(choice.id);
+            this.runSummary.activeSynergies = synergies.map((s) => s.id);
+        }
+
+        this.showBunkerLine?.(`WORKBENCH: RECALIBRATION INSTALLED // ${choice.name.toUpperCase()}`);
+        window.AudioManager?.play?.('fx_level_up', { volume: 0.6, playbackRate: 1.1 });
+
+        if (this.isMultiplayer) {
+            this.broadcastSharedWorldEvent?.('field-recalibration-applied', {
+                campId,
+                choiceId,
+                peerId: this.multiplayerLocalPlayerId ?? null
+            });
+        }
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('field-recalibration-applied', {
+                detail: { campId, choice, activeSynergies: synergies }
+            }));
+        }
+
+        return true;
+    }
+
+    rerollFieldRecalibration(campId) {
+        if (!campId) return false;
+        if (this.isCampRecalibrated?.(campId)) {
+            this.showBunkerLine?.('WORKBENCH: CAMP RECALIBRATION PROTOCOL ALREADY CONSUMED');
+            return false;
+        }
+        const bank = this.bank?.getState?.() ?? {};
+        const availableTech = Number(bank.tech ?? bank.scrap) || 0;
+        if (availableTech < RECALIBRATION_REROLL_COST.tech) {
+            this.showBunkerLine?.('WORKBENCH: INSUFFICIENT TECH TO REROLL MOD CHOICES');
+            return false;
+        }
+
+        const spendResult = this.bank?.spend?.({ tech: RECALIBRATION_REROLL_COST.tech });
+        if (spendResult === false) return false;
+
+        this.campRerolls ??= {};
+        this.campRerolls[campId] = (this.campRerolls[campId] || 0) + 1;
+        this.showBunkerLine?.('WORKBENCH: RECALIBRATION MATRIX REROLLED');
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 1.4 });
+
+        return this.getRecalibrationChoices(campId);
     }
 
     craftFieldRecipe(recipeId) {
@@ -31877,7 +32006,7 @@ export class ThreeGame {
         // adding a flat bonus. Pulled out into runDrops.js's
         // applyLastBreathDamage so it's testable without faking this
         // method's much larger dependency surface.
-        damage = applyLastBreathDamage(damage, this.runRelics, this.playerVitals?.o2 ?? 100);
+        damage = applyLastBreathDamage(damage, [...(this.runRelics ?? []), ...(this.runOverclocks ?? [])], this.playerVitals?.o2 ?? 100);
 
         const playerHeight = this.getTerrainHeightAt(this.player?.position?.x ?? 0, this.player?.position?.z ?? 0);
         if (playerHeight > 0) {
@@ -48273,12 +48402,49 @@ export class ThreeGame {
         if (!this.sectorZeroTutorial) {
             this.sectorZeroTutorial = new SectorZeroTutorialManager({ game: this });
         }
+        this.sectorZeroTutorial.onComplete = (detail) => this.handleSectorZeroCompleted(detail);
         this._sectorZeroMovedDistance = 0;
         this._sectorZeroMovedMs = 0;
         this._sectorZeroWeaponSpawned = false;
         this._sectorZeroCrawlerSpawned = false;
         this._setupSectorZeroEventListeners();
         return this.sectorZeroTutorial.start();
+    }
+
+    handleSectorZeroCompleted({ skipped = false, previousPhase = null } = {}) {
+        if (typeof window === 'undefined') return;
+        window.dispatchEvent(new CustomEvent('sector-zero-completed', {
+            detail: { skipped: Boolean(skipped), previousPhase }
+        }));
+    }
+
+    skipSectorZeroTutorial() {
+        if (!this.sectorZeroTutorial?.skip?.()) return false;
+
+        // A skip must leave the operator in a viable normal-run state. Prefer
+        // the authored rack sidearm if it already exists; otherwise create the
+        // same standard loadout directly at the operator's feet.
+        if (!this.fieldWeaponRunState?.equipped) {
+            let sidearm = this.fieldWeaponRunState?.worldDrops?.find(({ profileId }) => profileId === 'mk1_sidearm');
+            if (!sidearm && this.player?.position) {
+                sidearm = this.spawnFieldWeaponDrop?.(
+                    'mk1_sidearm',
+                    this.player.position.x,
+                    this.player.position.z,
+                    {
+                        ammoInWeapon: 12,
+                        reserveAmmo: 36,
+                        instanceId: `sector-zero-skip-sidearm:${this.fieldWeaponRunState?.runId ?? 'run'}`
+                    }
+                );
+            }
+            if (sidearm?.instanceId) this.interactWithFieldWeaponDrop?.(sidearm.instanceId);
+        }
+
+        this.addScrap?.(25);
+        this.openBunkerBlastDoor?.();
+        this.showBunkerLine?.('ONBOARDING BYPASSED — SIDEARM ISSUED · 25 TECH CREDITED · SECTOR 1 OPEN.');
+        return true;
     }
 
     handleSectorZeroPhaseChanged(phase) {
@@ -49024,6 +49190,41 @@ export class ThreeGame {
         }
     }
 
+    triggerSubZeroNecrosis(targetSprite) {
+        if (!targetSprite?.position) return;
+        const tx = targetSprite.position.x;
+        const tz = targetSprite.position.z;
+        this.spawnPhysicalBurst(tx, tz, { color: 0x7df2ff, count: 8, upward: 0.3 });
+        this.spawnPhysicalBurst(tx, tz, { color: 0x8df442, count: 8, upward: 0.25 });
+
+        const novaTargets = resolveSubZeroNecrosisNova({
+            originX: tx,
+            originZ: tz,
+            scatterSprites: this.scatterSprites,
+            novaRadius: 4.5,
+            novaDamage: 35,
+            sourceSprite: targetSprite
+        });
+
+        const necrosis = ((this._runBuildTelemetry ??= {}).subzero_necrosis ??= { activations: 0, damage: 0 });
+        necrosis.activations += 1;
+
+        for (const affected of novaTargets) {
+            necrosis.damage += Number(affected.damage) || 0;
+            this.applyPlayerDamageToEnemy(affected.sprite, affected.damage);
+            applyStatus(affected.sprite, 'freeze', affected.freezeAmount || 50);
+            applyStatus(affected.sprite, 'corrosion', affected.poisonDuration || 3.0);
+        }
+
+        clearStatus(targetSprite, 'freeze');
+        clearStatus(targetSprite, 'corrosion');
+
+        if (typeof window !== 'undefined') {
+            window.AudioManager?.play?.('crystal_shatter', { volume: 0.6, playbackRate: 0.9 });
+            window.AudioManager?.play?.('hive_spores_puff', { volume: 0.4, playbackRate: 1.3 });
+        }
+    }
+
     handleTankCorrosionPull(slamX, slamZ, radius = 7.0) {
         let pulledCount = 0;
         for (const sprite of this.scatterSprites ?? []) {
@@ -49047,6 +49248,14 @@ export class ThreeGame {
     checkCryoShatterOnDeath(sprite) {
         if (!sprite?.position) return;
         const isFrozen = getStatus(sprite, 'freeze').isFrozen || sprite.userData?.frozen || (sprite.userData?.frozenTimer ?? 0) > 0;
+        const isCorroded = getStatus(sprite, 'corrosion').active || Boolean(sprite.userData?.corroded);
+        const hasNecrosis = this.hasActiveSynergy?.('subzero_necrosis');
+
+        if (isFrozen && isCorroded && hasNecrosis) {
+            this.triggerSubZeroNecrosis(sprite);
+            return;
+        }
+
         const hasShatter = this.hasActiveRelic?.('shatter_engine') || this.hasActiveSynergy?.('cryo_shatter');
         if (isFrozen && hasShatter) {
             this.triggerCryoShatter(sprite);
