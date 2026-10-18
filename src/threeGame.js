@@ -28839,9 +28839,13 @@ export class ThreeGame {
         if (inBubble && !this._wasInBubble) {
             window.AudioManager?.play('ui_scan_ping', { volume: 0.22, playbackRate: 0.72, bus: 'sfx' });
         }
+        if (!inBubble && this._wasInBubble && !this._hasWarnedBubbleExit) {
+            this._hasWarnedBubbleExit = true;
+            window.showToastNotification?.('SUIT TELEMETRY: EXITED LIFE SUPPORT BUBBLE — O₂ RESERVES ACTIVE', { tone: 'warning', duration: 5000 });
+        }
         this._wasInBubble = inBubble;
 
-        const reactorLevel = this.bank.getState().reactorCompressorLevel ?? (reactorUpgrade ? 1 : 0);
+        const reactorLevel = this.bank?.getState?.()?.reactorCompressorLevel ?? (reactorUpgrade ? 1 : 0);
 
         if (inBubble) {
             this._currentO2DrainRate = 0;
@@ -28855,6 +28859,9 @@ export class ThreeGame {
             }
             this.playerVitals.o2 = Math.min(this.playerVitals.maxO2 ?? 100, this.playerVitals.o2 + refillRate * delta);
             this.playerVitals.o2HealthTimer = 0;
+            if (this.playerVitals.o2 >= 90) {
+                this._hasWarnedHalfO2 = false;
+            }
         } else {
             let drainRate = O2_DRAIN_RATE_PCT_PER_SEC
                 * (this.o2DrainMult ?? 1.0)
@@ -28908,6 +28915,11 @@ export class ThreeGame {
             }
             this._currentO2DrainRate = drainRate;
             this.playerVitals.o2 = Math.max(0, this.playerVitals.o2 - drainRate * delta);
+
+            if (!inBubble && previousO2 > 50 && this.playerVitals.o2 <= 50 && !this._hasWarnedHalfO2) {
+                this._hasWarnedHalfO2 = true;
+                window.showToastNotification?.('SUIT TELEMETRY: O₂ AT 50% — RETURN TO BUBBLE OR SECURE OXYGEN REFILL', { tone: 'warning', duration: 6000 });
+            }
 
             if (this.playerVitals.o2 <= 0) {
                 this.playerVitals.o2HealthTimer += delta;

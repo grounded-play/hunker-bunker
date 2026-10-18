@@ -299,6 +299,48 @@ describe('Gameplay regressions: damage, oxygen, and cliff falling', () => {
                 })
             }));
         });
+
+        it('warns player on initial bubble exit and when O2 crosses 50% threshold (S53-05)', () => {
+            const showToast = vi.fn();
+            window.showToastNotification = showToast;
+
+            const fakeGame = {
+                player: new THREE.Object3D(),
+                isPlayerDead: false,
+                falseTelemetryTimer: 0,
+                cinematicLock: false,
+                godMode: false,
+                _wasInBubble: true,
+                _hasWarnedBubbleExit: false,
+                _hasWarnedHalfO2: false,
+                playerVitals: { o2: 50.1, maxO2: 100, o2HealthTimer: 0 },
+                getO2GeneratorState: () => ({ isOnline: true, radius: 5, refillRate: 5 }),
+                getActiveO2GeneratorDistance: () => 10, // outside bubble
+                hasUpgrade: () => false,
+                bank: { getState: () => ({ tier2Unlocks: {} }), isSkillUnlocked: () => false },
+                getRunCardEffects: () => ({}),
+                emitO2State: vi.fn(),
+                o2DispatchTimer: 0
+            };
+
+            // Frame 1: Leaving bubble - should toast exit warning and cross below 50% to trigger 50% warning
+            ThreeGame.prototype.updateVitals.call(fakeGame, 1.0);
+            expect(fakeGame._hasWarnedBubbleExit).toBe(true);
+            expect(fakeGame._hasWarnedHalfO2).toBe(true);
+            expect(showToast).toHaveBeenCalledWith(
+                expect.stringContaining('EXITED LIFE SUPPORT BUBBLE'),
+                expect.objectContaining({ tone: 'warning' })
+            );
+            expect(showToast).toHaveBeenCalledWith(
+                expect.stringContaining('O₂ AT 50%'),
+                expect.objectContaining({ tone: 'warning' })
+            );
+
+            // Frame 2: Continuing outside bubble - should not spam warnings
+            showToast.mockClear();
+            ThreeGame.prototype.updateVitals.call(fakeGame, 1.0);
+            expect(showToast).not.toHaveBeenCalled();
+        });
     });
 
     describe('canOccupyPosition and cliff falling', () => {

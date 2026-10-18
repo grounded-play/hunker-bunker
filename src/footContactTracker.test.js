@@ -39,7 +39,7 @@ describe('FootContactTracker', () => {
         // Both feet lift and land together, as a walk/strafe blend can do.
         for (let t = 0; t < 3; t += 1 / 60) {
             const h = Math.max(0, Math.sin(2 * Math.PI * t)) * 0.12;
-            for (const foot of tracker.update(1 / 60, [h, h * 0.98], true)) events.push(t);
+            for (let k = 0; k < tracker.update(1 / 60, [h, h * 0.98], true).length; k++) events.push(t);
         }
         for (let i = 1; i < events.length; i++) expect(events[i] - events[i - 1]).toBeGreaterThanOrEqual(0.2 - 1e-9);
     });
