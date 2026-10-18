@@ -1,7 +1,11 @@
 # Procedural Spline Pipes, Cables, and Rigging System
+
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** Implementation of procedural conduits, sway shaders, and biome themes is complete in `src/worldConduits.js` and `src/cableSway.js`. Final Steam Deck performance metrics and release acceptance gates are consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](sprint-53-master-verification-and-execution-plan-2026-10-17.md#2-performance--frame-pacing-deck--pc).
+
 ## Architecture, Performance, Environmental Set-Dressing & Asset Interconnection Plan
 **Date:** 2026-10-09  
-**Status:** Architectural Plan  
+**Status:** Architectural Plan / Consolidated into Sprint 53 Master Plan
 **Target Platform:** WebGL2 / Three.js (Steam Deck 60 FPS Target, Desktop 120 FPS)  
 **Related Documents:** 
 - [`docs/planning/lived-in-world-pass-2-2026-10-09.md`](lived-in-world-pass-2-2026-10-09.md)

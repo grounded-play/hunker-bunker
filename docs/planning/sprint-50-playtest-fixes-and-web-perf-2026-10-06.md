@@ -1,6 +1,9 @@
 # Sprint 50 — playtest fixes and web performance (2026-10-06)
 
-Status: **implementation continued on `dev/sprint-51`; hardware acceptance and perf backlog remain** | Original branch: `dev/sprint-50` | PR #105 | Issue #106
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** Playtest remediations from this pass have been completed. Hardware verification routes for co-op expedition (#85), Steam Deck controller input (#53), and web performance (#106) are consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](sprint-53-master-verification-and-execution-plan-2026-10-17.md).
+
+Status: **historical / consolidated into Sprint 53 Master Plan** | Original branch: `dev/sprint-50` | PR #105 | Issue #106
 
 Source: the owner's two-account co-op session on 2026-10-06, 18:42–18:57 UTC.
 - **Build:** `2.4.15-beta` (`58a0f732`) on both machines.

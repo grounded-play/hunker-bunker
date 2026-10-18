@@ -1,5 +1,8 @@
 # Hunker Bunker economy: master plan
 
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** Live store disclosures, MicroTxn settlement drills, and publisher clearance tasks have been consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](sprint-53-master-verification-and-execution-plan-2026-10-17.md#5-publisher--operations-checklist).
+
 Status: proposal for owner review · Owner: publisher · Written: 2026-09-30 ·
 Base: `dev/sprint-48`
 

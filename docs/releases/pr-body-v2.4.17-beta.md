@@ -1,5 +1,8 @@
 # Release PR: v2.4.17-beta — Base Rebuild & Carry, Field Weapons & Flamethrower, Lived-in World, Lower-Console HUD, Playtest Fixes
 
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** Packaged verification, hardware acceptance, and release gate closure for this release candidate are consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md).
+
 **Target Branch:** `mothership` ← **Source Branch:** `dev/sprint-52`
 
 ---

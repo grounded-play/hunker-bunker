@@ -1,5 +1,8 @@
 # Lived-in world, pass 2: props, stickers, textures and blended edges — 2026-10-09
 
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** Remaining asset deliveries (Prop 80), VRAM optimizations, and Steam Deck frame-pacing captures from this pass have been consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](sprint-53-master-verification-and-execution-plan-2026-10-17.md).
+
 Owner, 2026-10-09: "I feel the world still feels too empty, what can we do to make it more lived in, in terms of assets and graphics overlays ... a list of 40 new unique assets in the visual style of the last 20 but for various areas and 20 more that we will put over a chroma green to like sticker on top of textures ... some more textures and instead of hard lines where one area ends and another begins we brush and blend the edges between things, let's plan this all out first, what do games use to make the world more lived in?"
 
 This is a plan. Phases 0 and 1 are built (see **Status** below); the rest is not.

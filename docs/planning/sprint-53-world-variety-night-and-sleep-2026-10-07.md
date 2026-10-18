@@ -1,6 +1,9 @@
 # Sprint 53 — A world that varies, names itself, goes dark, and sleeps
 
-Status: **approved 2026-10-07** ("all correct proceed"), in progress. Branch: `dev/sprint-51` (local only).
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** Biome wall reskinning, sleep/morning cinematic cards, and world variety systems from this design brief have been implemented and verified. Release qualification is consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](sprint-53-master-verification-and-execution-plan-2026-10-17.md).
+
+Status: **historical / consolidated into Sprint 53 Master Plan**. Branch: `dev/sprint-51` (local only).
 
 Implementation audit and remaining work: [`sprint-53-continuation-plan-2026-10-07.md`](sprint-53-continuation-plan-2026-10-07.md).
 

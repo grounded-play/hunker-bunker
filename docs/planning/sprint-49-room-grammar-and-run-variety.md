@@ -1,6 +1,9 @@
 # Sprint 49 — room grammars and expedition variety
 
-Status: active implementation & gate tracking | Branch: `dev/sprint-49` | Updated: 2026-10-05
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** Room grammar generation and area profile implementation are complete. Final G6 rollout captures and seed sweep gates are consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](sprint-53-master-verification-and-execution-plan-2026-10-17.md#room-grammar-g6-rollout--captures).
+
+Status: historical / consolidated | Branch: `dev/sprint-49` | Updated: 2026-10-17
 
 Parent: [S49-20](sprint-49.md#s49-20--world-variety-that-preserves-navigation-and-purpose).
 Commit evidence belongs in the [continuation journal](sprint-49-lived-in-world-continuation.md).

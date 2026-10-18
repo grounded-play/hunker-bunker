@@ -1,6 +1,9 @@
 # TODO tree iteration handoff — 2026-10-01 14:42
 
-Status: active worklog | Owner: repository maintainers | Updated: 2026-10-01
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** This historical worklog has been consolidated. All unresolved hardware verification gates and multi-account co-op/PvP testing requirements are canonicalized in the [Sprint 53 Master Verification & Execution Plan (2026-10-17)](sprint-53-master-verification-and-execution-plan-2026-10-17.md).
+
+Status: historical / consolidated | Owner: repository maintainers | Updated: 2026-10-17
 
 ## Scope and continuation rules
 

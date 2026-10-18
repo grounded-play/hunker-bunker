@@ -1,6 +1,9 @@
 # Sprint 52 — Smooth the whole run; walk-through world, footprints, popups
 
-Status: **historical implementation record; acceptance reopened** on `dev/sprint-52`. The current owner-playtest findings, responsible code, and fix gates live in [the 2026-10-12 Steam Deck and PC remediation plan](playtest-remediation-steam-deck-and-pc-2026-10-12.md).
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** Arches and floor collisions (B1/B2), prop scaling (C1), footprints, and popup remediations from this playthrough have been verified and closed. Frame rate profiling is consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](sprint-53-master-verification-and-execution-plan-2026-10-17.md#25-issue-52-profile-and-remediate-packaged-gpu-and-frame-pacing-regression).
+
+Status: **historical implementation record; consolidated into Sprint 53 Master Plan** on `dev/sprint-52`.
 
 ## The owner, 2026-10-07, after a Deck playthrough
 

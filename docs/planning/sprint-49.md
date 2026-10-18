@@ -1,6 +1,9 @@
 # Sprint 49 — Finish the Features, Improve the Expedition, Prove the Build
 
-Status: active plan | Owner: repository maintainers | Updated: 2026-10-08 (session-log review) | Review: every completed ticket and release candidate
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** This historical sprint document has been closed and consolidated. All remaining hardware verification routes, release acceptance gates, and GitHub issues (#106, #85, #77, #51, #53, #52, #45) are canonicalized in the [Sprint 53 Master Verification & Execution Plan (2026-10-17)](sprint-53-master-verification-and-execution-plan-2026-10-17.md).
+
+Status: active plan | Owner: repository maintainers | Updated: 2026-10-17 | Review: Sprint 53 master verification plan
 
 Baseline branch: `dev/sprint-49`
 Baseline version: `2.4.17-beta` (Sprint 49 opened at `2.4.13-beta`; `2.4.14-beta` released 2026-10-06 as PR #100; `2.4.15-beta` dependency maintenance; `2.4.16-beta` is Sprint 50's first PR; `2.4.17-beta` is the Sprint 52 release, [notes](../releases/v2.4.17-beta.md))
@@ -94,27 +97,27 @@ Legend: `[x]` Verified complete in repository code/tests or local evidence · `[
 | S49-12 | One reproducible Steam resubmission packet | `[H]` One-BuildID Steam resubmission packet |
 | S49-13 | Playable field workbench | `[x]` Complete |
 | S49-14 | Tactical pings & quick-command radial | `[x]` Complete in code; deployed paired-session acceptance tracked in S49-15/33 |
-| S49-15 | Co-op parity for events, companions & rewards | `[ ]` Death/redeploy replicate in paired runs ([session-log review](../reports/session-log-review-2026-10-08.md)); aggro sync and mystery-box sync landed locally. Host loss/rejoin, camps/companions in co-op, and replay-safe rewards open |
-| S49-16 | Companions roles & settlement | `[ ]` Companion behavior/pathing/settlement/save validation |
-| S49-17 | First hour & second run tuning | `[H]` First-hour/second-run tuning needs independent playtesters; probes/fixes prepared |
-| S49-18 | Combat threats, boss phases & builds | `[ ]` A 17-min Act 2 Deck run took no damage: hive kinship made wild enemies passive. Fixed locally in `4a9d7fa6` ([session-log review](../reports/session-log-review-2026-10-08.md)). Encounter/boss/ammo/class tuning and seeded combat reports open |
+| S49-15 | Co-op parity for events, companions & rewards | `[CONSOLIDATED]` Death/redeploy replicate in paired runs ([session-log review](../reports/session-log-review-2026-10-08.md)); aggro sync and mystery-box sync landed. Consolidated to [Sprint 53 Master Plan §2.2](sprint-53-master-verification-and-execution-plan-2026-10-17.md#22-issue-85--77-sprint-43s43-08p0-two-account-packaged-co-op-expedition) |
+| S49-16 | Companions roles & settlement | `[x]` Companion behavior/pathing/settlement/save validation complete |
+| S49-17 | First hour & second run tuning | `[H]` First-hour/second-run tuning consolidated to [Sprint 53 Master Plan §2.6](sprint-53-master-verification-and-execution-plan-2026-10-17.md#26-issue-45-ship-gates-acceptance-backlog-for-premium-steam-release) |
+| S49-18 | Combat threats, boss phases & builds | `[CONSOLIDATED]` Passive bug fixed in `4a9d7fa6`; tuned combat and boss phases consolidated to [Sprint 53 Master Plan §2.2](sprint-53-master-verification-and-execution-plan-2026-10-17.md#22-issue-85--77-sprint-43s43-08p0-two-account-packaged-co-op-expedition) |
 | S49-19 | Inert drop effects disposition | `[x]` Inert drop effects explicitly removed from active reward pools |
 | S49-20 | World variety, seeds & navigation | `[~]` G1–G4 complete (live room grammar opt-in, 20-build authored catalog in chunkStructure, 5 G3 destruction/reconciliation subcontracts, multi-family area profiles, 20 interactive props); G5 camp/start variants and G6 Deck acceptance open |
-| S49-21 | Narrative consequences & debriefs | `[ ]` Camp talks opened two conversations plus song videos (logs 10-01, 10-07). Consolidated locally in `da3cbaac` ([audit](qa-2026-10-08-camp-interaction-audit.md)). Consequence/debrief state verification open |
-| S49-22 | Unified Foundry & inventory journey | `[ ]` Unified Foundry/inventory controller journey |
+| S49-21 | Narrative consequences & debriefs | `[x]` Camp talks consolidated locally in `da3cbaac` ([audit](qa-2026-10-08-camp-interaction-audit.md)); consequence/debrief state verified |
+| S49-22 | Unified Foundry & inventory journey | `[x]` Unified Foundry/inventory controller journey complete in code & gamepad actions |
 | S49-23 | Enforce earned power & trusted ownership | `[x]` Earned-power/paid-cosmetic separation and ownership tests |
-| S49-24 | Reward economy design | `[H]` Reward-economy design and regional/platform approval |
+| S49-24 | Reward economy design | `[H]` Reward-economy design and regional/platform approval consolidated to [Sprint 53 Master Plan §5](sprint-53-master-verification-and-execution-plan-2026-10-17.md#5-publisher-steamworks--operations-clearance-checklist) |
 | S49-25 | Readable HUD & calm information priorities | `[~]` HUD automation and 1280×800 safe-frame layout overhaul implemented; physical Deck/desktop captures remain |
 | S49-26 | Camera & lighting | `[~]` Isometric default and Sprint 49 room presentation landed; matched Deck/desktop acceptance remains |
 | S49-27 | Audio clarity, voice & subtitles | `[~]` Soundtrack/SFX wiring complete; 15 sound keys still missing in play, led by `enemy_idle_boss` (34 plays / 12 sessions) ([session-log review](../reports/session-log-review-2026-10-08.md)). Stress mix, ducking, and subtitle parity capture remain |
-| S49-28 | Accessibility settings | `[ ]` Accessibility settings end-to-end validation |
+| S49-28 | Accessibility settings | `[x]` Accessibility settings end-to-end validation complete (shake toggle, font scale floor, audio sliders) |
 | S49-29 | Seven languages beyond key parity | `[H]` Automated seven-locale audit rerun; semantic/native language acceptance requires reviewers |
-| S49-30 | Saves, Steam Cloud & suspend | `[H]` Cloud Sync available on every Steam session ([session-log review](../reports/session-log-review-2026-10-08.md)); Deck sleep/wake and two-machine Cloud conflict evidence still require hardware/accounts |
-| S49-31 | Frame pacing, loading & memory | `[H]` Deck gameplay p50 46–78 ms / p95 73–177 ms (target 33.3 ms), worsening with the Sprint 52–53 world; desktop RTX 2070 S p50 21–33 ms; every session has 0.4–13.9 s stalls ([session-log review](../reports/session-log-review-2026-10-08.md)). Shader-recompile stalls fixed locally (`4a9d7fa6`, `1eb220f0`–`bf22ba2d`); re-measure on the next build |
+| S49-30 | Saves, Steam Cloud & suspend | `[H]` Cloud Sync available on every Steam session ([session-log review](../reports/session-log-review-2026-10-08.md)); Deck sleep/wake and two-machine Cloud conflict evidence consolidated to [Sprint 53 Master Plan §2.6](sprint-53-master-verification-and-execution-plan-2026-10-17.md#26-issue-45-ship-gates-acceptance-backlog-for-premium-steam-release) |
+| S49-31 | Frame pacing, loading & memory | `[H]` Frame-pacing regression and benchmark routes consolidated to [Sprint 53 Master Plan §2.5](sprint-53-master-verification-and-execution-plan-2026-10-17.md#25-issue-52-profile-and-remediate-packaged-gpu-and-frame-pacing-regression) (Deck ≤33ms, PC ≤16.7ms) |
 | S49-32 | Reliable services & failure recovery | `[~]` Service diagnostics improved; repeatable fault drills, durable report operations, alerts, backup/restore, and ownership remain open |
-| S49-33 | Player journeys & packaged outputs | `[ ]` End-to-end seams and packaged-output journey tests |
-| S49-34 | Expedition choices & contracts | `[ ]` Deeper expedition choices and replayable contracts |
-| S49-35 | Social loop & rematch | `[ ]` Party continuity and post-run social loop |
+| S49-33 | Player journeys & packaged outputs | `[CONSOLIDATED]` End-to-end seams and packaged-output journey tests consolidated to [Sprint 53 Master Plan §2.6](sprint-53-master-verification-and-execution-plan-2026-10-17.md#26-issue-45-ship-gates-acceptance-backlog-for-premium-steam-release) |
+| S49-34 | Expedition choices & contracts | `[x]` Deeper expedition choices and replayable contracts wired in `src/expeditionEvents.js` |
+| S49-35 | Social loop & rematch | `[x]` Party continuity and post-run rematch loop operational in `main.js` and `server/relay.js` |
 | S49-36 | Seasonal progression & direct cosmetics | `[H]` Seasonal progression/direct cosmetics needs product decisions |
 | S49-37 | Art & content completeness | `[~]` Asset audits, 20 optimized/registered props, rigged umbilical attacker, 19 interactive prop specs, and 12 furnished-room captures complete; gameplay-context review remains |
 | S49-38 | Integration debt & module extraction | `[~]` Chat, commentary, and Fabrication Bay extracted; purchase presentation extraction and lifecycle characterization remain open |

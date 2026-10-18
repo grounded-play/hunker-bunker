@@ -1,5 +1,8 @@
 # G3 renderer, identity and breach integration
 
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** G3 renderer, dressing hit-target, and destruction integration are complete. Performance benchmark gates are consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md#2-performance--frame-pacing-deck--pc).
+
 Implements the next slice of the [room grammar plan](../planning/sprint-49-room-grammar-and-run-variety.md).
 Integrates the previously uncommitted dressing hit-target/renderer work, then adds
 versioned identity, support removal and grammar-specific wall classification.

@@ -1,6 +1,9 @@
 # Sprint 49 lived-in world continuation
 
-Status: active implementation journal | Branch: `dev/sprint-49` | Updated: 2026-10-04
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** This implementation journal has been completed and closed. Destruction-window frame profiling and release performance gates are consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](sprint-53-master-verification-and-execution-plan-2026-10-17.md#25-issue-52-profile-and-remediate-packaged-gpu-and-frame-pacing-regression).
+
+Status: historical / consolidated | Branch: `dev/sprint-49` | Updated: 2026-10-17
 
 This file is the continuation point for the prop, prefab, destruction, and room-life
 work requested after reviewing the Sprint 49 plan. Keep it current before each

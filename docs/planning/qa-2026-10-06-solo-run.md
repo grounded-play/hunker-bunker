@@ -1,5 +1,8 @@
 # QA — 27-minute solo run, 2026-10-06
 
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** Findings and fixes from this solo QA session have been integrated. Hardware verification gates for camp interactions and Foundry progression are consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](sprint-53-master-verification-and-execution-plan-2026-10-17.md).
+
 **Capture:** `hunker-bunker-session-2026-10-06T22-52-30-009Z-mux9xn5p-uzr.json` in the session-log drop box.
 - Build `2.4.16-beta` (`b8b3f3bc`), Steam Deck, controller plus touch.
 - Engineer; died at 27 min (cryo hazard).

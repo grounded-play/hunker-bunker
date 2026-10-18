@@ -1,5 +1,8 @@
 # Room dressing destruction — persistence slice
 
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** Persistence slicing for broken dressing is implemented and verified. Steam Deck hardware comparison and performance gates are consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md#2-performance--frame-pacing-deck--pc).
+
 G3 follow-up to the [room grammar plan](../planning/sprint-49-room-grammar-and-run-variety.md).
 
 This slice adds map-local broken-object records to the existing maze snapshot.
