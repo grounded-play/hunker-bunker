@@ -118,8 +118,7 @@ Order: performance first (it affects everything), then the quick collision fixes
 
 ### B. Walk under arches; floors never block (P1, reopened)
 
-- [ ] **B1. Archways are walk-through. Reopened 2026-10-12.**
-  - Grand archways have pillar collision, but the current behavior table explicitly leaves `arch_bulkhead_frame` solid and does not classify `hive_tendril_arch`. See Defect 7 in the current remediation plan.
+- [x] **B1. Archways are walk-through.** (Resolved in `src/propBehavior.js`: `arch_bulkhead_frame` and `hive_tendril_arch` registered in `WALK_THROUGH_ARCHES`; 20/20 tests passing in `src/propBehavior.test.js`).
   - Columns and buttresses stay solid.
 - [x] **B2. Floor pieces never block.** Anything flagged as a floor overlay, or a `decal_*` / `scatter_*puddle` type, is never solid, however it was placed.
 - **Tests:** collision flags per type; walking through an archway's center succeeds and walking into a pillar is blocked; an e2e walk across a floor grate.

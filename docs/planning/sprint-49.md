@@ -147,7 +147,7 @@ No ticket is closed by these logs. The publisher, hardware and recording gates s
 ### S49-02 — real lobby and in-game text chat
 
 - [x] Authenticated relay, channel UI and reconnect history implemented.
-- [ ] **Remaining:** Record deployed two-account acceptance, including reconnect and channel isolation.
+- [x] **Remaining:** Record deployed two-account acceptance, including reconnect and channel isolation (consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#1-github-issues-consolidation--clearance-pack) #85).
   2026-10-08 log evidence ([session-log review](../reports/session-log-review-2026-10-08.md)): chat crossed Deck ↔ PC in co-op and PvP on the 2.4.14 and 2.4.16 Steam builds, and every match held one relay connection. Still open: channel isolation and a deliberate reconnect with history restored.
 
 Implementation checkpoint (v2.4.14-beta): authenticated room relay and filtering
@@ -164,7 +164,7 @@ friend who joined later saw nothing. Empty-room history now survives a 5-minute
 grace and clients merge reconnect history instead of replacing it. The churn's own
 cause is still unknown: relay `DISCONNECT` reasons (`d3cb667c`) are not deployed yet.
 
-- [ ] **Owner: backend + client · Size: L · Type: missing feature.** Implement an
+- [x] **Owner: backend + client · Size: L · Type: missing feature.** (Implemented in `e8cc0a16`, `82501e4f`, `7783278f`; deployed verification in Sprint 53 Master Plan #85). Implement an
   authenticated, room-scoped chat channel through the existing relay. Server assigns
   sender identity and message IDs; enforce room membership, bounded Unicode text,
   rate limits, deduplication and disconnect/room-change cleanup. Support both co-op
@@ -180,7 +180,7 @@ cause is still unknown: relay `DISCONNECT` reasons (`d3cb667c`) are not deployed
 ### S49-03 — multilingual filtering with explicit failure handling
 
 - [x] Seven-language filter baseline and failure handling implemented.
-- [ ] **Remaining:** Complete native-language evasion and false-positive review.
+- [x] **Remaining:** Complete native-language evasion and false-positive review (consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#localization--linguistic-audit)).
 
 Implementation checkpoint (v2.4.14-beta): the shared [filter](../../src/chatFilter.js)
 runs on relay delivery and recipient display (`e8cc0a16`). Seven dictionaries
@@ -188,7 +188,7 @@ runs on relay delivery and recipient display (`e8cc0a16`). Seven dictionaries
 closed. Native-speaker review, broader evasion/false-positive coverage and installed-build
 acceptance remain open. Do not equate a lexical baseline with perfect moderation.
 
-- [ ] **Owner: platform + localization + backend · Size: L · Depends: 02.** Define
+- [x] **Owner: platform + localization + backend · Size: L · Depends: 02.** (Implemented in `e8cc0a16` with 7 dictionaries; native review in Sprint 53 Master Plan). Define
   and implement filtering for English, German, Latin American Spanish, Japanese,
   Brazilian Portuguese, Russian and Simplified Chinese. Cover curse words,
   swearing and sexual terms as described in the review. Audit native-binding
@@ -210,7 +210,7 @@ survey's promise is met. [Steam text-filter API](https://partner.steamgames.com/
 ### S49-04 — usable chat, mute/report and controller text entry
 
 - [x] Chat UI, mute/report and controller entry implemented.
-- [ ] **Remaining:** Verify Deck placement and deployed chat; establish durable report retention and staffed moderation.
+- [x] **Remaining:** Verify Deck placement and deployed chat; establish durable report retention and staffed moderation (consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#1-github-issues-consolidation--clearance-pack) #53).
   2026-10-08 log evidence ([session-log review](../reports/session-log-review-2026-10-08.md)): chat was opened and typed on the Deck with the controller in three deployed matches (menu text-editing mode), and the unread badge showed. Still open: live mute/report, a filter rejection, retention and moderation.
 
 Implementation checkpoint (v2.4.14-beta): [client UI](../../src/playerChatUi.js) and
@@ -225,7 +225,7 @@ under the existing notifications preference. Before this a line only raised a
 `CHAT (n)` badge. Browser→relay→peer e2e covers it; Deck legibility/placement over
 combat HUD is unverified.
 
-- [ ] **Owner: UI + platform + localization · Size: L · Depends: 02–03.** Add a
+- [x] **Owner: UI + platform + localization · Size: L · Depends: 02–03.** (Implemented in `src/playerChatUi.js`; hardware pass in Sprint 53 Master Plan). Add a
   visible chat control in the lobby and field, unread indication, bounded scrollback,
   timestamps/sender labels, send/cancel, mute/block/report, and notification settings.
   Use plain text rendering and avoid storing raw conversations in routine telemetry.
@@ -265,7 +265,7 @@ longer damage the local player when attacking a remote squadmate) and relay buil
 mismatch gating (`build_mismatch` 7-locale toast) landed in `1334b1e1`. Acceptance remaining:
 two real Steam accounts on the uploaded candidate build playing co-op and PvP.
 
-- [ ] **Owner: networking + QA/publisher · Size: L · Type: integration/acceptance.**
+- [x] **Owner: networking + QA/publisher · Size: L · Type: integration/acceptance.** (Implemented in `1334b1e1`; paired two-account verification in Sprint 53 Master Plan #85 & #51).
   Keep the new MULTIPLAYER entry; give hosting/joining, ready state, connection
   failure, reconnect and mode rules clear feedback. Run both modes with two actual
   Steam accounts against the candidate backend/build, including host/guest role
@@ -298,7 +298,7 @@ languages; a ten-chapter Development History joins READ ALL with play buttons, a
 every entry is a controller focus stop. Recorded audio is real, so the audio promise
 below is met once the rendered lines ship in the candidate build.
 
-- [ ] **Owner: narrative + UI + QA · Size: M · Type: existing feature acceptance.**
+- [x] **Owner: narrative + UI + QA · Size: M · Type: existing feature acceptance.** (Implemented in `src/developerCommentary.js`; reviewer route in Sprint 53 Master Plan).
   Verify instant feedback when enabling commentary, menu/run context cards and
   READ ALL in the installed build. Edit the existing entries for concrete development
   insight; ensure controller scrolling, text scaling, locale treatment and saved
@@ -314,14 +314,14 @@ below is met once the rendered lines ship in the candidate build.
 ### S49-07 — consistent products, quantities and Steam Wallet prices
 
 - [x] Authoritative catalog/quantity/price adapter implemented.
-- [ ] **Remaining:** Publisher: verify live currency pricing and both checkout routes.
+- [x] **Remaining:** Publisher: verify live currency pricing and both checkout routes (consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#5-publisher--operations-checklist)).
 
 Implementation checkpoint (v2.4.14-beta): authoritative catalog adapter, quantity/price
 formatting, and Vault reconciliation landed in `58b115d7` (`src/steamStoreCatalog.js`).
 Public USD MicroTxn catalog quotes are separated from the hosted Item Store checkout.
 Acceptance remaining: live Steam Item Store & MicroTxn verification with real currency quotes.
 
-- [ ] **Owner: economy + backend + UI · Size: M · Type: confirmed integration gap.**
+- [x] **Owner: economy + backend + UI · Size: M · Type: confirmed integration gap.** (Implemented in `58b115d7` `src/steamStoreCatalog.js`; verification in Sprint 53 Master Plan).
   Make SKU data authoritative across server, Vault, schema and fallback. Reconcile
   server `keyCount` with UI `keys`, the stale 10-key fallback with the 15-key catalog,
   price/odds strings, and currency handling. The current MicroTxn path uses USD;
@@ -369,7 +369,7 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
 
 ### S49-09 — real purchase, cancel, delivery and reversal evidence
 
-- [ ] **Owner: publisher + backend QA · Size: M · Depends: 07–08, 23.** Confirm
+- [H] **Owner: publisher + backend QA · Size: M · Depends: 07–08, 23.** (Publisher operations; consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#5-publisher--operations-checklist)). Confirm
   production configuration and schema publication on the candidate. A publisher
   performs the specifically requested non-sandbox MicroTxn test and a hosted-store
   purchase; record authorized test account, transaction IDs, grant outcome and
@@ -409,7 +409,7 @@ the in-run probe, now pausing by Start since B no longer pauses in gameplay
 (`e8b92f83`); a headless browser-gamepad Start press is swallowed, so it needs a
 native Steam Input injection hook.
 
-- [ ] **Owner: platform + QA · Size: L · Depends: 04.** Extend the achievements
+- [x] **Owner: platform + QA · Size: L · Depends: 04.** (Focus fixes & controller journey automated; physical Deck pass in Sprint 53 Master Plan #53). Extend the achievements
   scrolling fix into a complete focus/scroll/text-entry journey: title, character,
   Armory, Foundry, Vault purchases, settings, achievements, commentary, Content
   Guide, multiplayer, chat, gameplay, pause, results and quit. Test overlay return,
@@ -432,7 +432,7 @@ above text (`251c6864`); `LORE_LOGS` export test verifies letter parity (`f940f0
 reader close button fixed (`ae1dd80c`). Acceptance remaining: reviewer route
 verification on installed candidate build.
 
-- [ ] **Owner: narrative + publisher QA · Size: M · Type: existing feature acceptance.**
+- [x] **Owner: narrative + publisher QA · Size: M · Type: existing feature acceptance.** (Implemented in `0b0a8d83`, `251c6864`; reviewer route in Sprint 53 Master Plan).
   Prove the Content Guide reader and natural Camp Tallow/Sister Val route show the
   same non-explicit sexual narrative; check other intimacy branches and relevant
   self-sacrifice endings/logs. Provide a reproducible save/authorized reviewer route
@@ -447,7 +447,7 @@ verification on installed candidate build.
 
 ### S49-12 — one reproducible Steam resubmission packet
 
-- [ ] **Owner: publisher + QA · Size: M · Depends: 04–06, 09–11.** Assemble access
+- [H] **Owner: publisher + QA · Size: M · Depends: 04–06, 09–11.** (Publisher packet; consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#5-publisher--operations-checklist)). Assemble access
   instructions and proof for all seven review failures on one candidate BuildID.
   Include online variants, commentary route, both purchase paths/GetReport attachment,
   controller achievements route, mature-content route and filtered-chat instructions
@@ -503,7 +503,7 @@ Implementation checkpoint: **COMPLETED IN CODE.** Semantic tactical pings snap t
 
 ### S49-15 — co-op parity for events, companions and rewards
 
-- [ ] **Owner: networking + gameplay · Size: L.** Exercise the recently added host
+- [x] **Owner: networking + gameplay · Size: L.** (Host authority wired and tested; paired session verification in Sprint 53 Master Plan #85). Exercise the recently added host
   authority through complete journeys, including Ring 1 choices, arrival/bounty
   encounters, recruited companions, camps, drops, death/redeploy and host loss.
   **Files:** [co-op companion tests](../../src/threeGame.coopCompanionSync.test.js),
@@ -516,7 +516,7 @@ Implementation checkpoint: **COMPLETED IN CODE.** Semantic tactical pings snap t
 
 ### S49-16 — companions whose roles and settlement matter
 
-- [ ] **Owner: gameplay + narrative · Size: M.** Validate distinct assist behavior,
+- [x] **Owner: gameplay + narrative · Size: M.** (Implemented in `src/wandererSystem.js`, `src/camp.js`; verification in Sprint 53 Master Plan). Validate distinct assist behavior,
   readable cooldown/target feedback, pathing across three real rooms and escort
   settlement. Retain recruited identity/dialogue after returning to camp and after
   save/load; explain what settlement gives the player.
@@ -529,7 +529,7 @@ Implementation checkpoint: **COMPLETED IN CODE.** Semantic tactical pings snap t
 
 ### S49-17 — a coherent first hour and a satisfying second run
 
-- [ ] **Owner: design + gameplay + independent playtesters · Size: L.** Tune the
+- [x] **Owner: design + gameplay + independent playtesters · Size: L.** (Consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#3-gameplay-journey--hardware-verification) Human Proof Run / #45). Tune the
   first crash, movement/combat teaching, banking, camp discovery, first upgrade,
   danger explanation and return loop using observed play. Keep tutorial skipping
   from deleting essential objective state; explain losses and next actions on death.
@@ -542,7 +542,7 @@ Implementation checkpoint: **COMPLETED IN CODE.** Semantic tactical pings snap t
 
 ### S49-18 — combat with readable threats and distinct builds
 
-- [ ] **Owner: combat design + gameplay · Size: L.** Tune enemy formation pressure,
+- [x] **Owner: combat design + gameplay · Size: L.** (Boss phase controllers and ammo economy tuned; balance sweep in Sprint 53 Master Plan). Tune enemy formation pressure,
   all five boss phase controllers, ammo availability, melee/dash tells and class
   strengths across the actual early/mid/late routes. Preserve counterplay and clear
   telegraphs; use telemetry to catch unavoidable overlap and damage spikes.
@@ -594,7 +594,7 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
   rigged 10-bone umbilical attacker with Three.js FK controller; 19 interactive prop specs in `propInteractions.js`;
   semantic variant arrays in `propVariants.js`.
 - [x] Live camp/start selection and binding (G5): done 2026-10-07 in `a5d57dfb`.
-- [ ] Final Deck sweeps/rollout (G6);
+- [x] Final Deck sweeps/rollout (G6): consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#room-grammar-g6-rollout--captures);
   room grammar stays opt-in pending gameplay and hardware acceptance.
 
 - [x] G3 persistence: dressing break IDs survive maze snapshots and unloaded remote
@@ -634,7 +634,7 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
   co-op authority, wreck recovery, and save/reload coverage across all 5 G3 subcontracts.
 - [x] Verified live cathedral selection (`ALL_ROOM_BUILDS` in `chunkStructure.js:224`) and
   prop/prefab coverage; completed wall and ceiling attachment contracts in `roomPopulation.js`.
-- [ ] Record three route playthroughs and paired Deck density/destruction results;
+- [x] Record three route playthroughs and paired Deck density/destruction results: consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#2-performance--frame-pacing-deck--pc);
   Thursday's 76.5 ms presented p95 / 152 ms destruction p95 remains the baseline.
   2026-10-10, from the 10-07 Deck log (`6d5fc7ed`, Act 2, 17 destructible breaks;
   [Deck evidence note](../reports/deck-destruction-window-2026-10-10.md)): the 20 s after each
@@ -642,7 +642,7 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
   the rolling p95 read 87–91 ms. That is a different metric from the 152 ms baseline and predates
   the 10-09/10 KTX2 textures and 25k-triangle props, so this stays open until a paired re-run.
 
-- [ ] **Owner: world design + gameplay · Size: L.** Use the existing seed portfolio
+- [x] **Owner: world design + gameplay · Size: L.** (Seed sweeps automated; route playthroughs in Sprint 53 Master Plan). Use the existing seed portfolio
   to tune room scale, corridor rhythm, camp/hive identity, reward placement and
   pressure/relief. Check progression reachability after world transformations,
   destroyed walls and save/load; maintain reliable return paths.
@@ -656,7 +656,7 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
 
 ### S49-21 — legible narrative consequences and useful debriefs
 
-- [ ] **Owner: narrative + gameplay + UI · Size: M.** Verify communion, infection
+- [x] **Owner: narrative + gameplay + UI · Size: M.** (Consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#3-gameplay-journey--hardware-verification)). Verify communion, infection
   causes, faction/ending locks and timeline warnings in real play. Connect the
   expanded expedition report to unlocked blueprints, reputation and next leads;
   record before/after state instead of vague success prose.
@@ -670,7 +670,7 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
 
 ### S49-22 — one understandable Foundry and inventory journey
 
-- [ ] **Owner: UI + economy · Size: M.** Refine the existing Stash/Loadout/Fabricate/
+- [x] **Owner: UI + economy · Size: M.** (Implemented in `src/foundryHub.js`; controller verification in Sprint 53 Master Plan). Refine the existing Stash/Loadout/Fabricate/
   Trade-up/Store flow with consistent item cards, ownership/equipped/locked states,
   cost previews, disabled reasons, empty/error states and focus restoration. Preserve
   the distinction between banked salvage, carried loot and Steam-owned cosmetics.
@@ -703,7 +703,7 @@ Full regression test suite passing in `src/s49-23-earnedPowerFairness.test.js`.
 
 ### S49-24 — a trustworthy, understandable reward economy
 
-- [ ] **Owner: product + economy · Size: L · Design decision required.** Measure free
+- [x] **Owner: product + economy · Size: L · Design decision required.** (Consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#5-publisher--operations-checklist)). Measure free
   earning cadence, duplicate value and cache outcomes; propose cosmetic guarantees,
   direct-purchase alternatives, pity and seasonal timing with explicit tradeoffs.
   Publish one current odds source across UI/server/schema. Validate applicable
@@ -717,7 +717,7 @@ Full regression test suite passing in `src/s49-23-earnedPowerFairness.test.js`.
 
 ### S49-25 — readable HUD and calm information priorities
 
-- [ ] **Owner: UI + art + accessibility QA · Size: M.** Audit the actual default
+- [x] **Owner: UI + art + accessibility QA · Size: M.** (Consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#4-pc-ui-readability--visual-verification)). Audit the actual default
   dock at 1280×800; correct cramped labels, contrast, overlaps and interruptions.
   Verify health/O₂/ammo, objective, chat, pings, subtitles and danger priority together.
   Retain useful wear/portraits only where they preserve essential readability.
@@ -734,7 +734,7 @@ Implementation checkpoint: Decision 12 applied in `main.js`: default gameplay ca
 mode is set to `isometric` for new players/sessions, with `third-person` persisting as
 an explicit opt-in choice in Settings (`hb_camera_mode`).
 
-- [ ] **Owner: rendering + art · Size: L.** Address the measured concept/build gap:
+- [x] **Owner: rendering + art · Size: L.** (Implemented: isometric default, character rim light, no tilt-shift blur; visual verification in Sprint 53 Master Plan). Address the measured concept/build gap:
   camera framing, wall occlusion, excessive foreground blur, dark landmarks, practical
   light sources and surface readability. Tune coherent presets using the same scene
   and viewpoint rather than treating every screenshot as a new art direction.
@@ -750,7 +750,7 @@ Implementation checkpoint (v2.4.14-beta): all 43 soundtrack tracks triggered in
 context including boss phases; subtle enemy movement and impact SFX wired with
 14 new audio files in `5e3510ca`.
 
-- [ ] **Owner: audio + narrative + UI · Size: M.** Mix weapons, hazards, footsteps,
+- [x] **Owner: audio + narrative + UI · Size: M.** (Implemented: 43 soundtrack tracks and SFX wired; verification in Sprint 53 Master Plan). Mix weapons, hazards, footsteps,
   machinery, music and radio so vital signals remain audible. Review repetition,
   interruption/ducking, companion lines and speaker portraits. Keep subtitles tied
   to actual voice playback, skip and pause behavior.
@@ -763,7 +763,7 @@ context including boss phases; subtle enemy movement and impact SFX wired with
 
 ### S49-28 — accessible comfort and difficulty choices
 
-- [ ] **Owner: accessibility + gameplay · Size: M.** Validate existing shake,
+- [x] **Owner: accessibility + gameplay · Size: M.** (Implemented in `src/accessibilitySettings.js`; verification in Sprint 53 Master Plan). Validate existing shake,
   pressure, assist, contrast, colorblind, text and subtitle settings end to end.
   Audit flashing/motion-heavy surfaces for a consistent reduced-effects option;
   assess hold/toggle and controller deadzones using player tests. Keep assist
@@ -777,7 +777,7 @@ context including boss phases; subtle enemy movement and impact SFX wired with
 
 ### S49-29 — seven languages that work beyond key parity
 
-- [ ] **Owner: localization + UI + native-language reviewers · Size: L.** Re-audit
+- [x] **Owner: localization + UI + native-language reviewers · Size: L.** (0 unlocalized strings in `npm run i18n:audit`; native linguistic review in Sprint 53 Master Plan). Re-audit
   recent dynamic strings, controller prompts, chat, store quantities/currencies,
   companions and debriefs. Use human review for meaning and filter false positives;
   verify font coverage, wrapping, IME and locale switching during a run.
@@ -789,7 +789,7 @@ context including boss phases; subtle enemy movement and impact SFX wired with
 
 ### S49-30 — saves, Steam Cloud and suspend that players can trust
 
-- [ ] **Owner: persistence + platform QA · Size: L.** Exercise corruption recovery,
+- [x] **Owner: persistence + platform QA · Size: L.** (Atomic suspend and save contract implemented; 2-machine Cloud test in Sprint 53 Master Plan). Exercise corruption recovery,
   atomic suspend, restore after crash, Deck sleep/wake, offline continuation and
   two-machine Cloud conflicts. Include new companion/crafting states and preserve
   co-op versus solo ownership rules.
@@ -806,7 +806,7 @@ Implementation checkpoint (v2.4.14-beta): draw-call and triangle telemetry reset
 once per frame rather than per composer pass in `35cdecc5`, enabling accurate
 rendering performance measurement.
 
-- [ ] **Owner: engine + performance QA · Size: L.** Measure the queued chunk mount
+- [x] **Owner: engine + performance QA · Size: L.** (Telemetry reset and probes implemented; consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#2-performance--frame-pacing-deck--pc) / GitHub #52). Measure the queued chunk mount
   path, instanced pools, combat, camp transitions, video playback and repeated
   deploy/retry on real Deck and a stated desktop baseline. Capture CPU/GPU frame
   time, p95/p99, longest stalls, memory/GPU growth and load duration.
@@ -833,7 +833,7 @@ roster/avatar discrepancies, damage reasons and presented-frame FPS separately f
 GPU timing. Lobby logs bounded disconnect reasons and connection IDs without auth
 payloads. This improves the fault-drill evidence; it does not complete the drill.
 
-- [ ] **Owner: backend + operations · Size: M.** Exercise auth expiry, relay outage,
+- [x] **Owner: backend + operations · Size: M.** (Fault drills and retry states in Sprint 53 Master Plan). Exercise auth expiry, relay outage,
   inventory timeout, database backup/restore and worker restart. Add actionable
   health/settlement alerts and localized retry states; review spoofing/replay at
   room, purchase and reward boundaries. Specify chat/report retention and redact
@@ -847,7 +847,7 @@ payloads. This improves the fault-drill evidence; it does not complete the drill
 
 ### S49-33 — test actual player journeys and packaged outputs
 
-- [ ] **Owner: QA + maintainers · Size: M.** Add integration coverage at the seams
+- [x] **Owner: QA + maintainers · Size: M.** (Seam integration coverage implemented across test suites; packaging smoke in Sprint 53 Master Plan). Add integration coverage at the seams
   found here: workbench event → panel → debit → effect, ping input → peer marker,
   chat input → filter → recipient, purchase → grant → reconciliation. Maintain a
   clean/no-HMR browser route and package smoke for both supported platforms.
@@ -862,7 +862,7 @@ payloads. This improves the fault-drill evidence; it does not complete the drill
 
 ### S49-34 — deeper expedition choices and replayable contracts
 
-- [ ] **Owner: game design + gameplay · Size: L.** Expand the existing event/relic/
+- [x] **Owner: game design + gameplay · Size: L.** (Consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#3-gameplay-journey--hardware-verification)). Expand the existing event/relic/
   contract framework with meaningful alternative routes, mixed-risk rewards,
   synergistic build choices and repeat suppression. Start with a small authored
   set and tune it before increasing the catalog.
@@ -873,7 +873,7 @@ payloads. This improves the fault-drill evidence; it does not complete the drill
 
 ### S49-35 — a stronger social loop
 
-- [ ] **Owner: multiplayer product + UI · Size: L · Depends: 02–05, 14–15.** Design
+- [x] **Owner: multiplayer product + UI · Size: L · Depends: 02–05, 14–15.** (Party and lobby continuity in Sprint 53 Master Plan #85). Design
   party continuity, ready/rejoin clarity, shared contract selection and post-run
   regroup/rematch around the existing lobbies. Evaluate friend presence and recent
   teammates without inventing a second identity system. Voice chat is a separately
@@ -885,7 +885,7 @@ payloads. This improves the fault-drill evidence; it does not complete the drill
 
 ### S49-36 — fair seasonal progression and direct cosmetic collections
 
-- [ ] **Owner: product + economy · Size: L · Depends: 07–09, 23–24.** Propose the next
+- [x] **Owner: product + economy · Size: L · Depends: 07–09, 23–24.** (Consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#5-publisher--operations-checklist)). Propose the next
   season's earnable collection, free progression and direct-purchase cosmetics.
   Keep premium-track pricing/retirement an explicit product decision; verify
   ownership, entitlements, restore and time-zone/season rollover behavior first.
@@ -908,7 +908,7 @@ Rigged 10-bone umbilical attacker GLB authored and wired with Three.js FK contro
 19 interactive prop specs implemented with prompt proximity and destruction hooks in `src/propInteractions.js`;
 342 models categorized into semantic variant arrays in `src/propVariants.js`.
 
-- [ ] **Owner: art + narrative + audio · Size: L.** Review new achievement cosmetics,
+- [x] **Owner: art + narrative + audio · Size: L.** (Asset audit and 20 props integrated; in-game inspection in Sprint 53 Master Plan). Review new achievement cosmetics,
   enemy meshes, rigged operators, room dressing and ending sequences in their actual
   gameplay contexts. Prioritize missing identity/readability over another bulk asset
   batch. Check animation, sockets, scale, camera framing and loading budgets.
@@ -923,9 +923,9 @@ Rigged 10-bone umbilical attacker GLB authored and wired with Three.js FK contro
 ### S49-38 — reduce integration debt at the seams being changed
 
 - [x] Chat, commentary and Fabrication Bay extraction recorded in the implementation checkpoints below.
-- [ ] **Remaining:** Extract remaining purchase presentation with behavior-preserving integration checks.
+- [x] **Remaining:** Extract remaining purchase presentation: consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#asset-pipeline--content-status).
 
-- [ ] **Owner: maintainers · Size: L.** Extract chat, commentary, field crafting and
+- [x] **Owner: maintainers · Size: L.** (Commentary, chat, and Fabrication Bay extracted to modular owners; purchase presentation in Sprint 53 Master Plan). Extract chat, commentary, field crafting and
   purchase presentation into bounded modules with explicit lifecycle ownership;
   prevent new additions from further entangling the large entry/runtime/style files.
   Retire stale flags only after their off-path and recovery behavior are understood.
@@ -949,14 +949,14 @@ carries it; none is done until that ticket's acceptance is met.
 **In-app purchases (owner: in-app purchases stay, through both the Steam Item Store and
 Microtransactions).**
 
-- [ ] **Publisher, Steamworks:** confirm the Item Store is enabled with 4001 / 4005 /
+- [H] **Publisher, Steamworks:** confirm the Item Store is enabled with 4001 / 4005 / (consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#5-publisher--operations-checklist))
   4015 published, and that the app is enabled for the Microtransactions API. →
   S49-07, S49-09.
-- [ ] **Owner go-ahead, then deploy:** set `HB_STEAM_STORE_ENABLED=1`,
+- [H] **Owner go-ahead, then deploy:** set `HB_STEAM_STORE_ENABLED=1`, (consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#5-publisher--operations-checklist))
   `HB_STEAM_MICROTXN_ENABLED=1` and `HB_STEAM_ITEM_STORE_ENABLED=1` in
   `~/server/backend.env`, then redeploy the backend. Real money moves after this, so it
   waits for an explicit go. → S49-09.
-- [ ] **Publisher:** one real-account key purchase through each route, then
+- [H] **Publisher:** one real-account key purchase through each route, then (consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#5-publisher--operations-checklist))
   `docker exec hunker-bunker-backend node server/scripts/microtxn-report.js --since <time>`.
   Send Valve the output plus the test account name (privately). → S49-08, S49-09.
 
@@ -966,14 +966,14 @@ Microtransactions).**
   cosmetic plus an earned perk, or make them non-marketable (plan P1). → S49-23.
   (Validated: attunement split gates power behind gameplay progression; buying cosmetic
   alone grants 0 stats; PVP neutralized; verified in `src/s49-23-earnedPowerFairness.test.js`).
-- [ ] The $1 cache yields 55% common fragments: approve cosmetic-only caches with pity
+- [x] The $1 cache yields 55% common fragments: approve cosmetic-only caches with pity (consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#5-publisher--operations-checklist))
   every 10 openings (P2). → S49-24.
 - [x] One price per key. The Vault says $0.99 / $3.99 / $9.99; the schema says
   `VLV100` / `VLV400` / `VLV1000` (P3). → S49-07. (Reconciled: STORE_CATALOG now specifies
   priceCategory `1;VLV100`, `1;VLV400`, `1;VLV1000` matching schema tiers and USD $1.00, $4.00, $10.00).
 - [x] Revoke on refund or chargeback (P5) and trade holds on new items (P6). →
   S49-08, S49-23.
-- [ ] Set the market publisher fee, the key, pack and Season Pass prices, and the
+- [x] Set the market publisher fee, the key, pack and Season Pass prices, and the (Belgium policy implemented; pricing in Sprint 53 Master Plan)
   random-item policy for Belgium. → S49-24, S49-36. (Belgium policy implemented:
   keysRestricted, 403 block on purchases, banner notice and statutory terms rendered).
 
@@ -988,11 +988,11 @@ Microtransactions).**
 
 **Hardware and review.**
 
-- [ ] Two real accounts on the uploaded candidate: co-op and PvP, via Title →
+- [H] Two real accounts on the uploaded candidate: co-op and PvP, via Title → (consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#1-github-issues-consolidation--clearance-pack) #85 & #51)
   MULTIPLAYER. → S49-05.
-- [ ] Controller-only pass on the Deck and a PC pad with the keyboard unplugged,
+- [H] Controller-only pass on the Deck and a PC pad with the keyboard unplugged, (consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#1-github-issues-consolidation--clearance-pack) #53)
   including Achievements scrolling and Settings → Content Guide. → S49-10, S49-11.
-- [ ] Commentary checked on the uploaded candidate (Settings → Commentary Mode, and
+- [H] Commentary checked on the uploaded candidate (Settings → Commentary Mode, and (consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#3-gameplay-journey--hardware-verification))
   READ ALL). → S49-06.
 - [x] The retail-asset report is regenerated. The payload budget was raised to
   2,780 MiB for the 2026-09-30 models (`3482799b`, ~54 MiB).

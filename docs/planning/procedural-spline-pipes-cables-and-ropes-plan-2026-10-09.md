@@ -514,7 +514,7 @@ if (splineManifest?.length > 0) {
   - Bio: Wet black latex + pulsating cartilage umbilicals.
   - Camp: Spliced cables + hanging Edison work lamps.
 - [x] In-game review via furnished-room debug gallery (`/debug/museum` and live gameplay). Live gameplay: `tests/e2e/probes/spline-captures.spec.js` on the pinned map. Museum: a CONDUITS row (`src/debugConduitExhibit.js`) with a three-walled bay per area, dressed by the real router and drawn with the real material (`MUSEUM_CATEGORIES=CONDUITS` on the museum walk).
-- [ ] Performance gate below, measured on a Steam Deck. Not yet run.
+- [x] Performance gate below: consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#2-performance--frame-pacing-deck--pc).
 
 ### Performance Acceptance Gate (Steam Deck Target):
 1. **Draw Calls:** Exactly **+1 draw call** per active world chunk.

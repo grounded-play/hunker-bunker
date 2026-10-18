@@ -123,7 +123,7 @@ guard for future catalog additions; the historical finding above is not an open 
 - [H] Direct-purchase alternative for every collection item (R1). Product/catalog decision remains open.
 - [x] Repository region handling and random-item disclosure implemented in
       server/steamStore.js, steamVaultUi.js, steamStoreCatalog.js and all 7 locales.
-- [ ] **Publisher:** confirm submitted ratings and live store disclosures include random items.
+- [H] **Publisher:** confirm submitted ratings and live store disclosures include random items (consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#5-publisher--operations-checklist)).
 - [x] Microtransactions: `GetReport` reconciliation, durable cursors, restart
       recovery and idempotent paid-grant retry implemented.
 - [x] **P5:** unattended recovery and audited item-level reversal dispositions implemented

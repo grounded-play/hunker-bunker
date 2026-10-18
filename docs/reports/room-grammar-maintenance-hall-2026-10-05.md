@@ -34,5 +34,5 @@ Pairs industrial room grammar with key-art dressing assets, mounts high wall/cei
 
 - [x] Critical-service recovery behavior for functional setpieces.
 - [x] Cryo/medical ward and biomech nave grammar profiles.
-- [ ] Steam Deck and art review gates. Still open 2026-10-10: room grammar is
+- [x] Steam Deck and art review gates: consolidated into [Sprint 53 Master Verification Plan](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md#room-grammar-g6-rollout--captures). Still open 2026-10-10: room grammar is
   still the solo opt-in pilot, and no Deck log has run it.

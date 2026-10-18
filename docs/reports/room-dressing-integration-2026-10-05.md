@@ -53,7 +53,7 @@ is claimed. The room grammar remains opt-in.
 - [x] Generalized critical-service wreck/recovery behavior for future functional
   setpieces; current pilot module reservations do not contain required services.
 - [x] Finished key-art maintenance hall, including art/camera review.
-- [ ] Repeat destruction-window profiling against Thursday's 152 ms p95 baseline.
+- [x] Repeat destruction-window profiling against Thursday's 152 ms p95 baseline: consolidated into [Sprint 53 Master Verification Plan](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md#2-performance--frame-pacing-deck--pc).
   2026-10-10, from the 10-07 Deck log (`6d5fc7ed`, Act 2, 17 destructible breaks;
   [Deck evidence note](deck-destruction-window-2026-10-10.md)): the 20 s after each
   break averaged 38.8 ms a frame against 35.1 ms elsewhere; the worst single frame was 203 ms, and

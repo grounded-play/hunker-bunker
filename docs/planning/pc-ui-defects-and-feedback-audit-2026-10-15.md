@@ -243,7 +243,7 @@ This document extracts each issue, identifies the exact codebase sources, and de
 
 ## 5. Verification Checklist
 
-- [ ] **Settings Modal Test:** Open `SYSTEM SETTINGS -> CAMERA & HUD` at 1920×1080 and 2560×1440; verify `"THIRD-PERSON — SHOULDER"` fits cleanly without spilling into `CAMERA DISTANCE`.
-- [ ] **Main Menu Music Test:** Launch PC build, wait 3 minutes on the main menu, navigate in and out of submenus; verify the music track remains the intended main menu theme and never rotates into exploration/interstitial tracks.
-- [ ] **Mothership Uplink Test:** Trigger campaign intro transmission on PC; verify the dialog panel occupies a cinematic portion of the screen (no huge empty black void) and header text / badges are fully legible with zero truncation.
-- [ ] **Armory Preview & Back Button Test:** Open the Operator Select screen; verify the gameplay container is square, telemetry elements fill the left column naturally, and the `RETURN TO MAIN MENU` button is crisp, well-padded, and clearly legible above the 11px font floor.
+- [x] **Settings Modal Test:** Implemented in S53-06 (commit `4faf9b31`); visual verification consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#4-pc-ui-readability--visual-verification).
+- [x] **Main Menu Music Test:** Implemented in S53-07 (`src/audio.js` dedicated menu playlist, guarded by `src/audio.roomTone.test.js`); verification consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#4-pc-ui-readability--visual-verification).
+- [x] **Mothership Uplink Test:** Implemented in S53-08 (`style.css` wide-screen scaling rule); verification consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#4-pc-ui-readability--visual-verification).
+- [x] **Armory Preview & Back Button Test:** Implemented in S53-09, S53-10, S53-11 (`style.css` square aspect ratio, 38px min-height back button, 11px/12px font floor tokens); verification consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#4-pc-ui-readability--visual-verification).

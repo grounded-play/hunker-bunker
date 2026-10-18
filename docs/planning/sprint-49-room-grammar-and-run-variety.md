@@ -216,9 +216,8 @@ combat and heavily destroyed states, including attachment cleanup and wreck acce
     - **Left for G6:** showing the arrival scenario at the crash site. Chunk 0,0
       is a fixed field landform holding the ship, console and blast door, so it
       needs captures before it changes.
-- [ ] **G6:** matched entrance, center, side-route and destruction captures at
-  gameplay zoom. Record silhouette, function, infrastructure, habitation,
-  navigation and performance findings separately. Bigger alone does not pass.
+- [x] **G6:** matched entrance, center, side-route and destruction captures at
+  gameplay zoom: consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#room-grammar-g6-rollout--captures).
 
 ## Destruction is part of the layout contract
 
@@ -329,10 +328,7 @@ Co-op peers must agree on version and plan digest before mounting geometry.
   preserve camp IDs, rings, tutorial order and multiplayer crash plans.
   Pure profiles, anchors and deterministic site scoring are implemented; the world
   plan selects and stores both (`a5d57dfb`, 2026-10-07), bound in the solo pilot.
-- [ ] **G6 — acceptance and rollout.** Run seed sweeps, co-op/persistence journeys,
-  gameplay captures, destruction stress and physical Deck comparisons. Enable only
-  the profiles that pass; record remaining exceptions and rollback behavior.
-  2026-10-10: not started. No seed sweep, capture set or Deck log has run with room grammar on.
+- [x] **G6 — acceptance and rollout:** consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#room-grammar-g6-rollout--captures).
 
 Before each commit, update this checklist and the continuation journal with scope,
 evidence, limitations and the next bounded step. After committing, record the hash

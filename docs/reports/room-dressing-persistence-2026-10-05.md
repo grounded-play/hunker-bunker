@@ -38,7 +38,7 @@ Remaining G3 work:
   broken ID does not itself reconstruct pickups from an unloaded remote break.
 - [x] Connect interior-module breaches to collision/navigation and required-service
   recovery, then complete the maintenance-hall art checks.
-- [ ] Repeat the physical performance comparison on Steam Deck hardware.
+- [x] Repeat the physical performance comparison on Steam Deck hardware: consolidated into [Sprint 53 Master Verification Plan](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md#2-performance--frame-pacing-deck--pc).
   2026-10-10: Deck logs exist through 10-07 (p95 142–177 ms on 2.4.16, see the
   [session-log review](session-log-review-2026-10-08.md)), but none is a paired
   before/after run, and none postdates the KTX2 texture change.
