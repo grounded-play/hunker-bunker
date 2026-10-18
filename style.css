@@ -964,6 +964,15 @@ body {
   justify-content: center;
 }
 
+/* Phone-width web clients use the existing compact menu plate instead of
+   transferring a 1280×800 desktop key-art image into a ~390px viewport. */
+@media (max-width: 768px) {
+  #splash {
+    background-image: url('/menu_bg.webp');
+    background-size: cover;
+  }
+}
+
 #splash::before {
   content: "";
   position: absolute;

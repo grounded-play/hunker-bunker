@@ -16733,10 +16733,7 @@ whenDocumentParsed(async () => {
             '/scout_ship.png',
             '/tank_ship.png',
             '/engineer_ship.png',
-            '/console.webp',
-            PLAYER_SPRITE_LAYOUTS.SCOUT.path,
-            PLAYER_SPRITE_LAYOUTS.TANK.path,
-            PLAYER_SPRITE_LAYOUTS.ENGINEER.path
+            '/console.webp'
         ],
         audio: [
             { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
@@ -17380,6 +17377,15 @@ whenDocumentParsed(async () => {
                     arcManager,
                     act2Manager
                 });
+                // The 2D walk sheets are fallback gameplay assets, not boot
+                // assets. Fetch only the deployed operator after the engine
+                // exists; the normal 3D chassis can paint without them.
+                const requestPlayerSprite = () => window.game?.playerTextures?.[targetType]?.userData?.loadSource?.();
+                if (typeof window.requestIdleCallback === 'function') {
+                    window.requestIdleCallback(requestPlayerSprite, { timeout: 1500 });
+                } else {
+                    window.setTimeout(requestPlayerSprite, 0);
+                }
                 window.game.setOperatorPolish?.(getSelectedPolish().color);
                 window.game.setCameraMode?.(state.settings.cameraMode);
                 window.game.setCameraTuning?.({

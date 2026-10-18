@@ -2,7 +2,7 @@
 
 **Document Status:** Canonical active sprint master plan  
 **Target Release:** `v2.4.18-beta` / Sprint 53 Closeout  
-**Branch:** `dev/sprint-52` (head `4faf9b31`)  
+**Branch:** `dev/sprint-53`
 **Parent Roadmap Anchor:** [Product State](../../PRODUCT_STATE.md) · [Sprint 53 Core Plan](sprint-53-plan-2026-10-15.md)  
 **Supersedes & Consolidates:** Sprawl from 18 prior documents audited in [better-todo-tree-20261017-1938.txt](../../scripts/better-todo-tree-20261017-1938.txt)
 
@@ -32,10 +32,10 @@ This document establishes a **single, unified, actionable master document** for 
   - [x] **Step 3 (Chunk configuration):** Rolldown manual chunks cleaned up; `debug-tools` no longer bundles Three.js or all locales.
   - [x] **PWA & Asset Preload Fixes (PR #105):** Removed 5.5 MB of unneeded door art; lazy-loaded hidden-screen PNGs; replaced 442 KB PNG favicon with 9.5 KB SVG.
 - **Remaining Implementation Steps for Clearance:**
-  - [ ] **Step 4 (Non-blocking Web Fonts):** Load Google Fonts stylesheet asynchronously with `media="print" onload="this.media='all'"` and preconnect to fonts.gstatic.com, or self-host Outfit and Space Mono. Prevents render-blocking on the loading screen.
-  - [ ] **Step 5 (Critical CSS):** Inline critical styles for the `#loading` screen in `index.html` so initial paint completes before `index-*.css` (102 KB) finishes downloading.
-  - [ ] **Step 6 (2D Character Sprites Deferral):** Defer loading large character sheets (`Tank.walk_v4.webp`, ~1.3 MB) until Armory opening or deployment, as 3D mode draws GLB models.
-  - [ ] **Step 7 (Mobile Profile Measurement & CI Gate):** Add `lighthouserc.mobile.json` and record 2 consecutive runs meeting Performance ≥ 80.
+  - [x] **Step 4 (Non-blocking Web Fonts):** Google Fonts use print-media deferral and fonts.gstatic.com preconnect; regression coverage lives in `src/bootPayload.test.js`.
+  - [x] **Step 5 (Critical CSS):** Loading and title-screen first-paint styles are inlined in `index.html`; full application styles load asynchronously without exposing unstyled menus.
+  - [x] **Step 6 (2D Character Sprites Deferral):** Full walk sheets are absent from the boot manifest. The selected class is requested after `ThreeGame` deployment initialization; Armory continues to load its own preview only on entry.
+  - [x] **Step 7 (Mobile Profile Measurement & CI Gate):** `lighthouserc.mobile.json` runs twice with pessimistic assertions and is included in the CI matrix. Both local clearance runs scored 93 with LCP 3.25s/3.24s and TBT 0ms. Evidence: [mobile Lighthouse clearance report](../reports/sprint-53-mobile-lighthouse-clearance-2026-10-17.md).
 - **Verification Command:**
   ```bash
   npm run build
@@ -44,6 +44,7 @@ This document establishes a **single, unified, actionable master document** for 
     --chrome-flags="--headless=new" --output=json --output-path=lh-mobile.json
   ```
 - **Acceptance Criterion:** 2 consecutive mobile runs report Performance ≥ 80, LCP < 4.0s, TBT < 200ms.
+- **Clearance Result (2026-10-17):** **PASSED** — consecutive scores 93/93; LCP 3.25s/3.24s; TBT 0ms/0ms.
 
 ---
 
