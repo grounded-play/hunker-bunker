@@ -42780,6 +42780,7 @@ export class ThreeGame {
                 sprite.position.set(emergence.landingX, data.baseY ?? 0.08, emergence.landingZ);
                 sprite.scale.set(data.baseScaleX ?? 1, data.baseScaleY ?? 1, 1);
                 data.holeEmergence = null;
+                data.aiMode = 'hunt';
                 data.stalkState = 'stalking';
                 data.pounceCooldown = Math.max(data.pounceCooldown ?? 0, 1.2);
             }
@@ -42829,6 +42830,30 @@ export class ThreeGame {
         data.stalkState ??= 'stalking';
         data.flankSign ??= (Math.random() < 0.5 ? 1 : -1);
         data.baseMaterialTint ??= (sprite.material?.color?.getHex?.() ?? 0xffffff);
+        data.attackCooldown = Math.max(0, (data.attackCooldown ?? 0) - delta);
+
+        // Preserve contact danger for a stalker that emerges beside the player
+        // or gets cornered inside its pounce wind-up range. The authored pounce
+        // handles its own collision below and must not double-hit here.
+        if (data.stalkState !== 'pouncing'
+            && distToPlayer <= SNAIL_ATTACK_RADIUS
+            && data.attackCooldown <= 0) {
+            const hitApplied = this.takeDamage(1, 'mycelium_stalker', sprite.position.x, sprite.position.z);
+            if (hitApplied) {
+                this.applySnailContactKnockback?.(sprite, data);
+                this.spawnToxicSporePuddle?.(sprite.position.x, sprite.position.z, false);
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('player-hit', { detail: { reason: 'mycelium_stalker' } }));
+                }
+                this.triggerCameraShake?.(0.2, 0.32);
+                window.AudioManager?.playMetalStress?.({ volume: 0.42, playbackRate: 1.45, force: true });
+            }
+            data.attackCooldown = 1;
+            data.stalkState = 'retreating';
+            data.retreatTimer = 2.2;
+            data.pounceCooldown = 3.5;
+            return;
+        }
 
         const hasLineOfSight = !this.hasWallBetween?.(this.player.position.x, this.player.position.z, sprite.position.x, sprite.position.z);
         const isLit = Boolean(this.isEnemyLitByPlayerFlashlight?.(sprite));
@@ -43009,7 +43034,9 @@ export class ThreeGame {
 
     updateChargerOrStalkerBehavior(sprite, delta, { isStalker = false } = {}) {
         if (isStalker) {
-            return this.updateMyceliumStalkerBehavior(sprite, delta);
+            const updateStalker = this.updateMyceliumStalkerBehavior
+                ?? ThreeGame.prototype.updateMyceliumStalkerBehavior;
+            return updateStalker.call(this, sprite, delta);
         }
         const data = sprite.userData;
         if (!this.player || this.isPlayerDead) return;
