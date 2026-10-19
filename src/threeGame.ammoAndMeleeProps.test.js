@@ -90,6 +90,47 @@ describe('ammo lockers, solid props, and Smash', () => {
         expect(game.triggerGameplayMelee).toHaveBeenCalledWith({ source: 'empty-fire-fallback' });
     });
 
+    it('reports empty ammo only once while the fire control remains held', () => {
+        const game = {
+            weaponClipAmmo: 0, weaponReloading: false, weaponFireCooldown: 0,
+            unlimitedAmmo: false, isPointerFireHeld: true, _emptyFireHeldLatched: false,
+            isGameplayInputActive: () => true, isInsideNoFireZone: () => false,
+            getAvailableAmmo: () => 0, triggerGameplayMelee: vi.fn(() => true)
+        };
+
+        expect(ThreeGame.prototype.fireWeaponAtCurrentAim.call(game)).toBe(true);
+        expect(ThreeGame.prototype.fireWeaponAtCurrentAim.call(game)).toBe(false);
+        expect(game.triggerGameplayMelee).toHaveBeenCalledTimes(1);
+        expect(window.AudioManager.play).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows yellow return chevrons away from the crash site and hides them at home', () => {
+        const arrows = Array.from({ length: 5 }, () => ({
+            position: new THREE.Vector3(),
+            rotation: { y: 0 },
+            visible: false
+        }));
+        const game = {
+            performanceProfile: 'gameplay', isInPocket: false, isPlayerDead: false,
+            player: { position: new THREE.Vector3(20, 0, 9) },
+            crashSiteGuidance: {
+                group: { visible: false }, arrows, material: { opacity: 0 }
+            },
+            explorationTracker: { computeScannedPath: () => ({ found: false, path: [] }) },
+            getTerrainHeightAt: () => 0
+        };
+
+        ThreeGame.prototype.updateCrashSiteGuidance.call(game, 100);
+        expect(game.crashSiteGuidance.group.visible).toBe(true);
+        expect(arrows[0].visible).toBe(true);
+        expect(arrows[0].position.x).toBeLessThan(20);
+        expect(arrows[0].position.y).toBeCloseTo(0.055);
+
+        game.player.position.set(9, 0, 9);
+        ThreeGame.prototype.updateCrashSiteGuidance.call(game, 200);
+        expect(game.crashSiteGuidance.group.visible).toBe(false);
+    });
+
     it('detects projectile hits against intact props', () => {
         const prop = {
             parent: {}, position: new THREE.Vector3(1, 0, 1),

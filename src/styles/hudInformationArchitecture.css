@@ -1821,7 +1821,7 @@ html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui .hud-consol
   inset: auto !important;
   grid-column: 1 / -1 !important;
   grid-row: 1 !important;
-  width: calc(100% - 94px) !important;
+  width: 100% !important;
   height: 100% !important;
   margin: 0 !important;
 }
@@ -1841,9 +1841,14 @@ html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot .obje
 html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot .objective-drawer__label {
   min-width: 0 !important;
   overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-  font-size: max(14px, calc(16 * var(--u))) !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.08 !important;
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  font-size: max(12px, calc(15 * var(--u))) !important;
 }
 
 html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui .hud-console__mission-slot > :is(

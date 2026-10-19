@@ -2591,6 +2591,10 @@ export class ThreeGame {
         this.isPointerFireHeld = false;
         this.heldFireClientX = null;
         this.heldFireClientY = null;
+        // One dry-fire/melee response per held trigger. Without this latch a
+        // held pointer generated a dry-fire sound, warning event and melee on
+        // every render frame once both clip and reserve reached zero.
+        this._emptyFireHeldLatched = false;
         this._lastNoFireCueAt = 0;
         this._lastNoAmmoCueAt = 0;
         this._lastReloadBlockedCueAt = 0;
@@ -4868,6 +4872,7 @@ export class ThreeGame {
         this.ambientVentSystem = new AmbientVentSystem(this.scene);
         this.floorFogSystem = new FloorFogSystem();
         this.setupPlayer();
+        this.setupCrashSiteGuidance();
         this.setupMultiplayerNetwork();
         this.setupInput();
         this.resize();
@@ -6112,6 +6117,12 @@ export class ThreeGame {
     }
 
     async setupPlayer3dCosmeticOverlay() {
+        // Class/profile changes can request a replacement while an earlier
+        // GLB is still loading. Only the newest request may attach a model;
+        // checking player/type alone is insufficient when both requests are
+        // for the same operator and was the cause of doubled local bodies.
+        const overlayGeneration = (this._playerOverlayGeneration ?? 0) + 1;
+        this._playerOverlayGeneration = overlayGeneration;
         this.player3dOverlay?.dispose?.();
         this.player3dOverlay = null;
         if (this.playerSprite) this.playerSprite.visible = true;
@@ -6176,7 +6187,10 @@ export class ThreeGame {
                 ...classVisuals[overlayType]
             });
             await this.prewarmLateModel?.(overlay.root);
-            if (this.player !== playerRoot || this.playerType !== overlayType) {
+            if (this._destroyed
+                || this._playerOverlayGeneration !== overlayGeneration
+                || this.player !== playerRoot
+                || this.playerType !== overlayType) {
                 overlay.dispose();
                 return;
             }
@@ -6205,8 +6219,100 @@ export class ThreeGame {
             // 2D sprite visible as the automatic fallback.
             this.playerSprite.visible = false;
         } catch (error) {
+            if (this._playerOverlayGeneration !== overlayGeneration) return;
             console.warn('[player-3d-overlay] unavailable; keeping the 2D player', error);
         }
+    }
+
+    setupCrashSiteGuidance() {
+        this.disposeCrashSiteGuidance?.();
+        const group = new THREE.Group();
+        group.name = 'crash-site-return-guidance';
+        group.renderOrder = 31;
+
+        const geometry = new THREE.BoxGeometry(0.18, 0.035, 0.86);
+        const material = new THREE.MeshBasicMaterial({
+            color: 0xffd43b,
+            transparent: true,
+            opacity: 0.82,
+            depthWrite: false,
+            fog: false
+        });
+        const arrows = [];
+        for (let index = 0; index < 5; index++) {
+            const arrow = new THREE.Group();
+            arrow.name = `crash-site-chevron-${index}`;
+            const left = new THREE.Mesh(geometry, material);
+            const right = new THREE.Mesh(geometry, material);
+            left.position.set(-0.2, 0, -0.22);
+            right.position.set(0.2, 0, -0.22);
+            left.rotation.y = -0.48;
+            right.rotation.y = 0.48;
+            arrow.add(left, right);
+            group.add(arrow);
+            arrows.push(arrow);
+        }
+        group.visible = false;
+        this.scene.add(group);
+        this.crashSiteGuidance = { group, arrows, geometry, material };
+    }
+
+    updateCrashSiteGuidance(now = performance.now()) {
+        const guidance = this.crashSiteGuidance;
+        if (!guidance || !this.player) return;
+        const home = CRASH_SITE_BUILD.center;
+        const px = this.player.position.x;
+        const pz = this.player.position.z;
+        const homeDistance = Math.hypot(home.x - px, home.z - pz);
+        const shouldShow = this.performanceProfile === 'gameplay'
+            && !this.isInPocket
+            && !this.isPlayerDead
+            && homeDistance > 8;
+        guidance.group.visible = shouldShow;
+        if (!shouldShow) return;
+
+        // Prefer the next explored A* cell so the guide bends back along the
+        // known route. Fall back to the crash-site bearing before a route has
+        // been scanned.
+        const route = this.explorationTracker?.computeScannedPath?.(
+            { x: px, z: pz },
+            { x: home.x, z: home.z }
+        );
+        const next = route?.found && route.path?.length > 1 ? route.path[1] : home;
+        let dx = next.x - px;
+        let dz = next.z - pz;
+        let directionLength = Math.hypot(dx, dz);
+        if (directionLength < 0.25) {
+            dx = home.x - px;
+            dz = home.z - pz;
+            directionLength = Math.hypot(dx, dz);
+        }
+        if (directionLength < 0.25) {
+            guidance.group.visible = false;
+            return;
+        }
+        dx /= directionLength;
+        dz /= directionLength;
+        const yaw = Math.atan2(dx, dz);
+        guidance.material.opacity = 0.72 + Math.sin(now * 0.005) * 0.16;
+        for (let index = 0; index < guidance.arrows.length; index++) {
+            const distance = Math.min(2.2 + index * 2.15, Math.max(1.2, homeDistance - 1.5));
+            const x = px + dx * distance;
+            const z = pz + dz * distance;
+            const arrow = guidance.arrows[index];
+            arrow.position.set(x, (this.getTerrainHeightAt?.(x, z) ?? 0.015) + 0.055, z);
+            arrow.rotation.y = yaw;
+            arrow.visible = distance < homeDistance - 0.6;
+        }
+    }
+
+    disposeCrashSiteGuidance() {
+        const guidance = this.crashSiteGuidance;
+        if (!guidance) return;
+        guidance.group?.removeFromParent?.();
+        guidance.geometry?.dispose?.();
+        guidance.material?.dispose?.();
+        this.crashSiteGuidance = null;
     }
 
     isMayorTinaSpawnEligible(seed = this.runEntropy) {
@@ -11271,6 +11377,16 @@ export class ThreeGame {
     fireWeaponAtCurrentAim({ source = 'pointer' } = {}) {
         if (!this.isGameplayInputActive()) return false;
 
+        // updateHeldFire runs every frame. Once an empty held trigger has
+        // received feedback, stop before emitting more input telemetry too.
+        if (this.isPointerFireHeld
+            && this._emptyFireHeldLatched
+            && this.weaponClipAmmo <= 0
+            && !this.unlimitedAmmo
+            && this.getAvailableAmmo() < 1) {
+            return false;
+        }
+
         presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.FIRE_INPUT, { source, aimX: this.aimDirX, aimZ: this.aimDirZ });
 
         if (!canUseWeaponWhileCarrying(this.carryState)) {
@@ -11301,6 +11417,14 @@ export class ThreeGame {
         if (this.weaponClipAmmo <= 0 && !this.unlimitedAmmo) {
             const availableAmmo = this.getAvailableAmmo();
             if (availableAmmo < 1) {
+                const now = performance.now();
+                if (!this.isPointerFireHeld
+                    && this._lastNoAmmoCueAt > 0
+                    && now - this._lastNoAmmoCueAt < WEAPON_BLOCKED_CUE_INTERVAL) {
+                    return false;
+                }
+                this._lastNoAmmoCueAt = now;
+                if (this.isPointerFireHeld) this._emptyFireHeldLatched = true;
                 window.AudioManager?.play('weapon_dry_fire', (this.audioAt?.(this.player?.position?.x, this.player?.position?.z, { volume: 0.45 }) ?? { volume: 0.45 }));
                 presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, { reason: 'out_of_ammo', clip: 0, reserve: 0 }, { level: 'warn' });
                 return this.triggerGameplayMelee({ source: 'empty-fire-fallback' });
@@ -11538,6 +11662,7 @@ export class ThreeGame {
 
     beginHeldFire(clientX, clientY, pointerType = 'mouse') {
         if (!this.isGameplayInputActive()) return false;
+        this._emptyFireHeldLatched = false;
         this.isPointerFireHeld = true;
         this.heldFireClientX = clientX;
         this.heldFireClientY = clientY;
@@ -11547,6 +11672,7 @@ export class ThreeGame {
 
     endHeldFire() {
         this.isPointerFireHeld = false;
+        this._emptyFireHeldLatched = false;
         this.heldFireClientX = null;
         this.heldFireClientY = null;
     }
@@ -13783,6 +13909,7 @@ export class ThreeGame {
         fp.measure('updateEngineerTurret', () => this.updateEngineerTurret(delta));
         fp.measure('updateRadarScans', () => this.updateRadarScans(delta));
         fp.measure('updatePlayer', () => this.updatePlayer(delta));
+        fp.measure('updateCrashSiteGuidance', () => this.updateCrashSiteGuidance?.(now));
         fp.measure('updateMultiplayer', () => this.updateMultiplayer?.(delta, now));
         fp.measure('updateWeaponState', () => this.updateWeaponState(delta));
         fp.measure('updateProjectiles', () => this.updateProjectiles(delta));
@@ -49265,6 +49392,10 @@ export class ThreeGame {
 
     destroy() {
         this._destroyed = true;
+        this._playerOverlayGeneration = (this._playerOverlayGeneration ?? 0) + 1;
+        this.player3dOverlay?.dispose?.();
+        this.player3dOverlay = null;
+        this.disposeCrashSiteGuidance?.();
         this.propDebrisPrewarm?.dispose();
         this.clearCompanions();
         this.applyMilestoneBossRuntimeEvent?.({ type: MILESTONE_BOSS_EVENT_TYPES.QUIT });

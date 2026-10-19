@@ -9382,6 +9382,8 @@ html[data-camp-dialog="open"] .hud-notification-stack {
 }
 
 .tutorial-prompt__text {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-family: 'Outfit', sans-serif;
   font-size: var(--font-xs);
   font-weight: 800;
@@ -9408,7 +9410,9 @@ html[data-camp-dialog="open"] .hud-notification-stack {
   position: absolute;
   top: calc(var(--vu) * 30);
   right: calc(var(--vu) * 4);
-  width: 100%;
+  width: min(calc(var(--vu) * 54), calc(100% - calc(var(--vu) * 8)));
+  max-width: calc(100% - calc(var(--vu) * 8));
+  box-sizing: border-box;
   justify-content: flex-start;
   border: 1.5px solid rgba(255, 200, 50, 0.75);
   border-radius: 8px;
