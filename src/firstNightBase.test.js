@@ -21,7 +21,7 @@ describe('first-night base recovery', () => {
     it('puts the berth on the authored bed socket, well clear of the console', () => {
         const plan = planFirstNightBase({ shipX: 9, shipZ: 9 });
         const { x, z } = plan.installSocket.transform;
-        expect({ x, z }).toEqual({ x: 4, z: 16 });
+        expect({ x, z }).toEqual({ x: 3, z: 15 });
         // Console sits at ship + (-1.6, 1.6); the old berth was 0.6 m from it.
         const fromConsole = Math.hypot(x - (9 - 1.6), z - (9 + 1.6));
         expect(fromConsole).toBeGreaterThan(4);
@@ -118,7 +118,26 @@ describe('first-night base recovery', () => {
         ).toBe(false);
         const { x, z } = plan.installSocket.transform;
         expect(Math.hypot(plan.cotSource.x - x, plan.cotSource.z - z)).toBeGreaterThan(2.6);
-        expect(Math.hypot(plan.cotSource.x - x, plan.cotSource.z - z)).toBeLessThan(4);
+        expect(Math.hypot(plan.cotSource.x - x, plan.cotSource.z - z)).toBeLessThan(5);
+    });
+
+    it('migrates the old berth shell away from the logged collision tile', () => {
+        const legacyPlan = planFirstNightBase({ shipX: 9, shipZ: 9 });
+        const state = createCarryState('run-a');
+        state.installed = legacyPlan.shell.map((module) => ({
+            ...module,
+            x: 4,
+            z: 16,
+            transform: { x: 4, z: 16, yaw: 0 }
+        }));
+        const migrated = ensureFirstNightBaseState(state, { shipX: 9, shipZ: 9 }).state;
+        expect(migrated.installed.filter(({ instanceId }) => instanceId.startsWith('starter-berth-')))
+            .toEqual(expect.arrayContaining(legacyPlan.shell.map((module) => expect.objectContaining({
+                instanceId: module.instanceId,
+                x: 3,
+                z: 15,
+                transform: expect.objectContaining({ x: 3, z: 15 })
+            }))));
     });
 
     it('moves an untouched cot from the old spot under the HUD', () => {

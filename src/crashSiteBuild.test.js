@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { CHUNK_SIZE } from './tileCatalog.js';
 import { CRASH_SITE_BUILD } from './data/crashSiteBuild.js';
-import { crashSiteClearCells, stampCrashSiteApproach, stampCrashSiteOrigin, validateCrashSiteConnection } from './crashSiteBuild.js';
+import {
+    crashSiteClearCells,
+    stampCrashSiteApproach,
+    stampCrashSiteOrigin,
+    validateCrashSiteConnection,
+    validateCrashSiteRooms
+} from './crashSiteBuild.js';
 
 const blank = (tile = 'X') => Array.from({ length: CHUNK_SIZE }, () => Array(CHUNK_SIZE).fill(tile));
 
@@ -38,9 +44,11 @@ describe('two-zone crash site build', () => {
             { x: 10, y: CHUNK_SIZE - 1 }
         ]);
         expect(grid[9][0]).toBe('.');
-        expect(grid[10].slice(6, 13).every((tile) => tile === '.')).toBe(true);
+        const room = CRASH_SITE_BUILD.serviceApproach.releaseBounds;
+        expect(grid[CRASH_SITE_BUILD.serviceApproach.hub.y].slice(room.left, room.right + 1).every((tile) => tile === '.')).toBe(true);
         expect(metadata.wayfindingMarkers.length).toBeGreaterThanOrEqual(3);
         expect(metadata.wayfindingMarkers.at(-1).landmark).toBe(true);
+        expect((CHUNK_SIZE - 1) - CRASH_SITE_BUILD.serviceApproach.hub.y).toBeLessThanOrEqual(10);
     });
 
     it('validates one continuous shared route from the crash room into the approach hub', () => {
@@ -55,6 +63,37 @@ describe('two-zone crash site build', () => {
             valid: false,
             reason: 'shared-socket-blocked'
         });
+    });
+
+    it('keeps every named room and the ship O2 module connected to the wreck', () => {
+        const origin = blank('.');
+        stampCrashSiteOrigin(origin);
+        expect(validateCrashSiteRooms(origin)).toEqual({ valid: true, reason: null });
+
+        const armory = CRASH_SITE_BUILD.sectorZero.rooms.find(({ id }) => id === 'pod_armory');
+        const armoryCenter = {
+            x: Math.round((armory.left + armory.right) / 2),
+            y: Math.round((armory.top + armory.bottom) / 2)
+        };
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            origin[armoryCenter.y + dy][armoryCenter.x + dx] = '#';
+        }
+        expect(validateCrashSiteRooms(origin)).toMatchObject({
+            valid: false,
+            reason: 'authored-room-unreachable',
+            targetId: 'pod_armory'
+        });
+    });
+
+    it('authors all four supply families and one encounter in the first post-hall room', () => {
+        const approach = CRASH_SITE_BUILD.serviceApproach;
+        expect(approach.supplies.map(({ type }) => type).sort()).toEqual(['ammo', 'coin', 'health', 'weapon']);
+        for (const target of [...approach.supplies, approach.encounter]) {
+            expect(target.localX).toBeGreaterThanOrEqual(approach.releaseBounds.left);
+            expect(target.localX).toBeLessThanOrEqual(approach.releaseBounds.right);
+            expect(target.localY).toBeGreaterThanOrEqual(approach.releaseBounds.top);
+            expect(target.localY).toBeLessThanOrEqual(approach.releaseBounds.bottom);
+        }
     });
 
     // 2026-10-14 playtest: the two border rows of the approach were stamped
@@ -145,6 +184,21 @@ describe('two-zone crash site build', () => {
                     `solid prop at ${x},${y}`
                 ).toBe(false);
             }
+        }
+    });
+
+    it('keeps both O2 fixtures in the authored impact room', () => {
+        const room = CRASH_SITE_BUILD.sectorZero.rooms.find(({ id }) => id === CRASH_SITE_BUILD.shipSystems.roomId);
+        const shipO2 = {
+            x: CRASH_SITE_BUILD.center.x + CRASH_SITE_BUILD.shipSystems.o2ModuleOffset.x,
+            z: CRASH_SITE_BUILD.center.z + CRASH_SITE_BUILD.shipSystems.o2ModuleOffset.z
+        };
+        const berthO2 = CRASH_SITE_BUILD.constructionSockets.find(({ id }) => id === 'first-bed');
+        for (const fixture of [shipO2, berthO2]) {
+            expect(fixture.x).toBeGreaterThanOrEqual(room.left);
+            expect(fixture.x).toBeLessThanOrEqual(room.right);
+            expect(fixture.z).toBeGreaterThanOrEqual(room.top);
+            expect(fixture.z).toBeLessThanOrEqual(room.bottom);
         }
     });
 

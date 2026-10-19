@@ -1,7 +1,7 @@
-export const CRASH_SITE_BUILD_VERSION = 3;
+export const CRASH_SITE_BUILD_VERSION = 4;
 
 const sectorZeroRooms = Object.freeze([
-    Object.freeze({ id: 'impact_cradle', phase: 'phase_1_boot', left: 4, right: 14, top: 4, bottom: 15 }),
+    Object.freeze({ id: 'impact_cradle', phase: 'phase_1_boot', left: 2, right: 16, top: 4, bottom: 16 }),
     Object.freeze({ id: 'pod_armory', phase: 'phase_2_weapon', left: 2, right: 7, top: 18, bottom: 27 }),
     Object.freeze({ id: 'salvage_bay', phase: 'phase_3_salvage', left: 20, right: 28, top: 8, bottom: 18 }),
     Object.freeze({ id: 'proving_ground', phase: 'phase_4_combat', left: 10, right: 18, top: 18, bottom: 27 }),
@@ -27,7 +27,7 @@ const sectorZeroProps = Object.freeze([
 ]);
 
 export const CRASH_SITE_BUILD = Object.freeze({
-    id: 'crash-site-two-zone-v2',
+    id: 'crash-site-two-zone-v3',
     center: Object.freeze({ x: 9, z: 9 }),
     edgeOffset: 4,
     originChunk: Object.freeze({ x: 0, y: 0 }),
@@ -38,8 +38,23 @@ export const CRASH_SITE_BUILD = Object.freeze({
     northPreHall: Object.freeze({ socketHalfWidth: 1, halfWidth: 2, top: 0, bottom: 3 }),
     serviceApproach: Object.freeze({
         halfWidth: 3,
-        hub: Object.freeze({ x: 9, y: 9 }),
-        releaseBounds: Object.freeze({ left: 5, right: 13, top: 6, bottom: 12 })
+        // Keep the first destination within one short hallway of the crash
+        // door. The former y=9 hub made the opening approach 39 cells long.
+        hub: Object.freeze({ x: 9, y: 39 }),
+        releaseBounds: Object.freeze({ left: 3, right: 15, top: 34, bottom: 44 }),
+        encounter: Object.freeze({ localX: 9, localY: 35, type: 'cybersnail' }),
+        supplies: Object.freeze([
+            Object.freeze({ id: 'first-aid', localX: 5, localY: 39, type: 'health', amount: 1 }),
+            Object.freeze({ id: 'first-ammo', localX: 7, localY: 42, type: 'ammo', amount: 12 }),
+            Object.freeze({ id: 'first-weapon', localX: 11, localY: 42, type: 'weapon', amount: 1 }),
+            Object.freeze({ id: 'first-coin', localX: 13, localY: 39, type: 'coin', amount: 3 })
+        ])
+    }),
+    // Ship systems are authored as part of the impact cradle, rather than
+    // being inferred from an unrelated waypoint or procedural room.
+    shipSystems: Object.freeze({
+        roomId: 'impact_cradle',
+        o2ModuleOffset: Object.freeze({ x: 1.75, z: 1.2 })
     }),
     clearManeuverLane: Object.freeze({
         axis: 'z',
@@ -62,7 +77,7 @@ export const CRASH_SITE_BUILD = Object.freeze({
         departureThresholdZ: 2.75
     }),
     constructionSockets: Object.freeze([
-        Object.freeze({ id: 'first-bed', kind: 'bed', x: 3.5, z: 15.5, yaw: Math.PI / 2 }),
+        Object.freeze({ id: 'first-bed', kind: 'bed', x: 2.5, z: 14.5, yaw: Math.PI / 2 }),
         Object.freeze({ id: 'west-seal', kind: 'wall', x: 1.5, z: 13, yaw: Math.PI / 2 }),
         Object.freeze({ id: 'east-seal', kind: 'wall', x: 28.5, z: 13, yaw: -Math.PI / 2 }),
         Object.freeze({ id: 'base-arcade', kind: 'arcade', x: 12.5, z: 26.5, yaw: 0 })

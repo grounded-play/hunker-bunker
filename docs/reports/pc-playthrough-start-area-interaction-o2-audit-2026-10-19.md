@@ -155,7 +155,43 @@ Run this on a newly packaged Windows build whose log identifies commit
    start-area geometry mismatches, directional interaction records for every E
    press, and a successful `o2-repair-result`.
 
-Automated validation for this implementation: 767 test files / 6,537 tests,
+Automated validation for this implementation: 767 test files / 6,543 tests,
 scoped ESLint, production build, and build-media audit all pass. Until the PC
 pass exists, source implementation is complete but packaged-runtime closure is
 still pending.
+
+## Follow-up PC session — 16:30 build `93e98d3c3fa8`
+
+The latest Windows session ran from 16:30:48 to 16:36:57 on the clean
+`dev/sprint-53` build. It travelled 318 m, collected ten pickups, never brought
+O2 online, and died to a pit at `(48.44, 47.97)`. Four crash-site
+depenetrations were retained. Three came from the same dynamic collider around
+tile `(4,16)` and one came from a dynamic collider around `(7,4)`.
+
+This exposed two remaining authored-flow problems:
+
+- The first north approach hub was at local `(9,9)`, 39 cells beyond the
+  origin boundary. The first concrete room and useful encounter therefore did
+  not read as “just beyond” the opening hallway.
+- Returning profiles bypass the phase-gated Sector Zero crawler. They had no
+  deterministic enemy in the opening route and depended on distant procedural
+  population.
+
+The follow-up implementation increments the crash build to version 4 and:
+
+- moves the approach hub to local `(9,39)`, nine cells past the shared door;
+- stamps the same connected 13×11 staging room for every approach variant;
+- places one health, ammo, weapon, and currency pickup in that room;
+- places one deterministic low-tier enemy there for returning profiles while
+  preserving the protected fresh-player tutorial;
+- expands the impact-cradle room and declares the ship O2 offset as part of
+  that authored room;
+- moves the first-night berth/O2 fixture from rounded tile `(4,16)` to `(3,15)`
+  and migrates untouched existing shell records off the logged collision tile;
+- validates all named origin rooms, the ship O2 point, the approach encounter,
+  and every approach supply with flood-fill connectivity tests.
+
+A new packaged Windows session is still required to close the runtime check:
+the expected evidence is a short door-to-staging-room walk, all four supply
+families visible, one nearby enemy on a returning profile, and no
+depenetration at `(4,16)`.

@@ -48,6 +48,12 @@ const LEGACY_COT_SOURCE_OFFSETS = Object.freeze([
     Object.freeze({ x: -2, z: 0 })
 ]);
 
+const LEGACY_BERTH_OFFSETS = Object.freeze([
+    // v3 rounded the authored half-cell socket (3.5, 15.5) to (4, 16),
+    // directly matching the dynamic-collider pushes in the 16:30 PC log.
+    Object.freeze({ x: -5, z: 7 })
+]);
+
 const LEGACY_GIVEAWAY_MODULE_IDS = new Set(['starter-berth-wall-w', 'starter-berth-door-e']);
 
 /**
@@ -104,7 +110,19 @@ export function planFirstNightBase({ shipX = 0, shipZ = 0 } = {}) {
 export function ensureFirstNightBaseState(state, options = {}) {
     if (!state) return { state, plan: planFirstNightBase(options), addedCot: false, addedCargo: [] };
     const plan = planFirstNightBase(options);
-    const installedWithoutLegacyGiveaways = state.installed.filter(({ instanceId }) => !LEGACY_GIVEAWAY_MODULE_IDS.has(instanceId));
+    const shipX = options.shipX ?? 0;
+    const shipZ = options.shipZ ?? 0;
+    const shellById = new Map(plan.shell.map((module) => [module.instanceId, module]));
+    const installedWithoutLegacyGiveaways = state.installed
+        .filter(({ instanceId }) => !LEGACY_GIVEAWAY_MODULE_IDS.has(instanceId))
+        .map((module) => {
+            const replacement = shellById.get(module.instanceId);
+            const atLegacyBerth = replacement && LEGACY_BERTH_OFFSETS.some((offset) => (
+                module.x === Math.round(shipX + offset.x)
+                && module.z === Math.round(shipZ + offset.z)
+            ));
+            return atLegacyBerth ? { ...replacement } : module;
+        });
     const installedIds = new Set(installedWithoutLegacyGiveaways.map(({ instanceId }) => instanceId));
     let next = {
         ...state,

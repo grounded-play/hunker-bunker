@@ -1052,7 +1052,7 @@ const O2_GENERATOR_RING_BASE_RADIUS = 1;
 const O2_GENERATOR_RING_BAND_THICKNESS = 0.24;
 const O2_MODULE_COLLISION_RADIUS = 0.5;
 const MODULE_OFFSETS = Object.freeze({
-    o2Generator: Object.freeze({ x: 1.75, z: 1.2 }),
+    o2Generator: CRASH_SITE_BUILD.shipSystems.o2ModuleOffset,
     hullMatrix: Object.freeze({ x: 2.7, z: 0.25 }),
     radarDish: Object.freeze({ x: 1.9, z: -1.15 }),
     reactorCompressor: Object.freeze({ x: 0.45, z: 3.0 })
@@ -38525,9 +38525,10 @@ export class ThreeGame {
         const metadata = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
         const doorApronCells = collectDoorApronCells(metadata);
         const candidates = [];
-        const tutorialPlacements = chunkX === CRASH_SITE_BUILD.originChunk.x
-            && chunkY === CRASH_SITE_BUILD.originChunk.y
-            ? [{
+        const authoredPlacements = [];
+        if (chunkX === CRASH_SITE_BUILD.originChunk.x
+            && chunkY === CRASH_SITE_BUILD.originChunk.y) {
+            authoredPlacements.push({
                 localX: Math.round(CRASH_SITE_BUILD.sectorZero.salvageCache.x),
                 localY: Math.round(CRASH_SITE_BUILD.sectorZero.salvageCache.z),
                 worldX: CRASH_SITE_BUILD.sectorZero.salvageCache.x,
@@ -38545,8 +38546,32 @@ export class ThreeGame {
                 bobOffset: 0,
                 shadowRadius: 0.32,
                 tutorialPickupId: 'sector_zero_salvage_cache'
-            }]
-            : [];
+            });
+        }
+        if (chunkX === CRASH_SITE_BUILD.approachChunk.x
+            && chunkY === CRASH_SITE_BUILD.approachChunk.y) {
+            for (const supply of CRASH_SITE_BUILD.serviceApproach.supplies ?? []) {
+                authoredPlacements.push({
+                    localX: supply.localX,
+                    localY: supply.localY,
+                    worldX: chunkX * this.chunkSize + supply.localX,
+                    worldZ: chunkY * this.chunkSize + supply.localY,
+                    type: supply.type,
+                    amount: supply.amount,
+                    rarity: LOOT_RARITIES[0],
+                    scale: supply.type === 'weapon' ? 1.05 : 0.94,
+                    rotation: 0,
+                    tiltX: 0,
+                    tiltZ: 0,
+                    elevation: 0.24,
+                    offsetX: 0,
+                    offsetZ: 0,
+                    bobOffset: 0,
+                    shadowRadius: supply.type === 'weapon' ? 0.34 : 0.28,
+                    tutorialPickupId: `crash_approach_${supply.id}`
+                });
+            }
+        }
         const plannedRoomPickups = (metadata?.roomInstances ?? [])
             .flatMap((room) => (room.populationPlan?.placements ?? [])
                 .filter((placement) => placement.kind === 'pickup')
@@ -38599,13 +38624,13 @@ export class ThreeGame {
         }
 
         if (candidates.length < 10) {
-            return tutorialPlacements.concat(filterDoorApronPlacements(plannedRoomPickups.map((candidate) => (
+            return authoredPlacements.concat(filterDoorApronPlacements(plannedRoomPickups.map((candidate) => (
                 this.buildPickupPlacement(candidate, random, depthLootConfig.legendaryBoost)
             )), doorApronCells, { chunkX, chunkY, chunkSize: this.chunkSize }));
         }
 
         const occupied = new Set();
-        const placements = [...tutorialPlacements];
+        const placements = [...authoredPlacements];
         for (const candidate of plannedRoomPickups) {
             occupied.add(`${candidate.localX},${candidate.localY}`);
             placements.push(this.buildPickupPlacement(candidate, random, depthLootConfig.legendaryBoost));
@@ -39144,6 +39169,26 @@ export class ThreeGame {
             ))
         );
         const candidates = [];
+        const approachEncounter = chunkX === CRASH_SITE_BUILD.approachChunk.x
+            && chunkY === CRASH_SITE_BUILD.approachChunk.y
+            && !this.isSectorZeroOnboardingActive?.()
+            ? CRASH_SITE_BUILD.serviceApproach.encounter
+            : null;
+        const approachEncounterPlacement = approachEncounter ? {
+            x: chunkX * this.chunkSize + approachEncounter.localX,
+            z: chunkY * this.chunkSize + approachEncounter.localY,
+            type: approachEncounter.type,
+            scatterKey: 'crash-approach:first-encounter',
+            scale: 1.05,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.09,
+            groupType: 'crash-approach-encounter',
+            phase: 0,
+            opacity: 1,
+            biomeTint: SNAIL_BIOME_TINTS[BIOME_KEYS.ACTIVE] ?? 0xffffff
+        } : null;
 
         // Deterministic clearing check for crash site center and all crashed ships across all clients
         const isNearSpawnClearing = (worldX, worldZ) => {
@@ -39179,7 +39224,7 @@ export class ThreeGame {
             }
         }
 
-        if (candidates.length < 4) return [];
+        if (candidates.length < 4) return approachEncounterPlacement ? [approachEncounterPlacement] : [];
         const chunkCenterX = chunkX * this.chunkSize + (this.chunkSize * 0.5);
         const chunkCenterZ = chunkY * this.chunkSize + (this.chunkSize * 0.5);
         const biomeKey = this.getBiomeKeyForWorldPosition(chunkCenterX, chunkCenterZ);
@@ -39338,7 +39383,7 @@ export class ThreeGame {
         }
 
         // 6. Build the final micro-varied placement properties
-        const finalPlacements = [];
+        const finalPlacements = approachEncounterPlacement ? [approachEncounterPlacement] : [];
         const junkPlacementAnchors = [];
         const chunkBiomeKey = this.getBiomeKeyForWorldPosition(chunkCenterX, chunkCenterZ);
         const chunkTemplate = this.getChunkTemplate(chunkX, chunkY);
@@ -39721,6 +39766,11 @@ export class ThreeGame {
             }
         }
 
+        // Returning profiles skip the phase-gated Sector Zero tutorial, so
+        // they previously had no guaranteed opening enemy. Put one readable,
+        // low-tier encounter in the staging room just beyond the first hall.
+        // Fresh profiles still fight the tutorial crawler inside the origin
+        // room before the blast door opens.
         return filterDoorApronPlacements(finalPlacements, doorApronCells, {
             chunkX,
             chunkY,
