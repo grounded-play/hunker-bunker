@@ -224,10 +224,15 @@ export function calculateVignetteSocket(playerPos, propPos, wallNormal = null, s
 }
 
 function restorePlayerControlState(game, vignette) {
+    // `player` is the transform parent while the 3D operator root carries the
+    // normal visual facing. Restoring both to the world yaw double-rotated the
+    // visible model after every vignette.
+    game.player.rotation.y = vignette.startYaw;
     if (Number.isFinite(vignette.initialFacingYaw)) {
-        game.player.rotation.y = vignette.initialFacingYaw;
         game.updateFacingYaw?.(vignette.initialFacingYaw);
-        if (game.player3dOverlay?.root) game.player3dOverlay.root.rotation.y = vignette.initialFacingYaw;
+    }
+    if (game.player3dOverlay?.root && Number.isFinite(vignette.initialOverlayYaw)) {
+        game.player3dOverlay.root.rotation.y = vignette.initialOverlayYaw;
     }
     // Input is suppressed while the vignette owns the player. Drop any
     // movement state captured before/during it so completion cannot launch the
@@ -263,6 +268,7 @@ export function createInteractionVignetteController(game) {
             const startPos = player.position.clone();
             const startYaw = player.rotation.y;
             const initialFacingYaw = game.facingYaw ?? startYaw;
+            const initialOverlayYaw = game.player3dOverlay?.root?.rotation?.y ?? initialFacingYaw - startYaw;
 
             const propPos = sprite?.position ?? player.position;
             const wallNormal = sprite?.userData?.wallNormal ?? null;
@@ -286,6 +292,7 @@ export function createInteractionVignetteController(game) {
                 startPos,
                 startYaw,
                 initialFacingYaw,
+                initialOverlayYaw,
                 targetPos: socket.position,
                 targetYaw: socket.yaw,
                 animationStarted: false,

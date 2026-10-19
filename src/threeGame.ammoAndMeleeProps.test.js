@@ -90,6 +90,20 @@ describe('ammo lockers, solid props, and Smash', () => {
         expect(game.triggerGameplayMelee).toHaveBeenCalledWith({ source: 'empty-fire-fallback' });
     });
 
+    it('cannot fire before the staged landing weapon is picked up', () => {
+        const game = {
+            fieldWeaponRunState: { runId: 'landing', equipped: null, worldDrops: [] },
+            isGameplayInputActive: () => true,
+            playThrottledUiError: vi.fn(),
+            showBunkerLine: vi.fn()
+        };
+
+        expect(ThreeGame.prototype.fireWeaponAtCurrentAim.call(game)).toBe(false);
+        expect(game.showBunkerLine).toHaveBeenCalledWith(
+            'UNARMED — RECOVER YOUR WEAPON FROM THE BERTH RACK.'
+        );
+    });
+
     it('reports empty ammo only once while the fire control remains held', () => {
         const game = {
             weaponClipAmmo: 0, weaponReloading: false, weaponFireCooldown: 0,

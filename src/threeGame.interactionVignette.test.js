@@ -346,7 +346,7 @@ describe('threeGame interaction vignette gameplay integration', () => {
     it('restores initial facing yaw upon completion so player movement direction is preserved', () => {
         const game = createMockGame();
         game.facingYaw = 1.25;
-        game.player.rotation.y = 1.25;
+        game.player.rotation.y = 0.35;
         game.player.position.set(5, 0, 5);
         game.updateFacingYaw = vi.fn((yaw) => { game.facingYaw = yaw; });
 
@@ -368,7 +368,7 @@ describe('threeGame interaction vignette gameplay integration', () => {
         // Finish vignette
         game.updatePlayer(1.3);
         expect(game.interactionVignette.isActive()).toBe(false);
-        expect(game.player.rotation.y).toBeCloseTo(1.25, 4);
+        expect(game.player.rotation.y).toBeCloseTo(0.35, 4);
         expect(game.facingYaw).toBeCloseTo(1.25, 4);
     });
 });

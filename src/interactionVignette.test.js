@@ -130,10 +130,11 @@ describe('interactionVignette', () => {
         it('restores logical facing and clears stale movement when completing', () => {
             const game = mockGame();
             game.facingYaw = 1.1;
-            game.player.rotation.y = 1.1;
+            game.player.rotation.y = 0.2;
             game.updateFacingYaw = vi.fn((yaw) => { game.facingYaw = yaw; });
             game.clearGameplayInputState = vi.fn();
             game.player3dOverlay.root = new THREE.Group();
+            game.player3dOverlay.root.rotation.y = 0.9;
             game.player.position.set(0, 0, 0);
             const controller = createInteractionVignetteController(game);
             const sprite = new THREE.Sprite();
@@ -144,8 +145,8 @@ describe('interactionVignette', () => {
             controller.update(2);
 
             expect(game.updateFacingYaw).toHaveBeenCalledWith(1.1);
-            expect(game.player.rotation.y).toBeCloseTo(1.1);
-            expect(game.player3dOverlay.root.rotation.y).toBeCloseTo(1.1);
+            expect(game.player.rotation.y).toBeCloseTo(0.2);
+            expect(game.player3dOverlay.root.rotation.y).toBeCloseTo(0.9);
             expect(game.clearGameplayInputState).toHaveBeenCalledTimes(1);
         });
 

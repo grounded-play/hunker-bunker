@@ -228,3 +228,37 @@ objective priority, offline O2 visibility, exact authored supply count,
 guaranteed first-hall enemy, absence of procedural crash-room set pieces, and
 exterior wall support. A packaged PC/Deck pass is still needed to confirm the
 visual composition and collect the new `objective-guidance-revealed` record.
+
+## Follow-up PC session — 20:31 layout build `785de2466dc3`
+
+The latest Windows/Steam session ran from 20:31:33 to 20:34:15 on the exact
+layout build requested for review. It travelled 111 m, collected five pickups,
+produced no O2, killed no enemies, and ended in a pit at `(0.29, 35.60)`.
+There were no runtime exceptions. The retained evidence identifies four
+remaining implementation defects rather than an old or mismatched build:
+
+- deployment reset the weapon HUD to 42 rounds and accepted
+  `plasma_carbine` shots even though no field weapon was equipped;
+- the selected armory weapon was never materialized as a world pickup, so the
+  intended berth-rack recovery step did not exist;
+- the life-support core inherited its distant world-plan objective position
+  instead of the crash-room assembly loop;
+- the interaction vignette restored the same world yaw on both the player
+  parent and its 3D child, double-rotating the visible operator, while the
+  detached bulkhead leaf lost the normalized model-root scale and appeared too
+  small for its collision opening.
+
+The follow-up implementation makes landing genuinely unarmed, stages the
+currently selected compatible armory weapon beside the berth (with the Mark-I
+sidearm as the safe fallback), hides the held-gun model and blocks ranged fire
+until that pickup is equipped, and keeps the O2 recovery core at authored
+crash-room position `(15,14)`. Interaction completion now independently
+restores the collision parent, logical aim yaw, and 3D child yaw. The authored
+bulkhead frame is fitted to `4.8 × 2.8 × 0.9` world units and its moving leaf
+to `3.05 × 2.66 × 0.62`, preserving the invisible raycast/collision proxy.
+
+Automated validation for this follow-up is 767 test files / 6,553 tests. A new
+packaged Windows pass remains required. It should confirm: zero shots before
+pickup; the selected gun visibly beside the berth; O2 core visible at `(15,14)`;
+body/reticle alignment after complete, cancelled, and damage-interrupted
+actions; and door art fully covering the closed portal.

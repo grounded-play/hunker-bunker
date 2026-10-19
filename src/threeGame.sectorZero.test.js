@@ -114,6 +114,39 @@ describe('ThreeGame Sector Zero Integration', () => {
         expect(game.openBunkerBlastDoor).toHaveBeenCalledOnce();
     });
 
+    it('stages the selected loadout gun beside the berth without equipping it', () => {
+        const game = createMockGame();
+        game.playerType = 'TANK';
+        game.scene = {};
+        game.fieldWeaponRunState = { runId: 'landing', equipped: null, worldDrops: [] };
+        game.spawnFieldWeaponDrop = vi.fn((profileId, x, z, options) => ({ profileId, x, z, ...options }));
+        window.loadout = { getEquippedId: vi.fn(() => 'pulse_carbine') };
+
+        const drop = game.stageSectorZeroLoadoutWeapon();
+
+        expect(game.fieldWeaponRunState.equipped).toBeNull();
+        expect(game.spawnFieldWeaponDrop).toHaveBeenCalledWith(
+            'pulse_carbine',
+            CRASH_SITE_BUILD.sectorZero.weaponRack.x,
+            CRASH_SITE_BUILD.sectorZero.weaponRack.z,
+            expect.objectContaining({
+                ammoInWeapon: 24,
+                reserveAmmo: 72,
+                sourceEncounterId: 'sector-zero-loadout'
+            })
+        );
+        expect(drop.profileId).toBe('pulse_carbine');
+    });
+
+    it('keeps the O2 recovery part in the authored crash room', () => {
+        const game = createMockGame();
+        game.worldPlan = { reservations: [] };
+        game.chunkSize = 31;
+
+        expect(game.getShipRebuildSourcePositions().o2Bubble)
+            .toEqual(CRASH_SITE_BUILD.shipSystems.o2RecoveryPosition);
+    });
+
     it('skips into a viable run with a sidearm, 25 tech and an open gate', () => {
         const game = createMockGame();
         game.player = { position: { x: 4, z: 8 } };

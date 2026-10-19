@@ -186,6 +186,16 @@ describe('clearSpawnArea — door/portal alignment', () => {
         expect(game.bunkerBlastDoorFrameGroup.position.toArray()).toEqual([9, 0, 3]);
         expect(game.bunkerBlastDoorSlabModel.parent).toBe(doorGroup);
         expect(game.bunkerBlastDoorSlabModel.position.y).toBe(-1.4);
+        const frameSize = new THREE.Box3().setFromObject(game.bunkerBlastDoorFrameGroup)
+            .getSize(new THREE.Vector3());
+        const slabSize = new THREE.Box3().setFromObject(game.bunkerBlastDoorSlabModel)
+            .getSize(new THREE.Vector3());
+        expect(frameSize.x).toBeCloseTo(4.8);
+        expect(frameSize.y).toBeCloseTo(2.8);
+        expect(frameSize.z).toBeCloseTo(0.9);
+        expect(slabSize.x).toBeCloseTo(3.05);
+        expect(slabSize.y).toBeCloseTo(2.66);
+        expect(slabSize.z).toBeCloseTo(0.62);
         expect(proxy.visible).toBe(true);
         expect(proxy.material.colorWrite).toBe(false);
         expect(rib.visible).toBe(false);

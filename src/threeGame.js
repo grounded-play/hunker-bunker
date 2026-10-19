@@ -5768,10 +5768,34 @@ export class ThreeGame {
                 frameMesh = root;
             }
 
+            // The loader normalizes the model root. These two authored parts are
+            // detached below, so fit each one independently or the root's scale
+            // is lost and a postage-stamp door sits inside the collision portal.
+            const fitDetachedPart = (part, targetSize) => {
+                if (!part) return;
+                part.removeFromParent?.();
+                part.position.set(0, 0, 0);
+                part.scale.set(1, 1, 1);
+                part.updateMatrixWorld(true);
+                const bounds = new THREE.Box3().setFromObject(part);
+                const size = bounds.getSize(new THREE.Vector3());
+                part.scale.set(
+                    targetSize.x / Math.max(size.x, 0.001),
+                    targetSize.y / Math.max(size.y, 0.001),
+                    targetSize.z / Math.max(size.z, 0.001)
+                );
+                part.updateMatrixWorld(true);
+                const fitted = new THREE.Box3().setFromObject(part);
+                const center = fitted.getCenter(new THREE.Vector3());
+                part.position.x -= center.x;
+                part.position.y -= fitted.min.y;
+                part.position.z -= center.z;
+            };
+
             // Frame stays static at the portal doorway opening (9, 0, 3)
             const frameGroup = new THREE.Group();
             frameGroup.position.set(9, 0, 3);
-            frameGroup.scale.set(1.5, 1.25, 1.2);
+            fitDetachedPart(frameMesh, { x: 4.8, y: 2.8, z: 0.9 });
             if (frameMesh) frameGroup.add(frameMesh);
             this.scene.add(frameGroup);
             this.bunkerBlastDoorFrameGroup = frameGroup;
@@ -5779,6 +5803,7 @@ export class ThreeGame {
 
             // The moving group is positioned at the procedural slab's center
             if (slabMesh) {
+                fitDetachedPart(slabMesh, { x: 3.05, y: 2.66, z: 0.62 });
                 slabMesh.position.set(0, -1.4, 0);
                 slabMesh.traverse?.((object) => {
                     if (!object.isMesh) return;
@@ -6223,6 +6248,7 @@ export class ThreeGame {
             overlay.root.position.z += this.playerSpriteLead;
             playerRoot.add(overlay.root);
             this.player3dOverlay = overlay;
+            overlay.setWeaponVisible?.(Boolean(this.fieldWeaponRunState?.equipped));
             this.updatePlayerDecalSprite();
             overlay.setOperatorPolish(this._playerPolishHex ?? 0xffffff);
             overlay.root.traverse((child) => {
@@ -10235,6 +10261,7 @@ export class ThreeGame {
         this.clearFieldWeaponDropVisuals?.();
         this.fieldWeaponRunState = resetFieldWeaponRunState(`run:${Date.now()}`);
         this._fieldWeaponDropSequence = 0;
+        this.stageSectorZeroLoadoutWeapon?.();
         this.spawnedFireGateSources?.clear?.();
         this.iceBarrierStates?.clear?.();
         for (const anchor of this.iceBarrierAnchors ?? []) {
@@ -10264,6 +10291,7 @@ export class ThreeGame {
         const equipped = this.fieldWeaponRunState?.equipped ?? null;
         if (!equipped) {
             this.applyWeaponUpgrades();
+            this.player3dOverlay?.setWeaponVisible?.(false);
             this.emitWeaponClipState?.();
             return null;
         }
@@ -10274,6 +10302,7 @@ export class ThreeGame {
         this.weaponReloading = false;
         this.weaponReloadTimer = 0;
         this.weaponAmmoRefillTimer = 0;
+        this.player3dOverlay?.setWeaponVisible?.(true);
         this.emitWeaponClipState?.();
         if (announce) {
             window.dispatchEvent(new CustomEvent('field-weapon-equipped', {
@@ -10281,6 +10310,29 @@ export class ThreeGame {
             }));
         }
         return equipped;
+    }
+
+    stageSectorZeroLoadoutWeapon() {
+        const sourceEncounterId = 'sector-zero-loadout';
+        const existing = this.fieldWeaponRunState?.worldDrops?.find((drop) => (
+            drop.sourceEncounterId === sourceEncounterId
+        ));
+        if (existing) return existing;
+        const selectedId = typeof window !== 'undefined'
+            ? window.loadout?.getEquippedId?.(this.playerType)
+            : null;
+        const profileId = getFieldWeaponDropDefinition(selectedId)
+            ? selectedId
+            : CRASH_SITE_BUILD.sectorZero.weaponRack.profileId;
+        const definition = getFieldWeaponDropDefinition(profileId);
+        if (!definition) return null;
+        const rack = CRASH_SITE_BUILD.sectorZero.weaponRack;
+        return this.spawnFieldWeaponDrop?.(profileId, rack.x, rack.z, {
+            ammoInWeapon: definition.clipCapacity,
+            reserveAmmo: Math.min(definition.reserveCapacity, definition.clipCapacity * 3),
+            sourceEncounterId,
+            instanceId: `sector-zero-loadout:${this.fieldWeaponRunState?.runId ?? 'run'}`
+        }) ?? null;
     }
 
     spawnFieldWeaponDrop(profileId, x, z, {
@@ -10449,8 +10501,11 @@ export class ThreeGame {
 
     getShipRebuildSourcePositions() {
         const plan = this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
-        const positions = {};
+        const positions = {
+            o2Bubble: { ...CRASH_SITE_BUILD.shipSystems.o2RecoveryPosition }
+        };
         for (const [index, stage] of SHIP_REBUILD_STAGES.entries()) {
+            if (stage.goalKey === 'o2Bubble') continue;
             const reservationId = `goal:${stage.goalKey}:objective`;
             const reservation = plan?.reservations?.find((entry) => entry.id === reservationId);
             if (!reservation) continue;
@@ -11657,6 +11712,15 @@ export class ThreeGame {
 
     fireWeaponAtCurrentAim({ source = 'pointer' } = {}) {
         if (!this.isGameplayInputActive()) return false;
+
+        if (this.fieldWeaponRunState && !this.fieldWeaponRunState.equipped) {
+            presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, {
+                reason: 'no_weapon'
+            }, { level: 'warn' });
+            this.playThrottledUiError('_lastNoWeaponCueAt', { volume: 0.42, playbackRate: 0.78 });
+            this.showBunkerLine?.('UNARMED — RECOVER YOUR WEAPON FROM THE BERTH RACK.');
+            return false;
+        }
 
         // updateHeldFire runs every frame. Once an empty held trigger has
         // received feedback, stop before emitting more input telemetry too.
@@ -19067,11 +19131,10 @@ export class ThreeGame {
     // Translate persisted weapon-upgrade levels into the live combat tuning used by
     // spawnPlayerShot() and the reload/clip logic. Called whenever upgrades change.
     applyWeaponUpgrades() {
-        const craftedId = typeof window !== 'undefined' ? window.loadout?.getEquippedId?.(this.playerType) : null;
         const runWeapon = this.fieldWeaponRunState?.equipped ?? null;
         this.fieldWeapon = runWeapon
             ? getFieldWeaponProfile(runWeapon.profileId, true)
-            : getFieldWeaponProfile(craftedId, typeof window !== 'undefined' && window.fabricator?.isFabricated?.(craftedId));
+            : null;
         const levels = this.bank?.getWeaponUpgrades?.() ?? {};
         const ammoCapacity = Math.max(0, Math.floor(levels.ammoCapacity ?? 0));
         const shotSpeed = Math.max(0, Math.floor(levels.shotSpeed ?? 0));
@@ -19102,7 +19165,8 @@ export class ThreeGame {
         // Never leave more rounds chambered than the (possibly shrunk) clip allows.
         this.weaponClipAmmo = runWeapon
             ? runWeapon.ammoInWeapon
-            : Math.min(this.weaponClipAmmo, this.weaponClipSize);
+            : 0;
+        this.player3dOverlay?.setWeaponVisible?.(Boolean(runWeapon));
     }
 
     hasUpgrade(goalKey) {
@@ -25802,7 +25866,7 @@ export class ThreeGame {
             projectile?.mesh?.material?.dispose?.();
             projectile?.mesh?.geometry?.dispose?.();
         }
-        this.weaponClipAmmo = this.fieldWeaponRunState?.equipped?.ammoInWeapon ?? this.weaponClipSize;
+        this.weaponClipAmmo = this.fieldWeaponRunState?.equipped?.ammoInWeapon ?? 0;
         this.weaponReloading = false;
         this.weaponReloadTimer = 0;
         this.weaponAmmoRefillTimer = 0;
@@ -25810,6 +25874,7 @@ export class ThreeGame {
         this.endHeldFire();
         this._lastNoFireCueAt = 0;
         this._lastNoAmmoCueAt = 0;
+        this._lastNoWeaponCueAt = 0;
         this._lastReloadBlockedCueAt = 0;
         this.activeProjectiles = [];
         this.clearMortarShells?.();
@@ -49380,7 +49445,9 @@ export class ThreeGame {
         this.sectorZeroTutorial.onComplete = (detail) => this.handleSectorZeroCompleted(detail);
         this._sectorZeroMovedDistance = 0;
         this._sectorZeroMovedMs = 0;
-        this._sectorZeroWeaponSpawned = false;
+        this._sectorZeroWeaponSpawned = Boolean(this.fieldWeaponRunState?.worldDrops?.some((drop) => (
+            drop.sourceEncounterId === 'sector-zero-loadout'
+        )));
         this._sectorZeroCrawlerSpawned = false;
         this.sectorZeroOnboardingPending = false;
         this.setSnailsEnabled?.(false, { removeExisting: true });
@@ -49438,11 +49505,7 @@ export class ThreeGame {
         }
         if (phase === SECTOR_ZERO_PHASES.WEAPON && !this._sectorZeroWeaponSpawned) {
             this._sectorZeroWeaponSpawned = true;
-            this.spawnFieldWeaponDrop?.(layout.weaponRack.profileId, layout.weaponRack.x, layout.weaponRack.z, {
-                ammoInWeapon: 12,
-                reserveAmmo: 36,
-                instanceId: `sector-zero-sidearm:${this.fieldWeaponRunState?.runId ?? 'run'}`
-            });
+            this.stageSectorZeroLoadoutWeapon?.();
         }
         if (phase === SECTOR_ZERO_PHASES.COMBAT && !this._sectorZeroCrawlerSpawned) {
             this._sectorZeroCrawlerSpawned = true;

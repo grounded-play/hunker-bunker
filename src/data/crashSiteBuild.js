@@ -54,7 +54,10 @@ export const CRASH_SITE_BUILD = Object.freeze({
     // being inferred from an unrelated waypoint or procedural room.
     shipSystems: Object.freeze({
         roomId: 'impact_cradle',
-        o2ModuleOffset: Object.freeze({ x: 3.5, z: 0.5 })
+        o2ModuleOffset: Object.freeze({ x: 3.5, z: 0.5 }),
+        // The first physical rebuild part belongs to the crash-room loop,
+        // not a distant procedural objective reservation.
+        o2RecoveryPosition: Object.freeze({ x: 15, z: 14 })
     }),
     clearManeuverLane: Object.freeze({
         axis: 'z',
@@ -69,7 +72,9 @@ export const CRASH_SITE_BUILD = Object.freeze({
         partitions: sectorZeroPartitions,
         props: sectorZeroProps,
         jammedCablePosition: Object.freeze({ x: 17, z: 29 }),
-        weaponRack: Object.freeze({ x: 5.5, z: 22.5, profileId: 'mk1_sidearm' }),
+        // The operator lands unarmed and retrieves the selected armory gun
+        // beside the berth before entering the combat tutorial.
+        weaponRack: Object.freeze({ x: 5, z: 15, profileId: 'mk1_sidearm' }),
         salvageCache: Object.freeze({ x: 24, z: 14, type: 'weapon', amount: 10 }),
         salvageCachePosition: Object.freeze({ x: 24, z: 14 }),
         combatSpawn: Object.freeze({ x: 14, z: 23, type: 'alien_proto_crawler' }),
