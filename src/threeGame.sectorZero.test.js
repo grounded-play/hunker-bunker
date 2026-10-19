@@ -32,6 +32,7 @@ describe('ThreeGame Sector Zero Integration', () => {
         game.totalDistanceTravelled = 0;
         game._sectorZeroMovedDistance = 0;
         game._sectorZeroMovedMs = 0;
+        game.scatterSprites = [];
         return game;
     }
 
@@ -134,5 +135,43 @@ describe('ThreeGame Sector Zero Integration', () => {
         expect(completed).toHaveBeenCalledOnce();
         expect(completed.mock.calls[0][0].detail).toMatchObject({ skipped: true });
         expect(game.skipSectorZeroTutorial()).toBe(false);
+    });
+
+    it('keeps ambient expedition systems disabled until Sector 0 resolves', () => {
+        const game = createMockGame();
+        game.armArrivalIncident = vi.fn();
+        game.armExpeditionEvent = vi.fn();
+        game.setSectorZeroOnboardingPending(true);
+
+        expect(game.isSectorZeroOnboardingActive()).toBe(true);
+        expect(game.snailsEnabled).toBe(false);
+        game.startSectorZeroTutorial();
+        expect(game.isSectorZeroOnboardingActive()).toBe(true);
+
+        game.sectorZeroTutorial._finish({ skipped: true });
+        expect(game.isSectorZeroOnboardingActive()).toBe(false);
+        expect(game.snailsEnabled).toBe(true);
+        expect(game.armArrivalIncident).toHaveBeenCalledOnce();
+        expect(game.armExpeditionEvent).toHaveBeenCalledOnce();
+    });
+
+    it('rejects a Sector 0 first frame staged in the showroom or without the origin chunk', () => {
+        const game = createMockGame();
+        game.performanceProfile = 'gameplay';
+        game.chunkSize = 49;
+        game.player = { position: { x: 4925, z: 4925 } };
+        game.chunkMeshes = new Map([['100,100', {}]]);
+        game.pendingChunkMounts = [];
+
+        expect(() => game.validatePreparedDeployment({ expectedSectorZero: true }))
+            .toThrow(/player staged in chunk 100,100/);
+
+        game.player.position = { x: 9, z: 9 };
+        expect(() => game.validatePreparedDeployment({ expectedSectorZero: true }))
+            .toThrow(/origin chunk was not mounted/);
+
+        game.chunkMeshes.set('0,0', {});
+        expect(game.validatePreparedDeployment({ expectedSectorZero: true }))
+            .toMatchObject({ chunkX: 0, chunkY: 0 });
     });
 });

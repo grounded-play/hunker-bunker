@@ -47,3 +47,12 @@ test('Continue deploys the saved class without opening hero select', async ({ pa
     );
     await expect(page.locator('#ui')).toBeVisible();
 });
+
+test('fresh or reset profile shows only NEW RUN and hides Continue, Switch Class, and profile HUD', async ({ page }) => {
+    await bootToTitleSplash(page);
+
+    await expect(page.locator('#title-profile-hud')).toBeHidden();
+    await expect(page.locator('#title-continue-btn')).toBeHidden();
+    await expect(page.locator('#title-switch-class-btn')).toBeHidden();
+    await expect(page.locator('#title-newrun-btn')).toBeVisible();
+});

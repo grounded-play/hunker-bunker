@@ -6254,56 +6254,101 @@ export class ThreeGame {
         }
         group.visible = false;
         this.scene.add(group);
-        this.crashSiteGuidance = { group, arrows, geometry, material };
+        this.crashSiteGuidance = {
+            group,
+            arrows,
+            geometry,
+            material,
+            waypoints: [],
+            passedWaypointIndexes: new Set(),
+            revealedAt: 0,
+            visibleForMs: 12000
+        };
     }
 
     updateCrashSiteGuidance(now = performance.now()) {
         const guidance = this.crashSiteGuidance;
         if (!guidance || !this.player) return;
-        const home = CRASH_SITE_BUILD.center;
         const px = this.player.position.x;
         const pz = this.player.position.z;
-        const homeDistance = Math.hypot(home.x - px, home.z - pz);
         const shouldShow = this.performanceProfile === 'gameplay'
             && !this.isInPocket
             && !this.isPlayerDead
-            && homeDistance > 8;
+            && guidance.waypoints.length > 0
+            && now - guidance.revealedAt <= guidance.visibleForMs;
         guidance.group.visible = shouldShow;
         if (!shouldShow) return;
 
-        // Prefer the next explored A* cell so the guide bends back along the
-        // known route. Fall back to the crash-site bearing before a route has
-        // been scanned.
-        const route = this.explorationTracker?.computeScannedPath?.(
-            { x: px, z: pz },
-            { x: home.x, z: home.z }
-        );
-        const next = route?.found && route.path?.length > 1 ? route.path[1] : home;
-        let dx = next.x - px;
-        let dz = next.z - pz;
-        let directionLength = Math.hypot(dx, dz);
-        if (directionLength < 0.25) {
-            dx = home.x - px;
-            dz = home.z - pz;
-            directionLength = Math.hypot(dx, dz);
-        }
-        if (directionLength < 0.25) {
-            guidance.group.visible = false;
-            return;
-        }
-        dx /= directionLength;
-        dz /= directionLength;
-        const yaw = Math.atan2(dx, dz);
         guidance.material.opacity = 0.72 + Math.sin(now * 0.005) * 0.16;
         for (let index = 0; index < guidance.arrows.length; index++) {
-            const distance = Math.min(2.2 + index * 2.15, Math.max(1.2, homeDistance - 1.5));
-            const x = px + dx * distance;
-            const z = pz + dz * distance;
             const arrow = guidance.arrows[index];
-            arrow.position.set(x, (this.getTerrainHeightAt?.(x, z) ?? 0.015) + 0.055, z);
-            arrow.rotation.y = yaw;
-            arrow.visible = distance < homeDistance - 0.6;
+            const waypoint = guidance.waypoints[index];
+            if (waypoint && Math.hypot(waypoint.x - px, waypoint.z - pz) < 1.15) {
+                guidance.passedWaypointIndexes.add(index);
+            }
+            if (!waypoint || guidance.passedWaypointIndexes.has(index)) {
+                arrow.visible = false;
+                continue;
+            }
+            arrow.visible = true;
         }
+        if (!guidance.arrows.some((arrow) => arrow.visible)) guidance.group.visible = false;
+    }
+
+    revealCrashSiteGuidanceFromScan(now = performance.now()) {
+        const guidance = this.crashSiteGuidance;
+        if (!guidance || !this.player || this.isInPocket) return false;
+        const home = CRASH_SITE_BUILD.center;
+        const startX = Math.round(this.player.position.x);
+        const startZ = Math.round(this.player.position.z);
+        if (Math.hypot(home.x - startX, home.z - startZ) <= 8) {
+            guidance.waypoints = [];
+            guidance.passedWaypointIndexes?.clear?.();
+            guidance.group.visible = false;
+            return false;
+        }
+        const path = this.findSnailPath?.(
+            startX,
+            startZ,
+            Math.round(home.x),
+            Math.round(home.z),
+            2400
+        ) ?? [];
+        const last = path.at(-1);
+        // The tile search returns its best partial path when its budget is
+        // exhausted. Never render a breadcrumb that terminates at a wall or
+        // unloaded boundary instead of the promised destination.
+        if (!last || Math.hypot(last.x - home.x, last.z - home.z) > 2.5) {
+            guidance.waypoints = [];
+            guidance.passedWaypointIndexes?.clear?.();
+            guidance.group.visible = false;
+            return false;
+        }
+        const sampleIndexes = [];
+        const stride = Math.max(2, Math.floor((path.length - 1) / guidance.arrows.length));
+        for (let index = stride; index < path.length && sampleIndexes.length < guidance.arrows.length; index += stride) {
+            sampleIndexes.push(index);
+        }
+        guidance.waypoints = sampleIndexes.map((pathIndex) => path[pathIndex]);
+        guidance.passedWaypointIndexes ??= new Set();
+        guidance.passedWaypointIndexes.clear();
+        guidance.revealedAt = now;
+        guidance.waypoints.forEach((waypoint, index) => {
+            const next = path[Math.min(path.length - 1, sampleIndexes[index] + 1)] ?? waypoint;
+            const arrow = guidance.arrows[index];
+            arrow.position.set(
+                waypoint.x,
+                (this.getTerrainHeightAt?.(waypoint.x, waypoint.z) ?? 0.015) + 0.055,
+                waypoint.z
+            );
+            arrow.rotation.y = Math.atan2(next.x - waypoint.x, next.z - waypoint.z);
+            arrow.visible = true;
+        });
+        for (let index = guidance.waypoints.length; index < guidance.arrows.length; index++) {
+            guidance.arrows[index].visible = false;
+        }
+        guidance.group.visible = guidance.waypoints.length > 0;
+        return guidance.group.visible;
     }
 
     disposeCrashSiteGuidance() {
@@ -11913,9 +11958,23 @@ export class ThreeGame {
         }
     }
 
+    setSectorZeroOnboardingPending(pending = false) {
+        this.sectorZeroOnboardingPending = Boolean(pending);
+        if (this.sectorZeroOnboardingPending) {
+            this.setSnailsEnabled(false, { removeExisting: true });
+            this._arrivalIncident = null;
+            this._expeditionEvent = null;
+        }
+        return this.sectorZeroOnboardingPending;
+    }
+
+    isSectorZeroOnboardingActive() {
+        return Boolean(this.sectorZeroOnboardingPending || this.sectorZeroTutorial?.isActive);
+    }
+
     removeActiveSnails() {
         const survivors = [];
-        for (const sprite of this.scatterSprites) {
+        for (const sprite of this.scatterSprites ?? []) {
             if (!this.isEnemyType(sprite?.userData?.type)) {
                 survivors.push(sprite);
                 continue;
@@ -27234,6 +27293,8 @@ export class ThreeGame {
         if (this.performanceProfile && this.performanceProfile !== 'gameplay') return false;
         if (this.godMode || this.noclip) return false;
         if (this.cinematicLock) return false; // untouchable during scripted sequences
+        if (this.isSectorZeroOnboardingActive?.()
+            && this.sectorZeroTutorial?.getCurrentPhase?.() !== SECTOR_ZERO_PHASES.COMBAT) return false;
         if (this.isInPocket) return false; // untouchable while resolving a fall inside a pocket
         if (this.iFrameTimer > 0 && reason !== 'abyss') return false;
         // GAP-PV-02: spawn protection prevents instant spawn-camping on respawn.
@@ -28746,6 +28807,7 @@ export class ThreeGame {
         });
 
         this.recordRadarScanDiscovery(px, pz, maxRadius);
+        this.revealCrashSiteGuidanceFromScan?.();
 
         window.AudioManager?.play('ui_scan_ping', { volume: 0.55, playbackRate: 0.48, bus: 'sfx' });
 
@@ -34006,6 +34068,25 @@ export class ThreeGame {
             mounted: this.chunkMeshes.size,
             queued: this.pendingChunkMounts.length
         });
+    }
+
+    validatePreparedDeployment({ expectedSectorZero = false } = {}) {
+        if (this.performanceProfile !== 'gameplay') {
+            throw new Error('Deployment integrity failed: gameplay profile was not selected before staging.');
+        }
+        if (!this.player) throw new Error('Deployment integrity failed: player is unavailable.');
+        const chunkX = Math.floor(this.player.position.x / this.chunkSize);
+        const chunkY = Math.floor(this.player.position.z / this.chunkSize);
+        if (expectedSectorZero && (chunkX !== 0 || chunkY !== 0)) {
+            throw new Error(`Sector 0 deployment integrity failed: player staged in chunk ${chunkX},${chunkY}.`);
+        }
+        if (expectedSectorZero && !this.chunkMeshes?.has?.('0,0')) {
+            throw new Error('Sector 0 deployment integrity failed: authored origin chunk was not mounted.');
+        }
+        if (this.pendingChunkMounts?.length) {
+            throw new Error(`Deployment integrity failed: ${this.pendingChunkMounts.length} visible chunk(s) remain unstaged.`);
+        }
+        return { chunkX, chunkY, mounted: this.chunkMeshes?.size ?? 0 };
     }
 
     addTerrainStepDressing(group, chunkX, chunkY, grid, landform) {
@@ -47270,8 +47351,14 @@ export class ThreeGame {
         this._runBuildTelemetry = {};
         this._lastDeathReason = null;
         this.syncExpeditionBountyTracker?.();
-        this.armArrivalIncident?.();
-        this.armExpeditionEvent?.();
+        if (this.isSectorZeroOnboardingActive?.()) {
+            this._arrivalIncident = null;
+            this._expeditionEvent = null;
+            this.clearCrashSiteDebris?.();
+        } else {
+            this.armArrivalIncident?.();
+            this.armExpeditionEvent?.();
+        }
         this.armRewardCache?.();
         return this.activeExpedition;
     }
@@ -48890,11 +48977,17 @@ export class ThreeGame {
         this._sectorZeroMovedMs = 0;
         this._sectorZeroWeaponSpawned = false;
         this._sectorZeroCrawlerSpawned = false;
+        this.sectorZeroOnboardingPending = false;
+        this.setSnailsEnabled?.(false, { removeExisting: true });
         this._setupSectorZeroEventListeners();
         return this.sectorZeroTutorial.start();
     }
 
     handleSectorZeroCompleted({ skipped = false, previousPhase = null } = {}) {
+        this.sectorZeroOnboardingPending = false;
+        this.setSnailsEnabled?.(true, { removeExisting: false });
+        this.armArrivalIncident?.();
+        this.armExpeditionEvent?.();
         if (typeof window === 'undefined') return;
         window.dispatchEvent(new CustomEvent('sector-zero-completed', {
             detail: { skipped: Boolean(skipped), previousPhase }
@@ -48960,6 +49053,9 @@ export class ThreeGame {
                 enemy.userData.attackCooldown = Math.max(enemy.userData.attackCooldown ?? 0, 2.5);
                 enemy.userData.isSectorZeroTutorialEnemy = true;
             }
+            // The authored crawler may run while the ambient director remains
+            // disabled. updateScatter does not require this global spawn flag.
+            this.snailsEnabled = false;
         }
         if (phase === SECTOR_ZERO_PHASES.DEPARTURE) this.openBunkerBlastDoor?.();
     }

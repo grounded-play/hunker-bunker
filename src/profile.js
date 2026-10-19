@@ -358,16 +358,22 @@ export function clearSaveData(storage = null) {
     const store = getStorage(storage);
     if (!store) return 0;
 
-    let removed = 0;
-    for (let i = (store.length ?? 0) - 1; i >= 0; i--) {
+    const keys = [];
+    const len = store.length ?? 0;
+    for (let i = 0; i < len; i++) {
         const key = store.key(i);
         if (key?.startsWith(SAVE_PREFIX)) {
-            try {
-                store.removeItem(key);
-                removed++;
-            } catch {
-                // Ignore inaccessible records; callers still get best-effort count.
-            }
+            keys.push(key);
+        }
+    }
+
+    let removed = 0;
+    for (const key of keys) {
+        try {
+            store.removeItem(key);
+            removed++;
+        } catch {
+            // Ignore inaccessible records; callers still get best-effort count.
         }
     }
     return removed;

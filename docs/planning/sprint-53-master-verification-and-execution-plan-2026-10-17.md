@@ -15,6 +15,35 @@
 
 ---
 
+## 0. Live-Play P0 Recovery TODOs (2026-10-18)
+
+Evidence source: packaged session `hunker-bunker-session-2026-10-19T05-29-48-551Z-mvetet76-1ode.json` from source `1d5c8772ffc5`. The session spawned in menu showroom chunk `(100,100)`, staged chunks `99..101`, emitted READY, then ring enforcement moved the operator roughly 6.8 km back toward the authored origin. This caused the visible second world load, camera lurch, late room population, 55 depenetrations, and an onboarding run attacked by standard expedition actors.
+
+### Implementation TODOs
+
+- [x] **S53-LIVE-P0-01 — Atomic deployment order:** select the gameplay render profile and chosen class before respawn, then reset, mount the correct visible chunks, validate the expected Sector 0 origin, snap camera interpolation, present the first frame, and only then return input.
+- [x] **S53-LIVE-P0-02 — Sector 0 owns onboarding:** mark onboarding pending before expedition creation; suppress random mission cards, arrival incidents, ambient enemies, and pre-combat damage; allow only the authored Phase 4 crawler; activate normal expedition systems after completion/skip.
+- [x] **S53-LIVE-P0-03 — Fail closed on a bad first frame:** reject a fresh Sector 0 deployment unless the player and mounted authored chunk are both in `(0,0)` and the visible mount queue is empty. A rejected deployment must remain behind the loading/door barrier.
+- [x] **S53-LIVE-P1-01 — Scan-authored navigation:** remove player-relative yellow chevrons. A successful radar scan now computes a route over real walkable tiles, places fixed world-space markers pointing to the next tile, removes passed markers, expires the trail, and displays nothing for a partial/unreachable path.
+- [x] **S53-LIVE-P1-02 — Destructive reset IPC & key snapshotting:** snapshot keys before removal in `clearSaveData` so storage mutations do not skip keys; add synchronous `hb:resetSaveDataSync` in Electron (`electron/main.cjs`) to wipe `saveState`, atomically write `{}` to disk, and remove `save.json.bak` before reload so preload cannot restore stale state; expose `resetSaveData` on `electronAPI` and call it from the settings reset confirm button.
+- [ ] **S53-LIVE-P1-03 — Reset packaged-build proof:** from a progressed profile use Settings → New Game Reset, relaunch, and prove the title exposes only NEW RUN (no CONTINUE, RESUME EXPEDITION, SWITCH CLASS, active operator history, or restored onboarding completion). Repeat once with Steam Cloud enabled and once offline.
+- [ ] **S53-LIVE-P1-04 — First-frame visual proof:** capture the first controllable frame and verify the crash-site floor finish, wreck, mounted wall props, collision, selected class, and HUD are final; no placeholder-to-GLB swap, duplicate player, default grid floor, floating wall prop, or in-view room population is permitted.
+- [ ] **S53-LIVE-P2-01 — Startup performance follow-up:** after the spawn fix, remeasure shader/composer warm-up, draw calls, triangles, VRAM, and READY-to-control latency. Defer unused corpse/enemy effects and batch repeated props only from new evidence; do not hide correctness failures by reducing the authored first frame.
+
+### Required Regression Matrix
+
+- [ ] Fresh solo: player spawns at the selected-class crash ship near `(9,9)`; chunk `(100,100)` is never generated or mounted; camera begins within the configured follow distance.
+- [ ] Fresh solo: Sector 0 BOOT owns the HUD before input; no random mission/card/arrival incident appears until Phase 5 completion or explicit skip.
+- [ ] Fresh solo: no ambient enemy exists before Phase 4; the Phase 4 crawler is the only hostile and damage is rejected before that phase.
+- [ ] Navigation: no yellow trail appears merely by walking; scan creates fixed walkable markers; moving the player does not move them; passed/expired markers disappear; unreachable routes render none.
+- [ ] First-frame: READY is impossible while visible mounts remain queued or the authored origin chunk is absent.
+- [ ] Persistence: retry, suspend/resume, returning solo, onboarding skip, Daily Ops, co-op, and PvP retain their intended spawn and mission behavior.
+- [ ] Reset: factory reset followed by reload and Steam restart produces a fresh profile with only NEW RUN available.
+
+Any failure in `S53-LIVE-P0-01` through `03`, any attack before the authored combat phase, or any reset that resurrects CONTINUE is a stop-ship regression.
+
+---
+
 ## 1. Executive Summary & Purpose
 
 Over previous sprints (Sprint 49 through Sprint 52), substantial core code was delivered—including the unified Foundry, 7-language localized chat with filtering, developer commentary with speech audio, PBR cathedral room blueprints, destructible instanced props, KTX2 Basis UASTC texture compression, and PC UI defect fixes (DEF-01 through DEF-06).

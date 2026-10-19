@@ -829,6 +829,33 @@ ipcMain.on('hb:saveDataRemoved', (_e, key) => {
     delete saveState[key];
     scheduleFlush();
 });
+
+function clearSaveFileSynchronously() {
+    if (saveTimer) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+    }
+    saveState = {};
+    const primary = saveFilePath();
+    const backup = `${primary}.bak`;
+    try {
+        writeSaveAtomic(fs, primary, {});
+        if (fs.existsSync(backup)) {
+            try { fs.unlinkSync(backup); } catch { /* ignore */ }
+        }
+    } catch (err) {
+        console.log(`[save] reset write failed: ${err?.message ?? err}`);
+    }
+}
+
+ipcMain.on('hb:resetSaveDataSync', (event) => {
+    clearSaveFileSynchronously();
+    event.returnValue = true;
+});
+ipcMain.handle('hb:resetSaveData', async () => {
+    clearSaveFileSynchronously();
+    return { ok: true };
+});
 const PUBLISHED_ACHIEVEMENT_KEY_SET = new Set(PUBLISHED_ACHIEVEMENT_KEYS);
 const achievementResetGenerationByAccount = new Map();
 

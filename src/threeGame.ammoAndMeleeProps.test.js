@@ -104,7 +104,7 @@ describe('ammo lockers, solid props, and Smash', () => {
         expect(window.AudioManager.play).toHaveBeenCalledTimes(1);
     });
 
-    it('shows yellow return chevrons away from the crash site and hides them at home', () => {
+    it('places scan-triggered return chevrons in world space instead of following the player', () => {
         const arrows = Array.from({ length: 5 }, () => ({
             position: new THREE.Vector3(),
             rotation: { y: 0 },
@@ -114,21 +114,31 @@ describe('ammo lockers, solid props, and Smash', () => {
             performanceProfile: 'gameplay', isInPocket: false, isPlayerDead: false,
             player: { position: new THREE.Vector3(20, 0, 9) },
             crashSiteGuidance: {
-                group: { visible: false }, arrows, material: { opacity: 0 }
+                group: { visible: false }, arrows, material: { opacity: 0 },
+                waypoints: [], passedWaypointIndexes: new Set(), revealedAt: 0, visibleForMs: 12000
             },
-            explorationTracker: { computeScannedPath: () => ({ found: false, path: [] }) },
+            findSnailPath: () => Array.from({ length: 12 }, (_, index) => ({ x: 20 - index, z: 9 })),
             getTerrainHeightAt: () => 0
         };
 
+        ThreeGame.prototype.updateCrashSiteGuidance.call(game, 100);
+        expect(game.crashSiteGuidance.group.visible).toBe(false);
+
+        expect(ThreeGame.prototype.revealCrashSiteGuidanceFromScan.call(game, 100)).toBe(true);
         ThreeGame.prototype.updateCrashSiteGuidance.call(game, 100);
         expect(game.crashSiteGuidance.group.visible).toBe(true);
         expect(arrows[0].visible).toBe(true);
         expect(arrows[0].position.x).toBeLessThan(20);
         expect(arrows[0].position.y).toBeCloseTo(0.055);
+        const placedX = arrows[0].position.x;
 
-        game.player.position.set(9, 0, 9);
+        game.player.position.set(18, 0, 9);
         ThreeGame.prototype.updateCrashSiteGuidance.call(game, 200);
-        expect(game.crashSiteGuidance.group.visible).toBe(false);
+        expect(arrows[0].position.x).toBe(placedX);
+        expect(arrows[0].visible).toBe(false);
+        game.player.position.set(17, 0, 9);
+        ThreeGame.prototype.updateCrashSiteGuidance.call(game, 300);
+        expect(arrows[0].visible).toBe(false);
     });
 
     it('detects projectile hits against intact props', () => {

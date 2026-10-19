@@ -3199,6 +3199,8 @@ const PICKUP_COMBO_THRESHOLD = 3;
 let runStartTime = Date.now();
 let currentMission = null;
 let currentRunModifier = null;
+let deferredSectorZeroMission = null;
+let deferredSectorZeroRunModifier = null;
 const pickupCounterState = {
     total: 0,
     health: 0,
@@ -3224,6 +3226,13 @@ window.profile = profile;
 
 window.addEventListener('sector-zero-completed', (event) => {
     profile.markSectorZeroCompleted({ skipped: Boolean(event?.detail?.skipped) });
+    currentMission = deferredSectorZeroMission;
+    currentRunModifier = deferredSectorZeroRunModifier;
+    deferredSectorZeroMission = null;
+    deferredSectorZeroRunModifier = null;
+    if (window.game) window.game.currentRunModifier = currentRunModifier;
+    if (currentMission) window.game?.initMission?.(currentMission);
+    else window.game?.clearMission?.();
 });
 
 const achievementEngine = new AchievementEngine();
@@ -5864,7 +5873,8 @@ function resetRunToStartingState({
     skipEffects = true,
     snailSpawnEnabled = false,
     purgeSnails = true,
-    deferChunkMount = false
+    deferChunkMount = false,
+    sectorZeroOnboarding = false
 } = {}) {
     activeRunSeed = null;
     activeRunCards = [];
@@ -5910,13 +5920,21 @@ function resetRunToStartingState({
             ? deriveExpeditionSeed(campaign.seed, campaign.expeditionIndex + 1)
             : Number(window.game?.globalSeedOffset) >>> 0;
         const missionRandom = window.game?.createSeededRandom?.(challengeSeed ^ 0x4d49534e) ?? Math.random;
-        currentMission = (act2Run || isPvp) ? null : assignMission(missionRandom, { seeded: true });
+        const selectedMission = (act2Run || isPvp)
+            ? null
+            : assignMission(missionRandom, { seeded: true });
         const runModifierSeed = (window.game?.isMultiplayer || window.activeMultiplayerSession)
             && (window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode)
             ? `run-${window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode}`
             : `expedition-${challengeSeed}`;
-        currentRunModifier = isPvp ? null : pickRunModifier(Math.random, { seed: runModifierSeed, recentKeys: [] });
-        if (isPvp) {
+        const selectedRunModifier = isPvp
+            ? null
+            : pickRunModifier(Math.random, { seed: runModifierSeed, recentKeys: [] });
+        deferredSectorZeroMission = sectorZeroOnboarding ? selectedMission : null;
+        deferredSectorZeroRunModifier = sectorZeroOnboarding ? selectedRunModifier : null;
+        currentMission = sectorZeroOnboarding ? null : selectedMission;
+        currentRunModifier = sectorZeroOnboarding ? null : selectedRunModifier;
+        if (isPvp || sectorZeroOnboarding) {
             activeRunCards = [];
             const cardStrip = document.getElementById('hud-run-cards');
             if (cardStrip) cardStrip.classList.add('hidden');
@@ -5931,7 +5949,9 @@ function resetRunToStartingState({
             window.game?.clearMission?.();
         }
         if (window.game) window.game.currentRunModifier = currentRunModifier;
-        setSnailSpawnState(snailSpawnEnabled, { purgeExisting: purgeSnails });
+        setSnailSpawnState(sectorZeroOnboarding ? false : snailSpawnEnabled, {
+            purgeExisting: sectorZeroOnboarding ? true : purgeSnails
+        });
         window.game?.setInputEnabled?.(false);
         renderBunkerLevel(0);
         renderBiomeStatus({ label: DEFAULT_BIOME_LABEL }, { showPrompt: false });
@@ -8321,7 +8341,7 @@ window.addEventListener('timeline-divergence', (e) => {
     showTimelineDivergenceBanner(detail);
 });
 
-async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
+async function prepareGameplayForDialogue({ loaderOverDoor = false, expectedSectorZero = false } = {}) {
     const game = window.game;
     if (!game?.prepareVisibleChunksForGameplay) return;
 
@@ -8359,6 +8379,8 @@ async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
                 }
             }
         });
+        game.validatePreparedDeployment?.({ expectedSectorZero });
+        game.snapCameraToPlayer?.();
         announceDeploymentStage('PRESENT', 'PRESENTING FIRST RENDERED SECTOR FRAME...', 98);
         if (!wasLoadingPaused) game.setLoadingPaused?.(false);
         await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -9825,15 +9847,21 @@ function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapsho
             splash?.classList.add('hidden');
             menu?.classList.add('hidden');
             setAppPhase('gameplay');
+            // Deployment is a transaction: select the world profile and class
+            // before respawn asks either of them for the spawn coordinate.
+            // Reversing this order parks the operative in menu chunk (100,100),
+            // stages that showroom, then lets ring clamping drag them home.
+            window.game?.setPerformanceProfile?.('gameplay');
+            window.game?.updatePlayerType?.(playerType, { poof: false, emitWorldEvents: false });
+            window.game?.setSectorZeroOnboardingPending?.(forceSectorZero);
             resetRunToStartingState({
                 resetBank,
                 skipEffects: true,
                 snailSpawnEnabled: true,
                 purgeSnails: false,
-                deferChunkMount: true
+                deferChunkMount: true,
+                sectorZeroOnboarding: forceSectorZero
             });
-            window.game?.setPerformanceProfile?.('gameplay');
-            window.game?.updatePlayerType?.(playerType, { poof: false, emitWorldEvents: false });
             document.getElementById('ui')?.classList.remove('hidden');
             syncHudCompassVisibility();
 
@@ -9844,7 +9872,10 @@ function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapsho
                 gameContainer.classList.add('fullscreen-mode');
                 queueGameLayoutRefresh();
             }
-            return Promise.resolve(prepareGameplayForDialogue({ loaderOverDoor: true })).then(() => {
+            return Promise.resolve(prepareGameplayForDialogue({
+                loaderOverDoor: true,
+                expectedSectorZero: forceSectorZero
+            })).then(() => {
                 if (resumeSnapshot && !window.game?.restoreExpeditionSuspend?.(resumeSnapshot)) {
                     throw new Error('Expedition continuation could not be restored.');
                 }
@@ -11984,6 +12015,11 @@ resetSaveCancelBtn?.addEventListener('click', () => {
 });
 
 resetSaveConfirmBtn?.addEventListener('click', () => {
+    try {
+        window.electronAPI?.resetSaveData?.();
+    } catch (err) {
+        console.warn('Electron reset save failed:', err);
+    }
     blackBoxStore.clear();
     if (window.game) {
         window.game.clearBlackBoxMarker();
@@ -12000,7 +12036,10 @@ resetSaveConfirmBtn?.addEventListener('click', () => {
     setCrosshairColorOpen(false);
     setLanguageSelectOpen(false);
     console.info(`Reset save data: cleared ${removed} record(s).`);
-    window.setTimeout(() => window.location.reload(), 350);
+    // Do not leave the live simulation running after destructive reset. A
+    // delayed reload allowed periodic persistence to recreate campaign keys,
+    // making the next title screen offer CONTINUE / SWITCH CLASS again.
+    window.location.reload();
 });
 
 function setQuitConfirmOpen(open) {
