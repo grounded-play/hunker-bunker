@@ -206,4 +206,18 @@ describe('the optimized enemy path search', () => {
         // Doors and safe zones really do turn searches aside in these maps.
         expect(blockedSteps).toBeGreaterThan(50);
     });
+
+    it('safely handles null or undefined blocksStep without throwing', () => {
+        const path = findTilePath({
+            startX: 0,
+            startZ: 0,
+            goalX: 3,
+            goalZ: 0,
+            nodeBudget: 100,
+            isWalkable: () => true,
+            blocksStep: null
+        });
+        expect(path.length).toBeGreaterThan(1);
+        expect(path.at(-1)).toEqual({ x: 3, z: 0 });
+    });
 });

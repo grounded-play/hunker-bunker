@@ -1135,8 +1135,8 @@ function getPreferredControllerFocusTarget(root, focusables) {
             ?? focusables[0];
     }
     if (root?.id === 'menu') {
-        return focusables.find((element) => element.classList?.contains('char-card') && element.classList.contains('selected'))
-            ?? focusables.find((element) => element.id === 'start-game')
+        return focusables.find((element) => element.id === 'start-game' && !element.disabled)
+            ?? focusables.find((element) => element.classList?.contains('char-card') && element.classList.contains('selected'))
             ?? focusables[0];
     }
     if (root?.id === 'operator-polish-modal') {
@@ -16995,13 +16995,8 @@ whenDocumentParsed(async () => {
             window.game?.clearBlackBoxMarker?.();
             updateContinueButtonState();
             renderHomebaseConsole({ initializeCallsign: true });
-            const callsign = document.getElementById('roster-callsign-input');
-            const needsIdentityAttention = !profile.getCallsign()
-                || profile.getCallsign() === 'AGENT'
-                || profile.getCallsign() === 'AGENT-01';
-            (needsIdentityAttention
-                ? callsign
-                : document.querySelector('.char-selection .char-card.selected'))?.focus?.();
+            const startBtn = document.getElementById('start-game');
+            (startBtn ?? document.querySelector('.char-selection .char-card.selected'))?.focus?.();
         });
     }
     if (titleNewRunBtn) {

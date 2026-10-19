@@ -5752,56 +5752,60 @@ export class ThreeGame {
     async upgradeBunkerBlastDoorToModel() {
         if (!this.bunkerBlastDoorGroup || !this.scene?.add) return false;
         try {
-            const framePromise = (this.createWorld3dModel?.('door_arch_guillotine_frame') ?? createWorld3dModel('door_arch_guillotine_frame'))
+            // Human player-built airtight bulkhead door for the bunker exit
+            const bulkheadModel = await (this.createWorld3dModel?.('base_door_sealable_bulkhead') ?? createWorld3dModel('base_door_sealable_bulkhead'))
                 .catch(() => null);
-            const slabPromise = (this.createWorld3dModel?.('door_arch_guillotine_slab') ?? createWorld3dModel('door_arch_guillotine_slab'))
-                .catch(() => null);
-            const [frameModel, slabModel] = await Promise.all([framePromise, slabPromise]);
-
-            const frameRoot = frameModel?.root ?? frameModel;
-            const slabRoot = slabModel?.root ?? slabModel;
-            if (!frameRoot || !slabRoot || this._destroyed || !this.bunkerBlastDoorGroup || !this.scene?.add) {
-                frameRoot?.userData?.dispose?.();
-                slabRoot?.userData?.dispose?.();
+            const root = bulkheadModel?.root ?? bulkheadModel;
+            if (!root || this._destroyed || !this.bunkerBlastDoorGroup || !this.scene?.add) {
+                root?.userData?.dispose?.();
                 return false;
+            }
+
+            // Find frame (HB_BODY) and moving door leaf (HB_DOOR_00)
+            let frameMesh = root.getObjectByName?.('HB_BODY') ?? null;
+            let slabMesh = root.getObjectByName?.('HB_DOOR_00') ?? null;
+            if (!frameMesh && !slabMesh) {
+                frameMesh = root;
             }
 
             // Frame stays static at the portal doorway opening (9, 0, 3)
             const frameGroup = new THREE.Group();
             frameGroup.position.set(9, 0, 3);
-            frameGroup.add(frameRoot);
+            frameGroup.scale.set(1.5, 1.25, 1.2);
+            if (frameMesh) frameGroup.add(frameMesh);
             this.scene.add(frameGroup);
             this.bunkerBlastDoorFrameGroup = frameGroup;
-            this.registerWorld3dPropFx?.(frameRoot);
+            this.registerWorld3dPropFx?.(frameGroup);
 
-            // The moving group is positioned at the procedural slab's center;
-            // normalized GLBs are grounded, so offset by half the 2.8 m slab.
-            slabRoot.position.y = -1.4;
-            slabRoot.traverse?.((object) => {
-                if (!object.isMesh) return;
-                object.userData = {
-                    ...object.userData,
-                    isWall: true,
-                    isBunkerBlastDoor: true,
-                    worldX: 9,
-                    worldZ: 3,
-                    wallKey: '9,3'
-                };
-            });
-            this.bunkerBlastDoorGroup.add(slabRoot);
-            this.bunkerBlastDoorSlabModel = slabRoot;
-            this.registerWorld3dPropFx?.(slabRoot);
+            // The moving group is positioned at the procedural slab's center
+            if (slabMesh) {
+                slabMesh.position.set(0, -1.4, 0);
+                slabMesh.traverse?.((object) => {
+                    if (!object.isMesh) return;
+                    object.userData = {
+                        ...object.userData,
+                        isWall: true,
+                        isBunkerBlastDoor: true,
+                        worldX: 9,
+                        worldZ: 3,
+                        wallKey: '9,3'
+                    };
+                });
+                this.bunkerBlastDoorGroup.add(slabMesh);
+                this.bunkerBlastDoorSlabModel = slabMesh;
+                this.registerWorld3dPropFx?.(slabMesh);
+            }
 
             // Preserve an invisible-but-raycastable proxy. `visible=false`
             // would also make Three.Raycaster skip the mesh.
             for (const child of this.bunkerBlastDoorGroup.children) {
-                if (child === slabRoot || !child.isMesh) continue;
+                if (child === slabMesh || !child.isMesh) continue;
                 if (child.userData?.isBunkerBlastDoor) {
                     child.material.colorWrite = false;
                     child.material.depthWrite = false;
                 } else if (child.material !== this._bunkerDoorBarMat) child.visible = false;
             }
-            // The authored frame now owns the visible red practical. Detach
+            // The authored frame now owns the visible practical. Detach
             // the provisional light so the fixed pool does not rank both.
             this._bunkerDoorStatusLight?.removeFromParent?.();
             return true;

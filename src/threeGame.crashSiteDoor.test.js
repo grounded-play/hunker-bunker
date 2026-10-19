@@ -171,16 +171,21 @@ describe('clearSpawnArea — door/portal alignment', () => {
             createWorld3dModel: async (type) => {
                 const root = new THREE.Group();
                 root.name = type;
-                root.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial()));
+                const body = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial());
+                body.name = 'HB_BODY';
+                const door = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial());
+                door.name = 'HB_DOOR_00';
+                root.add(body, door);
                 roots.set(type, root);
                 return root;
             }
         };
 
         expect(await ThreeGame.prototype.upgradeBunkerBlastDoorToModel.call(game)).toBe(true);
-        expect(roots.get('door_arch_guillotine_frame').parent.position.toArray()).toEqual([9, 0, 3]);
-        expect(roots.get('door_arch_guillotine_slab').parent).toBe(doorGroup);
-        expect(roots.get('door_arch_guillotine_slab').position.y).toBe(-1.4);
+        expect(roots.get('base_door_sealable_bulkhead')).toBeDefined();
+        expect(game.bunkerBlastDoorFrameGroup.position.toArray()).toEqual([9, 0, 3]);
+        expect(game.bunkerBlastDoorSlabModel.parent).toBe(doorGroup);
+        expect(game.bunkerBlastDoorSlabModel.position.y).toBe(-1.4);
         expect(proxy.visible).toBe(true);
         expect(proxy.material.colorWrite).toBe(false);
         expect(rib.visible).toBe(false);
