@@ -2095,7 +2095,7 @@ function assignDynamicPropExperiences(items, limit = 12) {
 }
 
 export class ThreeGame {
-    constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null, cameraMode = 'isometric', gameplayTiltShiftBlurEnabled = false } = {}) {
+    constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null, cameraMode = 'third-person', gameplayTiltShiftBlurEnabled = false } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
         if (!this.container) {
             throw new Error('ThreeGame requires a valid parent container.');
@@ -2394,7 +2394,7 @@ export class ThreeGame {
         this._roomCutawayQuadrant = cameraCutawayQuadrant(this.cameraAzimuth);
         this.cameraRotationInput = 0;
         this._cameraOrbitPointerDelta = 0;
-        this.cameraMode = cameraMode === 'third-person' ? 'third-person' : 'isometric';
+        this.cameraMode = cameraMode === 'isometric' ? 'isometric' : 'third-person';
         this._thirdPersonCameraRaycaster = new THREE.Raycaster();
         this.cameraDistancePreset = 'close';
         this.cameraFollowPreset = 'tight';
@@ -6262,8 +6262,179 @@ export class ThreeGame {
             waypoints: [],
             passedWaypointIndexes: new Set(),
             revealedAt: 0,
-            visibleForMs: 12000
+            visibleForMs: 12000,
+            isObjectiveMode: false,
+            isManualScan: false,
+            lastObjectiveCalcTime: 0,
+            lastObjectiveCalcPos: null,
+            lastObjectiveTarget: null
         };
+    }
+
+    getActiveObjectiveTargetPosition() {
+        if (!this.player) return null;
+        // 1. Sector 0 tutorial onboarding phase targets
+        if (this.sectorZeroTutorial?.isActive) {
+            const phase = this.sectorZeroTutorial.getCurrentPhase?.();
+            const s0 = CRASH_SITE_BUILD?.sectorZero;
+            if (phase === SECTOR_ZERO_PHASES.BOOT) {
+                return s0?.jammedCablePosition ? { x: s0.jammedCablePosition.x, z: s0.jammedCablePosition.z } : null;
+            }
+            if (phase === SECTOR_ZERO_PHASES.WEAPON) {
+                const cableDestroyed = this.brokenPropScatterKeys?.has?.('sector0_cable') || this._sector0CableDestroyed;
+                if (!cableDestroyed && s0?.jammedCablePosition) {
+                    return { x: s0.jammedCablePosition.x, z: s0.jammedCablePosition.z };
+                }
+            }
+            if (phase === SECTOR_ZERO_PHASES.SALVAGE) {
+                const hasSalvage = (this.bank?.getState?.()?.tech ?? 0) >= 15 || this._sectorZeroSalvageCollected;
+                if (hasSalvage) {
+                    return { x: 9.5, z: 12.0 };
+                }
+                return s0?.salvageCachePosition ? { x: s0.salvageCachePosition.x, z: s0.salvageCachePosition.z } : { x: 14.0, z: 12.0 };
+            }
+            if (phase === SECTOR_ZERO_PHASES.COMBAT) {
+                const liveSnail = this.snails?.find((s) => s.isAlive !== false);
+                if (liveSnail?.position) {
+                    return { x: liveSnail.position.x, z: liveSnail.position.z };
+                }
+                return s0?.combatSpawnPosition ? { x: s0.combatSpawnPosition.x, z: s0.combatSpawnPosition.z } : { x: 9.5, z: 4.5 };
+            }
+            if (phase === SECTOR_ZERO_PHASES.DEPARTURE) {
+                return { x: 9.5, z: s0?.departureThresholdZ ?? 2.75 };
+            }
+        }
+
+        // 2. Active mission cargo / delivery
+        const cargo = this.getMissionCargoGuidance?.();
+        if (cargo && Number.isFinite(cargo.x) && Number.isFinite(cargo.z)) {
+            return { x: cargo.x, z: cargo.z };
+        }
+
+        // 3. Black box
+        if (this._blackBoxMarkerActive && this._blackBoxState?.active) {
+            return { x: this._blackBoxState.x, z: this._blackBoxState.z };
+        }
+
+        // 4. Cave entrance
+        if (this.caveEntrance?.isRevealed && !this.isCaveRevealDone?.()) {
+            const cp = this.caveEntrance.getPosition?.();
+            if (cp) return { x: cp.x, z: cp.z };
+        }
+
+        // 5. Foundry
+        if (this.foundry?.isRevealed && !(this.bank?.isFoundryActivated?.())) {
+            const fp = this.foundry.getPosition?.();
+            if (fp) return { x: fp.x, z: fp.z };
+        }
+
+        // 6. Extraction after 3 bosses defeated
+        const defeatedBossCount = Math.max(this.killedBosses?.size ?? 0, this.defeatedMilestoneBosses?.size ?? 0);
+        if (defeatedBossCount >= 3) {
+            const ship = this.crashedShips?.find((s) => s.type === this.playerType) ?? this.crashedShips?.[0];
+            if (ship) return { x: ship.tileX, z: ship.tileZ };
+        }
+
+        // 7. Objective registry compass target
+        const regTarget = typeof window !== 'undefined' ? window.objectiveRegistry?.getCompassTarget?.() : null;
+        if (regTarget && Number.isFinite(regTarget.x) && Number.isFinite(regTarget.z)) {
+            return { x: regTarget.x, z: regTarget.z };
+        }
+
+        // 8. Camp quest target
+        const questTarget = this.getActiveCampQuestTargetPos?.();
+        if (questTarget && Number.isFinite(questTarget.x) && Number.isFinite(questTarget.z)) {
+            return { x: questTarget.x, z: questTarget.z };
+        }
+
+        // 9. Act 1 side signal
+        const sideSignal = this.getAct1SideSignalTarget?.();
+        if (sideSignal && Number.isFinite(sideSignal.x) && Number.isFinite(sideSignal.z)) {
+            return { x: sideSignal.x, z: sideSignal.z };
+        }
+
+        // 10. Active mission target
+        if (this.missionState?.targetPosition) {
+            return { x: this.missionState.targetPosition.x, z: this.missionState.targetPosition.z };
+        }
+
+        // 11. If outside crash site, guide back towards ship
+        const home = CRASH_SITE_BUILD.center;
+        const distToShip = Math.hypot(this.player.position.x - home.x, this.player.position.z - home.z);
+        if (distToShip > 12) {
+            return { x: home.x, z: home.z };
+        }
+
+        return null;
+    }
+
+    refreshObjectiveGuidanceWaypoints(target, now = performance.now()) {
+        const guidance = this.crashSiteGuidance;
+        if (!guidance || !this.player || this.isInPocket) return false;
+        const px = this.player.position.x;
+        const pz = this.player.position.z;
+        const startX = Math.round(px);
+        const startZ = Math.round(pz);
+        const goalX = Math.round(target.x);
+        const goalZ = Math.round(target.z);
+
+        guidance.lastObjectiveCalcTime = now;
+        guidance.lastObjectiveCalcPos = { x: px, z: pz };
+        guidance.lastObjectiveTarget = { x: target.x, z: target.z };
+        guidance.isObjectiveMode = true;
+        guidance.isManualScan = false;
+
+        const path = this.findSnailPath?.(startX, startZ, goalX, goalZ, 1600) ?? [];
+        let waypoints = [];
+        let sampleIndexes = [];
+
+        if (path.length >= 2) {
+            const stride = Math.max(2, Math.floor((path.length - 1) / guidance.arrows.length));
+            for (let index = stride; index < path.length && sampleIndexes.length < guidance.arrows.length; index += stride) {
+                sampleIndexes.push(index);
+            }
+            waypoints = sampleIndexes.map((pathIndex) => path[pathIndex]);
+        } else {
+            // Direct projection towards objective if pathfinder budget exhausted
+            const dist = Math.hypot(target.x - px, target.z - pz);
+            if (dist > 1.5) {
+                const dirX = (target.x - px) / dist;
+                const dirZ = (target.z - pz) / dist;
+                const stepCount = Math.min(guidance.arrows.length, Math.floor(dist / 2));
+                for (let i = 1; i <= stepCount; i++) {
+                    const stepDist = i * 2.0;
+                    if (stepDist < dist) {
+                        waypoints.push({ x: px + dirX * stepDist, z: pz + dirZ * stepDist });
+                    }
+                }
+            }
+        }
+
+        guidance.waypoints = waypoints;
+        guidance.passedWaypointIndexes ??= new Set();
+        guidance.passedWaypointIndexes.clear();
+        guidance.revealedAt = now;
+
+        guidance.waypoints.forEach((waypoint, index) => {
+            const next = sampleIndexes.length > 0 && path[Math.min(path.length - 1, sampleIndexes[index] + 1)]
+                ? path[Math.min(path.length - 1, sampleIndexes[index] + 1)]
+                : (guidance.waypoints[index + 1] ?? target);
+            const arrow = guidance.arrows[index];
+            arrow.position.set(
+                waypoint.x,
+                (this.getTerrainHeightAt?.(waypoint.x, waypoint.z) ?? 0.015) + 0.055,
+                waypoint.z
+            );
+            arrow.rotation.y = Math.atan2(next.x - waypoint.x, next.z - waypoint.z);
+            arrow.visible = true;
+        });
+
+        for (let index = guidance.waypoints.length; index < guidance.arrows.length; index++) {
+            guidance.arrows[index].visible = false;
+        }
+
+        guidance.group.visible = guidance.waypoints.length > 0;
+        return guidance.group.visible;
     }
 
     updateCrashSiteGuidance(now = performance.now()) {
@@ -6271,11 +6442,42 @@ export class ThreeGame {
         if (!guidance || !this.player) return;
         const px = this.player.position.x;
         const pz = this.player.position.z;
+
+        // If manual scan guidance was revealed, let it run for its duration
+        const isManualScanActive = guidance.isManualScan && (now - guidance.revealedAt <= guidance.visibleForMs);
+
+        if (!isManualScanActive && typeof this.getActiveObjectiveTargetPosition === 'function') {
+            const objectiveTarget = this.getActiveObjectiveTargetPosition();
+            if (objectiveTarget) {
+                const targetDist = Math.hypot(objectiveTarget.x - px, objectiveTarget.z - pz);
+                // Only show guidance if not right on top of the objective
+                if (targetDist > 1.8) {
+                    const timeSinceCalc = now - (guidance.lastObjectiveCalcTime || 0);
+                    const distFromLastCalc = guidance.lastObjectiveCalcPos
+                        ? Math.hypot(px - guidance.lastObjectiveCalcPos.x, pz - guidance.lastObjectiveCalcPos.z)
+                        : Infinity;
+                    const targetChanged = guidance.lastObjectiveTarget
+                        ? (guidance.lastObjectiveTarget.x !== objectiveTarget.x || guidance.lastObjectiveTarget.z !== objectiveTarget.z)
+                        : true;
+
+                    if (timeSinceCalc > 1200 || distFromLastCalc > 2.5 || targetChanged || guidance.waypoints.length === 0) {
+                        (this.refreshObjectiveGuidanceWaypoints || ThreeGame.prototype.refreshObjectiveGuidanceWaypoints).call(this, objectiveTarget, now);
+                    }
+                } else if (!guidance.isManualScan) {
+                    guidance.waypoints = [];
+                    guidance.passedWaypointIndexes?.clear?.();
+                }
+            } else if (!guidance.isManualScan) {
+                guidance.waypoints = [];
+                guidance.passedWaypointIndexes?.clear?.();
+            }
+        }
+
         const shouldShow = this.performanceProfile === 'gameplay'
             && !this.isInPocket
             && !this.isPlayerDead
             && guidance.waypoints.length > 0
-            && now - guidance.revealedAt <= guidance.visibleForMs;
+            && (guidance.isObjectiveMode || now - guidance.revealedAt <= guidance.visibleForMs);
         guidance.group.visible = shouldShow;
         if (!shouldShow) return;
 
@@ -6298,6 +6500,8 @@ export class ThreeGame {
     revealCrashSiteGuidanceFromScan(now = performance.now()) {
         const guidance = this.crashSiteGuidance;
         if (!guidance || !this.player || this.isInPocket) return false;
+        guidance.isManualScan = true;
+        guidance.isObjectiveMode = false;
         const home = CRASH_SITE_BUILD.center;
         const startX = Math.round(this.player.position.x);
         const startZ = Math.round(this.player.position.z);
@@ -10278,11 +10482,12 @@ export class ThreeGame {
             : Boolean(bankState.unlocks?.[goalKey]);
         const installed = isShipModuleInstalledForGoal(this.carryState, goalKey);
         const definition = getBaseModuleDefinition(stage?.definitionId);
+        const bypass = Boolean(this.godMode || this._qaBypassShipAssembly);
         return {
             stage,
             installed,
             grandfathered,
-            ready: installed || grandfathered,
+            ready: bypass || installed || grandfathered,
             label: definition?.label ?? 'RECOVERED SHIP MODULE'
         };
     }
@@ -13238,8 +13443,8 @@ export class ThreeGame {
         this.snapCameraToPlayer();
     }
 
-    setCameraMode(mode = 'isometric') {
-        this.cameraMode = mode === 'third-person' ? 'third-person' : 'isometric';
+    setCameraMode(mode = 'third-person') {
+        this.cameraMode = mode === 'isometric' ? 'isometric' : 'third-person';
         this.selectActiveCamera();
         this.resize();
         return this.cameraMode;
@@ -16840,7 +17045,7 @@ export class ThreeGame {
         }
 
         const assembly = this.getShipGoalAssemblyStatus?.('o2Bubble');
-        if (generatorState.level === 0 && assembly && !assembly.ready) {
+        if (generatorState.level === 0 && assembly && !assembly.ready && !this.godMode && !this._qaBypassShipAssembly) {
             return {
                 stateClass: 'btn-state--locked',
                 label: `INSTALL ${assembly.label}`,
@@ -17876,7 +18081,7 @@ export class ThreeGame {
     attemptO2GeneratorUpgrade(ship) {
         const generatorState = this.getO2GeneratorState();
         const assembly = this.getShipGoalAssemblyStatus?.('o2Bubble');
-        if (generatorState.level === 0 && assembly && !assembly.ready) {
+        if (generatorState.level === 0 && assembly && !assembly.ready && !this.godMode && !this._qaBypassShipAssembly) {
             this.showBunkerLine?.(`${assembly.label} REQUIRED — RECOVER IT IN THE EXPEDITION AND INSTALL IT AT THE SHIP.`);
             window.AudioManager?.play('ui_error', { volume: 0.58 });
             this.renderConsoleBanking(ship);

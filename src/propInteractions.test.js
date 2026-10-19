@@ -366,6 +366,26 @@ describe('propInteractions', () => {
         expect(interactionSpecKeyFor({ type: 'prop_rock' })).toBe('prop_rock');
     });
 
+    it('prioritizes interactable props in the player facing direction over closer props behind', () => {
+        // Player is at (0, 0) facing North (-Z direction: yaw = Math.PI)
+        const frontProp = {
+            position: { x: 0, z: -1.5 },
+            userData: { type: 'prop_maintenance_tool_cart', scatterKey: 'front:cart' }
+        };
+        const rearProp = {
+            position: { x: 0, z: 0.9 }, // Closer to player behind back
+            userData: { type: 'prop_maintenance_tool_cart', scatterKey: 'rear:cart' }
+        };
+        const game = {
+            player: { position: { x: 0, z: 0 } },
+            facingYaw: Math.PI, // Facing North (0, -1)
+            scatterSprites: [rearProp, frontProp]
+        };
+
+        const result = findNearestInteractableProp(game, 2.5);
+        expect(result?.sprite).toBe(frontProp);
+    });
+
     it('prefers an installed module interaction over its shared catalogue model', () => {
         const cabinet = {
             position: { x: 1, z: 0 },

@@ -250,6 +250,7 @@ export function createInteractionVignetteController(game) {
             const player = game.player;
             const startPos = player.position.clone();
             const startYaw = player.rotation.y;
+            const initialFacingYaw = game.facingYaw ?? startYaw;
 
             const propPos = sprite?.position ?? player.position;
             const wallNormal = sprite?.userData?.wallNormal ?? null;
@@ -272,6 +273,7 @@ export function createInteractionVignetteController(game) {
                 alignDuration: activePreset.alignSeconds,
                 startPos,
                 startYaw,
+                initialFacingYaw,
                 targetPos: socket.position,
                 targetYaw: socket.yaw,
                 animationStarted: false,
@@ -319,6 +321,11 @@ export function createInteractionVignetteController(game) {
 
             if (v.elapsed >= v.duration) {
                 const cb = v.onComplete;
+                if (Number.isFinite(v.initialFacingYaw)) {
+                    game.player.rotation.y = v.initialFacingYaw;
+                    game.updateFacingYaw?.(v.initialFacingYaw);
+                    if (game.player3dOverlay?.root) game.player3dOverlay.root.rotation.y = v.initialFacingYaw;
+                }
                 currentVignette = null;
                 cb?.();
             }
@@ -331,6 +338,11 @@ export function createInteractionVignetteController(game) {
             }
             if (reason === 'damage') {
                 game.player3dOverlay?.trigger?.('hit', 0.4);
+            }
+            if (Number.isFinite(v.initialFacingYaw)) {
+                game.player.rotation.y = v.initialFacingYaw;
+                game.updateFacingYaw?.(v.initialFacingYaw);
+                if (game.player3dOverlay?.root) game.player3dOverlay.root.rotation.y = v.initialFacingYaw;
             }
             const cb = v.onCancel;
             currentVignette = null;

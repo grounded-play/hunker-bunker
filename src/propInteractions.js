@@ -1691,8 +1691,18 @@ export function findNearestInteractableProp(game, maxDist = 2.5) {
     const px = game.player.position.x;
     const pz = game.player.position.z;
 
+    // Check player facing orientation
+    const yaw = game.facingYaw ?? game.player.rotation?.y ?? null;
+    let forwardX = 0;
+    let forwardZ = 0;
+    const hasFacing = Number.isFinite(yaw);
+    if (hasFacing) {
+        forwardX = Math.sin(yaw);
+        forwardZ = Math.cos(yaw);
+    }
+
     let nearest = null;
-    let minDist = maxDist;
+    let minScore = Infinity;
 
     for (const sprite of game.scatterSprites) {
         if (!sprite || sprite.userData?.burstTriggered) continue;
@@ -1702,9 +1712,24 @@ export function findNearestInteractableProp(game, maxDist = 2.5) {
         if (!spec || !spec.canInteract) continue;
         if (isSpentProp(game, sprite)) continue;
 
-        const d = Math.hypot(sprite.position.x - px, sprite.position.z - pz);
-        if (d < minDist) {
-            minDist = d;
+        const dx = sprite.position.x - px;
+        const dz = sprite.position.z - pz;
+        const d = Math.hypot(dx, dz);
+        if (d > maxDist) continue;
+
+        let score = d;
+        if (hasFacing && d > 0.001) {
+            const dirX = dx / d;
+            const dirZ = dz / d;
+            const dot = dirX * forwardX + dirZ * forwardZ;
+            // dot ranges from 1.0 (directly in front) to -1.0 (directly behind).
+            // Strongly penalize props behind the player so props in front take priority.
+            const anglePenalty = dot >= 0 ? (1.0 - 0.3 * dot) : (1.0 - 1.5 * dot);
+            score = d * anglePenalty;
+        }
+
+        if (score < minScore) {
+            minScore = score;
             nearest = { sprite, spec, propKey, distance: d };
         }
     }

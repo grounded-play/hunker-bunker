@@ -141,6 +141,32 @@ describe('ammo lockers, solid props, and Smash', () => {
         expect(arrows[0].visible).toBe(false);
     });
 
+    it('guides player towards active objective with chevrons', () => {
+        const arrows = Array.from({ length: 5 }, () => ({
+            position: new THREE.Vector3(0, 0, 0),
+            rotation: { y: 0 },
+            visible: false
+        }));
+        const game = {
+            performanceProfile: 'gameplay', isInPocket: false, isPlayerDead: false,
+            player: { position: new THREE.Vector3(10, 0, 10) },
+            crashSiteGuidance: {
+                group: { visible: false }, arrows, material: { opacity: 0 },
+                waypoints: [], passedWaypointIndexes: new Set(), revealedAt: 0, visibleForMs: 12000,
+                isObjectiveMode: false, isManualScan: false
+            },
+            getActiveObjectiveTargetPosition: () => ({ x: 10, z: 25 }),
+            findSnailPath: () => Array.from({ length: 16 }, (_, i) => ({ x: 10, z: 10 + i })),
+            getTerrainHeightAt: () => 0
+        };
+
+        ThreeGame.prototype.updateCrashSiteGuidance.call(game, 100);
+        expect(game.crashSiteGuidance.group.visible).toBe(true);
+        expect(game.crashSiteGuidance.isObjectiveMode).toBe(true);
+        expect(arrows[0].visible).toBe(true);
+        expect(arrows[0].position.z).toBeGreaterThan(10);
+    });
+
     it('detects projectile hits against intact props', () => {
         const prop = {
             parent: {}, position: new THREE.Vector3(1, 0, 1),

@@ -342,4 +342,33 @@ describe('threeGame interaction vignette gameplay integration', () => {
         expect(game.healPlayer).toHaveBeenCalled();
         expect(game.showBunkerLine).toHaveBeenCalledWith(expect.stringContaining('FATIGUE CLEANSED'));
     });
+
+    it('restores initial facing yaw upon completion so player movement direction is preserved', () => {
+        const game = createMockGame();
+        game.facingYaw = 1.25;
+        game.player.rotation.y = 1.25;
+        game.player.position.set(5, 0, 5);
+        game.updateFacingYaw = vi.fn((yaw) => { game.facingYaw = yaw; });
+
+        const safeSprite = new THREE.Sprite();
+        safeSprite.position.set(5, 0, 6);
+        safeSprite.userData = { type: 'prop_corporate_biometric_wall_safe' };
+
+        const nearestInfo = {
+            sprite: safeSprite,
+            spec: {
+                canInteract: true,
+                onInteract: vi.fn(() => true)
+            }
+        };
+
+        expect(interactWithCustomProp(game, nearestInfo)).toBe(true);
+        expect(game.interactionVignette.isActive()).toBe(true);
+
+        // Finish vignette
+        game.updatePlayer(1.3);
+        expect(game.interactionVignette.isActive()).toBe(false);
+        expect(game.player.rotation.y).toBeCloseTo(1.25, 4);
+        expect(game.facingYaw).toBeCloseTo(1.25, 4);
+    });
 });

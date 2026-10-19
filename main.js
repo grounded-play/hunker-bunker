@@ -2921,7 +2921,7 @@ const state = {
         introStyle: ['tactical_terminal', 'timed_verbatim', 'classic'].includes(localStorage.getItem('hb_intro_style'))
             ? localStorage.getItem('hb_intro_style')
             : 'tactical_terminal',
-        cameraMode: localStorage.getItem('hb_camera_mode') === 'third-person' ? 'third-person' : 'isometric',
+        cameraMode: localStorage.getItem('hb_camera_mode') === 'isometric' ? 'isometric' : 'third-person',
         cameraDistance: ['close', 'standard', 'wide'].includes(localStorage.getItem('hb_camera_distance'))
             ? localStorage.getItem('hb_camera_distance')
             : 'close',
@@ -10278,6 +10278,15 @@ function devGrantResources() {
     renderPickupCounter();
     window.game?.healPlayer?.(999999, { skipQueensMilkPenalty: true });
     window.game?.adjustOxygen?.(999999);
+    if (window.game) {
+        window.game._qaBypassShipAssembly = true;
+        if (window.game.carryState?.installed) {
+            window.game.carryState.installed.ship_life_support_core = true;
+            window.game.carryState.installed.ship_navigation_core = true;
+            window.game.carryState.installed.ship_comms_array = true;
+            window.game.carryState.installed.ship_engine_manifold = true;
+        }
+    }
     window.game?.renderConsoleBanking?.(window.game?.activeInteractiveConsole);
     renderFabricationModal();
     updateMenuCommandStatuses();

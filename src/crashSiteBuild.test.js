@@ -6,16 +6,17 @@ import { crashSiteClearCells, stampCrashSiteApproach, stampCrashSiteOrigin, vali
 const blank = (tile = 'X') => Array.from({ length: CHUNK_SIZE }, () => Array(CHUNK_SIZE).fill(tile));
 
 describe('two-zone crash site build', () => {
-    it('stamps a shell-bounded 17 by 16 origin chamber with one centered north throat', () => {
+    it('stamps a shell-bounded 17 by 14 origin chamber with one centered north throat and solid south wall', () => {
         const grid = blank('.');
         expect(stampCrashSiteOrigin(grid)).toBe(true);
         const room = CRASH_SITE_BUILD.primaryChamber;
         expect(room.right - room.left + 1).toBe(17);
-        expect(room.bottom - room.top + 1).toBe(16);
+        expect(room.bottom - room.top + 1).toBe(14);
         expect(grid[room.top].slice(room.left, room.right + 1).every((tile) => tile === '.')).toBe(true);
         expect(grid[0].slice(8, 11)).toEqual(['.', '.', '.']);
         expect(grid[0][7]).toBe('#');
         expect(grid[0][11]).toBe('#');
+        expect(grid[room.bottom + 1].slice(room.left, room.right + 1).every((tile) => tile === '#')).toBe(true);
     });
 
     it('turns the north neighbor into a seven-cell service hall and preserves required portals', () => {
@@ -119,8 +120,8 @@ describe('two-zone crash site build', () => {
         for (let y = CRASH_SITE_BUILD.northPreHall.top; y <= CRASH_SITE_BUILD.clearManeuverLane.toZ; y += 1) {
             expect(grid[y][CRASH_SITE_BUILD.center.x], `centre route at y=${y}`).toBe('.');
         }
-        expect(grid[9][6]).toBe('#');
-        expect(grid[10][6]).toBe('.');
-        expect(grid[7].slice(8, 11)).toEqual(['.', '.', '.']);
+        expect(grid[9][5]).toBe('#');
+        expect(grid[10][5]).toBe('.');
+        expect(grid[6].slice(8, 11)).toEqual(['.', '.', '.']);
     });
 });
