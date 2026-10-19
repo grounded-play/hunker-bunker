@@ -417,6 +417,37 @@ describe('room population', () => {
         });
     });
 
+    it('restricts consoles and terminals to cells adjacent to walls with wallNormal', () => {
+        const testConsoles = [
+            'prop_diagnostic_console',
+            'lore_terminal',
+            'chen_sealed_confession_console'
+        ];
+        for (const propType of testConsoles) {
+            const room = {
+                id: `wall-console-${propType}`,
+                role: 'generic',
+                interior: [
+                    { x: 1, y: 2 },
+                    { x: 2, y: 2 },
+                    { x: 3, y: 2 }
+                ],
+                navigation: { doorLanes: [] },
+                populationBudget: { signature: 1, large: 0, small: 0, pickup: 0, enemy: 0 },
+                themeConfig: { signatureProps: [propType] }
+            };
+            const grid = Array.from({ length: 5 }, () => Array(5).fill('.'));
+            grid[2][0] = '#';
+            const plan = planRoomPopulation(room, grid, () => 0);
+            expect(plan.placements[0]).toMatchObject({
+                type: propType,
+                x: 1,
+                y: 2,
+                wallNormal: { x: 1, z: 0 }
+            });
+        }
+    });
+
     it('attaches pipe organs, oxygen racks, and ceiling crane hoists along walls with valid wallNormal clearance', () => {
         const testProps = [
             'prop_pipe_organ_heat_exchanger',

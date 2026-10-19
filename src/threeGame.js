@@ -6257,7 +6257,7 @@ export class ThreeGame {
             fog: false
         });
         const arrows = [];
-        for (let index = 0; index < 5; index++) {
+        for (let index = 0; index < 8; index++) {
             const arrow = new THREE.Group();
             arrow.name = `crash-site-chevron-${index}`;
             const left = new THREE.Mesh(geometry, material);
@@ -6380,9 +6380,24 @@ export class ThreeGame {
         if (this.bank && typeof this.getActiveBaseGoal === 'function') {
             const baseGoal = this.getActiveBaseGoal();
             if (baseGoal?.key === 'o2Bubble') {
+                const assembly = this.getShipGoalAssemblyStatus?.('o2Bubble');
+                if (assembly && !assembly.ready && !assembly.installed && this.carryState?.carried?.definitionId !== 'ship_life_support_core') {
+                    const worldCargo = this.carryState?.worldObjects?.find((o) => o.definitionId === 'ship_life_support_core');
+                    if (worldCargo?.worldPosition) return { x: worldCargo.worldPosition.x, z: worldCargo.worldPosition.z };
+                    const sourcePositions = this.getShipRebuildSourcePositions?.();
+                    if (sourcePositions?.o2Bubble) return { x: sourcePositions.o2Bubble.x, z: sourcePositions.o2Bubble.z };
+                }
                 const o2Pos = this.getActiveO2GeneratorPosition?.();
                 if (o2Pos) return { x: o2Pos.x, z: o2Pos.z };
             } else if (baseGoal) {
+                const stage = getShipRebuildStageForGoal(baseGoal.key);
+                const assembly = stage ? this.getShipGoalAssemblyStatus?.(baseGoal.key) : null;
+                if (assembly && !assembly.ready && !assembly.installed && this.carryState?.carried?.definitionId !== stage?.definitionId) {
+                    const worldCargo = this.carryState?.worldObjects?.find((o) => o.definitionId === stage?.definitionId);
+                    if (worldCargo?.worldPosition) return { x: worldCargo.worldPosition.x, z: worldCargo.worldPosition.z };
+                    const sourcePositions = this.getShipRebuildSourcePositions?.();
+                    if (sourcePositions?.[baseGoal.key]) return { x: sourcePositions[baseGoal.key].x, z: sourcePositions[baseGoal.key].z };
+                }
                 const activeShip = this.getActiveShip?.();
                 if (activeShip) {
                     return {
@@ -6419,7 +6434,10 @@ export class ThreeGame {
         guidance.isObjectiveMode = true;
         guidance.isManualScan = false;
 
-        const path = this.findSnailPath?.(startX, startZ, goalX, goalZ, 1600) ?? [];
+        const pathFinder = (typeof this.findPlayerPath === 'function' && !Object.prototype.hasOwnProperty.call(this, 'findSnailPath'))
+            ? this.findPlayerPath
+            : (this.findSnailPath ?? this.findPlayerPath);
+        const path = pathFinder?.call(this, startX, startZ, goalX, goalZ, 2400) ?? [];
         let waypoints = [];
         let sampleIndexes = [];
 
@@ -6429,10 +6447,11 @@ export class ThreeGame {
                 sampleIndexes.push(index);
             }
             waypoints = sampleIndexes.map((pathIndex) => path[pathIndex]);
-        } else {
-            // Direct projection towards objective if pathfinder budget exhausted
+        }
+        
+        if (waypoints.length === 0) {
             const dist = Math.hypot(target.x - px, target.z - pz);
-            if (dist > 1.5) {
+            if (dist > 1.8) {
                 const dirX = (target.x - px) / dist;
                 const dirZ = (target.z - pz) / dist;
                 const stepCount = Math.min(guidance.arrows.length, Math.floor(dist / 2));
@@ -6537,43 +6556,68 @@ export class ThreeGame {
         if (!guidance || !this.player || this.isInPocket) return false;
         guidance.isManualScan = true;
         guidance.isObjectiveMode = false;
+
+        const objectiveTarget = typeof this.getActiveObjectiveTargetPosition === 'function'
+            ? this.getActiveObjectiveTargetPosition()
+            : null;
         const home = CRASH_SITE_BUILD.center;
+        const target = objectiveTarget ?? home;
+
         const startX = Math.round(this.player.position.x);
         const startZ = Math.round(this.player.position.z);
-        if (Math.hypot(home.x - startX, home.z - startZ) <= 8) {
+        const distToTarget = Math.hypot(target.x - startX, target.z - startZ);
+        if (distToTarget <= 1.5) {
             guidance.waypoints = [];
             guidance.passedWaypointIndexes?.clear?.();
             guidance.group.visible = false;
             return false;
         }
-        const path = this.findSnailPath?.(
+
+        const pathFinder = (typeof this.findPlayerPath === 'function' && !Object.prototype.hasOwnProperty.call(this, 'findSnailPath'))
+            ? this.findPlayerPath
+            : (this.findSnailPath ?? this.findPlayerPath);
+        const path = pathFinder?.call(
+            this,
             startX,
             startZ,
-            Math.round(home.x),
-            Math.round(home.z),
+            Math.round(target.x),
+            Math.round(target.z),
             2400
         ) ?? [];
-        const last = path.at(-1);
-        // The tile search returns its best partial path when its budget is
-        // exhausted. Never render a breadcrumb that terminates at a wall or
-        // unloaded boundary instead of the promised destination.
-        if (!last || Math.hypot(last.x - home.x, last.z - home.z) > 2.5) {
-            guidance.waypoints = [];
-            guidance.passedWaypointIndexes?.clear?.();
-            guidance.group.visible = false;
-            return false;
+
+        let waypoints = [];
+        let sampleIndexes = [];
+        if (path.length >= 2) {
+            const stride = Math.max(2, Math.floor((path.length - 1) / guidance.arrows.length));
+            for (let index = stride; index < path.length && sampleIndexes.length < guidance.arrows.length; index += stride) {
+                sampleIndexes.push(index);
+            }
+            waypoints = sampleIndexes.map((pathIndex) => path[pathIndex]);
         }
-        const sampleIndexes = [];
-        const stride = Math.max(2, Math.floor((path.length - 1) / guidance.arrows.length));
-        for (let index = stride; index < path.length && sampleIndexes.length < guidance.arrows.length; index += stride) {
-            sampleIndexes.push(index);
+        if (waypoints.length === 0) {
+            const dist = Math.hypot(target.x - this.player.position.x, target.z - this.player.position.z);
+            if (dist > 1.2) {
+                const dirX = (target.x - this.player.position.x) / dist;
+                const dirZ = (target.z - this.player.position.z) / dist;
+                const stepCount = Math.min(guidance.arrows.length, Math.max(1, Math.floor(dist / 1.8)));
+                for (let i = 1; i <= stepCount; i++) {
+                    const stepDist = i * 1.8;
+                    if (stepDist < dist + 0.5) {
+                        waypoints.push({ x: this.player.position.x + dirX * stepDist, z: this.player.position.z + dirZ * stepDist });
+                    }
+                }
+            }
         }
-        guidance.waypoints = sampleIndexes.map((pathIndex) => path[pathIndex]);
+
+        guidance.waypoints = waypoints;
         guidance.passedWaypointIndexes ??= new Set();
         guidance.passedWaypointIndexes.clear();
         guidance.revealedAt = now;
+
         guidance.waypoints.forEach((waypoint, index) => {
-            const next = path[Math.min(path.length - 1, sampleIndexes[index] + 1)] ?? waypoint;
+            const next = sampleIndexes.length > 0 && path[Math.min(path.length - 1, sampleIndexes[index] + 1)]
+                ? path[Math.min(path.length - 1, sampleIndexes[index] + 1)]
+                : (guidance.waypoints[index + 1] ?? target);
             const arrow = guidance.arrows[index];
             arrow.position.set(
                 waypoint.x,
@@ -6583,9 +6627,11 @@ export class ThreeGame {
             arrow.rotation.y = Math.atan2(next.x - waypoint.x, next.z - waypoint.z);
             arrow.visible = true;
         });
+
         for (let index = guidance.waypoints.length; index < guidance.arrows.length; index++) {
             guidance.arrows[index].visible = false;
         }
+
         guidance.group.visible = guidance.waypoints.length > 0;
         return guidance.group.visible;
     }
@@ -42927,6 +42973,18 @@ export class ThreeGame {
             nodeBudget,
             isWalkable: (x, z) => this.isSnailTileWalkable(x, z),
             blocksStep: this._attackPathBlocker
+        });
+    }
+
+    findPlayerPath(startTileX, startTileZ, goalTileX, goalTileZ, nodeBudget = 2400) {
+        return findTilePath({
+            startX: startTileX,
+            startZ: startTileZ,
+            goalX: goalTileX,
+            goalZ: goalTileZ,
+            nodeBudget,
+            isWalkable: (x, z) => this.isSnailTileWalkable(x, z),
+            blocksStep: null
         });
     }
 

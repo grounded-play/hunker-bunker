@@ -73,7 +73,18 @@ export function findRoomShellWallNormal(cell, grid, bounds) {
 }
 
 export function isWallBackedPropType(type) {
-    return isWallMountedModel(type);
+    if (!type) return false;
+    if (isWallMountedModel(type)) return true;
+    const lower = String(type).toLowerCase();
+    return lower.includes('console')
+        || lower.includes('terminal')
+        || lower.includes('panel')
+        || lower.includes('intercom')
+        || lower.includes('junction')
+        || lower.includes('switchboard')
+        || lower.includes('server_rack')
+        || lower.includes('breaker')
+        || lower.includes('fuse_box');
 }
 
 function pickCandidate(candidates, random, grid, center, {
@@ -91,6 +102,22 @@ function pickCandidate(candidates, random, grid, center, {
         ? candidates.filter((cell) => findCellWallNormal(cell, grid, wallBounds, { shellOnly: Boolean(wallBounds) }) !== null)
         : candidates;
     if (pool.length === 0 && wallOnly) return null;
+
+    // Filter candidates to enforce minimum spacing from existing placements so items don't clump on adjacent cells
+    const isOverlayDecal = kind === 'grounding-decal';
+    const minSpacing = isOverlayDecal ? 0.75 : 1.15;
+    const wellSpaced = pool.filter((cell) => {
+        for (const p of placements) {
+            if (p.kind === 'grounding-decal') continue;
+            const dist = Math.hypot(cell.x - p.x, cell.y - p.y);
+            if (dist < minSpacing) return false;
+        }
+        return true;
+    });
+    if (wellSpaced.length > 0) {
+        pool = wellSpaced;
+    }
+
     const focalPlacements = placements.filter((placement) => (
         ['signature', 'large', 'structural', 'interaction'].includes(placement.kind)
     ));
@@ -107,10 +134,6 @@ function pickCandidate(candidates, random, grid, center, {
             ? Math.min(...focalPlacements.map((placement) => Math.hypot(cell.x - placement.x, cell.y - placement.y)))
             : placedDistance;
         const isSupport = !['signature', 'large', 'ammo-cache', 'pickup'].includes(kind);
-        // Corners are valuable for large silhouettes, but treating a second
-        // wall as +100 made every small object flee to the four corners. Give
-        // support dressing enough edge bias to stay out of combat lanes while
-        // still allowing it to cluster around the room's authored focal prop.
         let score = wallCount * (isSupport ? 14 : 40) + centerDistance;
         if (kind === 'signature') score += doorDistance * 9;
         else if (['large', 'ammo-cache'].includes(kind)) score += doorDistance * 3 + placedDistance * 5;
