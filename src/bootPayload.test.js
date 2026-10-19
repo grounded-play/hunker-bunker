@@ -22,6 +22,26 @@ describe('boot payload', () => {
         expect(index).toContain('href="/menu_bg.webp" fetchpriority="high" media="(max-width: 768px)"');
     });
 
+    it('keeps menu artwork document-relative for packaged file builds', () => {
+        for (const asset of [
+            'title_key_art_v2.webp',
+            'menu_bg.webp',
+            'menu_bg_v3.webp',
+            'menu_frame_overlay.webp',
+            'door_biomech_keyart_v2.webp'
+        ]) {
+            expect(index).toContain(`: '${asset}'`);
+        }
+        expect(index).toContain("new URL(menuArtwork[property], document.baseURI).href");
+        expect(index).toContain("document.documentElement.style.setProperty(property, 'url(\"' + resolved + '\")')");
+
+        const style = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
+        expect(style).toContain('background-image: var(--asset-title-key-art)');
+        expect(style).toContain('background: var(--bg-dark) var(--asset-briefing-menu-bg)');
+        expect(style).toContain('background: var(--asset-menu-frame-overlay)');
+        expect(style).not.toMatch(/url\(['"]\/(?:title_key_art_v2|menu_bg(?:_v3)?|menu_frame_overlay|door_biomech_keyart_v2)\.webp/);
+    });
+
     it('never preloads a video in the page markup; videos load when they play', () => {
         const eager = [...index.matchAll(/<video\b[^>]*>/g)].map(([tag]) => tag).filter((tag) => /preload="auto"/.test(tag));
         expect(eager).toEqual([]);
