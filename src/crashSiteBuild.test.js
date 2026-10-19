@@ -241,6 +241,20 @@ describe('two-zone crash site build', () => {
         }
     });
 
+    it('mounts authored wall fixtures against the exterior shell, facing into their rooms', () => {
+        const grid = blank('.');
+        stampCrashSiteOrigin(grid);
+        const wallFixtures = CRASH_SITE_BUILD.sectorZero.props.filter(({ wallNormal }) => wallNormal);
+        expect(wallFixtures.map(({ id }) => id)).toEqual(expect.arrayContaining([
+            'sector_zero_salvage_console', 'jammed_hydraulic_cable', 'sector_zero_airlock_manifold'
+        ]));
+        for (const prop of wallFixtures) {
+            const wallX = Math.round(prop.x - prop.wallNormal.x);
+            const wallZ = Math.round(prop.z - prop.wallNormal.z);
+            expect(grid[wallZ]?.[wallX], `${prop.id} wall at ${wallX},${wallZ}`).toBe('#');
+        }
+    });
+
     it('keeps tutorial guidance targets synchronized with relocated objectives', () => {
         const layout = CRASH_SITE_BUILD.sectorZero;
         const cable = layout.props.find(({ id }) => id === 'jammed_hydraulic_cable');

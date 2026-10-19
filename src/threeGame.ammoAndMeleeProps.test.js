@@ -132,7 +132,7 @@ describe('ammo lockers, solid props, and Smash', () => {
         expect(arrows[0].position.y).toBeCloseTo(0.055);
         const placedX = arrows[0].position.x;
 
-        game.player.position.set(18, 0, 9);
+        game.player.position.set(placedX, 0, 9);
         ThreeGame.prototype.updateCrashSiteGuidance.call(game, 200);
         expect(arrows[0].position.x).toBe(placedX);
         expect(arrows[0].visible).toBe(false);
@@ -165,6 +165,57 @@ describe('ammo lockers, solid props, and Smash', () => {
         expect(game.crashSiteGuidance.isObjectiveMode).toBe(true);
         expect(arrows[0].visible).toBe(true);
         expect(arrows[0].position.z).toBeGreaterThan(10);
+    });
+
+    it('starts a scanned objective trail in front of the facing player', () => {
+        const arrows = Array.from({ length: 8 }, () => ({
+            position: new THREE.Vector3(), rotation: { y: 0 }, visible: false
+        }));
+        const manhattanPath = (startX, startZ, goalX, goalZ) => {
+            const path = [{ x: startX, z: startZ }];
+            let x = startX;
+            let z = startZ;
+            while (x !== goalX) {
+                x += Math.sign(goalX - x);
+                path.push({ x, z });
+            }
+            while (z !== goalZ) {
+                z += Math.sign(goalZ - z);
+                path.push({ x, z });
+            }
+            return path;
+        };
+        const game = {
+            player: { position: new THREE.Vector3(10, 0, 10) },
+            facingYaw: Math.PI / 2,
+            isInPocket: false,
+            crashSiteGuidance: {
+                group: { visible: false }, arrows, waypoints: [],
+                passedWaypointIndexes: new Set(), isObjectiveMode: false, isManualScan: false
+            },
+            getActiveObjectiveTargetPosition: () => ({ x: 10, z: 25 }),
+            findPlayerPath: manhattanPath,
+            getTerrainHeightAt: () => 0
+        };
+
+        expect(ThreeGame.prototype.revealCrashSiteGuidanceFromScan.call(game, 500)).toBe(true);
+        expect(game.crashSiteGuidance.isObjectiveMode).toBe(true);
+        expect(game.crashSiteGuidance.waypoints[0]).toEqual({ x: 11, z: 10 });
+        expect(game.crashSiteGuidance.waypoints[0].x).toBeGreaterThan(game.player.position.x);
+    });
+
+    it('prioritizes the active O2 rebuild objective over optional registry targets', () => {
+        window.objectiveRegistry = { getCompassTarget: () => ({ x: 80, z: 80 }) };
+        const game = {
+            player: { position: { x: 9, z: 9 } },
+            bank: {},
+            getActiveBaseGoal: () => ({ key: 'o2Bubble' }),
+            getShipGoalAssemblyStatus: () => ({ ready: true, installed: true }),
+            getActiveO2GeneratorPosition: () => ({ x: 12.5, z: 9.5 })
+        };
+
+        expect(ThreeGame.prototype.getActiveObjectiveTargetPosition.call(game))
+            .toEqual({ x: 12.5, z: 9.5 });
     });
 
     it('detects projectile hits against intact props', () => {

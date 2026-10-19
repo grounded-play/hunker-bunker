@@ -6333,7 +6333,41 @@ export class ThreeGame {
             return { x: cargo.x, z: cargo.z };
         }
 
-        // 3. Black box
+        // 3. The active ship-rebuild goal is the main opening objective. Keep
+        // it ahead of optional signals/registries so a scan cannot point away
+        // from the O2 recovery and repair flow.
+        if (this.bank && typeof this.getActiveBaseGoal === 'function') {
+            const baseGoal = this.getActiveBaseGoal();
+            if (baseGoal?.key === 'o2Bubble') {
+                const assembly = this.getShipGoalAssemblyStatus?.('o2Bubble');
+                if (assembly && !assembly.ready && !assembly.installed && this.carryState?.carried?.definitionId !== 'ship_life_support_core') {
+                    const worldCargo = this.carryState?.worldObjects?.find((o) => o.definitionId === 'ship_life_support_core');
+                    if (worldCargo?.worldPosition) return { x: worldCargo.worldPosition.x, z: worldCargo.worldPosition.z };
+                    const sourcePositions = this.getShipRebuildSourcePositions?.();
+                    if (sourcePositions?.o2Bubble) return { x: sourcePositions.o2Bubble.x, z: sourcePositions.o2Bubble.z };
+                }
+                const o2Pos = this.getActiveO2GeneratorPosition?.();
+                if (o2Pos) return { x: o2Pos.x, z: o2Pos.z };
+            } else if (baseGoal) {
+                const stage = getShipRebuildStageForGoal(baseGoal.key);
+                const assembly = stage ? this.getShipGoalAssemblyStatus?.(baseGoal.key) : null;
+                if (assembly && !assembly.ready && !assembly.installed && this.carryState?.carried?.definitionId !== stage?.definitionId) {
+                    const worldCargo = this.carryState?.worldObjects?.find((o) => o.definitionId === stage?.definitionId);
+                    if (worldCargo?.worldPosition) return { x: worldCargo.worldPosition.x, z: worldCargo.worldPosition.z };
+                    const sourcePositions = this.getShipRebuildSourcePositions?.();
+                    if (sourcePositions?.[baseGoal.key]) return { x: sourcePositions[baseGoal.key].x, z: sourcePositions[baseGoal.key].z };
+                }
+                const activeShip = this.getActiveShip?.();
+                if (activeShip) {
+                    return {
+                        x: activeShip.tileX + (activeShip.consoleOffset?.x ?? -1.6),
+                        z: activeShip.tileZ + (activeShip.consoleOffset?.z ?? 1.6)
+                    };
+                }
+            }
+        }
+
+        // 4. Black box
         if (this._blackBoxMarkerActive && this._blackBoxState?.active) {
             return { x: this._blackBoxState.x, z: this._blackBoxState.z };
         }
@@ -6380,39 +6414,7 @@ export class ThreeGame {
             return { x: this.missionState.targetPosition.x, z: this.missionState.targetPosition.z };
         }
 
-        // 11. Base goals inside crash site
-        if (this.bank && typeof this.getActiveBaseGoal === 'function') {
-            const baseGoal = this.getActiveBaseGoal();
-            if (baseGoal?.key === 'o2Bubble') {
-                const assembly = this.getShipGoalAssemblyStatus?.('o2Bubble');
-                if (assembly && !assembly.ready && !assembly.installed && this.carryState?.carried?.definitionId !== 'ship_life_support_core') {
-                    const worldCargo = this.carryState?.worldObjects?.find((o) => o.definitionId === 'ship_life_support_core');
-                    if (worldCargo?.worldPosition) return { x: worldCargo.worldPosition.x, z: worldCargo.worldPosition.z };
-                    const sourcePositions = this.getShipRebuildSourcePositions?.();
-                    if (sourcePositions?.o2Bubble) return { x: sourcePositions.o2Bubble.x, z: sourcePositions.o2Bubble.z };
-                }
-                const o2Pos = this.getActiveO2GeneratorPosition?.();
-                if (o2Pos) return { x: o2Pos.x, z: o2Pos.z };
-            } else if (baseGoal) {
-                const stage = getShipRebuildStageForGoal(baseGoal.key);
-                const assembly = stage ? this.getShipGoalAssemblyStatus?.(baseGoal.key) : null;
-                if (assembly && !assembly.ready && !assembly.installed && this.carryState?.carried?.definitionId !== stage?.definitionId) {
-                    const worldCargo = this.carryState?.worldObjects?.find((o) => o.definitionId === stage?.definitionId);
-                    if (worldCargo?.worldPosition) return { x: worldCargo.worldPosition.x, z: worldCargo.worldPosition.z };
-                    const sourcePositions = this.getShipRebuildSourcePositions?.();
-                    if (sourcePositions?.[baseGoal.key]) return { x: sourcePositions[baseGoal.key].x, z: sourcePositions[baseGoal.key].z };
-                }
-                const activeShip = this.getActiveShip?.();
-                if (activeShip) {
-                    return {
-                        x: activeShip.tileX + (activeShip.consoleOffset?.x ?? -1.6),
-                        z: activeShip.tileZ + (activeShip.consoleOffset?.z ?? 1.6)
-                    };
-                }
-            }
-        }
-
-        // 12. If outside crash site, guide back towards ship
+        // If outside crash site, guide back towards ship
         const home = CRASH_SITE_BUILD.center;
         const distToShip = Math.hypot(this.player.position.x - home.x, this.player.position.z - home.z);
         if (distToShip > 12) {
@@ -6422,7 +6424,7 @@ export class ThreeGame {
         return null;
     }
 
-    refreshObjectiveGuidanceWaypoints(target, now = performance.now()) {
+    refreshObjectiveGuidanceWaypoints(target, now = performance.now(), { preferFacing = false } = {}) {
         const guidance = this.crashSiteGuidance;
         if (!guidance || !this.player || this.isInPocket) return false;
         const px = this.player.position.x;
@@ -6441,31 +6443,29 @@ export class ThreeGame {
         const pathFinder = (typeof this.findPlayerPath === 'function' && !Object.prototype.hasOwnProperty.call(this, 'findSnailPath'))
             ? this.findPlayerPath
             : (this.findSnailPath ?? this.findPlayerPath);
-        const path = pathFinder?.call(this, startX, startZ, goalX, goalZ, 2400) ?? [];
+        let path = pathFinder?.call(this, startX, startZ, goalX, goalZ, 4000) ?? [];
+        if (preferFacing && Number.isFinite(this.facingYaw)) {
+            const facing = aimVectorFromYaw(this.facingYaw);
+            const leadX = Math.round(px + facing.x * 2);
+            const leadZ = Math.round(pz + facing.z * 2);
+            const leadIn = pathFinder?.call(this, startX, startZ, leadX, leadZ, 96) ?? [];
+            const leadOut = pathFinder?.call(this, leadX, leadZ, goalX, goalZ, 4000) ?? [];
+            const reachedLead = leadIn.length > 1 && Math.hypot(leadIn.at(-1).x - leadX, leadIn.at(-1).z - leadZ) < 0.75;
+            const reachedGoal = leadOut.length > 1 && Math.hypot(leadOut.at(-1).x - goalX, leadOut.at(-1).z - goalZ) < 2.5;
+            if (reachedLead && reachedGoal) path = leadIn.concat(leadOut.slice(1));
+        }
+        const pathEnd = path.at(-1);
+        if (!pathEnd || Math.hypot(pathEnd.x - goalX, pathEnd.z - goalZ) > 2.5) path = [];
         let waypoints = [];
         let sampleIndexes = [];
 
         if (path.length >= 2) {
-            const stride = Math.max(2, Math.floor((path.length - 1) / guidance.arrows.length));
-            for (let index = stride; index < path.length && sampleIndexes.length < guidance.arrows.length; index += stride) {
-                sampleIndexes.push(index);
-            }
+            const localTrailIndexes = [1, 3, 5, 8, 12, 17, 23, 30];
+            sampleIndexes = localTrailIndexes
+                .map((index) => Math.min(index, path.length - 1))
+                .filter((index, position, indexes) => index > 0 && index !== indexes[position - 1])
+                .slice(0, guidance.arrows.length);
             waypoints = sampleIndexes.map((pathIndex) => path[pathIndex]);
-        }
-        
-        if (waypoints.length === 0) {
-            const dist = Math.hypot(target.x - px, target.z - pz);
-            if (dist > 1.8) {
-                const dirX = (target.x - px) / dist;
-                const dirZ = (target.z - pz) / dist;
-                const stepCount = Math.min(guidance.arrows.length, Math.floor(dist / 2));
-                for (let i = 1; i <= stepCount; i++) {
-                    const stepDist = i * 2.0;
-                    if (stepDist < dist) {
-                        waypoints.push({ x: px + dirX * stepDist, z: pz + dirZ * stepDist });
-                    }
-                }
-            }
         }
 
         guidance.waypoints = waypoints;
@@ -6543,7 +6543,7 @@ export class ThreeGame {
         for (let index = 0; index < guidance.arrows.length; index++) {
             const arrow = guidance.arrows[index];
             const waypoint = guidance.waypoints[index];
-            if (waypoint && Math.hypot(waypoint.x - px, waypoint.z - pz) < 1.15) {
+            if (waypoint && Math.hypot(waypoint.x - px, waypoint.z - pz) < 0.65) {
                 guidance.passedWaypointIndexes.add(index);
             }
             if (!waypoint || guidance.passedWaypointIndexes.has(index)) {
@@ -6558,86 +6558,32 @@ export class ThreeGame {
     revealCrashSiteGuidanceFromScan(now = performance.now()) {
         const guidance = this.crashSiteGuidance;
         if (!guidance || !this.player || this.isInPocket) return false;
-        guidance.isManualScan = true;
-        guidance.isObjectiveMode = false;
-
         const objectiveTarget = typeof this.getActiveObjectiveTargetPosition === 'function'
             ? this.getActiveObjectiveTargetPosition()
             : null;
         const home = CRASH_SITE_BUILD.center;
         const target = objectiveTarget ?? home;
-
-        const startX = Math.round(this.player.position.x);
-        const startZ = Math.round(this.player.position.z);
-        const distToTarget = Math.hypot(target.x - startX, target.z - startZ);
+        const distToTarget = Math.hypot(target.x - this.player.position.x, target.z - this.player.position.z);
         if (distToTarget <= 1.5) {
             guidance.waypoints = [];
             guidance.passedWaypointIndexes?.clear?.();
             guidance.group.visible = false;
             return false;
         }
-
-        const pathFinder = (typeof this.findPlayerPath === 'function' && !Object.prototype.hasOwnProperty.call(this, 'findSnailPath'))
-            ? this.findPlayerPath
-            : (this.findSnailPath ?? this.findPlayerPath);
-        const path = pathFinder?.call(
-            this,
-            startX,
-            startZ,
-            Math.round(target.x),
-            Math.round(target.z),
-            2400
-        ) ?? [];
-
-        let waypoints = [];
-        let sampleIndexes = [];
-        if (path.length >= 2) {
-            const stride = Math.max(2, Math.floor((path.length - 1) / guidance.arrows.length));
-            for (let index = stride; index < path.length && sampleIndexes.length < guidance.arrows.length; index += stride) {
-                sampleIndexes.push(index);
-            }
-            waypoints = sampleIndexes.map((pathIndex) => path[pathIndex]);
+        const visible = (this.refreshObjectiveGuidanceWaypoints || ThreeGame.prototype.refreshObjectiveGuidanceWaypoints)
+            .call(this, target, now, { preferFacing: true });
+        guidance.isManualScan = false;
+        if (typeof window !== 'undefined' && typeof window.hbLog === 'function') {
+            window.hbLog('NAVIGATION', visible ? 'info' : 'warn', 'objective-guidance-revealed', {
+                from: { x: this.player.position.x, z: this.player.position.z },
+                target,
+                targetKind: objectiveTarget ? 'active-objective' : 'crash-site',
+                facingYaw: this.facingYaw ?? null,
+                waypointCount: guidance.waypoints.length,
+                visible
+            });
         }
-        if (waypoints.length === 0) {
-            const dist = Math.hypot(target.x - this.player.position.x, target.z - this.player.position.z);
-            if (dist > 1.2) {
-                const dirX = (target.x - this.player.position.x) / dist;
-                const dirZ = (target.z - this.player.position.z) / dist;
-                const stepCount = Math.min(guidance.arrows.length, Math.max(1, Math.floor(dist / 1.8)));
-                for (let i = 1; i <= stepCount; i++) {
-                    const stepDist = i * 1.8;
-                    if (stepDist < dist + 0.5) {
-                        waypoints.push({ x: this.player.position.x + dirX * stepDist, z: this.player.position.z + dirZ * stepDist });
-                    }
-                }
-            }
-        }
-
-        guidance.waypoints = waypoints;
-        guidance.passedWaypointIndexes ??= new Set();
-        guidance.passedWaypointIndexes.clear();
-        guidance.revealedAt = now;
-
-        guidance.waypoints.forEach((waypoint, index) => {
-            const next = sampleIndexes.length > 0 && path[Math.min(path.length - 1, sampleIndexes[index] + 1)]
-                ? path[Math.min(path.length - 1, sampleIndexes[index] + 1)]
-                : (guidance.waypoints[index + 1] ?? target);
-            const arrow = guidance.arrows[index];
-            arrow.position.set(
-                waypoint.x,
-                (this.getTerrainHeightAt?.(waypoint.x, waypoint.z) ?? 0.015) + 0.055,
-                waypoint.z
-            );
-            arrow.rotation.y = Math.atan2(next.x - waypoint.x, next.z - waypoint.z);
-            arrow.visible = true;
-        });
-
-        for (let index = guidance.waypoints.length; index < guidance.arrows.length; index++) {
-            guidance.arrows[index].visible = false;
-        }
-
-        guidance.group.visible = guidance.waypoints.length > 0;
-        return guidance.group.visible;
+        return visible;
     }
 
     disposeCrashSiteGuidance() {
@@ -25578,20 +25524,22 @@ export class ThreeGame {
         if (this.crashedShips) {
             for (const ship of this.crashedShips) {
                 const isActiveShip = ship.type === this.playerType;
-                const o2ModuleOnline = isActiveShip && generatorState.isOnline && !revealPending;
+                // This is the repair target, so it remains present while
+                // unpowered. Only the safe bubble depends on isOnline.
+                const o2ModuleVisible = isActiveShip && !revealPending;
                 const hullOnline = isActiveShip && Boolean(unlocks.hullExpansion);
                 const radarOnline = isActiveShip && Boolean(unlocks.radarNode);
                 const reactorOnline = isActiveShip && Boolean(unlocks.reactorCompressor);
                 if (ship.o2ModuleSprite) {
-                    ship.o2ModuleSprite.userData.world3dDesiredVisible = o2ModuleOnline;
-                    ship.o2ModuleSprite.visible = o2ModuleOnline && !ship.o2ModuleSprite.userData?.replacedBy3d;
-                    if (o2ModuleOnline) {
+                    ship.o2ModuleSprite.userData.world3dDesiredVisible = o2ModuleVisible;
+                    ship.o2ModuleSprite.visible = o2ModuleVisible && !ship.o2ModuleSprite.userData?.replacedBy3d;
+                    if (o2ModuleVisible) {
                         this.setupWorld3dReplacement(ship.o2ModuleSprite, 'o2_generator', { owner: ship, ownerKey: 'o2Module3d' });
                     }
                 }
-                if (ship.o2Module3d) ship.o2Module3d.visible = o2ModuleOnline;
+                if (ship.o2Module3d) ship.o2Module3d.visible = o2ModuleVisible;
                 if (ship.o2ModuleShadow) {
-                    ship.o2ModuleShadow.visible = o2ModuleOnline;
+                    ship.o2ModuleShadow.visible = o2ModuleVisible;
                 }
                 if (ship.hullModuleSprite) {
                     ship.hullModuleSprite.userData.world3dDesiredVisible = hullOnline;
@@ -38622,6 +38570,18 @@ export class ThreeGame {
                 });
             }
         }
+        const isAuthoredCrashZone = (
+            chunkX === CRASH_SITE_BUILD.originChunk.x && chunkY === CRASH_SITE_BUILD.originChunk.y
+        ) || (
+            chunkX === CRASH_SITE_BUILD.approachChunk.x && chunkY === CRASH_SITE_BUILD.approachChunk.y
+        );
+        if (isAuthoredCrashZone) {
+            return filterDoorApronPlacements(authoredPlacements, doorApronCells, {
+                chunkX,
+                chunkY,
+                chunkSize: this.chunkSize
+            });
+        }
         const plannedRoomPickups = (metadata?.roomInstances ?? [])
             .flatMap((room) => (room.populationPlan?.placements ?? [])
                 .filter((placement) => placement.kind === 'pickup')
@@ -38806,6 +38766,7 @@ export class ThreeGame {
                     x: prop.x,
                     z: prop.z,
                     type: prop.type,
+                    wallNormal: prop.wallNormal ?? null,
                     rotation: prop.rotation ?? 0,
                     scatterKey: `sector-zero:${prop.id}`,
                     scale: prop.scale ?? 1,
@@ -38999,8 +38960,13 @@ export class ThreeGame {
         // corridors clear and guarantees dressing concentrates where a
         // player would expect it — inside rooms.
         const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
+        const isAuthoredCrashZone = (
+            chunkX === CRASH_SITE_BUILD.originChunk.x && chunkY === CRASH_SITE_BUILD.originChunk.y
+        ) || (
+            chunkX === CRASH_SITE_BUILD.approachChunk.x && chunkY === CRASH_SITE_BUILD.approachChunk.y
+        );
 
-        for (let localY = 1; localY < this.chunkSize - 1; localY += 1) {
+        for (let localY = 1; !isAuthoredCrashZone && localY < this.chunkSize - 1; localY += 1) {
             for (let localX = 1; localX < this.chunkSize - 1; localX += 1) {
                 if (grid[localY][localX] !== '.') continue;
                 if (reservedCells.has(`${localX},${localY}`)) continue;
@@ -39221,7 +39187,6 @@ export class ThreeGame {
         const candidates = [];
         const approachEncounter = chunkX === CRASH_SITE_BUILD.approachChunk.x
             && chunkY === CRASH_SITE_BUILD.approachChunk.y
-            && !this.isSectorZeroOnboardingActive?.()
             ? CRASH_SITE_BUILD.serviceApproach.encounter
             : null;
         const approachEncounterPlacement = approachEncounter ? {

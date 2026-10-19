@@ -168,19 +168,20 @@ describe('ThreeGame Sector Zero Integration', () => {
         game.getDepthTier = () => 0;
         game.getSpawnTile = () => ({ x: 9, y: 9 });
         game.getRoomTypeGrid = () => null;
-        const blocked = Array.from({ length: 49 }, () => Array(49).fill('#'));
+        const open = Array.from({ length: 49 }, () => Array(49).fill('.'));
 
         const placements = game.createChunkPickupPlacements(
             CRASH_SITE_BUILD.approachChunk.x,
             CRASH_SITE_BUILD.approachChunk.y,
-            blocked
+            open
         );
         const authored = placements.filter(({ tutorialPickupId }) => tutorialPickupId?.startsWith('crash_approach_'));
+        expect(placements).toHaveLength(4);
         expect(authored.map(({ type }) => type).sort()).toEqual(['ammo', 'coin', 'health', 'weapon']);
         expect(authored.every(({ worldZ }) => worldZ >= -15 && worldZ <= -5)).toBe(true);
     });
 
-    it('guarantees a returning-player enemy after the first hallway without invading onboarding', () => {
+    it('guarantees an enemy after the first hallway during onboarding and returning runs', () => {
         const game = createMockGame();
         game.chunkSize = 49;
         game.runEntropy = 0;
@@ -195,12 +196,28 @@ describe('ThreeGame Sector Zero Integration', () => {
             expect.objectContaining({
                 type: CRASH_SITE_BUILD.serviceApproach.encounter.type,
                 scatterKey: 'crash-approach:first-encounter',
-                z: -14
+                z: -12
             })
         ]);
 
         game.isSectorZeroOnboardingActive = () => true;
-        expect(game.createChunkScatterPlacements(0, -1, blocked)).toEqual([]);
+        expect(game.createChunkScatterPlacements(0, -1, blocked)).toEqual([
+            expect.objectContaining({ scatterKey: 'crash-approach:first-encounter', z: -12 })
+        ]);
+    });
+
+    it('does not procedurally scatter extra set pieces through the authored crash room', () => {
+        const game = createMockGame();
+        game.chunkSize = 49;
+        game.runEntropy = 0;
+        game.wfcMetadataCache = new Map();
+        game.getRoomTypeGrid = () => Array.from({ length: 49 }, () => Array(49).fill('chamber'));
+        game.getSpawnTile = () => ({ x: 9, y: 9 });
+        const open = Array.from({ length: 49 }, () => Array(49).fill('.'));
+
+        const placements = game.createChunkSetPiecePlacements(0, 0, open);
+        expect(placements.every(({ scatterKey }) => !scatterKey?.startsWith('prop:'))).toBe(true);
+        expect(placements.every(({ groupType }) => groupType === 'sector-zero')).toBe(true);
     });
 
     it('rejects a Sector 0 first frame staged in the showroom or without the origin chunk', () => {

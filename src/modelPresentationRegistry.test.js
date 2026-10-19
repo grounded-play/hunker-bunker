@@ -17,7 +17,8 @@ describe('model presentation registry', () => {
             'cryo_heater_station',
             'storage_locker',
             'life_ribcage_rescue_cabinet',
-            'life_suit_drying_rack'
+            'life_suit_drying_rack',
+            'prop_diagnostic_console'
         ]) {
             expect(getModelPresentationProfile(type)).toMatchObject({
                 surface: MODEL_SURFACE.WALL,

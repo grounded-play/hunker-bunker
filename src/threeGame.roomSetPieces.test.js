@@ -43,14 +43,16 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
     it('only places Room Set Pieces on chamber-classified cells, never corridor cells', () => {
         const game = makeFakeGame();
         const grid = buildTwoBlockGrid(17);
-        const placements = ThreeGame.prototype.createChunkSetPiecePlacements.call(game, 0, 0, grid);
+        const chunkX = 2;
+        const chunkY = 2;
+        const placements = ThreeGame.prototype.createChunkSetPiecePlacements.call(game, chunkX, chunkY, grid);
 
         const roomPropPlacements = placements.filter((p) => p.scatterKey.startsWith('prop:'));
         expect(roomPropPlacements.length).toBeGreaterThan(0);
 
         for (const placement of roomPropPlacements) {
-            const localX = Math.round(placement.x);
-            const localY = Math.round(placement.z);
+            const localX = Math.round(placement.x - chunkX * game.chunkSize);
+            const localY = Math.round(placement.z - chunkY * game.chunkSize);
             // The corridor block spans local x 10..14 — none of those columns
             // should ever produce a room set piece.
             expect(localX, `placement at (${localX},${localY})`).toBeLessThan(10);
@@ -262,7 +264,7 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
         const inLane = ({ x, z }) => x >= 8 && x <= 10 && z >= 1 && z <= 18;
         const origin = ThreeGame.prototype.createChunkSetPiecePlacements.call(game, 0, 0, open.map((row) => [...row]))
             .filter((p) => p.scatterKey.startsWith('prop:'));
-        expect(origin.length).toBeGreaterThan(0);
+        expect(origin).toEqual([]);
         expect(origin.filter(inLane)).toEqual([]);
         // Elsewhere the same cells are ordinary floor and may be dressed.
         const other = ThreeGame.prototype.createChunkSetPiecePlacements.call(game, 2, 2, open.map((row) => [...row]))

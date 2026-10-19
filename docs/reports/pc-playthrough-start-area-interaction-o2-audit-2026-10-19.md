@@ -195,3 +195,36 @@ A new packaged Windows session is still required to close the runtime check:
 the expected evidence is a short door-to-staging-room walk, all four supply
 families visible, one nearby enemy on a returning profile, and no
 depenetration at `(4,16)`.
+
+## Follow-up PC session — 18:21 guidance build `95b3c2245cbe`
+
+The newest uploaded Windows session reached gameplay on the clean guidance
+build, but its frame update failed 821 times with `TypeError: o is not a
+function` from `findTilePath` via `findPlayerPath`. Commit `caa4e7e9` correctly
+guards the optional `blocksStep` callback and has a regression test for null
+and undefined callbacks. The same session's retained reticle telemetry proves
+that an enemy existed and was targetable, but the player recorded zero kills;
+the crash prevented this run from validating navigation or encounter clarity.
+
+The post-log layout and guidance pass increments the crash build to version 5:
+
+- a scan now routes to the active ship-rebuild objective before optional map
+  signals, begins its local arrow trail one tile from the player, and attempts
+  to lead from the player's facing direction before following a verified
+  walkable path;
+- the offline O2 generator remains visible and interactive, and its socket is
+  moved farther from the ship silhouette while staying in the impact room;
+- the origin and first approach chunks use only their authored pickups and
+  props, preventing procedural clusters from being layered onto the designed
+  opening set;
+- the first approach enemy is guaranteed for both tutorial and returning
+  profiles and is centered in the staging room;
+- the diagnostic console, cable tray, lockers, pod rack, and manifold carry
+  explicit exterior-wall normals; the diagnostic console is registered as a
+  wall-backed 3D model.
+
+Automated validation covers the pathfinding crash, scan-facing behavior,
+objective priority, offline O2 visibility, exact authored supply count,
+guaranteed first-hall enemy, absence of procedural crash-room set pieces, and
+exterior wall support. A packaged PC/Deck pass is still needed to confirm the
+visual composition and collect the new `objective-guidance-revealed` record.

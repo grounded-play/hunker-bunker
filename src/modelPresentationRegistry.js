@@ -112,6 +112,7 @@ export const WALL_MODEL_DEPTHS = Object.freeze({
     meridian_servitor_dock: 0.95,
     prop_biomech_respirator: 2.74,
     prop_conduit_junction_box: 0.44,
+    prop_diagnostic_console: 0.50,
     prop_icey_frost_manifold: 0.50,
     prop_light_cluster_dripping: 0.49,
     prop_overhead_cage_fluorescent: 0.32,

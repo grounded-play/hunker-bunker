@@ -105,4 +105,33 @@ describe('DP-02: O2 runtime retains its shader light set', () => {
         expect(complete).not.toHaveBeenCalled();
         expect(game.o2BubbleObjects.ring.visible).toBe(true);
     });
+
+    it('keeps the active generator fixture visible while it is offline and repairable', () => {
+        const sprite = { visible: false, userData: { replacedBy3d: false } };
+        const module3d = { visible: false };
+        const shadow = { visible: false };
+        const game = {
+            playerType: 'SCOUT',
+            unlocks: {},
+            bank: { getUnlocks: () => ({}) },
+            crashedShips: [{
+                type: 'SCOUT', o2ModuleSprite: sprite,
+                o2Module3d: module3d, o2ModuleShadow: shadow
+            }],
+            createO2BubbleObjects: vi.fn(),
+            getO2GeneratorState: () => ({ isOnline: false, radius: 3.9 }),
+            getActiveO2GeneratorPosition: () => ({ x: 12.5, z: 9.5 }),
+            setupWorld3dReplacement: vi.fn(),
+            o2BubbleObjects: null
+        };
+
+        ThreeGame.prototype.ensureO2BubbleVisualState.call(game);
+        expect(sprite.userData.world3dDesiredVisible).toBe(true);
+        expect(sprite.visible).toBe(true);
+        expect(module3d.visible).toBe(true);
+        expect(shadow.visible).toBe(true);
+        expect(game.setupWorld3dReplacement).toHaveBeenCalledWith(
+            sprite, 'o2_generator', expect.objectContaining({ owner: game.crashedShips[0] })
+        );
+    });
 });
