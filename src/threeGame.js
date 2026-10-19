@@ -5274,11 +5274,12 @@ export class ThreeGame {
         const tankShipMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: true, depthTest: true });
         const engineerShipMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: true, depthTest: true });
         const consoleMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: true, depthTest: true });
-        const o2ModuleMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.04, depthWrite: true, depthTest: true });
+        const o2ModuleMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.04, depthWrite: true, depthTest: true, opacity: LOCKED_MODULE_OPACITY });
         const hullModuleMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.04, depthWrite: true, depthTest: true, opacity: LOCKED_MODULE_OPACITY });
         const radarModuleMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.04, depthWrite: true, depthTest: true, opacity: LOCKED_MODULE_OPACITY });
         const reactorModuleMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.04, depthWrite: true, depthTest: true, opacity: LOCKED_MODULE_OPACITY });
         this.goalModuleMaterials = {
+            o2Generator: o2ModuleMat,
             hullMatrix: hullModuleMat,
             radarDish: radarModuleMat,
             reactorCompressor: reactorModuleMat
@@ -5542,6 +5543,23 @@ export class ThreeGame {
             ringMesh.position.set(consoleX, 0.03, consoleZ);
             this.scene.add(ringMesh);
             ship.consoleRing = ringMesh;
+
+            // 4b. Interactive O2 Generator Module Neon Glowing Ring (Pulsing Indicator)
+            const o2X = ship.tileX + (ship.o2ModuleOffset?.x ?? O2_MODULE_OFFSET.x);
+            const o2Z = ship.tileZ + (ship.o2ModuleOffset?.z ?? O2_MODULE_OFFSET.z);
+            const o2RingGeo = new THREE.RingGeometry(0.38, 0.44, 32);
+            const o2RingMat = new THREE.MeshBasicMaterial({
+                color: 0x55d9ff,
+                transparent: true,
+                opacity: 0.85,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            });
+            const o2RingMesh = new THREE.Mesh(o2RingGeo, o2RingMat);
+            o2RingMesh.rotation.x = -Math.PI / 2;
+            o2RingMesh.position.set(o2X, 0.03, o2Z);
+            this.scene.add(o2RingMesh);
+            ship.o2Ring = o2RingMesh;
 
             const safeRing = new THREE.Mesh(
                 new THREE.RingGeometry(Math.max(0.1, SHIP_NO_FIRE_RADIUS - 0.04), SHIP_NO_FIRE_RADIUS + 0.04, 64),
@@ -6358,7 +6376,24 @@ export class ThreeGame {
             return { x: this.missionState.targetPosition.x, z: this.missionState.targetPosition.z };
         }
 
-        // 11. If outside crash site, guide back towards ship
+        // 11. Base goals inside crash site
+        if (this.bank && typeof this.getActiveBaseGoal === 'function') {
+            const baseGoal = this.getActiveBaseGoal();
+            if (baseGoal?.key === 'o2Bubble') {
+                const o2Pos = this.getActiveO2GeneratorPosition?.();
+                if (o2Pos) return { x: o2Pos.x, z: o2Pos.z };
+            } else if (baseGoal) {
+                const activeShip = this.getActiveShip?.();
+                if (activeShip) {
+                    return {
+                        x: activeShip.tileX + (activeShip.consoleOffset?.x ?? -1.6),
+                        z: activeShip.tileZ + (activeShip.consoleOffset?.z ?? 1.6)
+                    };
+                }
+            }
+        }
+
+        // 12. If outside crash site, guide back towards ship
         const home = CRASH_SITE_BUILD.center;
         const distToShip = Math.hypot(this.player.position.x - home.x, this.player.position.z - home.z);
         if (distToShip > 12) {
@@ -13447,6 +13482,7 @@ export class ThreeGame {
         this.cameraMode = mode === 'isometric' ? 'isometric' : 'third-person';
         this.selectActiveCamera();
         this.resize();
+        this.updateRoomCutawaysForCamera?.({ force: true });
         return this.cameraMode;
     }
 
@@ -15036,7 +15072,7 @@ export class ThreeGame {
         const o2Distance = generatorPos
             ? Math.hypot(this.player.position.x - generatorPos.x, this.player.position.z - generatorPos.z)
             : Infinity;
-        const o2CandidateInRange = Boolean(generatorState.isOnline && generatorPos && o2Distance < 2.8);
+        const o2CandidateInRange = Boolean(generatorPos && o2Distance < 2.8);
 
         for (const ship of this.crashedShips) {
             if (!ship.isVisible) continue;
@@ -15046,6 +15082,12 @@ export class ThreeGame {
                 ship.consoleRing.material.opacity = pulse;
                 const scalePulse = 0.95 + Math.sin(now * 0.006) * 0.05;
                 ship.consoleRing.scale.set(scalePulse, scalePulse, 1.0);
+            }
+            if (ship.o2Ring) {
+                const pulse = 0.65 + Math.sin(now * 0.006 + 1.2) * 0.25;
+                ship.o2Ring.material.opacity = pulse;
+                const scalePulse = 0.95 + Math.sin(now * 0.006 + 1.2) * 0.05;
+                ship.o2Ring.scale.set(scalePulse, scalePulse, 1.0);
             }
             if (ship.safeRing) {
                 ship.safeRing.material.opacity = 0.1 + Math.sin(now * 0.003 + 1.1) * 0.03;
@@ -15123,7 +15165,7 @@ export class ThreeGame {
             if (o2InRange) {
                 const actionText = o2PromptEl.querySelector('.prompt-text');
                 const promptKey = o2PromptEl.querySelector('.prompt-key');
-                if (actionText) actionText.textContent = t('ui.prompt.upgrade_o2');
+                if (actionText) actionText.textContent = generatorState.isOnline ? t('ui.prompt.upgrade_o2') : 'REPAIR O₂ GENERATOR';
                 if (promptKey) {
                     const promptKeyLabel = this.getPromptKeyLabel('E');
                     promptKey.textContent = promptKeyLabel;
@@ -20620,8 +20662,11 @@ export class ThreeGame {
     // Everything a session export needs to replay or compare a route: which
     // campaign and expedition, which generator, and who else was in the room.
     getSessionRouteIdentifiers() {
+        const campaign = this._campaignWorldSeed == null ? null : campaignWorldStore.getState();
         return {
             campaignSeed: this._campaignWorldSeed ?? null,
+            interiorVersion: campaign?.seed === this._campaignWorldSeed ? campaign.interiorVersion : null,
+            authoredWorldEnabled: Boolean(this.authoredWorldTiles),
             runEntropy: Number.isFinite(this.runEntropy) ? this.runEntropy : null,
             expeditionIndex: Number.isInteger(this.expeditionIndex) ? this.expeditionIndex : null,
             expeditionSeed: this.expeditionSeed ?? null,
@@ -49128,6 +49173,10 @@ export class ThreeGame {
         debugLog.debug('WORLD', 'Chunk generated', {
             chunk: chunkRouteRecord.key,
             landform,
+            generatorId: mazeMetadata?.generatorId ?? null,
+            authoredBuildId: mazeMetadata?.structureResult?.diagnostics?.buildId ?? null,
+            hallwayArchetypeId: mazeMetadata?.structureResult?.diagnostics?.archetypeId ?? null,
+            hallwayRadius: mazeMetadata?.structureResult?.diagnostics?.width ?? null,
             architecture: mazeMetadata?.architectural?.mode ?? null,
             portals: Object.entries(chunkRouteRecord.portals)
                 .filter(([, open]) => open)

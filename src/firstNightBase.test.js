@@ -35,7 +35,7 @@ describe('first-night base recovery', () => {
                 definitionId: 'cot_bed',
                 missionId: 'first-night-cot-recovery',
                 modelType: 'carry_field_cot_folded',
-                worldPosition: { x: 6, z: 20 }
+                worldPosition: { x: 8, z: 20 }
             })
         ]);
         const seal = evaluateRoomSealGraph({ modules: result.state.installed, defaultSafeBubble: null });
@@ -109,7 +109,7 @@ describe('first-night base recovery', () => {
 
     it('puts the cot where the spawn camera sees it, short of the sleep bay', () => {
         const plan = planFirstNightBase({ shipX: 9, shipZ: 9 });
-        expect(plan.cotSource).toEqual({ x: 5, z: 9 });
+        expect(plan.cotSource).toEqual({ x: 7, z: 9 });
         const spawn = { x: 9 - 1.6, z: 9 + 2.8 };
         expect(Math.hypot(plan.cotSource.x - spawn.x, plan.cotSource.z - spawn.z)).toBeLessThan(4);
         const { x, z } = plan.installSocket.transform;

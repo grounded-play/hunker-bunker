@@ -10280,11 +10280,24 @@ function devGrantResources() {
     window.game?.adjustOxygen?.(999999);
     if (window.game) {
         window.game._qaBypassShipAssembly = true;
-        if (window.game.carryState?.installed) {
-            window.game.carryState.installed.ship_life_support_core = true;
-            window.game.carryState.installed.ship_navigation_core = true;
-            window.game.carryState.installed.ship_comms_array = true;
-            window.game.carryState.installed.ship_engine_manifold = true;
+        if (Array.isArray(window.game.carryState?.installed)) {
+            const rebuildModules = [
+                { id: 'ship_life_support_core', socket: 'ship-bay-life' },
+                { id: 'ship_navigation_core', socket: 'ship-bay-core' },
+                { id: 'ship_comms_array', socket: 'ship-bay-mount' },
+                { id: 'ship_engine_manifold', socket: 'ship-bay-engine' }
+            ];
+            for (const { id, socket } of rebuildModules) {
+                if (!window.game.carryState.installed.some(m => m.definitionId === id)) {
+                    window.game.carryState.installed.push({
+                        instanceId: `qa:${id}`,
+                        definitionId: id,
+                        socketId: socket,
+                        isDestroyed: false,
+                        damageState: 'intact'
+                    });
+                }
+            }
         }
     }
     window.game?.renderConsoleBanking?.(window.game?.activeInteractiveConsole);

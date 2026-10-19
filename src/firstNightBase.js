@@ -23,7 +23,8 @@ const RECOVERY_DEFINITIONS = Object.freeze([
         socketId: 'ship-sleep-bay',
         // West of the wreck, up-screen of the spawn and on the way to the
         // sleep bay. At ship + (5, 2) the HUD covered it (2026-10-15 playtest).
-        sourceOffset: Object.freeze({ x: -4, z: 0 })
+        // At ship + (-2, 0) it sits in the impact cradle clear of the partition wall at x=5.
+        sourceOffset: Object.freeze({ x: -2, z: 0 })
     }),
     Object.freeze({
         definitionId: 'hull_patch_panel',

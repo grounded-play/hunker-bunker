@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    findRoomShellWallNormal,
     GROUNDING_DECAL_LIMIT, GROUNDING_RULES, areaRoomObjectLimit, groundingRuleFor, normalizePopulationBudget, planRoomPopulation
 } from './roomPopulation.js';
 import { FLOOR_OVERLAY_TYPES } from './propBehavior.js';
@@ -467,6 +468,32 @@ describe('room population', () => {
             y: 2,
             wallNormal: { x: 1, z: 0 }
         });
+    });
+
+    it('mounts automatic wall fixtures on the exterior room shell, never an interior partition', () => {
+        const grid = Array.from({ length: 9 }, (_, y) => Array.from({ length: 9 }, (_, x) => (
+            x === 0 || y === 0 || x === 8 || y === 8 || (x === 4 && y >= 2 && y <= 6) ? '#' : '.'
+        )));
+        const interior = [];
+        for (let y = 1; y <= 7; y += 1) {
+            for (let x = 1; x <= 7; x += 1) if (grid[y][x] === '.') interior.push({ x, y });
+        }
+        const room = {
+            id: 'partitioned-engineering-room',
+            role: 'engineering',
+            bounds: { left: 1, right: 7, top: 1, bottom: 7 },
+            interior,
+            navigation: { doorLanes: [] },
+            populationBudget: { signature: 1, large: 0, small: 0, pickup: 0, enemy: 0 },
+            themeConfig: { signatureProps: ['prop_exosuit_docking_gantry'] }
+        };
+
+        expect(findRoomShellWallNormal({ x: 3, y: 4 }, grid, room.bounds)).toBeNull();
+        expect(findRoomShellWallNormal({ x: 1, y: 4 }, grid, room.bounds)).toEqual({ x: 1, z: 0 });
+        const [fixture] = planRoomPopulation(room, grid, () => 0).placements;
+        expect(fixture.type).toBe('prop_exosuit_docking_gantry');
+        expect(fixture.x === 1 || fixture.x === 7 || fixture.y === 1 || fixture.y === 7).toBe(true);
+        expect(fixture.wallNormal).not.toBeNull();
     });
 
     describe('floor grounding (lived-in world M2)', () => {
