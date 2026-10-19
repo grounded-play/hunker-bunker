@@ -116,6 +116,14 @@ describe('room dressing plan', () => {
         for (const item of dressing.items) (byLayer[item.layer] ??= new Set()).add(item.type);
         expect(byLayer.wallDecal?.size ?? 0).toBeLessThanOrEqual(DRESSING_LIMITS.typesPerLayer.wallDecals);
         expect(byLayer.clutter?.size ?? 0).toBeLessThanOrEqual(DRESSING_LIMITS.typesPerLayer.clutter);
+        for (const layer of ['wallProp', 'clutter', 'corner']) {
+            const counts = Map.groupBy(dressing.items.filter((item) => item.layer === layer), (item) => item.type);
+            for (const [type, instances] of counts) {
+                expect(instances.length, `${layer} repeats ${type}`).toBeLessThanOrEqual(
+                    DRESSING_LIMITS.maxInstancesPerRoom[layer]
+                );
+            }
+        }
 
         // Furniture collides: with every blocking piece solid, every floor cell
         // reachable from the doors before dressing must still be reachable.

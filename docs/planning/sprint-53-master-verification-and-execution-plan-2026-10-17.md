@@ -1,10 +1,17 @@
 # Sprint 53 Master Verification & Execution Plan (2026-10-17)
 
-**Document Status:** Canonical active sprint master plan  
-**Target Release:** `v2.4.18-beta` / Sprint 53 Closeout  
-**Branch:** `dev/sprint-53`
-**Parent Roadmap Anchor:** [Product State](../../PRODUCT_STATE.md) · [Sprint 53 Core Plan](sprint-53-plan-2026-10-15.md)  
-**Supersedes & Consolidates:** Sprawl from 18 prior documents audited in [better-todo-tree-20261017-1938.txt](../../scripts/better-todo-tree-20261017-1938.txt)
+| Candidate field | Value |
+|---|---|
+| Document status | Canonical active sprint master plan |
+| Target release | `v2.4.18-beta` / Sprint 53 Closeout |
+| Branch | `dev/sprint-53` |
+| Packaged candidate source | `7add8c30` |
+| Package-reported version | `v2.4.17-beta` until promotion |
+| Validation state (2026-10-18) | Local PvE/PvP build validation in progress; do not publish, merge, tag, or close hardware tickets yet |
+| Parent roadmap | [Product State](../../PRODUCT_STATE.md) · [Sprint 53 Core Plan](sprint-53-plan-2026-10-15.md) |
+| Supersedes and consolidates | Sprawl from 18 prior documents audited in [better-todo-tree-20261017-1938.txt](../../scripts/better-todo-tree-20261017-1938.txt) |
+
+> **Baseline rule:** every tester must record the exact source SHA shown by the build. Matching `v2.4.17-beta` labels alone is insufficient. The release notes, PR draft, README refresh, and captured documentation images created after `7add8c30` describe the candidate but are not included in the installed build currently under test.
 
 ---
 
@@ -50,7 +57,7 @@ This document establishes a **single, unified, actionable master document** for 
 
 ### 2.2 Issue #85 & #77: `[Sprint 43][S43-08][P0] Two-Account Packaged Co-op Expedition`
 - **Issue References:** [GitHub #85](https://github.com/grounded-play/hunker-bunker/issues/85) · [GitHub #77](https://github.com/grounded-play/hunker-bunker/issues/77)
-- **Goal:** Prove end-to-end co-op PvE gameplay with two real Steam accounts on an installed packaged candidate build (`v2.4.17-beta`+).
+- **Goal:** Prove end-to-end co-op PvE gameplay with two real Steam accounts on the installed candidate sourced from `7add8c30` (currently displayed as `v2.4.17-beta`).
 - **Parent Issue #77 Status:** Sub-tasks #86, #78, #84, #79, #80, #81, #82, #83 are all closed (`[x]`). #85 is the sole blocker to closing #77.
 - **Current Status in Source:**
   - [x] Lobby join, invite, auth token verification, and ready gate operational.
@@ -174,6 +181,8 @@ The following visual tests from the [PC UI Defects Audit](pc-ui-defects-and-feed
 | **V-04** | 1920×1080 | Operator Select | Select class; observe left-column preview and back button. | Game preview container is 1:1 square; `RETURN TO MAIN MENU` button is ≥38px tall with crisp ≥12px font. |
 | **V-05** | 3840×2160 (4K) | In-Game HUD | Deploy into Sector 0 at 4K display resolution. | HUD unit scales to 2.0×; text elements respect `--font-floor-min: 11px`; lower-third rails clear center corridor. |
 | **V-06** | 1280×800 (Steam Deck) | In-Game HUD & Menus | Launch installed Steam Deck build at 100% HUD scale. | Minimum 0.8px text floor; all vitals, ammo, prompts, and radar legible from comfortable handheld distance. |
+| **V-07** | 1920×1080 | Authored room floor | Enter the cathedral and one camp room after a cold boot; rotate the camera through all quadrants. | Final industrial/PBR floor is visible—never the temporary checker grid; no repeated raised square plates appear in intact rooms. |
+| **V-08** | 1920×1080 | Room perimeter dressing | Inspect wall fixtures, decals and repeated prop families before and after camera rotation. | Hanging fixtures contact their wall at the registered elevation; elevated dressing hides/restores with cutaway walls; no perimeter model exceeds its room repetition cap. |
 
 ---
 
@@ -200,15 +209,164 @@ The following commercial and platform operations require publisher coordination 
 
 ---
 
-## 6. Execution & Verification Runbook
+## 6. Candidate QA, Evidence & Ticket-Clearance Plan
 
-When verifying code and building release candidates for this sprint, execute the following sequence:
+This section is the live session sheet for the locally installed build sourced from `7add8c30`. Check a route only after its acceptance criteria and evidence fields are complete. Use `PASS`, `FAIL`, `BLOCKED`, or `NOT RUN`; never infer a pass from automated coverage alone.
+
+### 6.1 Session Header & Preflight
+
+Copy this block into the dated QA report before play begins:
+
+| Field | Required value |
+|---|---|
+| Session date/time and timezone | `YYYY-MM-DD HH:MM TZ` |
+| Candidate source SHA | Must equal `7add8c30` on every machine |
+| Displayed version | Expected `v2.4.17-beta`; record any mismatch |
+| Server/environment | Hostname, region, relay/backend revision |
+| Host machine/account | Hardware, OS, Steam account alias only |
+| Guest machine/account | Hardware, OS, distinct Steam account alias only |
+| Display/input | Resolution, refresh rate, keyboard/mouse or controller |
+| Settings | Quality preset, HUD scale, accessibility modifiers |
+| Run seed/profile state | Fresh/returning profile, expedition seed, class/loadout |
+| Evidence root | Dated folder or report path under `docs/reports/` |
+
+Preflight requirements:
+
+- [ ] Both installations report source SHA `7add8c30`; screenshots show the build identity where available.
+- [ ] Host and guest use distinct real Steam accounts, the same candidate depot, and the same server environment.
+- [ ] Tester clocks are synchronized so paired logs can be correlated by timestamp.
+- [ ] Old logs are moved out of the active capture folder; no credentials, auth tickets, email addresses, or account IDs will be committed.
+- [ ] The intended resolution, input device, quality preset, and telemetry capture are set before deployment.
+- [ ] A 60-second smoke run proves the title, audio, lobby connection, deployment, and log capture work before the long routes begin.
+
+### 6.2 Required Route Matrix
+
+| Route | Owner / tester | Status | Required environment | Primary clearance target | Minimum evidence |
+|---|---|---|---|---|---|
+| **BUILD-01** Candidate identity | ______ | `NOT RUN` | Every test machine | Prevent mixed-build results | SHA/version screenshots and machine table |
+| **PVE-01** Deck host / PC guest | ______ | `NOT RUN` | Two accounts, packaged build | #85, #77 | Paired logs, lobby/deploy/extraction video, debrief screenshots |
+| **PVE-02** PC host / Deck guest | ______ | `NOT RUN` | Host roles reversed | #85, #77 | Paired logs and replication comparison |
+| **PVP-01** Full competitive match | ______ | `NOT RUN` | Two accounts, packaged build | #51 | Paired logs, damage/kill/round evidence |
+| **FIRST-01** Fresh profile first hour | ______ | `NOT RUN` | Clean profile | #45 / first-hour proof | Uncut 35–45 minute recording and event timeline |
+| **CAMP-01** Camp interaction chain | ______ | `NOT RUN` | Returning and fresh states | Sprint 53 narrative acceptance | Video, dialogue telemetry, persistence check |
+| **ENEMY-01** Combat grammar | ______ | `NOT RUN` | Stalker/scuttler/mortar route | Sprint 53 gameplay acceptance | Clips and combat/death telemetry |
+| **DECK-01** Controller-only | ______ | `NOT RUN` | Physical Steam Deck, 1280×800 | #53 | Controller provenance log and suspend/resume video |
+| **PERF-01** Steam Deck soak | ______ | `NOT RUN` | Physical Deck | #52 | 25-minute frame-time capture |
+| **PERF-02** Windows GPU soak | ______ | `NOT RUN` | RTX 2070 SUPER target | #52 | 10-minute frame-time and shader-stall capture |
+| **VIS-01** Display matrix | ______ | `NOT RUN` | 1080p, 1440p, 4K, 1280×800 | #45 | Labeled screenshots for V-01 through V-08 |
+| **CLOUD-01** Steam Cloud round trip | ______ | `NOT RUN` | Machine A and Machine B | #45 | Before/after save-state log |
+| **OPS-01** Store/settlement drill | ______ | `NOT RUN` | Authorized production/sandbox environment | #45 | Redacted transaction and reconciliation report |
+
+### 6.3 PvE Co-op Routes (`PVE-01`, `PVE-02`)
+
+Run the route once with each machine acting as host. Record timestamps for every numbered checkpoint so host and guest logs can be compared directly.
+
+1. Create the lobby, join via invite or browser, change to distinct classes/loadouts, ready, unready, then ready and deploy.
+2. Confirm both players spawn on walkable terrain, see the correct remote chassis/skin/polish/weapon, and animate movement without stale or duplicate avatars.
+3. Ping a world location and an enemy; verify the peer receives the marker and its location remains stable.
+4. Fight one shared group. Compare enemy target, facing, health, bite/pounce event, player damage, and death state on both clients.
+5. Move or break a synchronized prop and collect a synchronized item/drop. Confirm exactly-once removal and matching ownership/state.
+6. At a safe camp, apply one Field Recalibration. Verify the chosen card, drawback, one-per-camp lock, and `field-recalibration-applied` state appear correctly for the squad.
+7. Down the guest. Verify death attribution, Black Box marker, host view, redeploy, and the returning avatar/loadout.
+8. Interrupt connectivity once, if the candidate environment permits it. Verify roster reconciliation and no immortal, stale, or duplicated player replica.
+9. Reach sanctuary/extraction and finish the session. Compare end-of-run statistics, rewards, progression, and lobby return.
+
+Pass only if both directions complete with zero repeat pit-falls, zero stale avatars, zero divergent enemy or prop state, and matching material end-state. A reconnect failure may be filed separately only if the uninterrupted critical route still completes and the release owner explicitly de-scopes reconnect from this candidate.
+
+### 6.4 PvP Route (`PVP-01`)
+
+1. Join the same match with two real accounts and confirm remote appearance, weapon, locomotion, and aim presentation.
+2. On spawn, attack during the 3.0-second protection window and prove damage is rejected.
+3. After protection expires, land isolated standard hits. Record health before/after and prove 10 server damage points remove exactly one local heart.
+4. Heal once and verify local, remote, and server health reconcile without rollback or duplication.
+5. Trade lethal hits in separate rounds. Verify killer/victim attribution, round ID, score, debrief, and match winner.
+6. Exercise rematch, then return to lobby. Confirm no prior-round protection, health, score, or avatar state leaks forward.
+
+Pass only with no one-shot regression, correct kill attribution, consistent results on both clients, and a clean rematch/lobby lifecycle.
+
+### 6.5 First Expedition, Camps & Cinematics (`FIRST-01`, `CAMP-01`)
+
+Use a genuinely clean profile for the first pass, then the same profile for persistence and skip checks.
+
+- [ ] DEPLOY routes a fresh profile directly to Sector 0 and records `expeditionCount: 0` / incomplete Sector Zero state before completion.
+- [ ] Phases 1–5 introduce movement, O₂ bubble exit, 50% O₂ warning, salvage, combat, and the blast gate without a dead end.
+- [ ] Phase 5 moves camera, player, and audio continuously across the threshold into Ring 1; no menu or random-maze discontinuity appears.
+- [ ] The first safe-camp route opens the expected doors and stages the Stranger/NPC at the correct anchor.
+- [ ] Each authored interaction follows: **trigger item/event → walk to location → player/NPC stage positions → interaction/action → first frame → motion/action beat → last frame → gameplay consequence**.
+- [ ] Dialogue choices appear only when their prerequisites are true; intimacy-gated lines remain hidden otherwise.
+- [ ] Completed choices and cinematics do not replay after leaving, returning, saving, or restarting.
+- [ ] Missing optional staging assets use their documented fallback without blocking control or progression.
+- [ ] Field Recalibration offers three deterministic cards, charges 10 scrap per reroll, applies one choice, enforces the camp limit, and persists for the run.
+- [ ] A returning player sees `[SKIP ONBOARDING (TRANSITION TO SECTOR 1)]`; using it opens the route and grants the documented sidearm plus 25 scrap/tech.
+
+For every cinematic defect, log the trigger, expected first frame, observed first frame, action beat, expected last frame, observed last frame, control-return point, and resulting state. This prevents a visually correct cutscene from masking a broken event consequence.
+
+### 6.6 Enemy & Combat Grammar (`ENEMY-01`)
+
+- [ ] **Mycelium Stalker:** observe occluded flanking, the 650 ms pre-pounce coil, cyan/green mandible telegraph and hiss, pounce damage/spore puddle/camera response, then retreat.
+- [ ] **Light response:** hold the suit flashlight cone on a Stalker and verify visible flinch, immediate retreat toward darkness, and pounce lockout.
+- [ ] **Damage response:** interrupt it with gunfire and verify the same readable retreat without frozen AI or instant re-pounce.
+- [ ] **Scuttler / Spore Mortar:** capture their intended range, tell, action, impact, recovery, and player counterplay; record any overlapping tells that become unreadable in a mixed encounter.
+- [ ] **Sub-Zero Necrosis:** freeze a bio-corroded target, detonate the fusion, and verify the nova radius/damage/freeze/lingering corrosion plus death/debrief attribution.
+- [ ] Confirm solo and networked encounters produce the same material result, with authority owned by the host during co-op.
+
+### 6.7 Deck, Performance, Visual & Cloud Acceptance
+
+**Steam Deck (`DECK-01`):** complete Title → Operator → Armory → Foundry → Settings → Content Guide → deploy → combat → camp → death/extraction using controller only. Record `deploy-input-provenance: controller`, verify no focus traps or keyboard-only prompts, suspend for 30 seconds, resume, and finish the route.
+
+**Performance (`PERF-01`, `PERF-02`):** use the same fixed route and quality preset for repeatability. The Deck capture must run 25 minutes with presented p95 ≤ 33.3 ms; RTX 2070 SUPER must run 10 minutes with presented p95 ≤ 16.7 ms. Neither may contain a gameplay stall > 250 ms. Record warm/cold start, resolution, driver, power mode, renderer, percentile summary, worst stalls, and the location/action at every spike.
+
+**Visual (`VIS-01`):** execute V-01 through V-08 in Section 4. Name each capture with test ID, resolution, route, and timestamp. Inspect legibility, overlap, clipping, focus, prompts, cinematic framing, first/last-frame continuity, floor finish, prop repetition, wall contact/cutaway behavior, and the lower-console HUD—not only whether the screen rendered.
+
+**Cloud (`CLOUD-01`):** on Machine A, change one unmistakable profile fact, exit cleanly, wait for Steam sync, then launch on Machine B and verify it. Reverse the change from B to A. Preserve timestamps and screenshots without exposing account identifiers.
+
+### 6.8 Evidence Format, Defects & Stop-Ship Rules
+
+Create `docs/reports/sprint-53-qa-2026-10-18.md` when the first session is recorded. Keep large raw captures/logs in the ignored evidence location during validation; commit only the redacted report and intentionally selected media after acceptance. Each route entry must include:
+
+- route ID, tester, build SHA, machines/accounts by non-sensitive alias, start/end time, result;
+- numbered checkpoint results with expected versus observed behavior;
+- log and media filenames with timestamps that correlate across machines;
+- performance/stat summaries where relevant;
+- defect IDs, reproduction rate, severity, workaround, and retest result;
+- final tester and release-owner sign-off.
+
+Severity and candidate handling:
+
+- **P0 / stop ship:** crash, save loss, security/payment issue, cannot deploy/finish, systemic desync, or wrong-build contamination. Stop the route and reject the candidate.
+- **P1 / release blocker:** repeatable major gameplay, controller, performance, cinematic progression, or multiplayer correctness failure. File and fix before promotion.
+- **P2 / follow-up candidate:** contained presentation defect with no progression/data/cert impact. File with evidence; release owner must explicitly accept or schedule it.
+
+Do not silently patch the installed candidate. Any code change creates a new SHA, invalidates `BUILD-01`, and requires all directly affected routes plus a smoke pass of PvE, PvP, first expedition, and Deck to be repeated.
+
+### 6.9 Ticket Closure Ledger
+
+| Ticket / task | May close only when | Current state |
+|---|---|---|
+| **#106** Mobile boot performance | Existing 93/93 report remains reproducible and build/presubmit stays green | Automated clearance recorded; closure-ready |
+| **#85 / #77** Packaged co-op | `PVE-01` and `PVE-02` pass with paired logs and matching debrief state | Awaiting local hardware evidence |
+| **#51** Packaged PvP | `PVP-01` passes with health, attribution, result and lifecycle proof | Awaiting two-account evidence |
+| **#53** Deck controller acceptance | `DECK-01` passes, including provenance and suspend/resume | Awaiting physical Deck evidence |
+| **#52 / S53-01** GPU/frame pacing | `PERF-01` and `PERF-02` meet p95 and tail-stall targets | Awaiting both hardware captures |
+| **S53-02** Scene weight | Performance evidence passes or remaining wall/trim batching is explicitly rescheduled | Implementation landed; measurement open |
+| **S53-04** Input telemetry | `DECK-01` records controller provenance with no mode regression | Implementation landed; hardware check open |
+| **#45** Premium release gate | All dependent routes and publisher items pass; no unaccepted P0/P1 remains | Umbrella gate open |
+| **ASSET-80** Hull shard | Raw art is delivered, integrated, audited, and visually accepted—or formally deferred | External gate |
+| **SPRITE-KTX2** Remaining atlases | Optimization lands and is measured—or is assigned to a named later milestone | Backlog decision required |
+
+Publisher and operations items in Section 5 require authorized coordination and cannot be cleared by local playtests. Do not enable production flags or perform a live transaction merely to complete this sprint sheet without the release owner's go-ahead.
+
+---
+
+## 7. Execution & Verification Runbook
+
+For a newly cut candidate, execute the following sequence before hardware testing:
 
 ```bash
 # 1. Verify code formatting and linting
 npm run lint
 
-# 2. Execute full automated test suite (all 724+ test files)
+# 2. Execute the complete unit and integration suite
 npm test
 
 # 3. Audit internationalization and text externalization
@@ -220,15 +378,23 @@ npm run audit:docs
 # 5. Execute presubmit and asset audits
 npm run presubmit
 
-# 6. Verify production build bundle
+# 6. Verify the production build bundle
 npm run build
 
-# 7. Run E2E layout and probe checks (headed / GPU where available)
+# 7. Run E2E layout and deferred-screen probes (headed/GPU where available)
 npx playwright test tests/e2e/hud-layout.spec.js tests/e2e/deferred-screens.spec.js
 ```
 
+Record the command, SHA, start/end time, exit status, and summary in the candidate report. The current `7add8c30` baseline already has a recorded 6,503/6,503 test pass across 764 files and mobile Lighthouse 93/93 evidence; hardware and packaged routes remain open.
+
 ---
 
-## 7. Sprint Closeout & Archive Protocol
+## 8. Sprint Closeout & Archive Protocol
 
-A task in this plan may only be marked complete `[x]` when its verified outcome (test run, screenshot, or dated session log) is committed to the repository. Once all P0 items in Section 2 and Section 3 reach verification, `PRODUCT_STATE.md` will be updated to reflect `v2.4.18-beta`, closing Sprint 53.
+A task in this plan may only be marked complete `[x]` when its objective outcome is recorded in the dated QA report and the selected redacted evidence is committed. When all P0/P1 routes and required publisher gates pass:
+
+1. Resolve or explicitly defer every row in Section 6.9 with an owner and target milestone.
+2. Re-run the documentation audit after final evidence links are added.
+3. Update `PRODUCT_STATE.md` and the runtime package version to `v2.4.18-beta`.
+4. Replace draft language in the release notes and PR description with final results.
+5. Commit the accepted evidence and documentation, open/update the PR, and only then tag or promote the release.

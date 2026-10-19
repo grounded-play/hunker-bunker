@@ -4,6 +4,7 @@ Release notes describe tagged builds, not active sprint work.
 
 | Version | Sprint | Notes |
 | --- | --- | --- |
+| `v2.4.18-beta` (candidate draft) | Sprint 53 | [Release notes](v2.4.18-beta.md) · [PR body](pr-body-v2.4.18-beta.md) · packaged QA in progress from `7add8c30` |
 | `v2.4.17-beta` | Sprint 52 | [Release notes](v2.4.17-beta.md) · [PR body](pr-body-v2.4.17-beta.md) |
 | `v2.4.14-beta` | Sprint 49 (first slice) | [Release notes](v2.4.14-beta.md) · [PR body](pr-body-v2.4.14-beta.md) |
 | `v2.4.13-beta` | Sprint 48 | [Release notes](v2.4.13-beta.md) · [PR body](pr-body-v2.4.13-beta.md) |

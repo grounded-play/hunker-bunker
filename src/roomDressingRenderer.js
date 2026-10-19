@@ -65,9 +65,21 @@ const HIDDEN_INSTANCE = new THREE.Matrix4().makeScale(0, 0, 0);
 export function hideRoomDressingItem(item) {
     if (!item) return;
     item.isDestroyed = true;
-    if (item.dynamicRoot) item.dynamicRoot.visible = false;
-    for (const { batch, index } of item.batchInstances ?? []) {
-        batch.setMatrixAt(index, HIDDEN_INSTANCE);
+    setRoomDressingItemCutawayHidden(item, item.cutawayHidden);
+}
+
+/**
+ * Elevated wall dressing must disappear with the foreground cutaway wall or
+ * it reads as a prop floating in the room. Unlike destruction this state is
+ * reversible when the player rotates the camera.
+ */
+export function setRoomDressingItemCutawayHidden(item, hidden) {
+    if (!item) return;
+    item.cutawayHidden = Boolean(hidden);
+    const visible = !item.isDestroyed && !item.cutawayHidden;
+    if (item.dynamicRoot) item.dynamicRoot.visible = visible;
+    for (const { batch, index, baseMatrix } of item.batchInstances ?? []) {
+        batch.setMatrixAt(index, visible && baseMatrix ? baseMatrix : HIDDEN_INSTANCE);
         batch.instanceMatrix.needsUpdate = true;
     }
 }
@@ -171,6 +183,7 @@ export async function buildRoomDressingGroup(items, {
                 root.position.set(item.x, item.mountY ?? 0, item.y);
                 root.rotation.y = item.yaw ?? 0;
                 root.scale.setScalar(item.scale ?? 1);
+                root.visible = !item.cutawayHidden;
                 root.userData.dressingItem = item;
                 item.dynamicRoot = root;
                 if (item.collider?.userData) item.collider.userData.world3dRoot = root;
@@ -200,21 +213,20 @@ export async function buildRoomDressingGroup(items, {
                 const batch = new THREE.InstancedMesh(mesh.geometry, mesh.material, staticList.length);
                 staticList.forEach((item, index) => {
                     item.batchInstances = item.batchInstances || [];
-                    item.batchInstances.push({ batch, index });
+                    const batchInstance = { batch, index, baseMatrix: null };
+                    item.batchInstances.push(batchInstance);
                     if (item.collider?.userData) {
                         item.collider.userData.dressingBatch = batch;
                         item.collider.userData.dressingIndex = index;
                     }
-                    if (item.isDestroyed || (item.id && isDestroyed?.(item.id))) {
-                        batch.setMatrixAt(index, zeroMatrix);
-                    } else {
-                        position.set(item.x, item.mountY ?? 0, item.y);
-                        quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, item.yaw ?? 0);
-                        const s = item.scale ?? 1;
-                        scale.set(s, s, s);
-                        matrix.compose(position, quaternion, scale).multiply(local);
-                        batch.setMatrixAt(index, matrix);
-                    }
+                    position.set(item.x, item.mountY ?? 0, item.y);
+                    quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, item.yaw ?? 0);
+                    const s = item.scale ?? 1;
+                    scale.set(s, s, s);
+                    matrix.compose(position, quaternion, scale).multiply(local);
+                    batchInstance.baseMatrix = matrix.clone();
+                    const hidden = item.cutawayHidden || item.isDestroyed || (item.id && isDestroyed?.(item.id));
+                    batch.setMatrixAt(index, hidden ? zeroMatrix : batchInstance.baseMatrix);
                 });
                 batch.instanceMatrix.needsUpdate = true;
                 batch.castShadow = false;
@@ -233,11 +245,8 @@ export async function buildRoomDressingGroup(items, {
         const batch = new THREE.InstancedMesh(UNIT_PLANE, decalMaterial(texture), list.length);
         list.forEach((item, index) => {
             item.batchInstances = item.batchInstances || [];
-            item.batchInstances.push({ batch, index });
-            if (item.isDestroyed) {
-                batch.setMatrixAt(index, HIDDEN_INSTANCE);
-                return;
-            }
+            const batchInstance = { batch, index, baseMatrix: null };
+            item.batchInstances.push(batchInstance);
             const size = item.size ?? 1;
             const surfaceProfile = getSurfaceAssetProfile(item.type);
             if (item.layer === 'wallDecal') {
@@ -256,7 +265,8 @@ export async function buildRoomDressingGroup(items, {
             quaternion.setFromEuler(euler);
             scale.set(size * aspect, size, 1);
             matrix.compose(position, quaternion, scale);
-            batch.setMatrixAt(index, matrix);
+            batchInstance.baseMatrix = matrix.clone();
+            batch.setMatrixAt(index, item.isDestroyed || item.cutawayHidden ? HIDDEN_INSTANCE : batchInstance.baseMatrix);
         });
         batch.instanceMatrix.needsUpdate = true;
         batch.castShadow = false;

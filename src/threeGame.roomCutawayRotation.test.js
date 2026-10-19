@@ -70,6 +70,23 @@ function makeGame({ destroyed = false, capScale, cutawayFrom = 'nw' } = {}) {
 }
 
 describe('ThreeGame room cutaway rotation', () => {
+    it('hides elevated wall fixtures with their foreground support and restores them', () => {
+        const fixture = {
+            layer: 'wallProp',
+            mountY: 1.45,
+            supportCell: { x: 4, y: 2 },
+            dynamicRoot: { visible: true }
+        };
+        const group = new THREE.Group();
+        group.userData.roomDressingItems = [fixture];
+        const game = { getWallKey: (x, z) => `${x},${z}` };
+
+        expect(ThreeGame.prototype.syncRoomDressingCutaways.call(game, group, new Set(['4,2']))).toBe(1);
+        expect(fixture.dynamicRoot.visible).toBe(false);
+        expect(ThreeGame.prototype.syncRoomDressingCutaways.call(game, group, new Set())).toBe(1);
+        expect(fixture.dynamicRoot.visible).toBe(true);
+    });
+
     it('restores the old foreground wall without remounting its instance pool', () => {
         const { game, wallPool, capPool } = makeGame();
         const changed = ThreeGame.prototype.updateRoomCutawaysForCamera.call(game);

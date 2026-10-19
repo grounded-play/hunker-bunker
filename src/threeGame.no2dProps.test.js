@@ -61,6 +61,25 @@ describe('no 2D stand-ins for props with 3D models', () => {
         }
     });
 
+    it('places registered hanging fixtures at their wall-mount elevation', () => {
+        const anchor = ThreeGame.prototype.createScatterInstance.call({
+            scatterMaterials: {},
+            deferWorld3dReplacement: vi.fn()
+        }, {
+            type: 'prop_overhead_cage_fluorescent',
+            x: 2,
+            z: 3,
+            scale: 1,
+            tiltX: 0,
+            elevation: 0.08,
+            wallNormal: { x: 0, z: 1 },
+            scatterKey: 'wall-fixture'
+        });
+
+        expect(anchor.position.y).toBeCloseTo(1.95, 5);
+        expect(anchor.userData.baseY).toBeCloseTo(1.95, 5);
+    });
+
     // The spawn paths gate on "has a model" before deferring. They used to ask
     // with the raw 2D name, so an alias never reached the game: the deferral
     // tests above passed while every aliased prop still drew its billboard.

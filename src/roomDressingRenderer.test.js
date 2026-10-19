@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-import { buildRoomDressingGroup, hideRoomDressingItem, hideRoomDressingSupport } from './roomDressingRenderer.js';
+import { buildRoomDressingGroup, hideRoomDressingItem, hideRoomDressingSupport, setRoomDressingItemCutawayHidden } from './roomDressingRenderer.js';
 
 describe('instanced dressing lifecycle', () => {
     it('releases already-built instance buffers if a later model load fails', async () => {
@@ -62,6 +62,25 @@ describe('instanced dressing lifecycle', () => {
             batch.getMatrixAt(index, matrix);
             expect(matrix.getMaxScaleOnAxis() === 0).toBe(Boolean(item.supportCell));
         }
+    });
+
+    it('temporarily hides a wall fixture with its cutaway wall and restores its matrix', async () => {
+        const item = { layer: 'wallProp', type: 'prop_lamp', x: 2, y: 3, mountY: 1.4 };
+        await buildRoomDressingGroup([item], {
+            loadModel: async () => new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial()),
+            loadDecalTexture: () => null
+        });
+        const [{ batch, index }] = item.batchInstances;
+        const matrix = new THREE.Matrix4();
+
+        setRoomDressingItemCutawayHidden(item, true);
+        batch.getMatrixAt(index, matrix);
+        expect(matrix.getMaxScaleOnAxis()).toBe(0);
+
+        setRoomDressingItemCutawayHidden(item, false);
+        batch.getMatrixAt(index, matrix);
+        expect(matrix.getMaxScaleOnAxis()).toBe(1);
+        expect(new THREE.Vector3().setFromMatrixPosition(matrix).y).toBeCloseTo(1.4);
     });
 
     it('rejects a registered wall-only decal when a caller puts it on the floor', async () => {

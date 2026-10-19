@@ -33,6 +33,9 @@ export const DRESSING_LIMITS = Object.freeze({
     // in game 2026-10-04: without these caps the visible dressing added
     // 0.8-1.25M triangles, about half the frame.
     maxTrianglesPerModel: Object.freeze({ wallProps: 36000, clutter: 25000, corners: 36000 }),
+    // Repetition is more visible than density. A room may reuse a practical
+    // or clutter family, but never line an entire wall with the same GLB.
+    maxInstancesPerRoom: Object.freeze({ wallProp: 2, clutter: 2, corner: 1 }),
     roomTriangles: Object.freeze({ perimeter: 120000, vignettes: 72000 }),
     // One vignette per this many open floor cells, within [min, max].
     vignettes: Object.freeze({ cellsPer: 22, min: 2, max: 6 })
@@ -522,6 +525,20 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
         }
     }
 
+    // Plan first so capping repetition never perturbs the deterministic RNG
+    // stream or the authored vignette choices. Then remove only excess copies
+    // of perimeter dressing; hero props and composed vignettes are untouched.
+    const repeated = new Map();
+    for (let index = items.length - 1; index >= 0; index -= 1) {
+        const item = items[index];
+        const limit = DRESSING_LIMITS.maxInstancesPerRoom[item.layer];
+        if (!Number.isFinite(limit)) continue;
+        const key = `${item.layer}:${item.type}`;
+        const count = repeated.get(key) ?? 0;
+        if (count >= limit) items.splice(index, 1);
+        else repeated.set(key, count + 1);
+    }
+
     const practical = items.find((item) => anchorLightFor(item.type));
     if (practical) practical.practicalLight = anchorLightFor(practical.type);
 
@@ -534,7 +551,13 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
         }
     });
 
-    return { family: kitFamilyLabel(room?.theme), profile: profile.id, types, items, triangles: spent.perimeter + spent.vignettes };
+    return {
+        family: kitFamilyLabel(room?.theme),
+        profile: profile.id,
+        types,
+        items,
+        triangles: items.reduce((sum, item) => sum + (DRESSING_TRIANGLES[item.type] ?? 0), 0)
+    };
 }
 
 export function isDestructibleDressingType(type, layer) {

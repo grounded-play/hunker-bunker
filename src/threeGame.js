@@ -326,6 +326,7 @@ import {
 } from './stickerDecals.js';
 import { assignRoomThemes } from './roomThemes.js';
 import { isWallBackedPropType, planChunkRoomPopulation } from './roomPopulation.js';
+import { getWallMountElevation } from './modelPresentationRegistry.js';
 import { collectReachableCells, planChunkRoomEncounters } from './roomEncounters.js';
 import {
     planProceduralDoors,
@@ -454,7 +455,7 @@ import { planRoomDressing } from './roomDressing.js';
 import { resolveRoomDressingIdentity } from './roomDressingIdentity.js';
 import { registerDressingNetwork, applyDressingNetworkEvent } from './dressingNetwork.js';
 import { isRoomDressingId, serializeBrokenRoomDressing, restoreBrokenRoomDressing } from './roomDressingPersistence.js';
-import { buildRoomDressingGroup, loadKeyedDecalTexture, hideRoomDressingItem, hideRoomDressingSupport } from './roomDressingRenderer.js';
+import { buildRoomDressingGroup, loadKeyedDecalTexture, hideRoomDressingItem, hideRoomDressingSupport, setRoomDressingItemCutawayHidden } from './roomDressingRenderer.js';
 import { planRoomSplineDressing } from './splineRouter.js';
 import {
     buildChunkSplinesMesh,
@@ -471,6 +472,7 @@ import { registerTinaHit, TINA_TOTAL_HITS } from './mayorTinaCombat.js';
 import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
 import { WORLD_3D_FACING_YAW, WORLD_3D_SWAP_PREFETCH_DISTANCE, world3dModelTypeFor, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, resolveScatterWorld3dType, syncWorld3dReplacement } from './world3dOverlay.js';
+import { isTerrainTextureReady } from './terrainTextureReadiness.js';
 import { prepareCorpse3dModel, prewarmCommonCorpse3dTemplates } from './corpse3d.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { intersectWallMeshes } from './wallRaycastIndex.js';
@@ -12211,32 +12213,37 @@ export class ThreeGame {
      */
     startFloorLayerArrayBuild() {
         if (!this.floorSplatShared || typeof document === 'undefined') return;
-        const sources = () => ({
-            roomAtlas: this.roomFloorMaterialAtlas?.image,
-            siteAtlas: this.siteFloorMaterialAtlas?.image,
+        const textureSources = () => ({
+            roomAtlas: this.roomFloorMaterialAtlas,
+            siteAtlas: this.siteFloorMaterialAtlas,
             ground: {
-                active: this.cliffTextures?.[BIOME_KEYS.ACTIVE]?.image,
-                cryo: this.cliffTextures?.[BIOME_KEYS.CRYO]?.image,
-                bio: this.cliffTextures?.[BIOME_KEYS.BIO]?.image
+                active: this.cliffTextures?.[BIOME_KEYS.ACTIVE],
+                cryo: this.cliffTextures?.[BIOME_KEYS.CRYO],
+                bio: this.cliffTextures?.[BIOME_KEYS.BIO]
             },
             normals: {
-                active: this.cliffNormalTextures?.[BIOME_KEYS.ACTIVE]?.image,
-                cryo: this.cliffNormalTextures?.[BIOME_KEYS.CRYO]?.image,
-                bio: this.cliffNormalTextures?.[BIOME_KEYS.BIO]?.image
+                active: this.cliffNormalTextures?.[BIOME_KEYS.ACTIVE],
+                cryo: this.cliffNormalTextures?.[BIOME_KEYS.CRYO],
+                bio: this.cliffNormalTextures?.[BIOME_KEYS.BIO]
             }
         });
-        const loaded = (image) => Boolean(image && (image.naturalWidth || image.width));
         const shared = this.floorSplatShared;
         let attempts = 0;
         const tryBuild = () => {
             if (this.floorSplatShared !== shared) return;
-            const images = sources();
-            if (![images.roomAtlas, images.siteAtlas, ...Object.values(images.ground), ...Object.values(images.normals)].every(loaded)) {
+            const textures = textureSources();
+            if (![textures.roomAtlas, textures.siteAtlas, ...Object.values(textures.ground), ...Object.values(textures.normals)].every(isTerrainTextureReady)) {
                 attempts += 1;
                 if (attempts < 600) setTimeout(tryBuild, 100);
                 else console.warn('[ThreeGame] Floor layer textures never loaded; floors stay unblended.');
                 return;
             }
+            const images = {
+                roomAtlas: textures.roomAtlas.image,
+                siteAtlas: textures.siteAtlas.image,
+                ground: Object.fromEntries(Object.entries(textures.ground).map(([key, texture]) => [key, texture.image])),
+                normals: Object.fromEntries(Object.entries(textures.normals).map(([key, texture]) => [key, texture.image]))
+            };
             Promise.all([buildFloorLayerArray(images), buildGroundNormalArray(images)]).then(([array, normals]) => {
                 if (this.floorSplatShared !== shared) {
                     array.dispose();
@@ -33182,6 +33189,23 @@ export class ThreeGame {
         if (this.handleMenuPointerMove) window.removeEventListener('pointermove', this.handleMenuPointerMove);
     }
 
+    syncRoomDressingCutaways(group, cutawayKeys = new Set()) {
+        let changed = 0;
+        for (const item of group?.userData?.roomDressingItems ?? []) {
+            const attachedHeight = item.layer === 'wallDecal' ? item.height : item.mountY;
+            const elevatedAttachment = (item.layer === 'wallProp' || item.layer === 'wallDecal')
+                && Number.isFinite(attachedHeight)
+                && attachedHeight > ROOM_CUTAWAY_HEIGHT + 0.05;
+            const support = item.supportCell;
+            const supportKey = support ? this.getWallKey?.(support.x, support.y) : null;
+            const hidden = Boolean(elevatedAttachment && supportKey && cutawayKeys.has(supportKey));
+            if (item.cutawayHidden === hidden) continue;
+            setRoomDressingItemCutawayHidden(item, hidden);
+            changed += 1;
+        }
+        return changed;
+    }
+
     updateRoomCutawaysForCamera({ force = false } = {}) {
         const quadrant = cameraCutawayQuadrant(
             this.cameraAzimuth,
@@ -33236,6 +33260,8 @@ export class ThreeGame {
                 }
                 changed += 1;
             }
+
+            changed += this.syncRoomDressingCutaways?.(group, cutawayKeys) ?? 0;
 
             presentation.capPool.instanceMatrix.needsUpdate = true;
             presentation.capPool.computeBoundingBox?.();
@@ -33857,18 +33883,25 @@ export class ThreeGame {
 
     addTerrainStepDressing(group, chunkX, chunkY, grid, landform) {
         if (!this.terrainStepGeometry || !this.wallMaterial) return;
+        // These are damaged/raised floor plates, not generic decoration. In
+        // intact maze and field rooms they read as duplicate square props
+        // hovering over the authored floor, so reserve them for damaged
+        // exterior landforms and never place them inside an authored room.
         const stepChanceByLandform = {
-            [LANDFORMS.MAZE]: 0.105,
-            [LANDFORMS.RUINS]: 0.145,
-            [LANDFORMS.FIELD]: 0.055,
-            [LANDFORMS.CRATER]: 0.075,
-            [LANDFORMS.CANYON]: 0.045
+            [LANDFORMS.RUINS]: 0.10,
+            [LANDFORMS.CRATER]: 0.055,
+            [LANDFORMS.CANYON]: 0.035
         };
-        const stepChance = stepChanceByLandform[landform] ?? 0.07;
+        const stepChance = stepChanceByLandform[landform] ?? 0;
         if (stepChance <= 0) return;
 
         const random = this.createSeededRandom(this.hashTile(chunkX * 1229 + 83, chunkY * 1597 + 131));
-        const maxSteps = landform === LANDFORMS.RUINS ? 30 : landform === LANDFORMS.MAZE ? 24 : 16;
+        const maxSteps = landform === LANDFORMS.RUINS ? 10 : 6;
+        const roomCells = new Set(
+            (this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)?.roomInstances ?? [])
+                .flatMap((room) => room.interior ?? [])
+                .map((cell) => `${cell.x},${cell.y}`)
+        );
         let steps = 0;
         const stepMatrices = [];
 
@@ -33876,6 +33909,7 @@ export class ThreeGame {
             for (let localX = 1; localX < this.chunkSize - 1; localX++) {
                 if (steps >= maxSteps) break;
                 if (grid[localY][localX] !== '.') continue;
+                if (roomCells.has(`${localX},${localY}`)) continue;
 
                 const floorNeighbors =
                     (grid[localY - 1][localX] === '.') +
@@ -34617,6 +34651,7 @@ export class ThreeGame {
             }
         }
         if (items.length === 0) return null;
+        group.userData.roomDressingItems = items;
 
         // Individually stateful props leave the static InstancedMesh path so a
         // single console can acknowledge E without changing every shared copy.
@@ -34689,6 +34724,11 @@ export class ThreeGame {
                 return;
             }
             group.add(dressing);
+            const cutawayPresentation = group.userData?.roomCutawayPresentation;
+            const cutawayKeys = cutawayPresentation?.cutawayWallKeysByQuadrant?.[
+                cutawayPresentation.quadrant ?? this._roomCutawayQuadrant
+            ] ?? new Set();
+            this.syncRoomDressingCutaways(group, cutawayKeys);
             for (const item of items) {
                 if (!item.dynamicRoot) continue;
                 this.registerWorld3dPropFx?.(item.dynamicRoot);
@@ -37508,6 +37548,7 @@ export class ThreeGame {
                 ),
                 cutawayWallKeysByQuadrant
             };
+            this.syncRoomDressingCutaways(group, cutawayWallKeysByQuadrant[cutawayQuadrant] ?? new Set());
         }
 
         for (const [roomStyleId, matrices] of pillarMatricesByRoomStyle.entries()) {
@@ -39210,7 +39251,15 @@ export class ThreeGame {
     createScatterInstance(placement) {
         const scaleX = placement.scale;
         const scaleY = placement.scale * (1.0 + placement.tiltX);
-        const anchoredY = placement.elevation ?? 0;
+        const modelType = world3dModelTypeFor(placement.type);
+        const registeredMountY = placement.wallNormal && isWallBackedPropType(placement.type)
+            ? getWallMountElevation(modelType)
+            : 0;
+        const anchoredY = Number.isFinite(placement.mountY)
+            ? placement.mountY
+            : registeredMountY > 0
+                ? registeredMountY
+                : (placement.elevation ?? 0);
 
         if (placement.type.startsWith('drop_')) {
             const dropKey = placement.type;
