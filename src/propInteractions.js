@@ -1683,8 +1683,27 @@ export function interactionSpecKeyFor(data) {
     return model && PROP_INTERACTION_SPECS[model] ? model : key;
 }
 
+const INTERACTION_FORWARD_CONE_COS = Math.cos(70 * Math.PI / 180);
+const INTERACTION_LOS_TARGET_BACKOFF = 0.2;
+
+function hasInteractionLineOfSight(game, px, pz, sprite, dx, dz, distance) {
+    if (typeof game?.hasLineOfSight === 'function') {
+        return game.hasLineOfSight(px, pz, sprite.position.x, sprite.position.z, sprite) !== false;
+    }
+    if (typeof game?.hasWallBetween !== 'function') return true;
+
+    // Wall-mounted props sit flush with wall geometry. Stop just before the
+    // prop so its own backing wall is not mistaken for an obstruction, while
+    // walls between the player and the prop still reject the candidate.
+    const visibleDistance = Math.max(0, distance - INTERACTION_LOS_TARGET_BACKOFF);
+    const scale = distance > 0 ? visibleDistance / distance : 0;
+    return !game.hasWallBetween(px, pz, px + dx * scale, pz + dz * scale);
+}
+
 /**
- * Finds the nearest interactable prop to the player.
+ * Finds the nearest visible interactable prop inside the player's forward
+ * interaction cone. Headless/legacy callers without a facing value retain
+ * the distance-only fallback.
  */
 export function findNearestInteractableProp(game, maxDist = 2.5) {
     if (!game?.player || !Array.isArray(game.scatterSprites)) return null;
@@ -1717,19 +1736,16 @@ export function findNearestInteractableProp(game, maxDist = 2.5) {
         const d = Math.hypot(dx, dz);
         if (d > maxDist) continue;
 
-        let score = d;
         if (hasFacing && d > 0.001) {
             const dirX = dx / d;
             const dirZ = dz / d;
             const dot = dirX * forwardX + dirZ * forwardZ;
-            // dot ranges from 1.0 (directly in front) to -1.0 (directly behind).
-            // Strongly penalize props behind the player so props in front take priority.
-            const anglePenalty = dot >= 0 ? (1.0 - 0.3 * dot) : (1.0 - 1.5 * dot);
-            score = d * anglePenalty;
+            if (dot < INTERACTION_FORWARD_CONE_COS) continue;
         }
+        if (!hasInteractionLineOfSight(game, px, pz, sprite, dx, dz, d)) continue;
 
-        if (score < minScore) {
-            minScore = score;
+        if (d < minScore) {
+            minScore = d;
             nearest = { sprite, spec, propKey, distance: d };
         }
     }

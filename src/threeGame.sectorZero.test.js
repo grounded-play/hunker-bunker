@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 import { SECTOR_ZERO_PHASES } from './sectorZeroTutorial.js';
+import { CRASH_SITE_BUILD } from './data/crashSiteBuild.js';
 
 describe('ThreeGame Sector Zero Integration', () => {
     let priorWindow;
@@ -88,7 +89,7 @@ describe('ThreeGame Sector Zero Integration', () => {
 
         game.sectorZeroTutorial.handleEvent('player-moved', { distance: 3.1 });
         expect(game.spawnFieldWeaponDrop).toHaveBeenCalledWith(
-            'mk1_sidearm', 4.35, 10.4,
+            'mk1_sidearm', CRASH_SITE_BUILD.sectorZero.weaponRack.x, CRASH_SITE_BUILD.sectorZero.weaponRack.z,
             expect.objectContaining({ ammoInWeapon: 12, reserveAmmo: 36 })
         );
         game.sectorZeroTutorial.handleEvent('field-weapon-equipped');
@@ -96,7 +97,11 @@ describe('ThreeGame Sector Zero Integration', () => {
         game.sectorZeroTutorial.handleEvent('salvage-collected', { amount: 10 });
         game.sectorZeroTutorial.handleEvent('console-deposited', { scrap: 10 });
 
-        expect(game.spawnEnemyInstance).toHaveBeenCalledWith('alien_proto_crawler', 9, 5.25);
+        expect(game.spawnEnemyInstance).toHaveBeenCalledWith(
+            'alien_proto_crawler',
+            CRASH_SITE_BUILD.sectorZero.combatSpawn.x,
+            CRASH_SITE_BUILD.sectorZero.combatSpawn.z
+        );
         expect(enemy.userData).toMatchObject({
             hp: 1,
             maxHp: 1,

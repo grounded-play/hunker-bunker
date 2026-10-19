@@ -127,6 +127,28 @@ describe('interactionVignette', () => {
             expect(onComplete).toHaveBeenCalledTimes(1);
         });
 
+        it('restores logical facing and clears stale movement when completing', () => {
+            const game = mockGame();
+            game.facingYaw = 1.1;
+            game.player.rotation.y = 1.1;
+            game.updateFacingYaw = vi.fn((yaw) => { game.facingYaw = yaw; });
+            game.clearGameplayInputState = vi.fn();
+            game.player3dOverlay.root = new THREE.Group();
+            game.player.position.set(0, 0, 0);
+            const controller = createInteractionVignetteController(game);
+            const sprite = new THREE.Sprite();
+            sprite.position.set(0, 0, 1);
+            sprite.userData = { type: 'storage_locker' };
+
+            controller.startVignette({ sprite });
+            controller.update(2);
+
+            expect(game.updateFacingYaw).toHaveBeenCalledWith(1.1);
+            expect(game.player.rotation.y).toBeCloseTo(1.1);
+            expect(game.player3dOverlay.root.rotation.y).toBeCloseTo(1.1);
+            expect(game.clearGameplayInputState).toHaveBeenCalledTimes(1);
+        });
+
         it('fires timed milestones (surges, camera shakes, and sound) during exosuit_dock vignette', () => {
             const game = mockGame();
             game.player.position.set(10, 0, 8);
@@ -300,6 +322,7 @@ describe('interactionVignette', () => {
 
         it('aborts on damage interrupt, triggers hit reaction, and invokes onCancel', () => {
             const game = mockGame();
+            game.clearGameplayInputState = vi.fn();
             const controller = createInteractionVignetteController(game);
 
             const sprite = new THREE.Sprite();
@@ -324,6 +347,7 @@ describe('interactionVignette', () => {
             expect(game.player3dOverlay.trigger).toHaveBeenCalledWith('hit', 0.4);
             expect(onCancel).toHaveBeenCalledWith('damage');
             expect(onComplete).not.toHaveBeenCalled();
+            expect(game.clearGameplayInputState).toHaveBeenCalledTimes(1);
         });
     });
 });

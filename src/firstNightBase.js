@@ -21,10 +21,10 @@ const RECOVERY_DEFINITIONS = Object.freeze([
         definitionId: 'cot_bed',
         missionId: FIRST_NIGHT_COT_MISSION_ID,
         socketId: 'ship-sleep-bay',
-        // West of the wreck, up-screen of the spawn and on the way to the
-        // sleep bay. At ship + (5, 2) the HUD covered it (2026-10-15 playtest).
-        // At ship + (-2, 0) it sits in the impact cradle clear of the partition wall at x=5.
-        sourceOffset: Object.freeze({ x: -2, z: 0 })
+        // Stage the folded cot beside its authored berth, outside the 11x11
+        // ship maneuver envelope. It remains on the spawn-to-berth route
+        // without becoming another collider crowded against the wreck.
+        sourceOffset: Object.freeze({ x: -5, z: 10 })
     }),
     Object.freeze({
         definitionId: 'hull_patch_panel',
@@ -40,7 +40,13 @@ const RECOVERY_DEFINITIONS = Object.freeze([
     })
 ]);
 
-const LEGACY_COT_SOURCE_OFFSET = Object.freeze({ x: 5, z: 2 });
+const LEGACY_COT_SOURCE_OFFSETS = Object.freeze([
+    Object.freeze({ x: 5, z: 2 }),
+    // d7dd9b61 staged the cot here. Move only untouched copies so existing
+    // campaigns receive the expanded crash-site clearance without resetting
+    // a cot the player has already carried elsewhere.
+    Object.freeze({ x: -2, z: 0 })
+]);
 
 const LEGACY_GIVEAWAY_MODULE_IDS = new Set(['starter-berth-wall-w', 'starter-berth-door-e']);
 
@@ -148,12 +154,16 @@ export function ensureFirstNightBaseState(state, options = {}) {
 // at the old ship + (5, 2) spot under the HUD. Either goes to today's spot
 // beside the wreck; a cot the player already moved is left where it is.
 function returnStrandedCot(worldObjects, plan, { shipX = 0, shipZ = 0 } = {}) {
-    const legacyX = Math.round(shipX + LEGACY_COT_SOURCE_OFFSET.x);
-    const legacyZ = Math.round(shipZ + LEGACY_COT_SOURCE_OFFSET.z);
+    const legacyPositions = LEGACY_COT_SOURCE_OFFSETS.map((offset) => ({
+        x: Math.round(shipX + offset.x),
+        z: Math.round(shipZ + offset.z)
+    }));
     return worldObjects.map((object) => {
         if (object.definitionId !== 'cot_bed') return object;
         const campReserved = object.handoff?.type === 'camp-cot' && object.handoff?.status === 'reserved';
-        const atLegacySpot = !object.handoff && object.worldPosition?.x === legacyX && object.worldPosition?.z === legacyZ;
+        const atLegacySpot = !object.handoff && legacyPositions.some(({ x, z }) => (
+            object.worldPosition?.x === x && object.worldPosition?.z === z
+        ));
         if (!campReserved && !atLegacySpot) return object;
         const rest = { ...object };
         delete rest.handoff;

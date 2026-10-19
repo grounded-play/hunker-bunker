@@ -59,6 +59,7 @@ function makeGame({ destroyed = false, capScale, cutawayFrom = 'nw' } = {}) {
     };
     return {
         game: {
+            cameraMode: 'isometric',
             cameraAzimuth: (-Math.PI * 3) / 4,
             _roomCutawayQuadrant: 'se',
             wallHeight: 2.8,
@@ -99,6 +100,19 @@ describe('ThreeGame room cutaway rotation', () => {
         expect(wall.position.y).toBeCloseTo(1.4, 5);
         expect([cap.matrix.elements[0], cap.matrix.elements[5], cap.matrix.elements[10]])
             .toEqual([0, 0, 0]);
+    });
+
+    it('keeps collision-bearing room walls full height in third-person', () => {
+        const { game, wallPool, capPool } = makeGame({ cutawayFrom: 'se' });
+        game.cameraMode = 'third-person';
+
+        ThreeGame.prototype.updateRoomCutawaysForCamera.call(game, { force: true });
+
+        const wall = matrixScaleAndPosition(wallPool);
+        const cap = matrixScaleAndPosition(capPool).matrix.elements;
+        expect(wall.scale.y).toBeCloseTo(1, 5);
+        expect(wall.position.y).toBeCloseTo(1.4, 5);
+        expect([cap[0], cap[5], cap[10]]).toEqual([0, 0, 0]);
     });
 
     it('never resurrects a destroyed room wall or its cap during rotation', () => {

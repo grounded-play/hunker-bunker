@@ -24,13 +24,14 @@ export function stampCrashSiteOrigin(grid, build = CRASH_SITE_BUILD, {
     const centerX = build.center.x;
     const preHall = build.northPreHall;
     for (let y = preHall.top; y <= preHall.bottom; y += 1) {
-        for (let x = centerX - preHall.halfWidth; x <= centerX + preHall.halfWidth; x += 1) {
+        const halfWidth = y === preHall.top
+            ? (preHall.socketHalfWidth ?? preHall.halfWidth)
+            : preHall.halfWidth;
+        for (let x = centerX - halfWidth; x <= centerX + halfWidth; x += 1) {
             grid[y][x] = floorTile;
         }
-    }
-    for (let y = preHall.top; y < preHall.bottom; y += 1) {
-        grid[y][centerX - preHall.halfWidth - 1] = wallTile;
-        grid[y][centerX + preHall.halfWidth + 1] = wallTile;
+        grid[y][centerX - halfWidth - 1] = wallTile;
+        grid[y][centerX + halfWidth + 1] = wallTile;
     }
     for (const partition of build.sectorZero?.partitions ?? []) {
         const openings = new Set(partition.openings ?? []);
@@ -51,9 +52,11 @@ export function stampCrashSiteOrigin(grid, build = CRASH_SITE_BUILD, {
  */
 export function crashSiteClearCells(build = CRASH_SITE_BUILD) {
     const lane = build.clearManeuverLane;
-    const halfWidth = Math.max(build.northPreHall.halfWidth, lane.halfWidth);
     const cells = [];
     for (let y = build.northPreHall.top; y <= lane.toZ; y += 1) {
+        const halfWidth = y === build.northPreHall.top
+            ? (build.northPreHall.socketHalfWidth ?? build.northPreHall.halfWidth)
+            : Math.max(build.northPreHall.halfWidth, lane.halfWidth);
         for (let x = lane.centerX - halfWidth; x <= lane.centerX + halfWidth; x += 1) cells.push({ x, y });
     }
     return cells;

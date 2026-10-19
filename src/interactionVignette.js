@@ -223,6 +223,18 @@ export function calculateVignetteSocket(playerPos, propPos, wallNormal = null, s
     return { position: socketPos, yaw: targetYaw };
 }
 
+function restorePlayerControlState(game, vignette) {
+    if (Number.isFinite(vignette.initialFacingYaw)) {
+        game.player.rotation.y = vignette.initialFacingYaw;
+        game.updateFacingYaw?.(vignette.initialFacingYaw);
+        if (game.player3dOverlay?.root) game.player3dOverlay.root.rotation.y = vignette.initialFacingYaw;
+    }
+    // Input is suppressed while the vignette owns the player. Drop any
+    // movement state captured before/during it so completion cannot launch the
+    // player in an old direction after logical facing has been restored.
+    game.clearGameplayInputState?.();
+}
+
 /**
  * Creates the runtime Interaction Vignette Controller for an active game session.
  */
@@ -321,11 +333,7 @@ export function createInteractionVignetteController(game) {
 
             if (v.elapsed >= v.duration) {
                 const cb = v.onComplete;
-                if (Number.isFinite(v.initialFacingYaw)) {
-                    game.player.rotation.y = v.initialFacingYaw;
-                    game.updateFacingYaw?.(v.initialFacingYaw);
-                    if (game.player3dOverlay?.root) game.player3dOverlay.root.rotation.y = v.initialFacingYaw;
-                }
+                restorePlayerControlState(game, v);
                 currentVignette = null;
                 cb?.();
             }
@@ -339,11 +347,7 @@ export function createInteractionVignetteController(game) {
             if (reason === 'damage') {
                 game.player3dOverlay?.trigger?.('hit', 0.4);
             }
-            if (Number.isFinite(v.initialFacingYaw)) {
-                game.player.rotation.y = v.initialFacingYaw;
-                game.updateFacingYaw?.(v.initialFacingYaw);
-                if (game.player3dOverlay?.root) game.player3dOverlay.root.rotation.y = v.initialFacingYaw;
-            }
+            restorePlayerControlState(game, v);
             const cb = v.onCancel;
             currentVignette = null;
             cb?.(reason);

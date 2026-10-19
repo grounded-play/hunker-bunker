@@ -139,6 +139,7 @@ import { installNativeTooltipGuard } from './src/nativeTooltipGuard.js';
 import { installAccessibilitySettings } from './src/accessibilitySettings.js';
 import { recordCollectedPickup, recordDebugResourceGrant, resetRunResourceTelemetry } from './src/runTelemetry.js';
 import { loaderBuildLabel, versionLabel } from './src/buildLabels.js';
+import { ensureQaShipRebuildModules } from './src/shipRebuild.js';
 
 // Installable PWA on the deployed web build only (never Electron or the dev server).
 registerWebServiceWorker();
@@ -10278,33 +10279,44 @@ function devGrantResources() {
     renderPickupCounter();
     window.game?.healPlayer?.(999999, { skipQueensMilkPenalty: true });
     window.game?.adjustOxygen?.(999999);
-    if (window.game) {
-        window.game._qaBypassShipAssembly = true;
-        if (Array.isArray(window.game.carryState?.installed)) {
-            const rebuildModules = [
-                { id: 'ship_life_support_core', socket: 'ship-bay-life' },
-                { id: 'ship_navigation_core', socket: 'ship-bay-core' },
-                { id: 'ship_comms_array', socket: 'ship-bay-mount' },
-                { id: 'ship_engine_manifold', socket: 'ship-bay-engine' }
-            ];
-            for (const { id, socket } of rebuildModules) {
-                if (!window.game.carryState.installed.some(m => m.definitionId === id)) {
-                    window.game.carryState.installed.push({
-                        instanceId: `qa:${id}`,
-                        definitionId: id,
-                        socketId: socket,
-                        isDestroyed: false,
-                        damageState: 'intact'
-                    });
-                }
-            }
-        }
+    const game = window.game;
+    let assemblyGrant = { installedModules: [], addedModules: [] };
+    if (game) {
+        game._qaBypassShipAssembly = true;
+        assemblyGrant = ensureQaShipRebuildModules(game.carryState);
     }
+    const o2Assembly = game?.getShipGoalAssemblyStatus?.('o2Bubble') ?? null;
+    const o2State = game?.getO2GeneratorState?.() ?? null;
+    const effectiveO2Cost = o2State?.nextUpgrade
+        ? (game?.getEffectiveCost?.(o2State.nextUpgrade.cost) ?? o2State.nextUpgrade.cost)
+        : null;
+    const o2RepairEligible = Boolean(
+        effectiveO2Cost
+        && (o2State.level > 0 || o2Assembly?.ready || game?._qaBypassShipAssembly)
+        && bankManager.canAfford?.(effectiveO2Cost)
+    );
+    window.hbLog?.('DEBUG', 'info', 'dev-resource-grant', {
+        resources: { tech: 999999, coin: 999999, med: 999999, ammo: 999999, shells: 999999 },
+        installedModules: assemblyGrant.installedModules,
+        addedModuleIds: assemblyGrant.addedModules.map(({ definitionId }) => definitionId),
+        qaBypassShipAssembly: Boolean(game?._qaBypassShipAssembly),
+        o2RepairEligible,
+        o2Assembly: o2Assembly ? {
+            ready: Boolean(o2Assembly.ready),
+            installed: Boolean(o2Assembly.installed),
+            grandfathered: Boolean(o2Assembly.grandfathered),
+            definitionId: o2Assembly.stage?.definitionId ?? null,
+            socketId: o2Assembly.stage?.socketId ?? null
+        } : null
+    });
     window.game?.renderConsoleBanking?.(window.game?.activeInteractiveConsole);
     renderFabricationModal();
     updateMenuCommandStatuses();
     showBiomePrompt('> DEBUG: 999,999 TECH, COIN, MED, SHELLS & AMMO GRANTED.');
-    return 'Granted 999,999 Tech, Coin, Med, Ammo, Shells, Max HP & Max O₂.';
+    const installedSummary = assemblyGrant.installedModules
+        .map(({ definitionId, socketId }) => `${definitionId}@${socketId}`)
+        .join(', ') || 'none';
+    return `Granted 999,999 Tech, Coin, Med, Ammo, Shells, Max HP & Max O₂. Ship modules: ${installedSummary}. O₂ repair eligible: ${o2RepairEligible ? 'YES' : 'NO'}.`;
 }
 
 function devToggleGodMode() {

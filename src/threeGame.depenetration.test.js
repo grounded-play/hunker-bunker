@@ -33,7 +33,10 @@ describe('ThreeGame player depenetration', () => {
             'PLAYER',
             'warn',
             'depenetrated',
-            expect.any(Object)
+            expect.objectContaining({
+                blockedTile: { x: 10, z: 10, type: null },
+                blockerSource: 'dynamic-collider'
+            })
         );
     });
 

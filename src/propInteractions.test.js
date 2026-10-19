@@ -369,11 +369,11 @@ describe('propInteractions', () => {
     it('prioritizes interactable props in the player facing direction over closer props behind', () => {
         // Player is at (0, 0) facing North (-Z direction: yaw = Math.PI)
         const frontProp = {
-            position: { x: 0, z: -1.5 },
+            position: { x: 0, z: -2 },
             userData: { type: 'prop_maintenance_tool_cart', scatterKey: 'front:cart' }
         };
         const rearProp = {
-            position: { x: 0, z: 0.9 }, // Closer to player behind back
+            position: { x: 0, z: 0.5 }, // Much closer, but behind the player
             userData: { type: 'prop_maintenance_tool_cart', scatterKey: 'rear:cart' }
         };
         const game = {
@@ -384,6 +384,54 @@ describe('propInteractions', () => {
 
         const result = findNearestInteractableProp(game, 2.5);
         expect(result?.sprite).toBe(frontProp);
+    });
+
+    it('does not silently select a rear prop when nothing is in the forward cone', () => {
+        const rearProp = {
+            position: { x: 0, z: 0.5 },
+            userData: { type: 'prop_maintenance_tool_cart', scatterKey: 'rear:only' }
+        };
+        const game = {
+            player: { position: { x: 0, z: 0 } },
+            facingYaw: Math.PI,
+            scatterSprites: [rearProp]
+        };
+
+        expect(findNearestInteractableProp(game, 2.5)).toBeNull();
+    });
+
+    it('rejects a forward prop when the game reports a wall in its line of sight', () => {
+        const blockedProp = {
+            position: { x: 0, z: -2 },
+            userData: { type: 'prop_maintenance_tool_cart', scatterKey: 'blocked:cart' }
+        };
+        const hasWallBetween = vi.fn(() => true);
+        const game = {
+            player: { position: { x: 0, z: 0 } },
+            facingYaw: Math.PI,
+            scatterSprites: [blockedProp],
+            hasWallBetween
+        };
+
+        expect(findNearestInteractableProp(game, 2.5)).toBeNull();
+        expect(hasWallBetween).toHaveBeenCalledWith(0, 0, 0, -1.8);
+    });
+
+    it('falls back to nearest distance when no player facing is available', () => {
+        const nearProp = {
+            position: { x: 0, z: 0.5 },
+            userData: { type: 'prop_maintenance_tool_cart', scatterKey: 'fallback:near' }
+        };
+        const farProp = {
+            position: { x: 0, z: -2 },
+            userData: { type: 'prop_maintenance_tool_cart', scatterKey: 'fallback:far' }
+        };
+        const game = {
+            player: { position: { x: 0, z: 0 } },
+            scatterSprites: [farProp, nearProp]
+        };
+
+        expect(findNearestInteractableProp(game, 2.5)?.sprite).toBe(nearProp);
     });
 
     it('prefers an installed module interaction over its shared catalogue model', () => {

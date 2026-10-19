@@ -42,6 +42,38 @@ export const SHIP_REBUILD_STAGES = Object.freeze([
     })
 ]);
 
+/** Install valid QA copies of every ship module using the production socket map. */
+export function ensureQaShipRebuildModules(carryState) {
+    const installed = carryState?.installed;
+    if (!Array.isArray(installed)) return { installedModules: [], addedModules: [] };
+
+    const addedModules = [];
+    for (const stage of SHIP_REBUILD_STAGES) {
+        let record = installed.find((entry) => entry?.definitionId === stage.definitionId);
+        if (!record) {
+            record = {
+                instanceId: `qa:${stage.definitionId}`,
+                definitionId: stage.definitionId,
+                socketId: stage.socketId,
+                isDestroyed: false,
+                damageState: 'intact'
+            };
+            installed.push(record);
+            addedModules.push(record);
+        }
+    }
+
+    const installedModules = SHIP_REBUILD_STAGES.flatMap((stage) => {
+        const record = installed.find((entry) => entry?.definitionId === stage.definitionId);
+        return record ? [{
+            definitionId: record.definitionId,
+            socketId: record.socketId,
+            instanceId: record.instanceId
+        }] : [];
+    });
+    return { installedModules, addedModules };
+}
+
 const asGoalSet = (builtGoalKeys) => builtGoalKeys instanceof Set
     ? builtGoalKeys
     : new Set(builtGoalKeys ?? []);

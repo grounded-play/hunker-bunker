@@ -35,7 +35,7 @@ describe('first-night base recovery', () => {
                 definitionId: 'cot_bed',
                 missionId: 'first-night-cot-recovery',
                 modelType: 'carry_field_cot_folded',
-                worldPosition: { x: 8, z: 20 }
+                worldPosition: { x: 5, z: 30 }
             })
         ]);
         const seal = evaluateRoomSealGraph({ modules: result.state.installed, defaultSafeBubble: null });
@@ -107,13 +107,18 @@ describe('first-night base recovery', () => {
         expect(ids(result.state.worldObjects)).toEqual(['cot_bed']);
     });
 
-    it('puts the cot where the spawn camera sees it, short of the sleep bay', () => {
+    it('stages the cot beside the sleep bay and outside the ship maneuver envelope', () => {
         const plan = planFirstNightBase({ shipX: 9, shipZ: 9 });
-        expect(plan.cotSource).toEqual({ x: 7, z: 9 });
+        expect(plan.cotSource).toEqual({ x: 4, z: 19 });
         const spawn = { x: 9 - 1.6, z: 9 + 2.8 };
-        expect(Math.hypot(plan.cotSource.x - spawn.x, plan.cotSource.z - spawn.z)).toBeLessThan(4);
+        expect(Math.hypot(plan.cotSource.x - spawn.x, plan.cotSource.z - spawn.z)).toBeLessThan(9);
+        expect(
+            plan.cotSource.x >= 4 && plan.cotSource.x <= 14
+            && plan.cotSource.z >= 4 && plan.cotSource.z <= 14
+        ).toBe(false);
         const { x, z } = plan.installSocket.transform;
-        expect(Math.hypot(plan.cotSource.x - x, plan.cotSource.z - z)).toBeLessThan(8);
+        expect(Math.hypot(plan.cotSource.x - x, plan.cotSource.z - z)).toBeGreaterThan(2.6);
+        expect(Math.hypot(plan.cotSource.x - x, plan.cotSource.z - z)).toBeLessThan(4);
     });
 
     it('moves an untouched cot from the old spot under the HUD', () => {
@@ -123,6 +128,23 @@ describe('first-night base recovery', () => {
         expect(ensureFirstNightBaseState(legacy, { shipX: 10, shipZ: 20 }).state.worldObjects[0].worldPosition).toEqual(plan.cotSource);
         const moved = { ...state, worldObjects: state.worldObjects.map((o) => ({ ...o, worldPosition: { x: 13.4, z: 21.2 } })) };
         expect(ensureFirstNightBaseState(moved, { shipX: 10, shipZ: 20 }).state.worldObjects[0].worldPosition).toEqual({ x: 13.4, z: 21.2 });
+    });
+
+    it('moves an untouched cot out of the former ship maneuver envelope', () => {
+        const { state, plan } = ensureFirstNightBaseState(createCarryState('run-a'), { shipX: 10, shipZ: 20 });
+        const previousSource = { x: 8, z: 20 };
+        const legacy = {
+            ...state,
+            worldObjects: state.worldObjects.map((object) => ({
+                ...object,
+                worldPosition: previousSource,
+                sourcePosition: previousSource
+            }))
+        };
+
+        const [cot] = ensureFirstNightBaseState(legacy, { shipX: 10, shipZ: 20 }).state.worldObjects;
+        expect(cot.worldPosition).toEqual(plan.cotSource);
+        expect(cot.sourcePosition).toEqual(plan.cotSource);
     });
 
     it('returns a cot a camp was holding to its spot beside the wreck', () => {

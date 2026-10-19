@@ -6,16 +6,19 @@ import { crashSiteClearCells, stampCrashSiteApproach, stampCrashSiteOrigin, vali
 const blank = (tile = 'X') => Array.from({ length: CHUNK_SIZE }, () => Array(CHUNK_SIZE).fill(tile));
 
 describe('two-zone crash site build', () => {
-    it('stamps a shell-bounded 17 by 16 origin chamber with one centered north throat and solid south wall', () => {
+    it('stamps a shell-bounded 29 by 26 origin chamber with one centered north socket and solid south wall', () => {
         const grid = blank('.');
         expect(stampCrashSiteOrigin(grid)).toBe(true);
         const room = CRASH_SITE_BUILD.primaryChamber;
-        expect(room.right - room.left + 1).toBe(17);
-        expect(room.bottom - room.top + 1).toBe(16);
+        expect(room.right - room.left + 1).toBe(29);
+        expect(room.bottom - room.top + 1).toBe(26);
         expect(grid[room.top].slice(room.left, room.right + 1).every((tile) => tile === '.')).toBe(true);
         expect(grid[0].slice(8, 11)).toEqual(['.', '.', '.']);
         expect(grid[0][7]).toBe('#');
         expect(grid[0][11]).toBe('#');
+        expect(grid[1].slice(7, 12)).toEqual(['.', '.', '.', '.', '.']);
+        expect(grid[1][6]).toBe('#');
+        expect(grid[1][12]).toBe('#');
         expect(grid[room.bottom + 1].slice(room.left, room.right + 1).every((tile) => tile === '#')).toBe(true);
     });
 
@@ -75,11 +78,14 @@ describe('two-zone crash site build', () => {
     it('declares the exit hall, door row and maneuver lane as clear of dressing', () => {
         const cells = new Set(crashSiteClearCells().map(({ x, y }) => `${x},${y}`));
         const x = CRASH_SITE_BUILD.center.x;
-        for (let y = CRASH_SITE_BUILD.northPreHall.top; y <= CRASH_SITE_BUILD.clearManeuverLane.toZ; y += 1) {
+        for (let y = CRASH_SITE_BUILD.northPreHall.top + 1; y <= CRASH_SITE_BUILD.clearManeuverLane.toZ; y += 1) {
             expect(cells.has(`${x},${y}`), `centre ${x},${y}`).toBe(true);
             expect(cells.has(`${x - 1},${y}`), `west ${x - 1},${y}`).toBe(true);
             expect(cells.has(`${x + 1},${y}`), `east ${x + 1},${y}`).toBe(true);
+            expect(cells.has(`${x - 2},${y}`), `outer west ${x - 2},${y}`).toBe(true);
+            expect(cells.has(`${x + 2},${y}`), `outer east ${x + 2},${y}`).toBe(true);
         }
+        expect(cells.has(`${x - 2},${CRASH_SITE_BUILD.northPreHall.top}`)).toBe(false);
         expect(cells.has('2,10')).toBe(false);
     });
 
@@ -98,8 +104,8 @@ describe('two-zone crash site build', () => {
         expect(new Set(signatures).size).toBe(4);
     });
 
-    it('declares a four-meter maneuver lane and half-grid construction sockets', () => {
-        expect(CRASH_SITE_BUILD.clearManeuverLane.halfWidth * 2).toBe(4);
+    it('declares a five-cell maneuver lane and half-grid construction sockets', () => {
+        expect(CRASH_SITE_BUILD.clearManeuverLane.halfWidth * 2 + 1).toBe(5);
         for (const socket of CRASH_SITE_BUILD.constructionSockets) {
             expect(socket.x * 2).toBe(Math.round(socket.x * 2));
             expect(socket.z * 2).toBe(Math.round(socket.z * 2));
@@ -120,8 +126,72 @@ describe('two-zone crash site build', () => {
         for (let y = CRASH_SITE_BUILD.northPreHall.top; y <= CRASH_SITE_BUILD.clearManeuverLane.toZ; y += 1) {
             expect(grid[y][CRASH_SITE_BUILD.center.x], `centre route at y=${y}`).toBe('.');
         }
-        expect(grid[9][5]).toBe('#');
-        expect(grid[10][5]).toBe('.');
-        expect(grid[6].slice(8, 11)).toEqual(['.', '.', '.']);
+        expect(grid[20][8]).toBe('#');
+        expect(grid[23][8]).toBe('.');
+        expect(grid[17].slice(7, 12)).toEqual(['.', '.', '.', '.', '.']);
+    });
+
+    it('keeps an obstacle-free 11 by 11 maneuver envelope around the ship', () => {
+        const grid = blank('.');
+        stampCrashSiteOrigin(grid);
+        const { x: centerX, z: centerZ } = CRASH_SITE_BUILD.center;
+        const solidProps = CRASH_SITE_BUILD.sectorZero.props.filter(({ solid }) => solid);
+
+        for (let y = centerZ - 5; y <= centerZ + 5; y += 1) {
+            for (let x = centerX - 5; x <= centerX + 5; x += 1) {
+                expect(grid[y][x], `ship clearance ${x},${y}`).toBe('.');
+                expect(
+                    solidProps.some((prop) => Math.round(prop.x) === x && Math.round(prop.z) === y),
+                    `solid prop at ${x},${y}`
+                ).toBe(false);
+            }
+        }
+    });
+
+    it('places partitions outside the ship safe ring and gives every partition opening five cells', () => {
+        const { x: centerX, z: centerZ } = CRASH_SITE_BUILD.center;
+        for (const partition of CRASH_SITE_BUILD.sectorZero.partitions) {
+            const crossesEnvelope = partition.axis === 'vertical'
+                ? partition.at >= centerX - 5 && partition.at <= centerX + 5
+                    && partition.to >= centerZ - 5 && partition.from <= centerZ + 5
+                : partition.at >= centerZ - 5 && partition.at <= centerZ + 5
+                    && partition.to >= centerX - 5 && partition.from <= centerX + 5;
+            expect(crossesEnvelope).toBe(false);
+
+            const openingRuns = [];
+            let run = [];
+            for (let cursor = partition.from; cursor <= partition.to + 1; cursor += 1) {
+                if (partition.openings.includes(cursor)) run.push(cursor);
+                else if (run.length) {
+                    openingRuns.push(run);
+                    run = [];
+                }
+            }
+            expect(openingRuns.every((opening) => opening.length >= 5)).toBe(true);
+        }
+    });
+
+    it('keeps each authored prop inside its named room and off the five-cell through-route', () => {
+        const rooms = new Map(CRASH_SITE_BUILD.sectorZero.rooms.map((room) => [room.id, room]));
+        const lane = CRASH_SITE_BUILD.clearManeuverLane;
+        for (const prop of CRASH_SITE_BUILD.sectorZero.props) {
+            const room = rooms.get(prop.roomId);
+            expect(room, `${prop.id} room`).toBeDefined();
+            expect(prop.x, `${prop.id} x`).toBeGreaterThanOrEqual(room.left);
+            expect(prop.x, `${prop.id} x`).toBeLessThanOrEqual(room.right);
+            expect(prop.z, `${prop.id} z`).toBeGreaterThanOrEqual(room.top);
+            expect(prop.z, `${prop.id} z`).toBeLessThanOrEqual(room.bottom);
+            if (prop.solid && prop.z >= lane.fromZ && prop.z <= lane.toZ) {
+                expect(Math.abs(prop.x - lane.centerX), `${prop.id} route clearance`).toBeGreaterThan(lane.halfWidth);
+            }
+        }
+    });
+
+    it('keeps tutorial guidance targets synchronized with relocated objectives', () => {
+        const layout = CRASH_SITE_BUILD.sectorZero;
+        const cable = layout.props.find(({ id }) => id === 'jammed_hydraulic_cable');
+        expect(layout.jammedCablePosition).toEqual({ x: cable.x, z: cable.z });
+        expect(layout.salvageCachePosition).toEqual({ x: layout.salvageCache.x, z: layout.salvageCache.z });
+        expect(layout.combatSpawnPosition).toEqual({ x: layout.combatSpawn.x, z: layout.combatSpawn.z });
     });
 });

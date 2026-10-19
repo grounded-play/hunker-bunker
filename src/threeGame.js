@@ -18123,35 +18123,80 @@ export class ThreeGame {
     attemptO2GeneratorUpgrade(ship) {
         const generatorState = this.getO2GeneratorState();
         const assembly = this.getShipGoalAssemblyStatus?.('o2Bubble');
+        const nextUpgrade = generatorState.nextUpgrade;
+        const effectiveCost = nextUpgrade ? this.getEffectiveCost(nextUpgrade.cost) : null;
+        const beforeBalance = this.bank.getState?.() ?? {};
+        const logResult = (ok, reason, upgrade = null) => {
+            const afterBalance = this.bank.getState?.() ?? beforeBalance;
+            window.hbLog?.('PROGRESSION', ok ? 'info' : 'warn', 'o2-generator-upgrade-result', {
+                ok,
+                reason,
+                levelBefore: generatorState.level,
+                levelAfter: upgrade?.level ?? this.bank.getO2GeneratorLevel?.() ?? generatorState.level,
+                cost: effectiveCost,
+                balanceBefore: {
+                    tech: beforeBalance.tech ?? 0,
+                    med: beforeBalance.med ?? 0,
+                    ammo: beforeBalance.ammo ?? 0,
+                    coin: beforeBalance.coin ?? 0
+                },
+                balanceAfter: {
+                    tech: afterBalance.tech ?? 0,
+                    med: afterBalance.med ?? 0,
+                    ammo: afterBalance.ammo ?? 0,
+                    coin: afterBalance.coin ?? 0
+                },
+                assembly: assembly ? {
+                    ready: Boolean(assembly.ready),
+                    installed: Boolean(assembly.installed),
+                    grandfathered: Boolean(assembly.grandfathered),
+                    definitionId: assembly.stage?.definitionId ?? null,
+                    socketId: assembly.stage?.socketId ?? null
+                } : null,
+                godMode: Boolean(this.godMode),
+                qaBypassShipAssembly: Boolean(this._qaBypassShipAssembly),
+                playerType: this.playerType ?? null
+            });
+        };
         if (generatorState.level === 0 && assembly && !assembly.ready && !this.godMode && !this._qaBypassShipAssembly) {
+            logResult(false, 'module_required');
             this.showBunkerLine?.(`${assembly.label} REQUIRED — RECOVER IT IN THE EXPEDITION AND INSTALL IT AT THE SHIP.`);
             window.AudioManager?.play('ui_error', { volume: 0.58 });
             this.renderConsoleBanking(ship);
             return false;
         }
-        const nextUpgrade = generatorState.nextUpgrade;
+        if (!nextUpgrade) {
+            logResult(false, generatorState.maxed ? 'max_level' : 'no_upgrade_path');
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            this.renderConsoleBanking(ship);
+            return false;
+        }
+        if (!this.bank.canAfford(effectiveCost)) {
+            logResult(false, 'insufficient_resources');
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            this.renderConsoleBanking(ship);
+            return false;
+        }
         let upgrade;
-        if (nextUpgrade && this.playerType === 'ENGINEER') {
-            const discountedCost = this.getEffectiveCost(nextUpgrade.cost);
-            if (!this.bank.canAfford(discountedCost)) {
+        if (this.playerType === 'ENGINEER') {
+            if (!this.bank.spend(effectiveCost)) {
+                logResult(false, 'spend_failed');
                 window.AudioManager?.play('ui_error', { volume: 0.58 });
                 this.renderConsoleBanking(ship);
-                return;
-            }
-            if (!this.bank.spend(discountedCost)) {
-                window.AudioManager?.play('ui_error', { volume: 0.58 });
-                this.renderConsoleBanking(ship);
-                return;
+                return false;
             }
             upgrade = this.bank.markO2GeneratorLevelOnly(nextUpgrade.level);
         } else {
             upgrade = this.bank.upgradeO2Generator();
         }
         if (!upgrade) {
+            logResult(false, 'upgrade_failed');
             window.AudioManager?.play('ui_error', { volume: 0.58 });
             this.renderConsoleBanking(ship);
-            return;
+            return false;
         }
+
+        logResult(true, generatorState.level === 0 ? 'repair_completed' : 'upgrade_completed', upgrade);
 
         this.closeConsoleModal();
         this.syncPersistentUpgrades();
@@ -18167,6 +18212,7 @@ export class ThreeGame {
         window.AudioManager?.play('class_lock', { volume: 0.55 });
         this.renderConsoleBanking(ship);
         this.renderO2GeneratorModal(ship);
+        return true;
     }
 
     attemptMedConversion(ship) {
@@ -18386,12 +18432,14 @@ export class ThreeGame {
             const level = this.bank.getO2GeneratorLevel();
             const maxed = level >= node.maxLevel;
             const nextCost = maxed ? null : node.costsPerLevel?.[level];
+            const assembly = this.getShipGoalAssemblyStatus?.('o2Bubble');
+            const assemblyReady = level > 0 || (assembly?.ready ?? true);
             return {
                 unlocked: maxed,
-                available: !maxed && this.bank.canAfford(this.getEffectiveCost(nextCost ?? {})),
+                available: !maxed && assemblyReady && this.bank.canAfford(this.getEffectiveCost(nextCost ?? {})),
                 level,
                 maxLevel: node.maxLevel,
-                gateText: '',
+                gateText: assemblyReady ? '' : `INSTALL ${assembly?.label ?? 'SHIP LIFE-SUPPORT SYSTEM'}`,
                 costText: maxed ? 'MAXED' : `COST: ${this.formatResourceCost(this.getEffectiveCost(nextCost ?? {}))}`,
                 desc: node.desc
             };
@@ -33659,7 +33707,14 @@ export class ThreeGame {
         for (const group of this.chunkMeshes?.values?.() ?? []) {
             const presentation = group.userData?.roomCutawayPresentation;
             if (!presentation || (!force && presentation.quadrant === quadrant)) continue;
-            const cutawayKeys = presentation.cutawayWallKeysByQuadrant?.[quadrant] ?? new Set();
+            // A shoulder camera sees walls nearly edge-on. Shortening a solid
+            // wall in that view reads as an open doorway while collision still
+            // (correctly) blocks the player. Cutaways are an isometric-only
+            // presentation aid; third-person keeps the authoritative shell at
+            // full height and relies on camera collision instead.
+            const cutawayKeys = this.cameraMode === 'third-person'
+                ? new Set()
+                : (presentation.cutawayWallKeysByQuadrant?.[quadrant] ?? new Set());
 
             for (const record of presentation.wallRecords ?? []) {
                 const state = record.roomWallPresentation;
@@ -36710,8 +36765,11 @@ export class ThreeGame {
                 )))
             ])
         );
+        const activeCutawayWallKeys = this.cameraMode === 'third-person'
+            ? new Set()
+            : (cutawayWallKeysByQuadrant[cutawayQuadrant] ?? new Set());
         const foregroundRoomWallCells = new Set(
-            [...(cutawayWallKeysByQuadrant[cutawayQuadrant] ?? [])].map((wallKey) => {
+            [...activeCutawayWallKeys].map((wallKey) => {
                 const [worldX, worldZ] = wallKey.split(',').map(Number);
                 return `${worldX - chunkX * this.chunkSize},${worldZ - chunkY * this.chunkSize}`;
             })
@@ -38006,7 +38064,7 @@ export class ThreeGame {
                 ),
                 cutawayWallKeysByQuadrant
             };
-            this.syncRoomDressingCutaways(group, cutawayWallKeysByQuadrant[cutawayQuadrant] ?? new Set());
+            this.syncRoomDressingCutaways(group, activeCutawayWallKeys);
         }
 
         for (const [roomStyleId, matrices] of pillarMatricesByRoomStyle.entries()) {
@@ -46892,6 +46950,20 @@ export class ThreeGame {
         const { x, z } = this.player.position;
         if (this.canOccupyPosition(x, z)) return false;
 
+        // Capture the blocked cell before moving the player. Previous logs
+        // contained only from/to coordinates, which made a wall, a safe-edge
+        // void, and a dynamic prop indistinguishable during PC playtests.
+        const blockedTileX = Math.round(x);
+        const blockedTileZ = Math.round(z);
+        const blockedTile = this.chunkCache?.get
+            ? this.getTileType?.(blockedTileX, blockedTileZ) ?? null
+            : null;
+        const blockerSource = blockedTile === EXTERIOR_CANYON_TILE || blockedTile === CLIFF_TILE
+            ? (this.blocksSpawnSafeEdge?.(x, z) ? 'spawn-safe-edge' : 'hole')
+            : blockedTile === '#' ? 'wall'
+                : blockedTile === 'D' ? 'door'
+                    : 'dynamic-collider';
+
         const result = resolveSafeSpawn({ x, z }, {
             maxRadius: 4,
             step: 0.25,
@@ -46909,7 +46981,9 @@ export class ThreeGame {
         this.player.position.z = result.z;
         window.hbLog?.('PLAYER', 'warn', 'depenetrated', {
             from: { x, z },
-            to: { x: result.x, z: result.z }
+            to: { x: result.x, z: result.z },
+            blockedTile: { x: blockedTileX, z: blockedTileZ, type: blockedTile },
+            blockerSource
         });
         return true;
     }

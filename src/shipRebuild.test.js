@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { beginCarry, createCarryState, installCarriedObject, resetCarryRunState } from './carrySystem.js';
 import {
     availableShipRebuildSocket,
+    ensureQaShipRebuildModules,
     ensureShipRebuildState,
     isShipModuleInstalledForGoal,
     planShipRebuild,
@@ -58,5 +59,33 @@ describe('physical ship rebuild', () => {
         expect(shipRebuildProgress({ installed })).toEqual({
             installed: 4, total: 4, complete: true, missingDefinitionIds: []
         });
+    });
+
+    it('adds idempotent QA modules without replacing valid installed records', () => {
+        const carryState = createCarryState('run-qa');
+        const existing = {
+            instanceId: 'real-life-support',
+            definitionId: 'ship_life_support_core',
+            socketId: 'ship-bay-life',
+            isDestroyed: false,
+            damageState: 'intact'
+        };
+        carryState.installed.push(existing);
+        const installedArray = carryState.installed;
+
+        const first = ensureQaShipRebuildModules(carryState);
+        const second = ensureQaShipRebuildModules(carryState);
+
+        expect(carryState.installed).toBe(installedArray);
+        expect(carryState.installed).toHaveLength(4);
+        expect(carryState.installed[0]).toBe(existing);
+        expect(first.addedModules).toHaveLength(3);
+        expect(second.addedModules).toEqual([]);
+        expect(second.installedModules.map(({ definitionId, socketId }) => `${definitionId}@${socketId}`)).toEqual([
+            'ship_life_support_core@ship-bay-life',
+            'ship_navigation_core@ship-bay-core',
+            'ship_comms_array@ship-bay-mount',
+            'ship_engine_manifold@ship-bay-engine'
+        ]);
     });
 });
