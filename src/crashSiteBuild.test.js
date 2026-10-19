@@ -6,12 +6,12 @@ import { crashSiteClearCells, stampCrashSiteApproach, stampCrashSiteOrigin, vali
 const blank = (tile = 'X') => Array.from({ length: CHUNK_SIZE }, () => Array(CHUNK_SIZE).fill(tile));
 
 describe('two-zone crash site build', () => {
-    it('stamps a shell-bounded 17 by 14 origin chamber with one centered north throat and solid south wall', () => {
+    it('stamps a shell-bounded 17 by 16 origin chamber with one centered north throat and solid south wall', () => {
         const grid = blank('.');
         expect(stampCrashSiteOrigin(grid)).toBe(true);
         const room = CRASH_SITE_BUILD.primaryChamber;
         expect(room.right - room.left + 1).toBe(17);
-        expect(room.bottom - room.top + 1).toBe(14);
+        expect(room.bottom - room.top + 1).toBe(16);
         expect(grid[room.top].slice(room.left, room.right + 1).every((tile) => tile === '.')).toBe(true);
         expect(grid[0].slice(8, 11)).toEqual(['.', '.', '.']);
         expect(grid[0][7]).toBe('#');

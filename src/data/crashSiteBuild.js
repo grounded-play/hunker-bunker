@@ -31,7 +31,7 @@ export const CRASH_SITE_BUILD = Object.freeze({
     edgeOffset: 4,
     originChunk: Object.freeze({ x: 0, y: 0 }),
     approachChunk: Object.freeze({ x: 0, y: -1 }),
-    primaryChamber: Object.freeze({ left: 1, right: 17, top: 4, bottom: 17 }),
+    primaryChamber: Object.freeze({ left: 1, right: 17, top: 4, bottom: 19 }),
     northPreHall: Object.freeze({ halfWidth: 1, top: 0, bottom: 3 }),
     serviceApproach: Object.freeze({
         halfWidth: 3,
@@ -43,16 +43,16 @@ export const CRASH_SITE_BUILD = Object.freeze({
         centerX: 9,
         halfWidth: 2,
         fromZ: 4,
-        toZ: 17
+        toZ: 18
     }),
     sectorZero: Object.freeze({
         id: 'sector-zero-five-room-v1',
         rooms: sectorZeroRooms,
         partitions: sectorZeroPartitions,
         props: sectorZeroProps,
-        weaponRack: Object.freeze({ x: 3.6, z: 10.4, profileId: 'mk1_sidearm' }),
-        salvageCache: Object.freeze({ x: 14.75, z: 10.2, type: 'weapon', amount: 10 }),
-        combatSpawn: Object.freeze({ x: 9, z: 4.8, type: 'alien_proto_crawler' }),
+        weaponRack: Object.freeze({ x: 4.35, z: 10.4, profileId: 'mk1_sidearm' }),
+        salvageCache: Object.freeze({ x: 13.75, z: 10.2, type: 'weapon', amount: 10 }),
+        combatSpawn: Object.freeze({ x: 9, z: 5.25, type: 'alien_proto_crawler' }),
         departureThresholdZ: 2.75
     }),
     constructionSockets: Object.freeze([
