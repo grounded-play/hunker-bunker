@@ -1561,6 +1561,10 @@ const MELEE_REACH = 1.8;
 const MELEE_HALF_ANGLE = THREE.MathUtils.degToRad(35);
 const MELEE_DAMAGE = 4;
 const MELEE_COOLDOWN = 0.55;
+const UNARMED_PUNCH_DAMAGE = 1;
+const UNARMED_PUNCH_REACH = 1.45;
+const UNARMED_PUNCH_HALF_ANGLE = THREE.MathUtils.degToRad(28);
+const UNARMED_PUNCH_COOLDOWN = 0.42;
 
 export const CLASS_MELEE_PROFILES = Object.freeze({
     SCOUT: Object.freeze({
@@ -11829,13 +11833,18 @@ export class ThreeGame {
     fireWeaponAtCurrentAim({ source = 'pointer' } = {}) {
         if (!this.isGameplayInputActive()) return false;
 
-        if (this.fieldWeaponRunState && !this.fieldWeaponRunState.equipped) {
+        const hasNoWeapon = Boolean(this.fieldWeaponRunState && !this.fieldWeaponRunState.equipped);
+        // A held primary input must produce one punch, not another punch every
+        // render frame. beginHeldFire clears the latch for the next click.
+        if (this.isPointerFireHeld && this._emptyFireHeldLatched && hasNoWeapon) return false;
+
+        if (hasNoWeapon) {
             presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, {
-                reason: 'no_weapon'
+                reason: 'no_weapon',
+                fallback: 'unarmed_punch'
             }, { level: 'warn' });
-            this.playThrottledUiError('_lastNoWeaponCueAt', { volume: 0.42, playbackRate: 0.78 });
-            this.showBunkerLine?.('UNARMED — RECOVER YOUR WEAPON FROM THE BERTH RACK.');
-            return false;
+            if (this.isPointerFireHeld) this._emptyFireHeldLatched = true;
+            return this.triggerUnarmedPunch({ source: 'no-weapon-primary' });
         }
 
         // updateHeldFire runs every frame. Once an empty held trigger has
@@ -11886,9 +11895,10 @@ export class ThreeGame {
                 }
                 this._lastNoAmmoCueAt = now;
                 if (this.isPointerFireHeld) this._emptyFireHeldLatched = true;
-                window.AudioManager?.play('weapon_dry_fire', (this.audioAt?.(this.player?.position?.x, this.player?.position?.z, { volume: 0.45 }) ?? { volume: 0.45 }));
-                presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, { reason: 'out_of_ammo', clip: 0, reserve: 0 }, { level: 'warn' });
-                return this.triggerGameplayMelee({ source: 'empty-fire-fallback' });
+                presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, {
+                    reason: 'out_of_ammo', clip: 0, reserve: 0, fallback: 'unarmed_punch'
+                }, { level: 'warn' });
+                return this.triggerUnarmedPunch({ source: 'empty-fire-fallback' });
             }
             this.requestReload();
             return false;
@@ -12010,6 +12020,81 @@ export class ThreeGame {
             }
         }
         return this.fireWeaponAtCurrentAim({ source });
+    }
+
+    triggerUnarmedPunch({ source = 'primary-fallback' } = {}) {
+        if (!this.isGameplayInputActive() || !this.player || this.isPlayerDead) return false;
+        if (!canUseWeaponWhileCarrying(this.carryState)) return false;
+        if ((this.meleeCooldownTimer ?? 0) > 0) return false;
+        if (this.isInsideNoFireZone()) return false;
+
+        const directionLength = Math.hypot(this.aimDirX, this.aimDirZ) || 1;
+        const aimX = this.aimDirX / directionLength;
+        const aimZ = this.aimDirZ / directionLength;
+        let nearestTarget = null;
+
+        for (const sprite of this.scatterSprites ?? []) {
+            if (!sprite?.parent || sprite.userData?.burstTriggered) continue;
+            if (!sprite.userData?.isDestructibleProp && !this.isEnemyType(sprite.userData?.type)) continue;
+            const dx = sprite.position.x - this.player.position.x;
+            const dz = sprite.position.z - this.player.position.z;
+            const distance = Math.hypot(dx, dz);
+            if (distance > UNARMED_PUNCH_REACH || distance < 0.001) continue;
+            const dot = ((dx / distance) * aimX) + ((dz / distance) * aimZ);
+            const angle = Math.acos(THREE.MathUtils.clamp(dot, -1, 1));
+            if (angle > UNARMED_PUNCH_HALF_ANGLE) continue;
+            if (!nearestTarget || distance < nearestTarget.distance) {
+                nearestTarget = { kind: 'sprite', sprite, distance };
+            }
+        }
+
+        // Sample the short strike line so an unarmed player can slowly break a
+        // destructible wall without receiving the Tank's four-damage breach.
+        for (const distance of [0.55, 0.85, 1.15, UNARMED_PUNCH_REACH]) {
+            const wall = this.findWallMeshAt?.(
+                this.player.position.x + aimX * distance,
+                this.player.position.z + aimZ * distance
+            );
+            if (!wall || wall.userData?.destroyed || wall.userData?.indestructible) continue;
+            if (!nearestTarget || distance < nearestTarget.distance) {
+                nearestTarget = { kind: 'wall', wall, distance };
+            }
+            break;
+        }
+
+        this.meleeCooldownTimer = UNARMED_PUNCH_COOLDOWN;
+        this.player3dOverlay?.trigger('melee');
+        this.spawnPhysicalBurst?.(
+            this.player.position.x + aimX * 0.75,
+            this.player.position.z + aimZ * 0.75,
+            { color: 0xd7e0e5, count: nearestTarget ? 5 : 2, upward: 0.12 }
+        );
+        this.triggerCameraShake?.(nearestTarget ? 0.045 : 0.02, 0.08);
+        window.AudioManager?.playMetalStress?.({
+            volume: nearestTarget ? 0.3 : 0.2,
+            playbackRate: 1.28 + Math.random() * 0.12,
+            force: true
+        });
+
+        if (nearestTarget?.kind === 'sprite') {
+            this.applyPlayerDamageToEnemy(nearestTarget.sprite, UNARMED_PUNCH_DAMAGE);
+        } else if (nearestTarget?.kind === 'wall') {
+            const destroyed = this.damageWall?.(nearestTarget.wall, UNARMED_PUNCH_DAMAGE, { source: 'player' });
+            if (destroyed) window.dispatchEvent(new CustomEvent('wall-breached'));
+        }
+
+        window.dispatchEvent(new CustomEvent('player-melee-attack', {
+            detail: {
+                source,
+                targetsHit: nearestTarget ? 1 : 0,
+                damage: UNARMED_PUNCH_DAMAGE,
+                reach: UNARMED_PUNCH_REACH,
+                classMelee: 'UNARMED PUNCH',
+                punch: true,
+                hitKind: nearestTarget?.kind ?? null
+            }
+        }));
+        return true;
     }
 
     triggerGameplayMelee({ source = 'manual' } = {}) {

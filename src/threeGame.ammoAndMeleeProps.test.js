@@ -80,28 +80,25 @@ describe('ammo lockers, solid props, and Smash', () => {
         expect(enemy.userData.knockbackTimer).toBeGreaterThan(0);
     });
 
-    it('falls back to Smash when both clip and reserve are empty', () => {
+    it('falls back to a one-damage punch when both clip and reserve are empty', () => {
         const game = {
             weaponClipAmmo: 0, weaponReloading: false, weaponFireCooldown: 0,
             isGameplayInputActive: () => true, isInsideNoFireZone: () => false,
-            getAvailableAmmo: () => 0, triggerGameplayMelee: vi.fn(() => true)
+            getAvailableAmmo: () => 0, triggerUnarmedPunch: vi.fn(() => true)
         };
         expect(ThreeGame.prototype.fireWeaponAtCurrentAim.call(game)).toBe(true);
-        expect(game.triggerGameplayMelee).toHaveBeenCalledWith({ source: 'empty-fire-fallback' });
+        expect(game.triggerUnarmedPunch).toHaveBeenCalledWith({ source: 'empty-fire-fallback' });
     });
 
-    it('cannot fire before the staged landing weapon is picked up', () => {
+    it('uses primary click to punch before the staged landing weapon is picked up', () => {
         const game = {
             fieldWeaponRunState: { runId: 'landing', equipped: null, worldDrops: [] },
             isGameplayInputActive: () => true,
-            playThrottledUiError: vi.fn(),
-            showBunkerLine: vi.fn()
+            triggerUnarmedPunch: vi.fn(() => true)
         };
 
-        expect(ThreeGame.prototype.fireWeaponAtCurrentAim.call(game)).toBe(false);
-        expect(game.showBunkerLine).toHaveBeenCalledWith(
-            'UNARMED — RECOVER YOUR WEAPON FROM THE BERTH RACK.'
-        );
+        expect(ThreeGame.prototype.fireWeaponAtCurrentAim.call(game)).toBe(true);
+        expect(game.triggerUnarmedPunch).toHaveBeenCalledWith({ source: 'no-weapon-primary' });
     });
 
     it('reports empty ammo only once while the fire control remains held', () => {
@@ -109,13 +106,56 @@ describe('ammo lockers, solid props, and Smash', () => {
             weaponClipAmmo: 0, weaponReloading: false, weaponFireCooldown: 0,
             unlimitedAmmo: false, isPointerFireHeld: true, _emptyFireHeldLatched: false,
             isGameplayInputActive: () => true, isInsideNoFireZone: () => false,
-            getAvailableAmmo: () => 0, triggerGameplayMelee: vi.fn(() => true)
+            getAvailableAmmo: () => 0, triggerUnarmedPunch: vi.fn(() => true)
         };
 
         expect(ThreeGame.prototype.fireWeaponAtCurrentAim.call(game)).toBe(true);
         expect(ThreeGame.prototype.fireWeaponAtCurrentAim.call(game)).toBe(false);
-        expect(game.triggerGameplayMelee).toHaveBeenCalledTimes(1);
-        expect(window.AudioManager.play).toHaveBeenCalledTimes(1);
+        expect(game.triggerUnarmedPunch).toHaveBeenCalledTimes(1);
+    });
+
+    it('punches only the nearest forward enemy or prop for exactly one damage', () => {
+        const nearProp = {
+            parent: {}, position: { x: 0.7, z: 0 },
+            userData: { isDestructibleProp: true, type: 'prop_bunker_supplies' }
+        };
+        const farEnemy = {
+            parent: {}, position: { x: 1.2, z: 0.1 },
+            userData: { type: 'cybersnail' }
+        };
+        const game = {
+            player: { position: { x: 0, z: 0 } }, isPlayerDead: false,
+            aimDirX: 1, aimDirZ: 0, meleeCooldownTimer: 0,
+            scatterSprites: [farEnemy, nearProp],
+            isGameplayInputActive: () => true, isInsideNoFireZone: () => false,
+            isEnemyType: ThreeGame.prototype.isEnemyType,
+            findWallMeshAt: () => null,
+            applyPlayerDamageToEnemy: vi.fn(),
+            spawnPhysicalBurst: vi.fn(), triggerCameraShake: vi.fn(),
+            player3dOverlay: { trigger: vi.fn() }
+        };
+
+        expect(ThreeGame.prototype.triggerUnarmedPunch.call(game)).toBe(true);
+        expect(game.applyPlayerDamageToEnemy).toHaveBeenCalledTimes(1);
+        expect(game.applyPlayerDamageToEnemy).toHaveBeenCalledWith(nearProp, 1);
+        expect(game.meleeCooldownTimer).toBeGreaterThan(0);
+    });
+
+    it('punches a local destructible wall for exactly one damage', () => {
+        const wall = { userData: { isWall: true, wallKey: '0:1' } };
+        const game = {
+            player: { position: { x: 0, z: 0 } }, isPlayerDead: false,
+            aimDirX: 0, aimDirZ: 1, meleeCooldownTimer: 0,
+            scatterSprites: [],
+            isGameplayInputActive: () => true, isInsideNoFireZone: () => false,
+            isEnemyType: ThreeGame.prototype.isEnemyType,
+            findWallMeshAt: vi.fn(() => wall), damageWall: vi.fn(() => false),
+            spawnPhysicalBurst: vi.fn(), triggerCameraShake: vi.fn(),
+            player3dOverlay: { trigger: vi.fn() }
+        };
+
+        expect(ThreeGame.prototype.triggerUnarmedPunch.call(game)).toBe(true);
+        expect(game.damageWall).toHaveBeenCalledWith(wall, 1, { source: 'player' });
     });
 
     it('places scan-triggered return chevrons in world space instead of following the player', () => {
