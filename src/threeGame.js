@@ -77,10 +77,15 @@ import {
     planFirstNightBase
 } from './firstNightBase.js';
 import {
+    availableCampO2Socket,
     availableShipRebuildSocket,
+    CAMP_O2_STAGE,
+    ensureCampO2State,
     ensureShipRebuildState,
     getShipRebuildStageForGoal,
+    isCampO2CoreInstalled,
     isShipModuleInstalledForGoal,
+    planCampO2,
     planShipRebuild,
     SHIP_REBUILD_STAGES,
     shipRebuildProgress
@@ -5125,6 +5130,8 @@ export class ThreeGame {
         this.setupBunkerCot();
         this.setupBaseAtmosphereIndicator();
         this.setupBedInstallSocketVisual();
+        this.setupConstructionInstallSocketVisuals();
+        this.setupEscapeCraftYardVisual();
     }
 
     /**
@@ -5228,6 +5235,88 @@ export class ThreeGame {
         }
         const installed = Boolean(installedCot(this.carryState));
         this.bedInstallSocketVisual.visible = this.performanceProfile === 'gameplay' && !installed;
+    }
+
+    setupConstructionInstallSocketVisuals() {
+        if (!this.scene || this.constructionInstallSocketVisuals?.size) return;
+        this.constructionInstallSocketVisuals = new Map();
+        const campSocket = this.getCampO2Plan?.()?.installSocket;
+        const craftSockets = this.getShipRebuildPlan?.()?.installSockets ?? [];
+        const sockets = [campSocket, ...craftSockets].filter(Boolean);
+        for (const socket of sockets) {
+            const definition = getBaseModuleDefinition(socket.definitionId);
+            const root = createBedInstallSocketVisual({
+                label: socket.siteKind === 'camp-o2'
+                    ? 'CAMP O2 CORE // INSTALL HERE'
+                    : `${definition?.label ?? 'FLIGHT SYSTEM'} // ESCAPE CRAFT`,
+                width: Math.max(0.8, definition?.footprint?.w ?? 1),
+                length: Math.max(0.8, definition?.footprint?.d ?? 1),
+                height: Math.min(0.7, definition?.footprint?.h ?? 0.5)
+            });
+            root.position.set(
+                socket.transform.x,
+                this.getTerrainHeightAt?.(socket.transform.x, socket.transform.z) ?? 0,
+                socket.transform.z
+            );
+            root.rotation.y = socket.transform.yaw ?? 0;
+            root.userData.installSocket = socket;
+            this.scene.add(root);
+            this.registerEnvLight?.(root.userData.light);
+            this.constructionInstallSocketVisuals.set(socket.id, root);
+        }
+    }
+
+    updateConstructionInstallSocketVisuals(now = performance.now()) {
+        if (this.escapeCraftYardVisual) {
+            this.escapeCraftYardVisual.visible = this.performanceProfile === 'gameplay';
+        }
+        if (!this.constructionInstallSocketVisuals?.size) return;
+        const occupied = new Set((this.carryState?.installed ?? []).map(({ socketId }) => socketId));
+        const carried = this.carryState?.carried;
+        for (const [socketId, root] of this.constructionInstallSocketVisuals) {
+            const socket = root.userData.installSocket;
+            const visible = this.performanceProfile === 'gameplay' && !occupied.has(socketId);
+            const compatible = Boolean(carried && (
+                carried.definitionId === socket.definitionId
+                || (socket.siteKind === 'camp-o2' && CAMP_O2_STAGE.legacyDefinitionIds.includes(carried.definitionId))
+            ));
+            const isNear = Boolean(this.player && Math.hypot(
+                this.player.position.x - socket.transform.x,
+                this.player.position.z - socket.transform.z
+            ) <= 2.8);
+            updateBedInstallSocketVisual(root, {
+                isNear,
+                isCarryingTarget: compatible,
+                elapsedSeconds: now * 0.001,
+                visible
+            });
+        }
+    }
+
+    setupEscapeCraftYardVisual() {
+        if (!this.scene || this.escapeCraftYardVisual) return;
+        const yard = CRASH_SITE_BUILD.escapeCraftYard;
+        const group = new THREE.Group();
+        group.name = 'escape-craft-construction-yard';
+        group.position.set(yard.worldCenter.x, 0, yard.worldCenter.z);
+        const padMaterial = new THREE.MeshStandardMaterial({
+            color: 0x17232b,
+            roughness: 0.72,
+            metalness: 0.62,
+            emissive: 0x07212a,
+            emissiveIntensity: 0.45
+        });
+        const pad = new THREE.Mesh(new THREE.BoxGeometry(13, 0.08, 9), padMaterial);
+        pad.position.y = 0.04;
+        pad.receiveShadow = true;
+        group.add(pad);
+        const edgeMaterial = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.72 });
+        const edges = new THREE.LineSegments(new THREE.EdgesGeometry(pad.geometry), edgeMaterial);
+        edges.position.copy(pad.position);
+        group.add(edges);
+        group.visible = this.performanceProfile === 'gameplay';
+        this.scene.add(group);
+        this.escapeCraftYardVisual = group;
     }
 
     setupBaseAtmosphereIndicator() {
@@ -6366,8 +6455,8 @@ export class ThreeGame {
             const baseGoal = this.getActiveBaseGoal();
             if (baseGoal?.key === 'o2Bubble') {
                 const assembly = this.getShipGoalAssemblyStatus?.('o2Bubble');
-                if (assembly && !assembly.ready && !assembly.installed && this.carryState?.carried?.definitionId !== 'ship_life_support_core') {
-                    const worldCargo = this.carryState?.worldObjects?.find((o) => o.definitionId === 'ship_life_support_core');
+                if (assembly && !assembly.ready && !assembly.installed && this.carryState?.carried?.definitionId !== CAMP_O2_STAGE.definitionId) {
+                    const worldCargo = this.carryState?.worldObjects?.find((o) => o.definitionId === CAMP_O2_STAGE.definitionId);
                     if (worldCargo?.worldPosition) return { x: worldCargo.worldPosition.x, z: worldCargo.worldPosition.z };
                     const sourcePositions = this.getShipRebuildSourcePositions?.();
                     if (sourcePositions?.o2Bubble) return { x: sourcePositions.o2Bubble.x, z: sourcePositions.o2Bubble.z };
@@ -6383,13 +6472,8 @@ export class ThreeGame {
                     const sourcePositions = this.getShipRebuildSourcePositions?.();
                     if (sourcePositions?.[baseGoal.key]) return { x: sourcePositions[baseGoal.key].x, z: sourcePositions[baseGoal.key].z };
                 }
-                const activeShip = this.getActiveShip?.();
-                if (activeShip) {
-                    return {
-                        x: activeShip.tileX + (activeShip.consoleOffset?.x ?? -1.6),
-                        z: activeShip.tileZ + (activeShip.consoleOffset?.z ?? 1.6)
-                    };
-                }
+                const yard = CRASH_SITE_BUILD.escapeCraftYard?.worldCenter;
+                if (yard) return { x: yard.x, z: yard.z };
             }
         }
 
@@ -10547,26 +10631,37 @@ export class ThreeGame {
     }
 
     getShipRebuildPlan() {
-        const ship = this.getActiveShip?.();
+        const site = CRASH_SITE_BUILD.escapeCraftYard.worldCenter;
         return planShipRebuild({
-            shipX: Number(ship?.tileX) || 0,
-            shipZ: Number(ship?.tileZ) || 0,
+            siteX: site.x,
+            siteZ: site.z,
             sourcePositions: this.getShipRebuildSourcePositions?.() ?? {}
+        });
+    }
+
+    getCampO2Plan() {
+        return planCampO2({
+            socketPosition: CRASH_SITE_BUILD.shipSystems.o2InstallSocket,
+            sourcePosition: CRASH_SITE_BUILD.shipSystems.o2RecoveryPosition
         });
     }
 
     getAvailableCarryInstallSocket(object = this.carryState?.carried) {
         return availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan?.(), object)
+            ?? availableCampO2Socket(this.carryState, this.getCampO2Plan?.(), object)
             ?? availableShipRebuildSocket(this.carryState, this.getShipRebuildPlan?.(), object);
     }
 
     getShipGoalAssemblyStatus(goalKey) {
-        const stage = getShipRebuildStageForGoal(goalKey);
+        const isCampO2 = goalKey === CAMP_O2_STAGE.goalKey;
+        const stage = isCampO2 ? CAMP_O2_STAGE : getShipRebuildStageForGoal(goalKey);
         const bankState = this.bank?.getState?.() ?? {};
         const grandfathered = goalKey === 'o2Bubble'
             ? (bankState.o2GeneratorLevel ?? 0) >= 1
             : Boolean(bankState.unlocks?.[goalKey]);
-        const installed = isShipModuleInstalledForGoal(this.carryState, goalKey);
+        const installed = isCampO2
+            ? isCampO2CoreInstalled(this.carryState)
+            : isShipModuleInstalledForGoal(this.carryState, goalKey);
         const definition = getBaseModuleDefinition(stage?.definitionId);
         const bypass = Boolean(this.godMode || this._qaBypassShipAssembly);
         return {
@@ -10584,22 +10679,30 @@ export class ThreeGame {
         this._shipRebuildAuditTimer %= 1;
         const sourcePositions = this.getShipRebuildSourcePositions?.() ?? {};
         if (!Object.keys(sourcePositions).length) return null;
-        const ship = this.getActiveShip();
-        const result = ensureShipRebuildState(this.carryState, {
-            shipX: ship.tileX,
-            shipZ: ship.tileZ,
+        const campResult = ensureCampO2State(this.carryState, {
+            socketPosition: CRASH_SITE_BUILD.shipSystems.o2InstallSocket,
+            sourcePosition: CRASH_SITE_BUILD.shipSystems.o2RecoveryPosition
+        });
+        this.carryState = campResult.state;
+        const site = CRASH_SITE_BUILD.escapeCraftYard.worldCenter;
+        const craftResult = ensureShipRebuildState(this.carryState, {
+            siteX: site.x,
+            siteZ: site.z,
             sourcePositions,
             builtGoalKeys: this.getBuiltGoalKeys?.() ?? []
         });
-        this.carryState = result.state;
-        if (result.addedCargo.length) {
+        this.carryState = craftResult.state;
+        saveInstalledBaseModules(this.carryState.installed);
+        const addedCargo = [...campResult.addedCargo, ...craftResult.addedCargo];
+        if (addedCargo.length) {
             this.reconcileCarryObjectVisuals?.();
+            this.reconcileInstalledBaseModuleVisuals?.();
             this.syncMissionCargoMapLandmarks?.();
             window.dispatchEvent(new CustomEvent('ship-rebuild-cargo-staged', {
-                detail: { cargo: result.addedCargo }
+                detail: { cargo: addedCargo }
             }));
         }
-        return result;
+        return { ...craftResult, addedCargo, campPlan: campResult.plan };
     }
 
     bootstrapFirstNightBaseRecovery() {
@@ -10910,6 +11013,7 @@ export class ThreeGame {
                 });
             }
         }
+        this.updateConstructionInstallSocketVisuals?.(now);
         this.checkLooseCarryObjectSnapToSockets?.();
         this.updateCarryInteractionPrompt?.();
     }
@@ -11417,7 +11521,11 @@ export class ThreeGame {
         const delivery = this.getMissionCargoDelivery?.(result.carried);
         this.showBunkerLine?.(delivery
             ? `CARGO LIFTED — BOTH HANDS OCCUPIED. ${delivery.label}.`
-            : 'CARGO LIFTED — BOTH HANDS OCCUPIED. RETURN TO THE SHIP BERTH.');
+            : nearest.object.definitionId === CAMP_O2_STAGE.definitionId
+                ? 'CAMP O2 CORE LIFTED — CARRY IT TO THE GENERATOR SOCKET.'
+                : SHIP_REBUILD_STAGES.some(({ definitionId }) => definitionId === nearest.object.definitionId)
+                    ? 'FLIGHT SYSTEM LIFTED — CARRY IT TO THE ESCAPE-CRAFT YARD.'
+                    : 'CARGO LIFTED — BOTH HANDS OCCUPIED. RETURN TO THE CAMP BERTH.');
         this.spawnPhysicalBurst?.(this.player.position.x, this.player.position.z, { color: 0xf3d18a, count: 8, upward: 0.12 });
         window.AudioManager?.play?.('metal_stress', { volume: 0.42, playbackRate: 1.08 });
         window.dispatchEvent(new CustomEvent('carry-object-began', { detail: { carried: result.carried } }));
@@ -11548,12 +11656,15 @@ export class ThreeGame {
         this.syncBunkerCot?.();
         const label = getBaseModuleDefinition(result.installed.definitionId)?.label ?? 'RECOVERED MODULE';
         const isShipPart = SHIP_REBUILD_STAGES.some(({ definitionId }) => definitionId === result.installed.definitionId);
+        const isCampO2 = result.installed.definitionId === CAMP_O2_STAGE.definitionId;
         if (isShipPart) {
             const progress = shipRebuildProgress(this.carryState);
             this.showBunkerLine?.(progress.complete
-                ? `${label} INSTALLED — ALL PRIMARY SHIP SYSTEMS PHYSICALLY ONLINE.`
-                : `${label} INSTALLED — SHIP REBUILD ${progress.installed}/${progress.total}.`);
+                ? `${label} INSTALLED — ESCAPE CRAFT 3/3, ALL FLIGHT SYSTEMS ONLINE.`
+                : `${label} INSTALLED — ESCAPE CRAFT ${progress.installed}/${progress.total}.`);
             window.dispatchEvent(new CustomEvent('ship-rebuild-progress', { detail: progress }));
+        } else if (isCampO2) {
+            this.showBunkerLine?.(`${label} INSTALLED — CAMP GENERATOR READY FOR REPAIR.`);
         } else {
             // The hull patch and door seal appear once the cot is in.
             if (result.installed.definitionId === 'cot_bed') {
@@ -11572,7 +11683,12 @@ export class ThreeGame {
         this.spawnPhysicalBurst?.(socket.transform.x, socket.transform.z, { color: 0x66e6ff, count: 14, upward: 0.2 });
         this.triggerCameraShake?.(0.08, 0.18);
         window.AudioManager?.play?.('ui_confirm', { volume: 0.72, playbackRate: 0.86 });
-        window.dispatchEvent(new CustomEvent('base-module-installed', { detail: { installed: result.installed } }));
+        window.dispatchEvent(new CustomEvent('base-module-installed', {
+            detail: {
+                installed: result.installed,
+                siteKind: socket.siteKind ?? (isCampO2 ? 'camp-o2' : isShipPart ? 'escape-craft' : 'camp')
+            }
+        }));
         return true;
     }
 
@@ -17151,7 +17267,7 @@ export class ThreeGame {
             return {
                 stateClass: 'btn-state--locked',
                 label: `INSTALL ${assembly.label}`,
-                hint: `${assembly.label} MUST BE RECOVERED AND INSTALLED AT THE SHIP.`,
+                hint: `${assembly.label} MUST BE INSTALLED IN THE CAMP GENERATOR SOCKET.`,
                 enabled: false
             };
         }
@@ -17474,6 +17590,11 @@ export class ThreeGame {
     }
 
     getGoalModulePresentation(goalKey) {
+        if (SHIP_REBUILD_STAGES.some((stage) => stage.goalKey === goalKey)) {
+            // Flight systems are already revealed by their installed GLBs at
+            // the escape-craft yard; never animate duplicate parts on wreck.
+            return null;
+        }
         const ship = this.getActiveShip?.();
         if (!ship) return null;
         const config = {
@@ -17548,8 +17669,9 @@ export class ThreeGame {
         if (!this.crashedShips || !this.shipTextures) return;
 
         const bankState = this.bank.getState();
-        const activeGoal = this.getActiveBaseGoal(bankState);
-        const isFullyHealed = activeGoal === null;
+        // The arrival wreck remains a wreck. Campaign progress assembles a
+        // separate escape craft at the authored yard instead of healing this.
+        const isFullyHealed = false;
         const radarUnlocked = Boolean(bankState.unlocks?.radarNode);
         const radarTexture = this.goalModuleMaterials?.radarDish?.map ?? null;
 
@@ -17578,7 +17700,7 @@ export class ThreeGame {
             return {
                 key: 'o2Bubble',
                 title: 'REPAIR O₂ GENERATOR',
-                desc: 'REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.',
+                desc: 'INSTALL THE CAMP CORE, THEN REPAIR THE GENERATOR TO CREATE A LOCAL SAFE O₂ ZONE.',
                 cost: nextUpgrade ? this.getEffectiveCost(nextUpgrade.cost) : {},
                 type: 'o2'
             };
@@ -18119,7 +18241,7 @@ export class ThreeGame {
     attemptGoalUnlock(ship, cardConfig) {
         const assembly = this.getShipGoalAssemblyStatus?.(cardConfig.goalKey);
         if (assembly && !assembly.ready) {
-            this.showBunkerLine?.(`${assembly.label} REQUIRED — RECOVER IT IN THE EXPEDITION AND INSTALL IT AT THE SHIP.`);
+            this.showBunkerLine?.(`${assembly.label} REQUIRED — INSTALL IT IN THE CAMP GENERATOR SOCKET.`);
             window.AudioManager?.play('ui_error', { volume: 0.58 });
             this.renderConsoleBanking(ship);
             return false;
@@ -25583,17 +25705,18 @@ export class ThreeGame {
         const generatorPos = this.getActiveO2GeneratorPosition();
         const revealPending = Boolean(this._o2RevealPending);
         const enabled = generatorState.isOnline && Boolean(generatorPos) && !revealPending;
-        const unlocks = this.unlocks ?? this.bank.getUnlocks();
-
         if (this.crashedShips) {
             for (const ship of this.crashedShips) {
                 const isActiveShip = ship.type === this.playerType;
                 // This is the repair target, so it remains present while
                 // unpowered. Only the safe bubble depends on isOnline.
                 const o2ModuleVisible = isActiveShip && !revealPending;
-                const hullOnline = isActiveShip && Boolean(unlocks.hullExpansion);
-                const radarOnline = isActiveShip && Boolean(unlocks.radarNode);
-                const reactorOnline = isActiveShip && Boolean(unlocks.reactorCompressor);
+                // These legacy sprites belong to the crash wreck. The actual
+                // three flight systems render from installed carry modules at
+                // the separate escape-craft yard.
+                const hullOnline = false;
+                const radarOnline = false;
+                const reactorOnline = false;
                 if (ship.o2ModuleSprite) {
                     ship.o2ModuleSprite.userData.world3dDesiredVisible = o2ModuleVisible;
                     ship.o2ModuleSprite.visible = o2ModuleVisible && !ship.o2ModuleSprite.userData?.replacedBy3d;
@@ -49351,7 +49474,10 @@ export class ThreeGame {
             if (mazeMetadata) {
                 mazeMetadata.roomEdgeRepairs = sealRoomExteriorEdges(grid, mazeMetadata.roomInstances);
             }
-            const naturalCrossing = stampNaturalCrossing(grid);
+            // The authored opening route and escape-craft yard are one
+            // controlled set. A random canyon crossing can create a detached
+            // walkable strip beside it, which reads as another broken room.
+            const naturalCrossing = isCrashApproach ? null : stampNaturalCrossing(grid);
             if (mazeMetadata) {
                 mazeMetadata.naturalCrossings = naturalCrossing ? [naturalCrossing] : [];
                 mazeMetadata.envelopeErrors = validateRoomExteriorEnvelope(
@@ -49998,6 +50124,18 @@ export class ThreeGame {
         this.baseAtmosphereIndicator = null;
         disposeBedInstallSocketVisual(this.bedInstallSocketVisual);
         this.bedInstallSocketVisual = null;
+        for (const root of this.constructionInstallSocketVisuals?.values?.() ?? []) {
+            disposeBedInstallSocketVisual(root);
+        }
+        this.constructionInstallSocketVisuals?.clear?.();
+        this.constructionInstallSocketVisuals = null;
+        this.escapeCraftYardVisual?.traverse?.((object) => {
+            object.geometry?.dispose?.();
+            const materials = Array.isArray(object.material) ? object.material : [object.material];
+            for (const material of materials) material?.dispose?.();
+        });
+        this.escapeCraftYardVisual?.removeFromParent?.();
+        this.escapeCraftYardVisual = null;
         this.renderer.domElement.removeEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.removeEventListener('contextmenu', this.handleCanvasContextMenu);
         this.renderer.domElement.removeEventListener('pointermove', this.handleCanvasPointerMove);

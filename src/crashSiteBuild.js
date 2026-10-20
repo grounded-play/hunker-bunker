@@ -152,12 +152,21 @@ export function stampCrashSiteApproach(grid, build = CRASH_SITE_BUILD, {
     const approach = build.serviceApproach;
     const hub = approach.hub;
     const release = approach.releaseBounds;
+    const yard = build.escapeCraftYard;
     const layoutVariant = Math.abs(Math.trunc(variant)) % 4;
     // Every variant shares one concrete, readable staging room. Variants add
     // side pockets without replacing the room, so a seed can no longer turn
     // the first destination into what looks like disconnected cave fragments.
     for (let y = release.top; y <= release.bottom; y += 1) {
         for (let x = release.left; x <= release.right; x += 1) grid[y][x] = floorTile;
+    }
+    if (yard?.localBounds) {
+        const bounds = yard.localBounds;
+        for (let y = bounds.top; y <= bounds.bottom; y += 1) {
+            for (let x = bounds.left; x <= bounds.right; x += 1) grid[y][x] = floorTile;
+        }
+        carveLine(grid, hub, yard.localEntry, 2);
+        carveLine(grid, yard.localEntry, yard.localCenter, 2);
     }
     if (layoutVariant !== 0) {
         const satellites = layoutVariant === 1
@@ -207,6 +216,7 @@ export function stampCrashSiteApproach(grid, build = CRASH_SITE_BUILD, {
             variant: layoutVariant
         },
         stagingRoom: { ...release },
+        escapeCraftYard: yard?.localBounds ? { ...yard.localBounds } : null,
         width: approach.halfWidth * 2 + 1,
         hub: { ...hub },
         openings,
@@ -238,6 +248,11 @@ export function validateCrashSiteConnection(originGrid, approachGrid, build = CR
     const approachTargets = [
         { id: 'approach-hub', x: build.serviceApproach.hub.x, y: build.serviceApproach.hub.y },
         { id: 'approach-encounter', x: build.serviceApproach.encounter.localX, y: build.serviceApproach.encounter.localY },
+        ...(build.escapeCraftYard?.localCenter ? [{
+            id: 'escape-craft-yard',
+            x: build.escapeCraftYard.localCenter.x,
+            y: build.escapeCraftYard.localCenter.y
+        }] : []),
         ...(build.serviceApproach.supplies ?? []).map((supply) => ({
             id: `approach-supply:${supply.id}`,
             x: supply.localX,

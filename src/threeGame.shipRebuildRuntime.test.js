@@ -23,6 +23,7 @@ function gameStub() {
             reactorCompressor: { x: 90, z: 100 }
         }),
         getFirstNightBasePlan: ThreeGame.prototype.getFirstNightBasePlan,
+        getCampO2Plan: ThreeGame.prototype.getCampO2Plan,
         getShipRebuildPlan: ThreeGame.prototype.getShipRebuildPlan,
         getAvailableCarryInstallSocket: ThreeGame.prototype.getAvailableCarryInstallSocket,
         reconcileCarryObjectVisuals: vi.fn(),
@@ -42,7 +43,7 @@ describe('ship rebuild runtime', () => {
         const game = gameStub();
         const staged = ThreeGame.prototype.updateShipRebuildRecovery.call(game, 1);
         expect(staged.addedCargo.map(({ definitionId }) => definitionId)).toEqual([
-            'ship_life_support_core', 'ship_navigation_core'
+            'camp_o2_generator_core', 'ship_navigation_core'
         ]);
         expect(ThreeGame.prototype.updateShipRebuildRecovery.call(game, 1).addedCargo).toEqual([]);
 
@@ -50,14 +51,14 @@ describe('ship rebuild runtime', () => {
         game.getNearestCarryObject = ThreeGame.prototype.getNearestCarryObject;
         expect(ThreeGame.prototype.beginCarryObject.call(game, navigation.instanceId)).toBe(true);
         const socket = game.getAvailableCarryInstallSocket(game.carryState.carried);
-        expect(socket.id).toBe('ship-bay-core');
+        expect(socket.id).toBe('escape-craft-navigation');
         game.player.position.x = socket.transform.x;
         game.player.position.z = socket.transform.z;
         expect(ThreeGame.prototype.installCurrentCarryObject.call(game)).toBe(true);
         expect(game.carryState.installed).toEqual(expect.arrayContaining([
-            expect.objectContaining({ definitionId: 'ship_navigation_core', socketId: 'ship-bay-core' })
+            expect.objectContaining({ definitionId: 'ship_navigation_core', socketId: 'escape-craft-navigation' })
         ]));
-        expect(game.showBunkerLine).toHaveBeenLastCalledWith(expect.stringContaining('SHIP REBUILD 1/4'));
+        expect(game.showBunkerLine).toHaveBeenLastCalledWith(expect.stringContaining('ESCAPE CRAFT 1/3'));
     });
 
     it('blocks abstract ship builds until their matching physical module is installed', () => {
@@ -93,14 +94,14 @@ describe('ship rebuild runtime', () => {
                 assembly: expect.objectContaining({
                     ready: false,
                     installed: false,
-                    definitionId: 'ship_life_support_core',
-                    socketId: 'ship-bay-life'
+                    definitionId: 'camp_o2_generator_core',
+                    socketId: 'camp-o2-generator'
                 })
             })
         );
         expect(ThreeGame.prototype.getO2GeneratorButtonState.call(game, {
             level: 0, maxed: false, nextUpgrade: { cost: { tech: 10 } }
-        })).toMatchObject({ enabled: false, label: 'INSTALL SHIP LIFE-SUPPORT SYSTEM' });
+        })).toMatchObject({ enabled: false, label: 'INSTALL CAMP O2 GENERATOR CORE' });
 
         const treeState = ThreeGame.prototype.getUnifiedNodeState.call(game, {
             purchase: { kind: 'o2gen' },
@@ -110,7 +111,7 @@ describe('ship rebuild runtime', () => {
         }, game.bank.getState());
         expect(treeState).toMatchObject({
             available: false,
-            gateText: 'INSTALL SHIP LIFE-SUPPORT SYSTEM'
+            gateText: 'INSTALL CAMP O2 GENERATOR CORE'
         });
     });
 
@@ -152,10 +153,10 @@ describe('ship rebuild runtime', () => {
 
         const grant = ensureQaShipRebuildModules(game.carryState);
         expect(grant.installedModules).toEqual(expect.arrayContaining([
-            expect.objectContaining({ definitionId: 'ship_life_support_core', socketId: 'ship-bay-life' }),
-            expect.objectContaining({ definitionId: 'ship_navigation_core', socketId: 'ship-bay-core' }),
-            expect.objectContaining({ definitionId: 'ship_comms_array', socketId: 'ship-bay-mount' }),
-            expect.objectContaining({ definitionId: 'ship_engine_manifold', socketId: 'ship-bay-engine' })
+            expect.objectContaining({ definitionId: 'camp_o2_generator_core', socketId: 'camp-o2-generator' }),
+            expect.objectContaining({ definitionId: 'ship_navigation_core', socketId: 'escape-craft-navigation' }),
+            expect.objectContaining({ definitionId: 'ship_comms_array', socketId: 'escape-craft-comms' }),
+            expect.objectContaining({ definitionId: 'ship_engine_manifold', socketId: 'escape-craft-engine' })
         ]));
         expect(game.getShipGoalAssemblyStatus('o2Bubble')).toMatchObject({ ready: true, installed: true });
 

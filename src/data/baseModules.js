@@ -129,6 +129,19 @@ export const BASE_MODULE_CATALOG = Object.freeze({
         massClass: 'heavy',
         buildTags: ['life_support', 'o2_producer']
     }),
+    camp_o2_generator_core: Object.freeze({
+        id: 'camp_o2_generator_core',
+        label: 'CAMP O2 GENERATOR CORE',
+        category: BASE_MODULE_CATEGORIES.LIFE_SUPPORT,
+        // Reuse the proven machinery mesh until the camp-specific art pass.
+        modelType: 'ship_module_life_support_core',
+        carryModelType: 'ship_module_life_support_core',
+        footprint: { w: 1.2, d: 1.2, h: 1.8 },
+        socketTypes: ['camp_o2_generator'],
+        o2OutputRate: 50.0,
+        massClass: 'heavy',
+        buildTags: ['camp_utility', 'life_support', 'o2_producer']
+    }),
     o2_duct: Object.freeze({
         id: 'o2_duct',
         label: 'PRESSURIZATION DUCT',
@@ -247,6 +260,8 @@ export const BASE_MODULE_CATALOG = Object.freeze({
         massClass: 'heavy',
         buildTags: ['ship_part', 'engine']
     }),
+    // Legacy save/catalog definition. Runtime migration turns this into the
+    // camp-only generator core; it is no longer part of escape-craft progress.
     ship_life_support_core: Object.freeze({
         id: 'ship_life_support_core',
         label: 'SHIP LIFE-SUPPORT SYSTEM',

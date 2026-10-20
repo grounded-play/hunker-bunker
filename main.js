@@ -10284,6 +10284,9 @@ function devGrantResources() {
     if (game) {
         game._qaBypassShipAssembly = true;
         assemblyGrant = ensureQaShipRebuildModules(game.carryState);
+        // Apply the same authored camp/yard transforms and legacy migration as
+        // a normal runtime tick so QA grants never leave modules at (0,0).
+        game.updateShipRebuildRecovery?.(1);
     }
     const o2Assembly = game?.getShipGoalAssemblyStatus?.('o2Bubble') ?? null;
     const o2State = game?.getO2GeneratorState?.() ?? null;

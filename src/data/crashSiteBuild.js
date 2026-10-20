@@ -57,7 +57,22 @@ export const CRASH_SITE_BUILD = Object.freeze({
         o2ModuleOffset: Object.freeze({ x: 3.5, z: 0.5 }),
         // The first physical rebuild part belongs to the crash-room loop,
         // not a distant procedural objective reservation.
-        o2RecoveryPosition: Object.freeze({ x: 15, z: 14 })
+        o2RecoveryPosition: Object.freeze({ x: 15, z: 14 }),
+        o2InstallSocket: Object.freeze({ x: 12.5, z: 9.5, yaw: Math.PI })
+    }),
+    // This is a new craft built on a dedicated pad beyond the first hallway;
+    // it is never the wreck at `center` and never shares the camp O2 socket.
+    escapeCraftYard: Object.freeze({
+        chunk: Object.freeze({ x: 0, y: -1 }),
+        localBounds: Object.freeze({ left: 20, right: 36, top: 20, bottom: 32 }),
+        localCenter: Object.freeze({ x: 28, y: 26 }),
+        localEntry: Object.freeze({ x: 20, y: 30 }),
+        worldCenter: Object.freeze({ x: 28, z: -23 }),
+        sockets: Object.freeze({
+            navigation: Object.freeze({ x: 24, z: -22, yaw: Math.PI / 2 }),
+            comms: Object.freeze({ x: 28, z: -27, yaw: 0 }),
+            engine: Object.freeze({ x: 32, z: -22, yaw: -Math.PI / 2 })
+        })
     }),
     clearManeuverLane: Object.freeze({
         axis: 'z',
