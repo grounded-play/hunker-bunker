@@ -12,7 +12,25 @@ function stubs() {
 }
 
 function installedCarryState() {
-    return ensureFirstNightBaseState(createCarryState('run-test'), { shipX: 100, shipZ: 200 }).state;
+    const res = ensureFirstNightBaseState(createCarryState('run-test'), { shipX: 100, shipZ: 200 });
+    const cot = res.state.worldObjects.find((o) => o.definitionId === 'cot_bed');
+    if (cot) {
+        return {
+            ...res.state,
+            installed: [
+                ...res.state.installed,
+                {
+                    ...cot,
+                    socketId: 'ship-sleep-bay',
+                    x: res.plan.installSocket.transform.x,
+                    z: res.plan.installSocket.transform.z,
+                    transform: { ...res.plan.installSocket.transform }
+                }
+            ],
+            worldObjects: res.state.worldObjects.filter((o) => o.definitionId !== 'cot_bed')
+        };
+    }
+    return res.state;
 }
 
 const bunkerGame = (overrides = {}) => ({

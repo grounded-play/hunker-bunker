@@ -53,14 +53,14 @@ function stageLooseCot(game) {
 describe('physical first-night cargo runtime', () => {
     beforeEach(() => browserStub());
 
-    it('bootstraps an installed camp cot without obsolete seal cargo', () => {
+    it('bootstraps a staged recovery camp cot without obsolete seal cargo', () => {
         const game = baseGame();
         const result = ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
         expect(result.addedCot).toBe(true);
-        expect(game.carryState.worldObjects).toEqual([]);
-        expect(game.carryState.installed).toEqual(expect.arrayContaining([
-            expect.objectContaining({ definitionId: 'cot_bed', socketId: 'ship-sleep-bay' })
+        expect(game.carryState.worldObjects).toEqual(expect.arrayContaining([
+            expect.objectContaining({ definitionId: 'cot_bed', missionId: 'first-night-cot-recovery' })
         ]));
+        expect(game.carryState.installed.some(({ definitionId }) => definitionId === 'cot_bed')).toBe(false);
         expect(game.carryState.installed.some(({ definitionId }) => (
             definitionId === 'hull_patch_panel' || definitionId === 'door_seal_kit'
         ))).toBe(false);
@@ -97,7 +97,17 @@ describe('physical first-night cargo runtime', () => {
         game.dayState = createDayState();
         game.canRestAt = ThreeGame.prototype.canRestAt;
         ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
-        const site = { id: 'bunker_cot', ...game.getFirstNightBasePlan().installSocket.transform };
+        const socket = game.getFirstNightBasePlan().installSocket.transform;
+        game.carryState.installed.push({
+            instanceId: 'cot_bed:test',
+            definitionId: 'cot_bed',
+            socketId: 'ship-sleep-bay',
+            x: socket.x,
+            z: socket.z,
+            transform: { ...socket }
+        });
+        game.carryState.worldObjects = game.carryState.worldObjects.filter((o) => o.definitionId !== 'cot_bed');
+        const site = { id: 'bunker_cot', ...socket };
         game.getO2GeneratorState = () => ({ isOnline: false, radius: 0 });
         game.getActiveO2GeneratorPosition = () => ({ x: 3.5, z: 0.5 });
         expect(game.canRestAt(site)).toMatchObject({ allowed: false, reason: 'camp-o2-offline' });

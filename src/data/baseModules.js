@@ -123,12 +123,12 @@ export const BASE_MODULE_CATALOG = Object.freeze({
         category: BASE_MODULE_CATEGORIES.LIFE_SUPPORT,
         modelType: 'base_o2_atmospheric_regulator',
         footprint: { w: 0.8, d: 0.8, h: 1.6 },
-        socketTypes: ['machinery_mount'],
+        socketTypes: ['machinery_mount', 'camp_o2_generator'],
         o2OutputRate: 25.0, // cubic meters per second equivalent
         powerDraw: 10.0,
         buildCost: { scrap: 20, components: 3 },
         massClass: 'heavy',
-        buildTags: ['life_support', 'o2_producer']
+        buildTags: ['life_support', 'o2_producer', 'camp_utility']
     }),
     camp_o2_generator_core: Object.freeze({
         id: 'camp_o2_generator_core',

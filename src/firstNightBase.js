@@ -1,3 +1,5 @@
+import { addCarryObject, createCarryObject } from './carrySystem.js';
+import { getBaseModuleDefinition } from './data/baseModules.js';
 import { CRASH_SITE_BUILD } from './data/crashSiteBuild.js';
 
 export const FIRST_NIGHT_COT_MISSION_ID = 'first-night-cot-recovery';
@@ -14,18 +16,34 @@ export const FIRST_NIGHT_BERTH_OFFSET = Object.freeze({
     z: FIRST_BED_SOCKET.z - CRASH_SITE_BUILD.center.z
 });
 
+const RECOVERY_DEFINITIONS = Object.freeze([
+    Object.freeze({
+        definitionId: 'cot_bed',
+        missionId: FIRST_NIGHT_COT_MISSION_ID,
+        socketId: 'ship-sleep-bay',
+        // Stage the folded cot beside its authored berth, outside the 11x11
+        // ship maneuver envelope.
+        sourceOffset: Object.freeze({ x: -5, z: 10 })
+    })
+]);
+
+const LEGACY_COT_SOURCE_OFFSETS = Object.freeze([
+    Object.freeze({ x: 5, z: 2 }),
+    Object.freeze({ x: -2, z: 0 })
+]);
+
 const LEGACY_BERTH_OFFSETS = Object.freeze([
     // v3 rounded the authored half-cell socket (3.5, 15.5) to (4, 16),
     // directly matching the dynamic-collider pushes in the 16:30 PC log.
     Object.freeze({ x: -5, z: 7 })
 ]);
 
-const LEGACY_GIVEAWAY_MODULE_IDS = new Set(['starter-berth-wall-w', 'starter-berth-door-e']);
+const LEGACY_GIVEAWAY_MODULE_IDS = new Set(['starter-berth-wall-w', 'starter-berth-door-e', 'starter-berth-bed']);
 
 /**
- * Plans the starting camp rest point. The cot is present from the beginning;
- * installing and repairing the separate camp O2 core is the physical build
- * lesson and the only environmental gate for sleeping here.
+ * Plans the starting camp rest point. The cot begins as physical recovery
+ * cargo staged beside the wreck; the player carries it to the authored bed
+ * spot and installs it.
  */
 export function planFirstNightBase({ shipX = 0, shipZ = 0 } = {}) {
     const x = shipX + FIRST_NIGHT_BERTH_OFFSET.x;
@@ -44,12 +62,19 @@ export function planFirstNightBase({ shipX = 0, shipZ = 0 } = {}) {
         { instanceId: 'starter-berth-wall-s', definitionId: 'straight_wall_1x1', x, z, side: 'south' },
         { instanceId: 'starter-berth-o2', definitionId: 'o2_regulator', x, z }
     ].map((module) => ({ ...module, socketId: 'crashed-ship-berth', transform: { x, z, yaw: 0 } }));
+    const recoveryCargo = RECOVERY_DEFINITIONS.map((recovery) => ({
+        ...recovery,
+        worldPosition: {
+            x: shipX + recovery.sourceOffset.x,
+            z: shipZ + recovery.sourceOffset.z
+        }
+    }));
     return {
         installSocket: installSockets[0],
         installSockets,
         shell,
-        recoveryCargo: Object.freeze([]),
-        cotSource: Object.freeze({ x, z })
+        recoveryCargo,
+        cotSource: recoveryCargo[0].worldPosition
     };
 }
 
@@ -60,9 +85,10 @@ export function ensureFirstNightBaseState(state, options = {}) {
     const shipZ = options.shipZ ?? 0;
     const shellById = new Map(plan.shell.map((module) => [module.instanceId, module]));
     const installedWithoutLegacyGiveaways = state.installed
-        .filter(({ instanceId, missionId }) => (
+        .filter(({ instanceId, missionId, definitionId, installedByPlayer }) => (
             !LEGACY_GIVEAWAY_MODULE_IDS.has(instanceId)
             && missionId !== FIRST_NIGHT_SEAL_MISSION_ID
+            && !(definitionId === 'cot_bed' && !installedByPlayer && (instanceId === `cot_bed:${state.runId ?? 'campaign'}` || instanceId === 'cot_bed:campaign'))
         ))
         .map((module) => {
             const replacement = shellById.get(module.instanceId);
@@ -73,44 +99,68 @@ export function ensureFirstNightBaseState(state, options = {}) {
             return atLegacyBerth ? { ...replacement } : module;
         });
     const installedIds = new Set(installedWithoutLegacyGiveaways.map(({ instanceId }) => instanceId));
-    const cotSocket = plan.installSocket;
-    const existingCot = installedWithoutLegacyGiveaways.find(({ definitionId }) => definitionId === 'cot_bed')
-        ?? (state.carried?.definitionId === 'cot_bed' ? state.carried : null)
-        ?? state.worldObjects?.find(({ definitionId }) => definitionId === 'cot_bed')
-        ?? null;
-    const installedCotRecord = {
-        ...(existingCot ?? {}),
-        instanceId: existingCot?.instanceId ?? `cot_bed:${state.runId ?? 'campaign'}`,
-        definitionId: 'cot_bed',
-        missionId: FIRST_NIGHT_COT_MISSION_ID,
-        socketId: cotSocket.id,
-        transform: { ...cotSocket.transform },
-        x: cotSocket.transform.x,
-        z: cotSocket.transform.z,
-        yaw: cotSocket.transform.yaw
-    };
-    const installedWithoutCot = installedWithoutLegacyGiveaways.filter(({ definitionId }) => definitionId !== 'cot_bed');
-    const next = {
+    let next = {
         ...state,
         installed: [
-            ...installedWithoutCot,
-            ...plan.shell.filter(({ instanceId }) => !installedIds.has(instanceId)),
-            installedCotRecord
+            ...installedWithoutLegacyGiveaways,
+            ...plan.shell.filter(({ instanceId }) => !installedIds.has(instanceId))
         ],
-        carried: state.carried?.definitionId === 'cot_bed' || state.carried?.missionId === FIRST_NIGHT_SEAL_MISSION_ID
-            ? null
-            : state.carried,
-        worldObjects: (state.worldObjects ?? []).filter((object) => (
-            object.definitionId !== 'cot_bed'
-            && object.missionId !== FIRST_NIGHT_SEAL_MISSION_ID
-        ))
+        carried: state.carried?.missionId === FIRST_NIGHT_SEAL_MISSION_ID ? null : state.carried,
+        worldObjects: returnStrandedCot(
+            (state.worldObjects ?? []).filter(({ missionId }) => missionId !== FIRST_NIGHT_SEAL_MISSION_ID),
+            plan,
+            options
+        )
     };
+
+    const addedCargo = [];
+    for (const recovery of plan.recoveryCargo) {
+        const alreadyExists = next.installed.some(({ definitionId }) => definitionId === recovery.definitionId)
+            || next.carried?.definitionId === recovery.definitionId
+            || next.worldObjects.some(({ definitionId }) => definitionId === recovery.definitionId);
+        if (alreadyExists) continue;
+        const definition = getBaseModuleDefinition(recovery.definitionId);
+        const object = createCarryObject({
+            instanceId: `${recovery.definitionId}:${next.runId ?? 'campaign'}`,
+            definitionId: recovery.definitionId,
+            missionId: recovery.missionId,
+            massClass: definition?.massClass ?? 'medium',
+            worldPosition: recovery.worldPosition,
+            carrySocket: 'both-hands',
+            buildTags: definition?.buildTags ?? ['bed', 'sleep_anchor'],
+            runId: next.runId
+        });
+        const result = addCarryObject(next, object);
+        if (!result.ok) continue;
+        next = result.state;
+        addedCargo.push(object);
+    }
+
     return {
         state: next,
         plan,
-        addedCot: !existingCot,
-        addedCargo: []
+        addedCot: addedCargo.some(({ definitionId }) => definitionId === 'cot_bed'),
+        addedCargo
     };
+}
+
+function returnStrandedCot(worldObjects, plan, { shipX = 0, shipZ = 0 } = {}) {
+    const legacyPositions = LEGACY_COT_SOURCE_OFFSETS.map((offset) => ({
+        x: Math.round(shipX + offset.x),
+        z: Math.round(shipZ + offset.z)
+    }));
+    return worldObjects.map((object) => {
+        if (object.definitionId !== 'cot_bed') return object;
+        const campReserved = object.handoff?.type === 'camp-cot' && object.handoff?.status === 'reserved';
+        const atLegacySpot = !object.handoff && legacyPositions.some(({ x, z }) => (
+            object.worldPosition?.x === x && object.worldPosition?.z === z
+        ));
+        if (!campReserved && !atLegacySpot) return object;
+        const rest = { ...object };
+        delete rest.handoff;
+        const home = { ...plan.cotSource };
+        return { ...rest, worldPosition: home, sourcePosition: { ...home }, lastSafePosition: { ...home } };
+    });
 }
 
 export function availableFirstNightSocket(state, plan, object) {

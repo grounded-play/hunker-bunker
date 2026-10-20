@@ -1549,6 +1549,7 @@ const DEFAULT_KEY_BINDINGS = Object.freeze({
     moveLeft: ['KeyA', 'ArrowLeft'],
     moveRight: ['KeyD', 'ArrowRight'],
     interact: ['KeyE', 'Enter'],
+    cycleInteract: ['KeyC', 'KeyX'],
     reload: ['KeyR', null],
     melee: ['KeyV', null],
     ability: ['KeyF', null],
@@ -9329,9 +9330,20 @@ export class ThreeGame {
                 debugLog.debug('INPUT', 'Action: INTERACT (E/Enter)');
                 this.triggerGameplayInteract();
             }
-            if (event.code === 'KeyC') {
+            if (event.code === 'KeyC' || event.code === 'KeyX' || this.codeMatchesAction(event.code, 'cycleInteract')) {
                 event.preventDefault();
+                debugLog.debug('INPUT', 'Action: CYCLE INTERACT');
                 this.cycleInteractionTarget();
+                return;
+            }
+            if (event.code === 'KeyQ' || event.code === 'Tab') {
+                const candidates = this.getPriorityInteractionCandidates?.() ?? [];
+                if (candidates.length > 1) {
+                    event.preventDefault();
+                    debugLog.debug('INPUT', 'Action: CYCLE INTERACT (Q/Tab)');
+                    this.cycleInteractionTarget();
+                    return;
+                }
             }
             if (this.codeMatchesAction(event.code, 'reload')) {
                 event.preventDefault();
@@ -9397,6 +9409,15 @@ export class ThreeGame {
             event.preventDefault();
             if (!this.isGameplayInputActive()) return;
             this.triggerGameplayInteract();
+        };
+        this.handleCanvasWheel = (event) => {
+            if (!this.isGameplayInputActive?.() || this.isPlayerDead) return;
+            const candidates = this.getPriorityInteractionCandidates?.() ?? [];
+            if (candidates.length > 1) {
+                event.preventDefault();
+                const direction = event.deltaY > 0 ? 1 : -1;
+                this.cycleInteractionTarget(direction);
+            }
         };
 
         // Pointer/tap state for canvas input.
@@ -9680,6 +9701,7 @@ export class ThreeGame {
         this.renderer.domElement.addEventListener('pointerup', this.handleCanvasTap);
         this.renderer.domElement.addEventListener('pointercancel', this.handleCanvasPointerCancel);
         this.renderer.domElement.addEventListener('pointerleave', this.handleCanvasPointerCancel);
+        this.renderer.domElement.addEventListener('wheel', this.handleCanvasWheel, { passive: false });
     }
 
     updateFacingYaw(yaw) {
@@ -9814,21 +9836,70 @@ export class ThreeGame {
             candidates.sort((a, b) => a.distance - b.distance);
             return candidates;
         }
+        const carriedObject = this.carryState?.carried;
         const consoleShip = this.activeInteractiveConsole;
         if (consoleShip) {
             const x = consoleShip.tileX + consoleShip.consoleOffset.x;
             const z = consoleShip.tileZ + consoleShip.consoleOffset.z;
-            candidates.push({ id: 'ship-console', label: 'SHIP CONSOLE', distance: Math.hypot(px - x, pz - z), interact: () => this.interactWithConsole() });
+            candidates.push({
+                id: 'ship-console',
+                label: 'SHIP CONSOLE',
+                distance: Math.hypot(px - x, pz - z),
+                secondary: Boolean(carriedObject),
+                priorityRank: carriedObject ? 2 : 1,
+                interact: () => this.interactWithConsole()
+            });
         }
+        const o2CoreInstalled = isCampO2CoreInstalled(this.carryState);
         if (this.activeInteractiveO2Generator) {
             const position = this.getActiveO2GeneratorPosition();
-            if (position) candidates.push({ id: 'o2-generator', label: 'O2 GENERATOR', distance: Math.hypot(px - position.x, pz - position.z), interact: () => this.interactWithO2Generator() });
+            if (position) {
+                if (o2CoreInstalled) {
+                    const generatorState = this.getO2GeneratorState();
+                    const label = generatorState.isOnline ? 'UPGRADE O2 GENERATOR' : 'REPAIR O2 GENERATOR';
+                    candidates.push({
+                        id: 'o2-generator',
+                        label,
+                        distance: Math.hypot(px - position.x, pz - position.z),
+                        secondary: Boolean(carriedObject),
+                        priorityRank: carriedObject ? 2 : 1,
+                        interact: () => this.interactWithO2Generator()
+                    });
+                } else if (!carriedObject) {
+                    candidates.push({
+                        id: 'o2-generator-missing-core',
+                        label: 'O2 GENERATOR · CORE INSTALLATION REQUIRED',
+                        distance: Math.hypot(px - position.x, pz - position.z),
+                        secondary: false,
+                        priorityRank: 1,
+                        interact: () => {
+                            this.showBunkerLine?.('O₂ GENERATOR REQUIRES CORE INSTALLATION — RETRIEVE THE O₂ CORE FROM THE CRASH SITE.');
+                            window.AudioManager?.play?.('ui_deny', { volume: 0.5 });
+                            return false;
+                        }
+                    });
+                }
+            }
         }
         if (this.activeInteractiveBaseTurret) {
-            candidates.push({ id: 'base-turret', label: 'BASE TURRET', distance: Math.hypot(px - 9, pz - 4.8), interact: () => this.interactWithBaseTurret() });
+            candidates.push({
+                id: 'base-turret',
+                label: 'BASE TURRET',
+                distance: Math.hypot(px - 9, pz - 4.8),
+                secondary: Boolean(carriedObject),
+                priorityRank: carriedObject ? 2 : 1,
+                interact: () => this.interactWithBaseTurret()
+            });
         }
         if (this.foundry?.isRevealed && this.foundry.isWithinInteractRange(px, pz)) {
-            candidates.push({ id: 'foundry', label: 'FAB BAY', distance: this.foundry.distanceTo(px, pz), interact: () => this.interactWithFoundry() });
+            candidates.push({
+                id: 'foundry',
+                label: 'FAB BAY',
+                distance: this.foundry.distanceTo(px, pz),
+                secondary: Boolean(carriedObject),
+                priorityRank: carriedObject ? 2 : 1,
+                interact: () => this.interactWithFoundry()
+            });
         }
         if (this._blackBoxMarkerActive && this._blackBoxState) {
             const distance = Math.hypot(px - this._blackBoxState.x, pz - this._blackBoxState.z);
@@ -9838,6 +9909,7 @@ export class ThreeGame {
                     label: 'BLACK BOX (OPTIONAL)',
                     distance,
                     secondary: true,
+                    priorityRank: 2,
                     interact: () => this.interactWithBlackBox()
                 });
             }
@@ -9850,11 +9922,11 @@ export class ThreeGame {
                     // Name what is inside and what opening it costs.
                     label: `${t(REWARD_CACHE_I18N_KEYS.preview, { dropName: t(this.activeRewardCache.dropNameKey) })} · ${t(REWARD_CACHE_I18N_KEYS.riskCost, { cost: t(this.activeRewardCache.costConfig?.labelKey) })}`,
                     distance,
+                    priorityRank: 1,
                     interact: () => this.interactWithRewardCache()
                 });
             }
         }
-        const carriedObject = this.carryState?.carried;
         if (carriedObject) {
             const delivery = this.getMissionCargoDelivery?.(carriedObject);
             const deliveryDistance = delivery
@@ -9865,32 +9937,42 @@ export class ThreeGame {
                     id: `deliver-cargo:${carriedObject.instanceId}`,
                     label: delivery.label,
                     distance: deliveryDistance,
+                    priorityRank: 0,
                     interact: () => this.deliverCurrentMissionCargo()
                 });
             }
-            const socket = availableFirstNightSocket(
-                this.carryState, this.getFirstNightBasePlan?.(), carriedObject
-            ) ?? availableShipRebuildSocket(
-                this.carryState, this.getShipRebuildPlan?.(), carriedObject
-            );
+            const socket = this.getAvailableCarryInstallSocket?.(carriedObject)
+                ?? availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan?.(), carriedObject)
+                ?? availableCampO2Socket(this.carryState, this.getCampO2Plan?.(), carriedObject)
+                ?? availableShipRebuildSocket(this.carryState, this.getShipRebuildPlan?.(), carriedObject);
             const socketDistance = socket
                 ? Math.hypot(px - socket.transform.x, pz - socket.transform.z)
                 : Infinity;
-            if (!delivery && socketDistance <= 2.5) {
-                const label = getBaseModuleDefinition(carriedObject.definitionId)?.label ?? 'RECOVERED MODULE';
+            const canInstall = !delivery && socketDistance <= 3.2;
+            if (canInstall) {
+                const def = getBaseModuleDefinition(carriedObject.definitionId);
+                const label = def?.label ?? 'RECOVERED MODULE';
+                const isCampO2 = socket.siteKind === 'camp-o2' || carriedObject.definitionId === CAMP_O2_STAGE.definitionId;
+                const installLabel = isCampO2
+                    ? `INSTALL ${label} IN CAMP GENERATOR`
+                    : socket.id === 'ship-sleep-bay' || socket.siteKind === 'camp'
+                        ? `INSTALL ${label} AT SHIP BERTH`
+                        : `INSTALL ${label} AT ESCAPE CRAFT`;
                 candidates.push({
                     id: `install-cargo:${carriedObject.instanceId}`,
-                    label: `INSTALL ${label} AT SHIP BERTH`,
+                    label: installLabel,
                     distance: socketDistance,
+                    priorityRank: 0,
                     interact: () => this.installCurrentCarryObject()
                 });
             }
             candidates.push({
                 id: `drop-cargo:${carriedObject.instanceId}`,
                 label: 'SET CARGO DOWN',
-                distance: 2.15,
-                secondary: true,
-                interact: () => this.dropCurrentCarryObject()
+                distance: canInstall ? 2.15 : 0,
+                secondary: false,
+                priorityRank: canInstall ? 1 : 0,
+                interact: () => this.dropCurrentCarryObject({ allowInstall: false })
             });
         } else {
             const carryObject = this.getNearestCarryObject?.();
@@ -9900,66 +9982,72 @@ export class ThreeGame {
                     id: `carry-object:${carryObject.object.instanceId}`,
                     label: `LIFT ${label} · BOTH HANDS`,
                     distance: carryObject.distance,
+                    priorityRank: 0,
                     interact: () => this.beginCarryObject(carryObject.object.instanceId)
                 });
             }
-        }
-        const damagedModule = this.getNearestDamagedBaseModule?.();
-        if (damagedModule) {
-            const label = getBaseModuleDefinition(damagedModule.module.definitionId)?.label ?? 'BASE MODULE';
-            const hasRepairTool = this.bank?.hasWallRepairTool?.() === true;
-            candidates.push({
-                id: `repair-base:${damagedModule.module.instanceId}`,
-                label: hasRepairTool
-                    ? `REPAIR ${label} · ${damagedModule.cost} SHELLS`
-                    : 'FIELD WELDER REQUIRED · BUILD AT FABRICATION TERMINAL',
-                distance: damagedModule.distance,
-                interact: () => this.repairInstalledBaseModule(damagedModule.module.instanceId)
-            });
-        }
-        const destroyedWall = this.getNearestDestroyedWall?.();
-        if (destroyedWall) {
-            const hasRepairTool = this.bank?.hasWallRepairTool?.() === true;
-            candidates.push({
-                id: `rebuild-wall:${destroyedWall.key}`,
-                label: hasRepairTool
-                    ? `REBUILD BREACHED WALL · ${DESTROYED_WALL_REPAIR_COST} SHELLS`
-                    : 'FIELD WELDER REQUIRED · BUILD AT FABRICATION TERMINAL',
-                distance: destroyedWall.distance,
-                interact: () => this.repairDestroyedWallAt(destroyedWall.x, destroyedWall.z)
-            });
-        }
-        const baseDoor = this.getNearestInstalledBaseDoor?.();
-        if (baseDoor) {
-            candidates.push({
-                id: `cycle-base-door:${baseDoor.module.instanceId}`,
-                label: baseDoor.module.isOpen ? 'SEAL BERTH PRESSURE DOOR' : 'OPEN BERTH PRESSURE DOOR',
-                distance: baseDoor.distance,
-                interact: () => this.toggleInstalledBaseDoor(baseDoor.module.instanceId)
-            });
-        }
-        const shipModule = this.getNearestInstalledShipModule?.();
-        if (shipModule) {
-            const action = getShipModuleAction(shipModule.module.definitionId);
-            const remaining = this.getShipModuleActionCooldown?.(shipModule.module.instanceId) ?? 0;
-            candidates.push({
-                id: `use-ship-module:${shipModule.module.instanceId}`,
-                label: remaining > 0
-                    ? `${action?.label ?? 'SHIP SYSTEM'} · RECHARGING ${Math.ceil(remaining)}s`
-                    : action?.label ?? 'USE SHIP SYSTEM',
-                distance: shipModule.distance,
-                interact: () => this.interactWithInstalledShipModule(shipModule.module.instanceId)
-            });
-        }
-        const fieldWeapon = this.getNearestFieldWeaponDrop?.();
-        if (fieldWeapon) {
-            const profile = getFieldWeaponProfile(fieldWeapon.drop.profileId, true);
-            candidates.push({
-                id: `field-weapon:${fieldWeapon.drop.instanceId}`,
-                label: `SWAP TO ${profile?.label ?? fieldWeapon.drop.profileId} · ${fieldWeapon.drop.ammoInWeapon}/${fieldWeapon.drop.reserveAmmo}`,
-                distance: fieldWeapon.distance,
-                interact: () => this.interactWithFieldWeaponDrop(fieldWeapon.drop.instanceId)
-            });
+            const damagedModule = this.getNearestDamagedBaseModule?.();
+            if (damagedModule) {
+                const label = getBaseModuleDefinition(damagedModule.module.definitionId)?.label ?? 'BASE MODULE';
+                const hasRepairTool = this.bank?.hasWallRepairTool?.() === true;
+                candidates.push({
+                    id: `repair-base:${damagedModule.module.instanceId}`,
+                    label: hasRepairTool
+                        ? `REPAIR ${label} · ${damagedModule.cost} SHELLS`
+                        : 'FIELD WELDER REQUIRED · BUILD AT FABRICATION TERMINAL',
+                    distance: damagedModule.distance,
+                    priorityRank: 1,
+                    interact: () => this.repairInstalledBaseModule(damagedModule.module.instanceId)
+                });
+            }
+            const destroyedWall = this.getNearestDestroyedWall?.();
+            if (destroyedWall) {
+                const hasRepairTool = this.bank?.hasWallRepairTool?.() === true;
+                candidates.push({
+                    id: `rebuild-wall:${destroyedWall.key}`,
+                    label: hasRepairTool
+                        ? `REBUILD BREACHED WALL · ${DESTROYED_WALL_REPAIR_COST} SHELLS`
+                        : 'FIELD WELDER REQUIRED · BUILD AT FABRICATION TERMINAL',
+                    distance: destroyedWall.distance,
+                    priorityRank: 1,
+                    interact: () => this.repairDestroyedWallAt(destroyedWall.x, destroyedWall.z)
+                });
+            }
+            const baseDoor = this.getNearestInstalledBaseDoor?.();
+            if (baseDoor) {
+                candidates.push({
+                    id: `cycle-base-door:${baseDoor.module.instanceId}`,
+                    label: baseDoor.module.isOpen ? 'SEAL BERTH PRESSURE DOOR' : 'OPEN BERTH PRESSURE DOOR',
+                    distance: baseDoor.distance,
+                    priorityRank: 1,
+                    interact: () => this.toggleInstalledBaseDoor(baseDoor.module.instanceId)
+                });
+            }
+            const shipModule = this.getNearestInstalledShipModule?.();
+            if (shipModule) {
+                const action = getShipModuleAction(shipModule.module.definitionId);
+                const remaining = this.getShipModuleActionCooldown?.(shipModule.module.instanceId) ?? 0;
+                candidates.push({
+                    id: `use-ship-module:${shipModule.module.instanceId}`,
+                    label: remaining > 0
+                        ? `${action?.label ?? 'SHIP SYSTEM'} · RECHARGING ${Math.ceil(remaining)}s`
+                        : action?.label ?? 'USE SHIP SYSTEM',
+                    distance: shipModule.distance,
+                    priorityRank: 1,
+                    interact: () => this.interactWithInstalledShipModule(shipModule.module.instanceId)
+                });
+            }
+            const fieldWeapon = this.getNearestFieldWeaponDrop?.();
+            if (fieldWeapon) {
+                const profile = getFieldWeaponProfile(fieldWeapon.drop.profileId, true);
+                candidates.push({
+                    id: `field-weapon:${fieldWeapon.drop.instanceId}`,
+                    label: `SWAP TO ${profile?.label ?? fieldWeapon.drop.profileId} · ${fieldWeapon.drop.ammoInWeapon}/${fieldWeapon.drop.reserveAmmo}`,
+                    distance: fieldWeapon.distance,
+                    priorityRank: 1,
+                    interact: () => this.interactWithFieldWeaponDrop(fieldWeapon.drop.instanceId)
+                });
+            }
         }
         if (this.playerType === 'ENGINEER' && (this.currentDepthTier ?? 0) === 0) {
             const dirLen = Math.hypot(this.aimDirX, this.aimDirZ) || 1;
@@ -9971,6 +10059,7 @@ export class ThreeGame {
                     id: 'nanite-bridge',
                     label: 'DEPLOY NANITE BRIDGE (3 SALVAGE)',
                     distance,
+                    priorityRank: 1,
                     interact: () => this.deployNaniteBridgeAt(hx, hz)
                 });
             }
@@ -9993,12 +10082,24 @@ export class ThreeGame {
                             hostilesNearby: !check.allowed && check.reason === 'hostiles_nearby'
                         }),
                         distance,
+                        priorityRank: 1,
                         interact: () => this.interactWithTransitTerminal(terminal.id)
                     });
                 }
             }
         }
-        candidates.sort((a, b) => Number(Boolean(a.secondary)) - Number(Boolean(b.secondary)) || a.distance - b.distance);
+        candidates.sort((a, b) => {
+            const secDiff = Number(Boolean(a.secondary)) - Number(Boolean(b.secondary));
+            if (secDiff !== 0) return secDiff;
+            const rankDiff = (a.priorityRank ?? 1) - (b.priorityRank ?? 1);
+            if (rankDiff !== 0) return rankDiff;
+            return a.distance - b.distance;
+        });
+        if (candidates.length > 0) {
+            this._interactionTargetIndex = Math.max(0, Math.min(this._interactionTargetIndex ?? 0, candidates.length - 1));
+        } else {
+            this._interactionTargetIndex = 0;
+        }
         return candidates;
     }
 
@@ -10045,6 +10146,7 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('interaction-target-changed', {
             detail: { id: selected.id, label: selected.label, index: this._interactionTargetIndex, count: candidates.length }
         }));
+        this.updateCarryInteractionPrompt?.();
         return true;
     }
 
@@ -11084,21 +11186,38 @@ export class ThreeGame {
         }
 
         let label = null;
-        const carried = this.carryState?.carried;
-        if (carried) {
-            const socket = this.getAvailableCarryInstallSocket?.(carried)
-                ?? availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan?.(), carried);
-            const defLabel = getBaseModuleDefinition(carried.definitionId)?.label ?? 'CARGO';
-            if (socket && Math.hypot(this.player.position.x - socket.transform.x, this.player.position.z - socket.transform.z) <= 2.6) {
-                label = `[E] PLACE ${defLabel.toUpperCase()} (INSTALL)`;
+        const candidates = this.getPriorityInteractionCandidates?.() ?? [];
+        if (candidates.length > 0) {
+            const index = Math.min(this._interactionTargetIndex ?? 0, candidates.length - 1);
+            const selected = candidates[index];
+            const interactKey = this.getPromptKeyGlyph?.('E', 'interact') ?? 'E';
+            if (candidates.length > 1) {
+                const cycleKey = this.getPromptKeyGlyph?.('C', 'cycleInteract') ?? 'C';
+                label = `[${interactKey}] ${selected.label} · [${cycleKey}] NEXT (${index + 1}/${candidates.length})`;
             } else {
-                label = `[E] SET ${defLabel.toUpperCase()} DOWN`;
+                label = `[${interactKey}] ${selected.label}`;
             }
         } else {
-            const nearest = this.getNearestCarryObject?.();
-            if (nearest) {
-                const defLabel = getBaseModuleDefinition(nearest.object.definitionId)?.label ?? 'CARGO';
-                label = `[E] LIFT ${defLabel.toUpperCase()} · BOTH HANDS`;
+            const carried = this.carryState?.carried;
+            if (carried) {
+                const socket = this.getAvailableCarryInstallSocket?.(carried)
+                    ?? availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan?.(), carried)
+                    ?? availableCampO2Socket(this.carryState, this.getCampO2Plan?.(), carried)
+                    ?? availableShipRebuildSocket(this.carryState, this.getShipRebuildPlan?.(), carried);
+                const defLabel = getBaseModuleDefinition(carried.definitionId)?.label ?? 'CARGO';
+                const interactKey = this.getPromptKeyGlyph?.('E', 'interact') ?? 'E';
+                if (socket && Math.hypot(this.player.position.x - socket.transform.x, this.player.position.z - socket.transform.z) <= 3.2) {
+                    label = `[${interactKey}] PLACE ${defLabel.toUpperCase()} (INSTALL)`;
+                } else {
+                    label = `[${interactKey}] SET ${defLabel.toUpperCase()} DOWN`;
+                }
+            } else {
+                const nearest = this.getNearestCarryObject?.();
+                if (nearest) {
+                    const defLabel = getBaseModuleDefinition(nearest.object.definitionId)?.label ?? 'CARGO';
+                    const interactKey = this.getPromptKeyGlyph?.('E', 'interact') ?? 'E';
+                    label = `[${interactKey}] LIFT ${defLabel.toUpperCase()} · BOTH HANDS`;
+                }
             }
         }
 
@@ -11613,7 +11732,9 @@ export class ThreeGame {
             [forward.x * 1.35, forward.z * 1.35],
             [right.x * 1.2, right.z * 1.2],
             [-right.x * 1.2, -right.z * 1.2],
-            [-forward.x, -forward.z]
+            [-forward.x, -forward.z],
+            [forward.x * 0.7, forward.z * 0.7],
+            [0, 0]
         ];
         for (const [dx, dz] of offsets) {
             const x = this.player.position.x + dx;
@@ -11624,42 +11745,52 @@ export class ThreeGame {
                 && Math.hypot(prop.position.x - x, prop.position.z - z) < (prop.userData.collisionRadius ?? 0.5) + 0.45);
             if (!blocked) return { x, z };
         }
-        return null;
+        return { x: this.player.position.x, z: this.player.position.z };
     }
 
-    dropCurrentCarryObject() {
+    dropCurrentCarryObject({ allowInstall = true } = {}) {
         if (!this.carryState?.carried) return false;
         const carried = this.carryState.carried;
-        const socket = this.getAvailableCarryInstallSocket?.(carried)
-            ?? availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan?.(), carried);
-        if (socket && this.player) {
-            const socketDistance = Math.hypot(this.player.position.x - socket.transform.x, this.player.position.z - socket.transform.z);
-            if (socketDistance <= 2.6) {
-                return this.installCurrentCarryObject();
+        if (allowInstall) {
+            const socket = this.getAvailableCarryInstallSocket?.(carried)
+                ?? availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan?.(), carried)
+                ?? availableCampO2Socket(this.carryState, this.getCampO2Plan?.(), carried)
+                ?? availableShipRebuildSocket(this.carryState, this.getShipRebuildPlan?.(), carried);
+            if (socket && this.player) {
+                const socketDistance = Math.hypot(this.player.position.x - socket.transform.x, this.player.position.z - socket.transform.z);
+                if (socketDistance <= 3.2) {
+                    return this.installCurrentCarryObject();
+                }
             }
         }
-        const position = this.findSafeCarryDropPosition();
+        let position = this.findSafeCarryDropPosition?.();
+        if (!position && this.player) {
+            position = { x: this.player.position.x, z: this.player.position.z };
+        }
         if (!position) {
             this.showBunkerLine?.('NO CLEAR SPACE TO SET CARGO DOWN.');
             return false;
         }
-        if (socket) {
-            const dropDistance = Math.hypot(position.x - socket.transform.x, position.z - socket.transform.z);
-            if (dropDistance <= 2.0) {
-                return this.installCurrentCarryObject();
-            }
-        }
-        const result = dropCarriedObject(this.carryState, position, {
-            carrierPlayerId: this.multiplayerLocalPlayerId ?? 'local'
+        const carrierPlayerId = this.carryState.carried.carrierPlayerId ?? this.multiplayerLocalPlayerId ?? 'local';
+        let result = dropCarriedObject(this.carryState, position, {
+            carrierPlayerId
         });
+        if (!result.ok) {
+            result = dropCarriedObject(this.carryState, position, {});
+        }
         if (!result.ok) return false;
         this.carryState = result.state;
         const root = this.carriedObjectVisual;
         this.carriedObjectVisual = null;
-        if (root) this.carryObjectVisuals.set(result.dropped.instanceId, root);
+        if (root && result.dropped) {
+            this.carryObjectVisuals.set(result.dropped.instanceId, root);
+        }
         this.reconcileCarryObjectVisuals();
         window.AudioManager?.play?.('metal_stress', { volume: 0.34, playbackRate: 0.82 });
-        window.dispatchEvent(new CustomEvent('carry-object-dropped', { detail: { dropped: result.dropped } }));
+        this.showBunkerLine?.('CARGO SET DOWN.');
+        if (result.dropped) {
+            window.dispatchEvent(new CustomEvent('carry-object-dropped', { detail: { dropped: result.dropped } }));
+        }
         return true;
     }
 
@@ -11711,13 +11842,16 @@ export class ThreeGame {
         const carried = this.carryState?.carried;
         if (!carried || !this.player) return false;
         const socket = this.getAvailableCarryInstallSocket?.(carried)
-            ?? availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan(), carried);
+            ?? availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan(), carried)
+            ?? availableCampO2Socket(this.carryState, this.getCampO2Plan?.(), carried)
+            ?? availableShipRebuildSocket(this.carryState, this.getShipRebuildPlan?.(), carried);
         if (!socket) return false;
-        if (Math.hypot(this.player.position.x - socket.transform.x, this.player.position.z - socket.transform.z) > 2.5) return false;
+        if (Math.hypot(this.player.position.x - socket.transform.x, this.player.position.z - socket.transform.z) > 3.2) return false;
         const result = installCarriedObject(this.carryState, socket, {
             carrierPlayerId: this.multiplayerLocalPlayerId ?? 'local'
         });
         if (!result.ok) return false;
+        result.installed.installedByPlayer = true;
         this.carryState = result.state;
         saveInstalledBaseModules(this.carryState.installed);
         this.disposeWorld3dPropFx?.(this.carriedObjectVisual);
@@ -15399,7 +15533,12 @@ export class ThreeGame {
         const o2Distance = generatorPos
             ? Math.hypot(this.player.position.x - generatorPos.x, this.player.position.z - generatorPos.z)
             : Infinity;
-        const o2CandidateInRange = Boolean(generatorPos && o2Distance < 2.8);
+        const o2CandidateInRange = Boolean(
+            generatorPos &&
+            o2Distance < 2.8 &&
+            !this.carryState?.carried &&
+            (!this.carryState || isCampO2CoreInstalled(this.carryState))
+        );
 
         for (const ship of this.crashedShips) {
             if (!ship.isVisible) continue;
@@ -15426,7 +15565,7 @@ export class ThreeGame {
             const dz = this.player.position.z - consoleZ;
             const distance = Math.hypot(dx, dz);
 
-            if (distance < 3.8 && distance < minDistance) {
+            if (!this.carryState?.carried && distance < 3.8 && distance < minDistance) {
                 nearestConsole = ship;
                 minDistance = distance;
             }
@@ -16055,6 +16194,8 @@ export class ThreeGame {
     interactWithO2Generator() {
         if (!this.isGameplayInputActive()) return false;
         if (!this.activeInteractiveO2Generator) return false;
+        if (this.carryState?.carried) return false;
+        if (this.carryState && !isCampO2CoreInstalled(this.carryState)) return false;
         this.acknowledgePropExperience?.(
             this.activeInteractiveO2Generator.o2ModuleSprite ?? this.activeInteractiveO2Generator
         );
@@ -16117,6 +16258,8 @@ export class ThreeGame {
     tryInteractWithO2Pointer(clientX, clientY) {
         const ship = this.activeInteractiveO2Generator;
         if (!ship || !this.isGameplayInputActive()) return false;
+        if (this.carryState?.carried) return false;
+        if (this.carryState && !isCampO2CoreInstalled(this.carryState)) return false;
 
         const modal = document.getElementById('o2-generator-modal');
         if (modal && !modal.classList.contains('hidden')) {
@@ -19154,10 +19297,13 @@ export class ThreeGame {
         if (badge) {
             badge.textContent = t('ui.console.field_stabilizer', { type: ship?.type ?? this.playerType });
         }
-        setText('o2-generator-modal-status', generatorState.isOnline
-            ? `ONLINE // LVL ${generatorState.level}`
-            : 'OFFLINE // REPAIR REQUIRED');
-        setText('o2-generator-modal-field', generatorState.isOnline
+        const o2CoreInstalled = isCampO2CoreInstalled(this.carryState);
+        setText('o2-generator-modal-status', !o2CoreInstalled
+            ? 'OFFLINE // CORE NOT INSTALLED'
+            : (generatorState.isOnline
+                ? `ONLINE // LVL ${generatorState.level}`
+                : 'OFFLINE // REPAIR REQUIRED'));
+        setText('o2-generator-modal-field', (generatorState.isOnline && o2CoreInstalled)
             ? `FIELD RADIUS ${generatorState.radius.toFixed(1)}u // REFILL ${generatorState.refillRate.toFixed(1)}%/s`
             : 'FIELD RADIUS 0.0u // REFILL OFFLINE');
 
@@ -50338,6 +50484,7 @@ export class ThreeGame {
         this.renderer.domElement.removeEventListener('pointerup', this.handleCanvasTap);
         this.renderer.domElement.removeEventListener('pointercancel', this.handleCanvasPointerCancel);
         this.renderer.domElement.removeEventListener('pointerleave', this.handleCanvasPointerCancel);
+        this.renderer.domElement.removeEventListener('wheel', this.handleCanvasWheel);
         this.darknessOverlay?.remove?.();
         this.tiltShiftOverlay?.remove?.();
         this._containerSizeObserver?.disconnect?.();

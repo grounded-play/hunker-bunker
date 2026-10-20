@@ -7,7 +7,7 @@ export const CAMP_O2_STAGE = Object.freeze({
     goalKey: 'o2Bubble',
     prerequisiteGoalKey: null,
     definitionId: 'camp_o2_generator_core',
-    legacyDefinitionIds: Object.freeze(['ship_life_support_core']),
+    legacyDefinitionIds: Object.freeze(['ship_life_support_core', 'o2_regulator']),
     missionId: 'camp-o2:generator-core',
     socketId: 'camp-o2-generator',
     socketTag: 'camp_utility'
