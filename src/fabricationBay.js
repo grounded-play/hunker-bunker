@@ -9,7 +9,7 @@
  * pieces are injected, so it is testable without a browser.
  */
 import { assetUrl } from './assetUrl.js';
-import { BASE_ARCADE_BUILD_COST, FOUNDRY_ACTIVATION_COST } from './bank.js';
+import { BASE_ARCADE_BUILD_COST, FOUNDRY_ACTIVATION_COST, WALL_REPAIR_TOOL_BUILD_COST } from './bank.js';
 import { describeFieldWeapon } from './fieldWeapon.js';
 import {
     FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES,
@@ -239,6 +239,37 @@ export function createFabricationBay({
         grid.appendChild(panel);
     }
 
+    function renderWallRepairToolPanel(grid, bank) {
+        const unlocked = bankManager.hasWallRepairTool?.() === true;
+        const affordable = bankManager.canAfford(WALL_REPAIR_TOOL_BUILD_COST);
+        const panel = doc.createElement('div');
+        panel.className = 'fab-activation-panel fab-activation-panel--repair-tool';
+        panel.innerHTML = `
+        <div class="fab-activation-panel__kicker">CAMP BREACH RESPONSE</div>
+        <div class="fab-activation-panel__title">FIELD BULKHEAD WELDER</div>
+        <div class="fab-activation-panel__desc">Rebuild boss-breached walls and restore damaged camp modules in the field.</div>
+        <div class="fab-activation-panel__cost">${costText(WALL_REPAIR_TOOL_BUILD_COST, bank, { showHaveNeed: !affordable })}</div>`;
+        const button = doc.createElement('button');
+        button.id = 'fab-build-wall-repair-tool';
+        button.className = 'fab-card__btn';
+        button.disabled = unlocked || !affordable;
+        button.textContent = unlocked
+            ? 'FIELD WELDER BUILT'
+            : affordable ? 'BUILD FIELD WELDER' : missingText(WALL_REPAIR_TOOL_BUILD_COST, bank);
+        button.addEventListener('click', () => {
+            const result = bankManager.purchaseWallRepairTool?.();
+            if (result?.ok) {
+                playSound('upgrade_unlock', { volume: 0.65 });
+                showPrompt('FIELD BULKHEAD WELDER READY');
+                render();
+            } else {
+                playSound('ui_error', { volume: 0.5 });
+            }
+        });
+        panel.appendChild(button);
+        grid.appendChild(panel);
+    }
+
     function renderRecipeCard(grid, recipe, bank) {
         const fabricated = fabricator.isFabricated(recipe.id);
         // These are real current-run outputs, not concept collection cards.
@@ -362,6 +393,7 @@ export function createFabricationBay({
         }
 
         renderBaseArcadePanel(grid, bank);
+        renderWallRepairToolPanel(grid, bank);
 
         // Bay is online: show the roll panel and sync the roll button.
         rollPanel?.classList.remove('hidden');

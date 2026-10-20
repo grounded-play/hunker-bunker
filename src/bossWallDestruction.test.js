@@ -2,6 +2,21 @@ import { describe, expect, it, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 
 describe('Boss Wall Destruction & Visibility', () => {
+    it('authors the first O2 boss entrance as a two-tile camp breach', () => {
+        const game = {
+            getTileType: () => '#',
+            findWallMeshAt: vi.fn((x, z) => ({ userData: { isWall: true, wallKey: `${x},${z}` } })),
+            destroyWall: vi.fn(() => true),
+            showBunkerLine: vi.fn()
+        };
+        const boss = { userData: {} };
+
+        expect(ThreeGame.prototype.stageFirstBossCampBreach.call(game, boss)).toBe(true);
+        expect(game.destroyWall).toHaveBeenCalledTimes(2);
+        expect(game.destroyWall).toHaveBeenCalledWith(expect.anything(), { source: 'boss', force: true });
+        expect(boss.userData.campBreachCommitted).toBe(true);
+    });
+
     it('smashes forward destructible wall when boss moves into it', () => {
         const damagedWalls = [];
         const destroyedBlastDoors = [];

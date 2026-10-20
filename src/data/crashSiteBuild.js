@@ -96,6 +96,19 @@ export const CRASH_SITE_BUILD = Object.freeze({
         combatSpawnPosition: Object.freeze({ x: 14, z: 23 }),
         departureThresholdZ: 2.75
     }),
+    firstBossBreach: Object.freeze({
+        spawn: Object.freeze({ x: 15, z: 5 }),
+        tiles: Object.freeze([
+            Object.freeze({ x: 15, z: 4 }),
+            Object.freeze({ x: 16, z: 4 })
+        ])
+    }),
+    survivorArrival: Object.freeze({
+        // Walk down the authored north approach and stop at the visible
+        // departure-airlock threshold, never at an arbitrary ship corner.
+        spawn: Object.freeze({ x: 9, z: -8 }),
+        target: Object.freeze({ x: 9, z: 3.6 })
+    }),
     constructionSockets: Object.freeze([
         // The cot is part of the camp, not the wreck. Its whole 1x2 footprint
         // sits comfortably inside the level-one O2 field centered at 12.5,9.5.

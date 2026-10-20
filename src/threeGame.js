@@ -1295,6 +1295,7 @@ const PROCEDURAL_DOOR_OPEN_RADIUS = 2.7;
 const PROCEDURAL_DOOR_CLOSE_RADIUS = 3.6;
 const BOSS_WALL_BREAK_COOLDOWN = 0.42;
 const BOSS_WALL_BREAK_DAMAGE = 999;
+const DESTROYED_WALL_REPAIR_COST = 6;
 // Co-op friendly fire shoves a squadmate along the bullet's travel direction
 // instead of damaging them: enough to move someone out of a doorway, not enough
 // to fling them off a ledge.
@@ -9906,11 +9907,26 @@ export class ThreeGame {
         const damagedModule = this.getNearestDamagedBaseModule?.();
         if (damagedModule) {
             const label = getBaseModuleDefinition(damagedModule.module.definitionId)?.label ?? 'BASE MODULE';
+            const hasRepairTool = this.bank?.hasWallRepairTool?.() === true;
             candidates.push({
                 id: `repair-base:${damagedModule.module.instanceId}`,
-                label: `REPAIR ${label} · ${damagedModule.cost} SHELLS`,
+                label: hasRepairTool
+                    ? `REPAIR ${label} · ${damagedModule.cost} SHELLS`
+                    : 'FIELD WELDER REQUIRED · BUILD AT FABRICATION TERMINAL',
                 distance: damagedModule.distance,
                 interact: () => this.repairInstalledBaseModule(damagedModule.module.instanceId)
+            });
+        }
+        const destroyedWall = this.getNearestDestroyedWall?.();
+        if (destroyedWall) {
+            const hasRepairTool = this.bank?.hasWallRepairTool?.() === true;
+            candidates.push({
+                id: `rebuild-wall:${destroyedWall.key}`,
+                label: hasRepairTool
+                    ? `REBUILD BREACHED WALL · ${DESTROYED_WALL_REPAIR_COST} SHELLS`
+                    : 'FIELD WELDER REQUIRED · BUILD AT FABRICATION TERMINAL',
+                distance: destroyedWall.distance,
+                interact: () => this.repairDestroyedWallAt(destroyedWall.x, destroyedWall.z)
             });
         }
         const baseDoor = this.getNearestInstalledBaseDoor?.();
@@ -11341,11 +11357,16 @@ export class ThreeGame {
     }
 
     repairInstalledBaseModule(instanceId) {
+        if (this.bank?.hasWallRepairTool?.() !== true) {
+            this.showBunkerLine?.('FIELD WELDER REQUIRED — ACTIVATE THE FOUNDRY AND BUILD IT AT THE FABRICATION TERMINAL.');
+            globalThis.window?.AudioManager?.play?.('ui_error', { volume: 0.42 });
+            return false;
+        }
         const preview = repairBaseModule(this.carryState?.installed ?? [], instanceId);
         if (!preview.ok) return false;
         if (!this.bank?.spendShells?.(preview.cost)) {
             this.showBunkerLine?.(`REPAIR REQUIRES ${preview.cost} SHELLS.`);
-            window.AudioManager?.play?.('ui_error', { volume: 0.42 });
+            globalThis.window?.AudioManager?.play?.('ui_error', { volume: 0.42 });
             return false;
         }
         this.carryState = { ...this.carryState, installed: preview.modules };
@@ -11358,6 +11379,54 @@ export class ThreeGame {
         this.showBunkerLine?.('PRESSURE SEAL RESTORED — CABIN REPRESSURIZING.');
         window.AudioManager?.play?.('ui_confirm', { volume: 0.64, playbackRate: 0.82 });
         window.dispatchEvent(new CustomEvent('base-module-repaired', { detail: { module: preview.module, cost: preview.cost } }));
+        return true;
+    }
+
+    getNearestDestroyedWall(maxDistance = 2.6) {
+        if (!this.player || this.carryState?.carried) return null;
+        let nearest = null;
+        for (const key of this.destroyedWallKeys ?? []) {
+            const [x, z] = String(key).split(',').map(Number);
+            if (!Number.isFinite(x) || !Number.isFinite(z)) continue;
+            const distance = Math.hypot(x - this.player.position.x, z - this.player.position.z);
+            // Do not materialize a wall around the operator standing in the gap.
+            if (distance < 0.8 || distance > maxDistance || distance >= (nearest?.distance ?? Infinity)) continue;
+            nearest = { key, x, z, distance };
+        }
+        return nearest;
+    }
+
+    repairDestroyedWallAt(worldX, worldZ) {
+        const key = this.getWallKey(worldX, worldZ);
+        if (!this.destroyedWallKeys?.has(key)) return false;
+        if (this.bank?.hasWallRepairTool?.() !== true) {
+            this.showBunkerLine?.('FIELD WELDER REQUIRED — ACTIVATE THE FOUNDRY AND BUILD IT AT THE FABRICATION TERMINAL.');
+            globalThis.window?.AudioManager?.play?.('ui_error', { volume: 0.42 });
+            return false;
+        }
+        if (!this.bank?.spendShells?.(DESTROYED_WALL_REPAIR_COST)) {
+            this.showBunkerLine?.(`WALL REBUILD REQUIRES ${DESTROYED_WALL_REPAIR_COST} SHELLS.`);
+            window.AudioManager?.play?.('ui_error', { volume: 0.42 });
+            return false;
+        }
+        const coord = this.getChunkLocalFromWorld(worldX, worldZ);
+        this.destroyedWallKeys.delete(key);
+        this.destroyedExteriorWallKeys?.delete(key);
+        const grid = this.chunkCache?.get?.(coord.key);
+        if (grid?.[coord.localY]) grid[coord.localY][coord.localX] = '#';
+        this._chunkRoomTypeCache?.delete?.(coord.key);
+        this._chunkTemplateCache?.delete?.(coord.key);
+        this.remountChunkForWorldTile?.(coord.tileX, coord.tileZ);
+        this.spawnPhysicalBurst?.(coord.tileX, coord.tileZ, { color: 0x30d158, count: 18, upward: 0.22, spread: 1.15 });
+        this.triggerCameraShake?.(0.07, 0.14);
+        this.showBunkerLine?.('BULKHEAD REBUILT — BREACH SEALED.');
+        globalThis.window?.AudioManager?.play?.('ui_confirm', { volume: 0.66, playbackRate: 0.78 });
+        this.persistCampaignWorld?.();
+        if (typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('wall-repaired', {
+                detail: { x: coord.tileX, z: coord.tileZ, cost: DESTROYED_WALL_REPAIR_COST }
+            }));
+        }
         return true;
     }
 
@@ -24493,17 +24562,18 @@ export class ThreeGame {
     }
 
     getCrashSiteWandererArrival(activeShip = {}) {
+        const authored = CRASH_SITE_BUILD.survivorArrival;
+        if (authored?.spawn && authored?.target) {
+            return {
+                spawnX: authored.spawn.x,
+                spawnZ: authored.spawn.z,
+                targetX: authored.target.x,
+                targetZ: authored.target.z
+            };
+        }
         const shipX = Number(activeShip.tileX ?? activeShip.position?.x ?? 0);
         const shipZ = Number(activeShip.tileZ ?? activeShip.position?.z ?? 0);
-        const candidates = [
-            { targetX: shipX + 2.5, targetZ: shipZ + 1.8, spawnX: shipX + 10.5, spawnZ: shipZ + 1.8 },
-            { targetX: shipX - 2.5, targetZ: shipZ + 1.8, spawnX: shipX - 10.5, spawnZ: shipZ + 1.8 },
-            { targetX: shipX + 1.8, targetZ: shipZ + 2.5, spawnX: shipX + 1.8, spawnZ: shipZ + 10.5 },
-            { targetX: shipX + 1.8, targetZ: shipZ - 2.5, spawnX: shipX + 1.8, spawnZ: shipZ - 10.5 }
-        ];
-        const isOpen = (x, z) => this.isSnailTileWalkable?.(Math.round(x), Math.round(z)) !== false;
-        return candidates.find((candidate) => isOpen(candidate.targetX, candidate.targetZ)
-            && isOpen(candidate.spawnX, candidate.spawnZ)) ?? candidates[0];
+        return { targetX: shipX, targetZ: shipZ - 2.5, spawnX: shipX, spawnZ: shipZ - 10.5 };
     }
 
     updateWandererPromptState() {
@@ -42791,6 +42861,10 @@ export class ThreeGame {
             }
             if (spawnX !== null) break;
         }
+        if (sourceGoalKey === 'o2Bubble' && CRASH_SITE_BUILD.firstBossBreach?.spawn) {
+            spawnX = CRASH_SITE_BUILD.firstBossBreach.spawn.x;
+            spawnZ = CRASH_SITE_BUILD.firstBossBreach.spawn.z;
+        }
         if (spawnX === null) return null;
 
         // Do not advance the pure lifecycle until a live parent exists. The
@@ -42841,6 +42915,7 @@ export class ThreeGame {
         // scatterSprites across chunk syncs. Chunk groups use world coords.
         group.add(boss);
         this.scatterSprites.push(boss);
+        if (sourceGoalKey === 'o2Bubble') this.stageFirstBossCampBreach?.(boss);
         if (milestoneDef) {
             const transition = this.applyMilestoneBossRuntimeEvent({
                 type: MILESTONE_BOSS_EVENT_TYPES.BOSS_SPAWNED,
@@ -42855,6 +42930,33 @@ export class ThreeGame {
         window.AudioManager?.playMetalStress?.({ volume: 0.6, playbackRate: 0.42, force: true });
         window.dispatchEvent(new CustomEvent('milestone-boss-spawned', { detail: { type: bossType } }));
         return boss;
+    }
+
+    stageFirstBossCampBreach(boss) {
+        const tiles = CRASH_SITE_BUILD.firstBossBreach?.tiles ?? [];
+        let breached = 0;
+        for (const tile of tiles) {
+            if (this.getTileType?.(tile.x, tile.z) !== '#') continue;
+            const wall = this.findWallMeshAt?.(tile.x, tile.z);
+            const destroyed = wall
+                ? this.destroyWall?.(wall, { source: 'boss', force: true })
+                : Boolean(this.markWallTileDestroyed?.(tile.x, tile.z));
+            if (destroyed) breached += 1;
+        }
+        if (!breached) return false;
+        if (boss?.userData) {
+            boss.userData.campBreachCommitted = true;
+            boss.userData.wallBreakCooldown = BOSS_WALL_BREAK_COOLDOWN;
+            boss.userData.pathNodes = null;
+            boss.userData.pathRetargetTimer = 0;
+        }
+        this.showBunkerLine?.('CAMP HULL BREACH — HOSTILE FORCING ENTRY.');
+        if (typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('first-boss-camp-breached', {
+                detail: { tiles: tiles.slice(0, breached) }
+            }));
+        }
+        return true;
     }
 
     spawnHiveHarvestBoss(hive, extractionLevel = 1) {

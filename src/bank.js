@@ -1,12 +1,13 @@
 import { SURVIVOR_REWARDS } from './survivorContract.js';
 import { BANK_CURRENCY_KEYS, describeBankTransaction } from './economyReceipt.js';
 import { mergeSquadProgress } from './squadProgress.js';
-import { BASE_ARCADE_BANK_COST } from './data/baseModules.js';
+import { BASE_ARCADE_BANK_COST, WALL_REPAIR_TOOL_BANK_COST } from './data/baseModules.js';
 
 const STORAGE_KEY = 'hb_bank';
-const BANK_SCHEMA_VERSION = 8;
+const BANK_SCHEMA_VERSION = 9;
 
 export const BASE_ARCADE_BUILD_COST = BASE_ARCADE_BANK_COST;
+export const WALL_REPAIR_TOOL_BUILD_COST = WALL_REPAIR_TOOL_BANK_COST;
 
 export function shellPriceOf(cost = {}) {
     const tech = Number(cost?.tech) || 0;
@@ -362,7 +363,8 @@ function createDefaultState() {
             hullExpansion: false,
             radarNode: false,
             reactorCompressor: false,
-            baseArcadeBlackjack: false
+            baseArcadeBlackjack: false,
+            wallRepairTool: false
         },
         hullExpansionLevel: 0,
         radarNodeLevel: 0,
@@ -436,6 +438,11 @@ function migrateBank(raw) {
         raw.reactorCompressorLevel = raw.reactorCompressorLevel ?? (raw.unlocks?.reactorCompressor ? 1 : 0);
         raw.schemaVersion = 8;
     }
+    if (version < 9) {
+        raw.unlocks ??= {};
+        raw.unlocks.wallRepairTool = Boolean(raw.unlocks.wallRepairTool);
+        raw.schemaVersion = 9;
+    }
     return raw;
 }
 
@@ -486,6 +493,7 @@ function toSerializableState(raw) {
             base.unlocks[key] = Boolean(raw.unlocks[key]);
         }
         base.unlocks.baseArcadeBlackjack = Boolean(raw.unlocks.baseArcadeBlackjack);
+        base.unlocks.wallRepairTool = Boolean(raw.unlocks.wallRepairTool);
         derivedLevel = deriveLegacyO2GeneratorLevel(base.unlocks);
     }
 
@@ -946,6 +954,27 @@ export class BankManager {
         next.unlocks.baseArcadeBlackjack = true;
         this.save(next);
         emit('base-arcade-unlocked', { cost: requested, bank: this.getState() });
+        emit('bank-updated', { bank: this.getState() });
+        return { ok: true, cost: requested };
+    }
+
+    hasWallRepairTool() {
+        return Boolean(this.state.unlocks?.wallRepairTool);
+    }
+
+    purchaseWallRepairTool(cost = WALL_REPAIR_TOOL_BUILD_COST) {
+        if (!this.isFoundryActivated()) return { ok: false, reason: 'foundry-required' };
+        if (this.hasWallRepairTool()) return { ok: true, alreadyUnlocked: true };
+        const requested = normalizeInventory(cost);
+        if (!this.canAfford(requested)) return { ok: false, reason: 'insufficient-funds', cost: requested };
+        const next = this.getState();
+        next.med -= requested.med;
+        next.ammo -= requested.ammo;
+        next.tech -= requested.tech;
+        next.coin -= requested.coin;
+        next.unlocks.wallRepairTool = true;
+        this.save(next);
+        emit('wall-repair-tool-unlocked', { cost: requested, bank: this.getState() });
         emit('bank-updated', { bank: this.getState() });
         return { ok: true, cost: requested };
     }

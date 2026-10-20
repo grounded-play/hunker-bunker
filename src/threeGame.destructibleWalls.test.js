@@ -95,6 +95,34 @@ describe('destructible wall grid persistence', () => {
         expect(grid[5][4]).toBe('.');
     });
 
+    it('rebuilds a destroyed wall with the fabricated field welder', () => {
+        const grid = makeGrid();
+        grid[5][4] = '.';
+        const fakeThis = {
+            chunkSize: 19,
+            player: { position: { x: 3, z: 5 } },
+            carryState: { carried: null },
+            chunkCache: new Map([['0,0', grid]]),
+            destroyedWallKeys: new Set(['4,5']),
+            destroyedExteriorWallKeys: new Set(),
+            _chunkRoomTypeCache: new Map(),
+            _chunkTemplateCache: new Map(),
+            getWallKey: ThreeGame.prototype.getWallKey,
+            getChunkLocalFromWorld: ThreeGame.prototype.getChunkLocalFromWorld,
+            bank: { hasWallRepairTool: () => true, spendShells: vi.fn(() => true) },
+            remountChunkForWorldTile: vi.fn(),
+            spawnPhysicalBurst: vi.fn(), triggerCameraShake: vi.fn(), showBunkerLine: vi.fn(),
+            persistCampaignWorld: vi.fn()
+        };
+
+        expect(call('getNearestDestroyedWall', fakeThis)).toMatchObject({ key: '4,5' });
+        expect(call('repairDestroyedWallAt', fakeThis, 4, 5)).toBe(true);
+        expect(grid[5][4]).toBe('#');
+        expect(fakeThis.destroyedWallKeys.has('4,5')).toBe(false);
+        expect(fakeThis.bank.spendShells).toHaveBeenCalledWith(6);
+        expect(fakeThis.remountChunkForWorldTile).toHaveBeenCalledWith(4, 5);
+    });
+
     it('classifies a room-shell wall as exterior but preserves interior dividers', () => {
         const grid = makeGrid(7);
         grid[3][2] = '.';

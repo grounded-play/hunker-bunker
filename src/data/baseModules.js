@@ -13,6 +13,7 @@ export const BASE_MODULE_CATEGORIES = Object.freeze({
 });
 
 export const BASE_ARCADE_BANK_COST = Object.freeze({ tech: 25, coin: 30, med: 5 });
+export const WALL_REPAIR_TOOL_BANK_COST = Object.freeze({ tech: 12, coin: 4, med: 0 });
 
 export const BASE_MODULE_CATALOG = Object.freeze({
     // Structural panels

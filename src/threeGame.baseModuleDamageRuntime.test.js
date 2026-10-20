@@ -29,7 +29,7 @@ function gameStub() {
         spawnPhysicalBurst: vi.fn(),
         triggerCameraShake: vi.fn(),
         showBunkerLine: vi.fn(),
-        bank: { spendShells: vi.fn(() => true) }
+        bank: { hasWallRepairTool: vi.fn(() => true), spendShells: vi.fn(() => true) }
     };
 }
 
@@ -73,6 +73,15 @@ describe('installed base module damage runtime', () => {
         const nearest = ThreeGame.prototype.getNearestDamagedBaseModule.call(game);
         expect(nearest).toMatchObject({ module: expect.objectContaining({ instanceId: 'door-1' }) });
         expect(nearest.cost).toBeGreaterThan(0);
+    });
+
+    it('refuses module repair until the field welder has been built', () => {
+        const game = gameStub();
+        ThreeGame.prototype.damageInstalledBaseModule.call(game, 'wall-1', 30);
+        game.bank.hasWallRepairTool.mockReturnValue(false);
+        expect(ThreeGame.prototype.repairInstalledBaseModule.call(game, 'wall-1')).toBe(false);
+        expect(game.bank.spendShells).not.toHaveBeenCalled();
+        expect(game.showBunkerLine).toHaveBeenCalledWith(expect.stringContaining('FIELD WELDER REQUIRED'));
     });
 
     it('cycles the authored pressure door between blocking/sealed and passable/leaking states', () => {

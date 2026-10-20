@@ -46,7 +46,7 @@ const IDS = ['fab-recipe-grid', 'fab-roll-panel', 'fab-roll-btn', 'fab-odds', 'f
     'fab-bank-tech', 'fab-bank-coin', 'fab-bank-med', 'fab-bank-shells', 'fab-reveal', 'fab-reveal-strip',
     'fab-reveal-card', 'fab-reveal-strip-wrap'];
 
-function setup({ activated = true, canRoll = true, hub = false, arcadeUnlocked = false } = {}) {
+function setup({ activated = true, canRoll = true, hub = false, arcadeUnlocked = false, repairToolUnlocked = false } = {}) {
     vi.useFakeTimers();
     const els = new Map(IDS.map((id) => [id, new FakeElement('div', id)]));
     els.get('fabrication-modal').classList.add('hidden');
@@ -72,8 +72,10 @@ function setup({ activated = true, canRoll = true, hub = false, arcadeUnlocked =
         canAfford: () => true,
         isFoundryActivated: () => activated,
         isBaseArcadeUnlocked: () => arcadeUnlocked,
+        hasWallRepairTool: () => repairToolUnlocked,
         canActivateFoundry: () => true,
-        activateFoundry: vi.fn(() => { activated = true; return true; })
+        activateFoundry: vi.fn(() => { activated = true; return true; }),
+        purchaseWallRepairTool: vi.fn(() => { repairToolUnlocked = true; return { ok: true }; })
     };
     const loadout = {
         activeClassId: 'scout',
@@ -171,6 +173,18 @@ describe('fabrication bay', () => {
             .flatMap((child) => child.children)
             .find((child) => child.id === 'fab-build-blackjack-arcade');
         expect(installedButton.disabled).toBe(true);
+    });
+
+    it('builds a persistent field welder from the online fabrication terminal', () => {
+        const { bay, els, bankManager, deps } = setup();
+        bay.render();
+        const button = els.get('fab-recipe-grid').children
+            .flatMap((child) => child.children)
+            .find((child) => child.id === 'fab-build-wall-repair-tool');
+        expect(button.disabled).toBe(false);
+        button.click();
+        expect(bankManager.purchaseWallRepairTool).toHaveBeenCalledOnce();
+        expect(deps.showPrompt).toHaveBeenCalledWith('FIELD BULKHEAD WELDER READY');
     });
 
     it('ticks prints every half second and stops the ticker when nothing is printing', () => {
