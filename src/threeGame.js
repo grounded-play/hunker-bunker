@@ -9850,12 +9850,12 @@ export class ThreeGame {
                 interact: () => this.interactWithConsole()
             });
         }
-        const o2CoreInstalled = isCampO2CoreInstalled(this.carryState);
+        const o2CoreInstalled = !this.carryState || isCampO2CoreInstalled(this.carryState);
         if (this.activeInteractiveO2Generator) {
-            const position = this.getActiveO2GeneratorPosition();
+            const position = this.getActiveO2GeneratorPosition?.();
             if (position) {
                 if (o2CoreInstalled) {
-                    const generatorState = this.getO2GeneratorState();
+                    const generatorState = this.getO2GeneratorState?.() ?? { isOnline: false };
                     const label = generatorState.isOnline ? 'UPGRADE O2 GENERATOR' : 'REPAIR O2 GENERATOR';
                     candidates.push({
                         id: 'o2-generator',
@@ -9874,7 +9874,7 @@ export class ThreeGame {
                         priorityRank: 1,
                         interact: () => {
                             this.showBunkerLine?.('O₂ GENERATOR REQUIRES CORE INSTALLATION — RETRIEVE THE O₂ CORE FROM THE CRASH SITE.');
-                            window.AudioManager?.play?.('ui_deny', { volume: 0.5 });
+                            globalThis.window?.AudioManager?.play?.('ui_error', { volume: 0.5 });
                             return false;
                         }
                     });
