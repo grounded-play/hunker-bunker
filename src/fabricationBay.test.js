@@ -184,7 +184,7 @@ describe('fabrication bay', () => {
         expect(button.disabled).toBe(false);
         button.click();
         expect(bankManager.purchaseWallRepairTool).toHaveBeenCalledOnce();
-        expect(deps.showPrompt).toHaveBeenCalledWith('FIELD BULKHEAD WELDER READY');
+        expect(deps.showPrompt).toHaveBeenCalledWith('ui.fab.welder_ready');
     });
 
     it('ticks prints every half second and stops the ticker when nothing is printing', () => {

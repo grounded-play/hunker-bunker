@@ -1649,7 +1649,13 @@
       "stat_rate": "連射 ×{value}",
       "stat_range": "射程 ×{value}",
       "stat_shots": "{count}発",
-      "odds": "確率"
+      "odds": "確率",
+      "welder_kicker": "拠点突破対策",
+      "welder_title": "フィールド隔壁溶接機",
+      "welder_desc": "ボスに破壊された壁を再建し、損傷した拠点モジュールを現地で修復します。",
+      "welder_installed": "フィールド溶接機作成済み",
+      "welder_build": "フィールド溶接機を作成",
+      "welder_ready": "フィールド隔壁溶接機 準備完了"
     },
     "camp": {
       "sleep_warning": "{camp} で眠ると {day} 日目へ進む。未解決の信号は閉ざされる。",

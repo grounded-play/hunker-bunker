@@ -1649,7 +1649,13 @@
       "stat_rate": "KADENZ ×{value}",
       "stat_range": "REICHW ×{value}",
       "stat_shots": "{count} SCHÜSSE",
-      "odds": "CHANCEN"
+      "odds": "CHANCEN",
+      "welder_kicker": "LAGERBRUCH-REAKTION",
+      "welder_title": "FELD-SCHOTTSCHWEISSGERÄT",
+      "welder_desc": "Baue vom Boss durchbrochene Wände wieder auf und repariere beschädigte Lagermodule im Feld.",
+      "welder_installed": "FELDSCHWEISSGERÄT GEBAUT",
+      "welder_build": "FELDSCHWEISSGERÄT BAUEN",
+      "welder_ready": "FELD-SCHOTTSCHWEISSGERÄT BEREIT"
     },
     "camp": {
       "sleep_warning": "Schlaf in {camp} bringt dich zu Tag {day}. Diese offenen Signale werden geschlossen.",

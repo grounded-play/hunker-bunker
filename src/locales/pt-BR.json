@@ -1649,7 +1649,13 @@
       "stat_rate": "CADÊNCIA ×{value}",
       "stat_range": "ALCANCE ×{value}",
       "stat_shots": "{count} DISPAROS",
-      "odds": "CHANCES"
+      "odds": "CHANCES",
+      "welder_kicker": "RESPOSTA A BRECHA NO ACAMPAMENTO",
+      "welder_title": "SOLDADOR DE MAMPARA DE CAMPO",
+      "welder_desc": "Reconstrua paredes rompidas por chefes e restaure módulos danificados do acampamento em campo.",
+      "welder_installed": "SOLDADOR DE CAMPO CONSTRUÍDO",
+      "welder_build": "CONSTRUIR SOLDADOR DE CAMPO",
+      "welder_ready": "SOLDADOR DE MAMPARA DE CAMPO PRONTO"
     },
     "camp": {
       "sleep_warning": "Dormir em {camp} avança para o dia {day}. Estes sinais pendentes serão fechados.",

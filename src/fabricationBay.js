@@ -245,22 +245,22 @@ export function createFabricationBay({
         const panel = doc.createElement('div');
         panel.className = 'fab-activation-panel fab-activation-panel--repair-tool';
         panel.innerHTML = `
-        <div class="fab-activation-panel__kicker">CAMP BREACH RESPONSE</div>
-        <div class="fab-activation-panel__title">FIELD BULKHEAD WELDER</div>
-        <div class="fab-activation-panel__desc">Rebuild boss-breached walls and restore damaged camp modules in the field.</div>
+        <div class="fab-activation-panel__kicker">${t('ui.fab.welder_kicker')}</div>
+        <div class="fab-activation-panel__title">${t('ui.fab.welder_title')}</div>
+        <div class="fab-activation-panel__desc">${t('ui.fab.welder_desc')}</div>
         <div class="fab-activation-panel__cost">${costText(WALL_REPAIR_TOOL_BUILD_COST, bank, { showHaveNeed: !affordable })}</div>`;
         const button = doc.createElement('button');
         button.id = 'fab-build-wall-repair-tool';
         button.className = 'fab-card__btn';
         button.disabled = unlocked || !affordable;
         button.textContent = unlocked
-            ? 'FIELD WELDER BUILT'
-            : affordable ? 'BUILD FIELD WELDER' : missingText(WALL_REPAIR_TOOL_BUILD_COST, bank);
+            ? t('ui.fab.welder_installed')
+            : affordable ? t('ui.fab.welder_build') : missingText(WALL_REPAIR_TOOL_BUILD_COST, bank);
         button.addEventListener('click', () => {
             const result = bankManager.purchaseWallRepairTool?.();
             if (result?.ok) {
                 playSound('upgrade_unlock', { volume: 0.65 });
-                showPrompt('FIELD BULKHEAD WELDER READY');
+                showPrompt(t('ui.fab.welder_ready'));
                 render();
             } else {
                 playSound('ui_error', { volume: 0.5 });

@@ -1649,7 +1649,13 @@
       "stat_rate": "RATE ×{value}",
       "stat_range": "RANGE ×{value}",
       "stat_shots": "{count} SHOTS",
-      "odds": "ODDS"
+      "odds": "ODDS",
+      "welder_kicker": "CAMP BREACH RESPONSE",
+      "welder_title": "FIELD BULKHEAD WELDER",
+      "welder_desc": "Rebuild boss-breached walls and restore damaged camp modules in the field.",
+      "welder_installed": "FIELD WELDER BUILT",
+      "welder_build": "BUILD FIELD WELDER",
+      "welder_ready": "FIELD BULKHEAD WELDER READY"
     },
     "camp": {
       "sleep_warning": "Sleeping at {camp} advances to day {day}. These unresolved signals will close.",

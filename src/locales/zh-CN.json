@@ -1649,7 +1649,13 @@
       "stat_rate": "射速 ×{value}",
       "stat_range": "射程 ×{value}",
       "stat_shots": "{count} 发",
-      "odds": "概率"
+      "odds": "概率",
+      "welder_kicker": "营地破口应对",
+      "welder_title": "战地舱壁焊接机",
+      "welder_desc": "在战场上重建被首领破坏的墙壁并修复受损的营地组件。",
+      "welder_installed": "战地焊接机已建造",
+      "welder_build": "建造战地焊接机",
+      "welder_ready": "战地舱壁焊接机就绪"
     },
     "camp": {
       "sleep_warning": "在 {camp} 休息将推进到第 {day} 天。以下未解决的信号将关闭。",
