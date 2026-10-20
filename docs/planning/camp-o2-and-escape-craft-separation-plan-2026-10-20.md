@@ -45,7 +45,7 @@ Coordinates are world-space unless explicitly marked local.
 | Element | Position | Role |
 | --- | --- | --- |
 | Crash wreck | `(9,9)` | Landmark, terminal, salvage; never an assembly target |
-| Recovery bed socket | `(2.5,14.5)` | Sleep/save/recovery |
+| Recovery bed | `(14.5,11.5)` | Starting camp fixture; sleep unlocks after O2 reveal |
 | Camp O2 generator | `(12.5,9.5)` | Permanent local generator and O2 modal |
 | Camp O2 core recovery | `(15,14)` | First heavy carry lesson |
 | Camp O2 install socket | `(12.5,9.5)` | Accepts only the camp generator core |
@@ -75,11 +75,20 @@ room, so the opening combat/resource promise stays intact.
 
 ### Camp survival track
 
-1. Recover `camp_o2_generator_core` at `(15,14)`.
-2. Carry it to the visible socket on the camp generator at `(12.5,9.5)`.
-3. Installation enables the resource-funded O2 repair button.
-4. Repairing level 0 → 1 activates the local safe-air bubble and completes
-   `o2Bubble`.
+1. The recovery cot starts installed at `(14.5,11.5)`. Its entire 1x2 footprint
+   fits inside the first 4.5 m O2 field.
+2. Recover `camp_o2_generator_core` at `(15,14)`.
+3. Carry it to the visible socket at `(12.5,9.5)`. Before installation, the
+   completed generator model is hidden and only the construction socket shows.
+4. Installation reveals the offline generator and enables its repair button.
+5. Repairing level 0 → 1 runs the authored door/video/generator-rise sequence.
+6. The safe-air ring expands around the generator. Sleep becomes available
+   only after that reveal completes and only while the bed remains in the live
+   field.
+
+The former cot, hull-patch, and door-seal carry ladder is retired. Old loose or
+carried cots migrate into the authored camp socket, and obsolete first-night
+seal cargo is removed from saves.
 
 This track does not increment escape-craft progress.
 

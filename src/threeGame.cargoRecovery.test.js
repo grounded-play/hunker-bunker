@@ -5,10 +5,10 @@ import { addCarryObject, beginCarry, createCarryObject, createCarryState } from 
 function missionObject() {
     return createCarryObject({
         instanceId: 'cargo-1',
-        definitionId: 'hull_patch_panel',
-        missionId: 'first-night-berth-seal',
+        definitionId: 'camp_o2_generator_core',
+        missionId: 'camp-o2:generator-core',
         worldPosition: { x: 8, z: 9 },
-        buildTags: ['wall', 'hull_patch'],
+        buildTags: ['camp_utility', 'life_support', 'o2_producer'],
         runId: 'run-a'
     });
 }
@@ -24,6 +24,8 @@ function gameStub() {
         carriedObjectVisual: null,
         multiplayerLocalPlayerId: 'local',
         getFirstNightBasePlan: ThreeGame.prototype.getFirstNightBasePlan,
+        getCampO2Plan: ThreeGame.prototype.getCampO2Plan,
+        getAvailableCarryInstallSocket: ThreeGame.prototype.getAvailableCarryInstallSocket,
         getActiveShip: () => ({ tileX: 0, tileZ: 0 }),
         reconcileCarryObjectVisuals: vi.fn(),
         spawnPhysicalBurst: vi.fn(),
@@ -45,7 +47,7 @@ describe('mission cargo recovery runtime', () => {
         game.carryState = beginCarry(game.carryState, 'cargo-1', 'local').state;
         const held = ThreeGame.prototype.getMissionCargoGuidance.call(game);
         expect(held).toMatchObject({ id: 'cargo-1', mode: 'cargo-install' });
-        expect(held.label).toContain('INSTALL CRASH-HULL PATCH PANEL');
+        expect(held.label).toContain('INSTALL CAMP O2 GENERATOR CORE');
     });
 
     it('recovers repeatedly invalid cargo and emits one visible feedback event', () => {

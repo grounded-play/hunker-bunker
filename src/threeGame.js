@@ -51,8 +51,7 @@ import {
     advanceRoomAtmosphere,
     createRoomAtmosphereState,
     describeRoomAtmosphere,
-    evaluateRoomSealGraph,
-    isPositionSafeForRest
+    evaluateRoomSealGraph
 } from './baseSealGraph.js';
 import {
     createBaseAtmosphereIndicator,
@@ -11669,20 +11668,18 @@ export class ThreeGame {
             window.dispatchEvent(new CustomEvent('ship-rebuild-progress', { detail: progress }));
         } else if (isCampO2) {
             this.showBunkerLine?.(`${label} INSTALLED — CAMP GENERATOR READY FOR REPAIR.`);
+            // Installing the physical core is the moment the offline generator
+            // becomes a real world object. Before this, only its build socket is
+            // visible; the repair purchase later owns the cinematic rise.
+            this.ensureO2BubbleVisualState?.();
         } else {
-            // The hull patch and door seal appear once the cot is in.
             if (result.installed.definitionId === 'cot_bed') {
                 this.bootstrapFirstNightBaseRecovery?.();
                 if (this.interactionSequenceRunner) {
                     void this.interactionSequenceRunner.runSequence('base_cot_first_night');
                 }
             }
-            const remaining = this.getFirstNightBasePlan().recoveryCargo.filter(({ definitionId }) => (
-                !this.carryState.installed.some((module) => module.definitionId === definitionId)
-            ));
-            this.showBunkerLine?.(remaining.length
-                ? `${label} INSTALLED — ${remaining.length} BERTH MODULE${remaining.length === 1 ? '' : 'S'} STILL MISSING.`
-                : `${label} INSTALLED — BERTH SEALED. O2 PRESSURIZATION STARTING.`);
+            this.showBunkerLine?.(`${label} INSTALLED — BRING THE CAMP O2 FIELD ONLINE TO UNLOCK SLEEP.`);
         }
         this.spawnPhysicalBurst?.(socket.transform.x, socket.transform.z, { color: 0x66e6ff, count: 14, upward: 0.2 });
         this.triggerCameraShake?.(0.08, 0.18);
@@ -19441,10 +19438,10 @@ export class ThreeGame {
     // Animated sweep by default; instant when restoring an already-online base.
     igniteBaseLights({ instant = false } = {}) {
         if (!this.baseLights) return;
-        const ship = this.getActiveShip();
-        if (!Number.isFinite(ship?.tileX) || !Number.isFinite(ship?.tileZ)) return;
-        const cx = ship.tileX;
-        const cz = ship.tileZ;
+        const generator = this.getActiveO2GeneratorPosition?.();
+        if (!Number.isFinite(generator?.x) || !Number.isFinite(generator?.z)) return;
+        const cx = generator.x;
+        const cz = generator.z;
         const generatorState = this.getO2GeneratorState();
         const radius = generatorState.isOnline ? generatorState.radius : 3.9;
         const color = PLAYER_COLORS[this.playerType] ?? 0xffffff;
@@ -19454,9 +19451,9 @@ export class ThreeGame {
 
     playO2GeneratorWorldReveal() {
         return new Promise((resolve) => {
-            const ship = this.getActiveShip();
-            if (ship?.tileX != null && ship?.tileZ != null && typeof this.centerCameraOnPosition === 'function') {
-                this.centerCameraOnPosition(ship.tileX, ship.tileZ);
+            const generator = this.getActiveO2GeneratorPosition?.();
+            if (generator && typeof this.centerCameraOnPosition === 'function') {
+                this.centerCameraOnPosition(generator.x, generator.z);
             }
             this._onO2StartupSequenceComplete = () => {
                 resolve();
@@ -19604,7 +19601,8 @@ export class ThreeGame {
                 if (this.baseLights) {
                     const color = PLAYER_COLORS[this.playerType] ?? 0xffffff;
                     const generatorState = this.getO2GeneratorState();
-                    this.baseLights.ignite(ship?.tileX ?? 0, ship?.tileZ ?? 0, generatorState.radius, color);
+                    const generatorPos = this.getActiveO2GeneratorPosition?.();
+                    this.baseLights.ignite(generatorPos?.x ?? 0, generatorPos?.z ?? 0, generatorState.radius, color);
                 }
                 window.AudioManager?.play?.('ui_boot1', { volume: 0.6 });
             }
@@ -23499,11 +23497,17 @@ export class ThreeGame {
             const atmosphere = this.getBaseAtmosphereStatus?.();
             actionText.textContent = refusal === 'active_quest'
                 ? t('ui.prompt.rest_blocked_quest')
-                : refusal === 'cabin-pressurizing'
-                    ? `CABIN PRESSURIZING · ${Math.round((atmosphere?.pressure ?? 0) * 100)}%`
-                    : refusal.startsWith?.('unsealed:')
-                        ? `SLEEP LOCKED · ${atmosphere?.label ?? 'CABIN BREACH'}`
-                        : t('ui.prompt.rest_blocked_unsafe');
+                : refusal === 'camp-o2-offline'
+                    ? 'SLEEP LOCKED · REPAIR CAMP O2 GENERATOR'
+                    : refusal === 'camp-o2-starting'
+                        ? 'SLEEP LOCKED · O2 FIELD STARTING'
+                        : refusal === 'outside-camp-o2-field'
+                            ? 'SLEEP LOCKED · BED OUTSIDE O2 FIELD'
+                            : refusal === 'cabin-pressurizing'
+                                ? `CABIN PRESSURIZING · ${Math.round((atmosphere?.pressure ?? 0) * 100)}%`
+                                : refusal.startsWith?.('unsealed:')
+                                    ? `SLEEP LOCKED · ${atmosphere?.label ?? 'CABIN BREACH'}`
+                                    : t('ui.prompt.rest_blocked_unsafe');
             actionText.dataset.restPrompt = '1';
             promptEl.classList.add('visible');
             promptEl.classList.remove('hidden');
@@ -23587,19 +23591,21 @@ export class ThreeGame {
             return { allowed: false, reason: 'camp-unsafe' };
         }
         if (site?.id === 'bunker_cot') {
-            const seal = this.baseAtmosphereSeal ?? evaluateRoomSealGraph({
-                modules: this.carryState?.installed ?? [],
-                defaultSafeBubble: null
-            });
-            const restSafety = isPositionSafeForRest({
-                ...seal,
-                pressure: this.baseAtmosphereState?.pressure
-            }, site);
-            if (!restSafety.safe) {
+            const generatorState = this.getO2GeneratorState?.() ?? { isOnline: false, radius: 0 };
+            if (!generatorState.isOnline) return { allowed: false, reason: 'camp-o2-offline' };
+            if (this._o2RevealPending || this.o2StartupSequenceActive) {
+                return { allowed: false, reason: 'camp-o2-starting' };
+            }
+            const generator = this.getActiveO2GeneratorPosition?.();
+            const distance = generator
+                ? Math.hypot(site.x - generator.x, site.z - generator.z)
+                : Infinity;
+            if (!generator || distance > generatorState.radius) {
                 return {
                     allowed: false,
-                    reason: restSafety.reason,
-                    leakDetails: restSafety.leakDetails ?? null
+                    reason: 'outside-camp-o2-field',
+                    distance,
+                    radius: generatorState.radius
                 };
             }
             safeSpace = true;
@@ -25795,7 +25801,10 @@ export class ThreeGame {
                 const isActiveShip = ship.type === this.playerType;
                 // This is the repair target, so it remains present while
                 // unpowered. Only the safe bubble depends on isOnline.
-                const o2ModuleVisible = isActiveShip && !revealPending;
+                const coreInstalled = isCampO2CoreInstalled(this.carryState);
+                const o2ModuleVisible = isActiveShip
+                    && !revealPending
+                    && (coreInstalled || generatorState.isOnline);
                 // These legacy sprites belong to the crash wreck. The actual
                 // three flight systems render from installed carry modules at
                 // the separate escape-craft yard.
@@ -25883,13 +25892,12 @@ export class ThreeGame {
             this.revealCaveEntrance({ instant: true });
         }
         if (this.baseLights) {
-            const ship = this.getActiveShip();
-            if (ship && Number.isFinite(ship.tileX) && Number.isFinite(ship.tileZ)) {
+            if (generatorPos) {
                 const color = PLAYER_COLORS[this.playerType] ?? 0xffffff;
                 if (!this.baseLights.isIgnited) {
                     this.igniteBaseLights({ instant: true });
                 } else {
-                    this.baseLights.recenter(ship.tileX, ship.tileZ, generatorState.radius);
+                    this.baseLights.recenter(generatorPos.x, generatorPos.z, generatorState.radius);
                     this.baseLights.setColor(color);
                 }
             }

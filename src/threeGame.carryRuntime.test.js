@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
-import { createCarryState } from './carrySystem.js';
+import { createCarryObject, createCarryState } from './carrySystem.js';
 import { createDayState } from './dayCycle.js';
 
 function browserStub() {
@@ -30,36 +30,48 @@ function baseGame() {
     };
 }
 
+// Generic carry tests still exercise a loose legacy cot. Fresh campaigns now
+// begin with this cot installed, so stage the old shape explicitly here.
+function stageLooseCot(game) {
+    ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
+    const plan = game.getFirstNightBasePlan();
+    game.carryState.installed = game.carryState.installed.filter(({ definitionId }) => definitionId !== 'cot_bed');
+    const legacySource = { x: plan.cotSource.x - 4, z: plan.cotSource.z };
+    game.carryState.worldObjects = [createCarryObject({
+        instanceId: 'test-loose-cot',
+        definitionId: 'cot_bed',
+        missionId: 'first-night-cot-recovery',
+        massClass: 'heavy',
+        worldPosition: legacySource,
+        carrySocket: 'both-hands',
+        buildTags: ['furniture', 'bed', 'sleep_anchor'],
+        runId: game.carryState.runId
+    })];
+    return plan;
+}
+
 describe('physical first-night cargo runtime', () => {
     beforeEach(() => browserStub());
 
-    it('bootstraps the cot beside the incomplete berth, and the seal parts once it is in', () => {
+    it('bootstraps an installed camp cot without obsolete seal cargo', () => {
         const game = baseGame();
         const result = ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
         expect(result.addedCot).toBe(true);
-        expect(game.carryState.worldObjects).toEqual([
-            expect.objectContaining({ definitionId: 'cot_bed', modelType: 'carry_field_cot_folded' })
-        ]);
-        expect(game.carryState.installed.some(({ definitionId }) => definitionId === 'cot_bed')).toBe(false);
-
-        ThreeGame.prototype.beginCarryObject.call(game, game.carryState.worldObjects[0].instanceId);
-        const socket = game.getFirstNightBasePlan().installSocket.transform;
-        game.player.position.x = socket.x;
-        game.player.position.z = socket.z;
-        expect(ThreeGame.prototype.installCurrentCarryObject.call(game)).toBe(true);
-        expect(game.carryState.worldObjects).toEqual(expect.arrayContaining([
-            expect.objectContaining({ definitionId: 'hull_patch_panel', modelType: 'crash_hull_panels' }),
-            expect.objectContaining({ definitionId: 'door_seal_kit', modelType: 'mod_pressure_seal' })
+        expect(game.carryState.worldObjects).toEqual([]);
+        expect(game.carryState.installed).toEqual(expect.arrayContaining([
+            expect.objectContaining({ definitionId: 'cot_bed', socketId: 'ship-sleep-bay' })
         ]));
-        expect(game.showBunkerLine).toHaveBeenLastCalledWith(expect.stringContaining('2 BERTH MODULES STILL MISSING'));
+        expect(game.carryState.installed.some(({ definitionId }) => (
+            definitionId === 'hull_patch_panel' || definitionId === 'door_seal_kit'
+        ))).toBe(false);
     });
 
     it('lifts with both hands, safely drops, then installs at the ship socket', () => {
         const game = baseGame();
-        ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
+        stageLooseCot(game);
         const cotId = game.carryState.worldObjects[0].instanceId;
-        game.player.position.x = game.getFirstNightBasePlan().cotSource.x;
-        game.player.position.z = game.getFirstNightBasePlan().cotSource.z;
+        game.player.position.x = game.carryState.worldObjects[0].worldPosition.x;
+        game.player.position.z = game.carryState.worldObjects[0].worldPosition.z;
         game.getNearestCarryObject = ThreeGame.prototype.getNearestCarryObject;
         expect(ThreeGame.prototype.beginCarryObject.call(game, cotId)).toBe(true);
         expect(game.carryState.carried?.definitionId).toBe('cot_bed');
@@ -80,32 +92,27 @@ describe('physical first-night cargo runtime', () => {
         ]));
     });
 
-    it('allows bunker sleep only after the cot, wall patch, and door seal complete the berth', () => {
+    it('allows bunker sleep only after the camp O2 reveal completes', () => {
         const game = baseGame();
         game.dayState = createDayState();
         game.canRestAt = ThreeGame.prototype.canRestAt;
         ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
         const site = { id: 'bunker_cot', ...game.getFirstNightBasePlan().installSocket.transform };
-        expect(game.canRestAt(site)).toMatchObject({ allowed: false, reason: 'unsealed:missing_wall' });
+        game.getO2GeneratorState = () => ({ isOnline: false, radius: 0 });
+        game.getActiveO2GeneratorPosition = () => ({ x: 3.5, z: 0.5 });
+        expect(game.canRestAt(site)).toMatchObject({ allowed: false, reason: 'camp-o2-offline' });
 
-        const cotId = game.carryState.worldObjects[0].instanceId;
-        ThreeGame.prototype.beginCarryObject.call(game, cotId);
-        game.player.position.x = site.x;
-        game.player.position.z = site.z;
-        ThreeGame.prototype.installCurrentCarryObject.call(game);
-        expect(game.canRestAt(site)).toMatchObject({ allowed: false, reason: 'unsealed:missing_wall' });
+        game.getO2GeneratorState = () => ({ isOnline: true, radius: 4.5 });
+        game._o2RevealPending = true;
+        expect(game.canRestAt(site)).toMatchObject({ allowed: false, reason: 'camp-o2-starting' });
 
-        for (const definitionId of ['hull_patch_panel', 'door_seal_kit']) {
-            const object = game.carryState.worldObjects.find((entry) => entry.definitionId === definitionId);
-            ThreeGame.prototype.beginCarryObject.call(game, object.instanceId);
-            ThreeGame.prototype.installCurrentCarryObject.call(game);
-        }
+        game._o2RevealPending = false;
         expect(game.canRestAt(site)).toMatchObject({ allowed: true, nextDay: 2 });
     });
 
     it('disables sprint and dodge while carrying a heavy module', () => {
         const game = baseGame();
-        ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
+        stageLooseCot(game);
         const cotId = game.carryState.worldObjects[0].instanceId;
         ThreeGame.prototype.beginCarryObject.call(game, cotId);
         game.isGameplayInputActive = () => true;
@@ -119,7 +126,7 @@ describe('physical first-night cargo runtime', () => {
 
     it('stagger-drops heavy cargo after a landed directional hit', () => {
         const game = baseGame();
-        ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
+        stageLooseCot(game);
         ThreeGame.prototype.beginCarryObject.call(game, game.carryState.worldObjects[0].instanceId);
         Object.assign(game, {
             performanceProfile: 'gameplay',
@@ -145,7 +152,7 @@ describe('physical first-night cargo runtime', () => {
 
     it('auto-installs cot bed when dropped directly in or near the bed socket zone', () => {
         const game = baseGame();
-        ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
+        stageLooseCot(game);
         const cotId = game.carryState.worldObjects[0].instanceId;
         ThreeGame.prototype.beginCarryObject.call(game, cotId);
 
@@ -164,7 +171,7 @@ describe('physical first-night cargo runtime', () => {
 
     it('auto-snaps loose cargo into matching socket when sitting inside the socket zone', () => {
         const game = baseGame();
-        ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
+        stageLooseCot(game);
         const socket = game.getFirstNightBasePlan().installSocket.transform;
         // Position cot on ground within the socket area
         game.carryState.worldObjects[0].worldPosition = { x: socket.x, z: socket.z };
@@ -181,11 +188,11 @@ describe('physical first-night cargo runtime', () => {
         const game = baseGame();
         game.isGameplayInputActive = () => true;
         game.getNearestCarryObject = ThreeGame.prototype.getNearestCarryObject;
-        ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
+        stageLooseCot(game);
 
         // Standing near loose cot
-        game.player.position.x = game.getFirstNightBasePlan().cotSource.x;
-        game.player.position.z = game.getFirstNightBasePlan().cotSource.z;
+        game.player.position.x = game.carryState.worldObjects[0].worldPosition.x;
+        game.player.position.z = game.carryState.worldObjects[0].worldPosition.z;
         ThreeGame.prototype.updateCarryInteractionPrompt.call(game);
         expect(game._carryPromptLabel).toBe('[E] LIFT EXPEDITION RECOVERY COT · BOTH HANDS');
 
@@ -208,7 +215,7 @@ describe('physical first-night cargo runtime', () => {
         game.scene = { add: vi.fn() };
         game.getTerrainHeightAt = () => 0;
 
-        ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
+        stageLooseCot(game);
         ThreeGame.prototype.setupBedInstallSocketVisual.call(game);
         expect(game.bedInstallSocketVisual).toBeDefined();
         expect(game.bedInstallSocketVisual.visible).toBe(true);

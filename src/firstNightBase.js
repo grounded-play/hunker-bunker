@@ -1,52 +1,18 @@
-import { addCarryObject, createCarryObject } from './carrySystem.js';
-import { getBaseModuleDefinition } from './data/baseModules.js';
 import { CRASH_SITE_BUILD } from './data/crashSiteBuild.js';
 
 export const FIRST_NIGHT_COT_MISSION_ID = 'first-night-cot-recovery';
+// Retained only to recognize and remove obsolete tutorial cargo from saves.
 export const FIRST_NIGHT_SEAL_MISSION_ID = 'first-night-berth-seal';
 
 // The sleep berth sits on the crash site's authored bed socket, open floor in
-// the main chamber's south-west, clear of the maneuver lane (data/
-// crashSiteBuild.js). It used to sit at ship (-2, +2): 0.6 m from the
-// console, so the bed marker covered the shop prompt and the player spawned
-// standing in it (owner, 2026-10-15). Kept relative to the ship.
+// the camp beside the generator, clear of the wreck maneuver lane and wholly
+// inside the first O2 ring (data/crashSiteBuild.js). Kept relative to the
+// authored crash-site origin for co-op and save migration.
 const FIRST_BED_SOCKET = CRASH_SITE_BUILD.constructionSockets.find(({ id }) => id === 'first-bed');
 export const FIRST_NIGHT_BERTH_OFFSET = Object.freeze({
     x: FIRST_BED_SOCKET.x - CRASH_SITE_BUILD.center.x,
     z: FIRST_BED_SOCKET.z - CRASH_SITE_BUILD.center.z
 });
-
-const RECOVERY_DEFINITIONS = Object.freeze([
-    Object.freeze({
-        definitionId: 'cot_bed',
-        missionId: FIRST_NIGHT_COT_MISSION_ID,
-        socketId: 'ship-sleep-bay',
-        // Stage the folded cot beside its authored berth, outside the 11x11
-        // ship maneuver envelope. It remains on the spawn-to-berth route
-        // without becoming another collider crowded against the wreck.
-        sourceOffset: Object.freeze({ x: -5, z: 10 })
-    }),
-    Object.freeze({
-        definitionId: 'hull_patch_panel',
-        missionId: FIRST_NIGHT_SEAL_MISSION_ID,
-        socketId: 'ship-berth-wall-west',
-        sourceOffset: Object.freeze({ x: 7, z: 1 })
-    }),
-    Object.freeze({
-        definitionId: 'door_seal_kit',
-        missionId: FIRST_NIGHT_SEAL_MISSION_ID,
-        socketId: 'ship-berth-door-east',
-        sourceOffset: Object.freeze({ x: 7, z: 3 })
-    })
-]);
-
-const LEGACY_COT_SOURCE_OFFSETS = Object.freeze([
-    Object.freeze({ x: 5, z: 2 }),
-    // d7dd9b61 staged the cot here. Move only untouched copies so existing
-    // campaigns receive the expanded crash-site clearance without resetting
-    // a cot the player has already carried elsewhere.
-    Object.freeze({ x: -2, z: 0 })
-]);
 
 const LEGACY_BERTH_OFFSETS = Object.freeze([
     // v3 rounded the authored half-cell socket (3.5, 15.5) to (4, 16),
@@ -57,31 +23,18 @@ const LEGACY_BERTH_OFFSETS = Object.freeze([
 const LEGACY_GIVEAWAY_MODULE_IDS = new Set(['starter-berth-wall-w', 'starter-berth-door-e']);
 
 /**
- * Plans the minimum viable ship-side berth. The crashed hull supplies the
- * floor, roof, two sound walls, and regulator. The cot, hull patch, and door
- * seal are physical recovery lessons whose sockets complete the first room.
+ * Plans the starting camp rest point. The cot is present from the beginning;
+ * installing and repairing the separate camp O2 core is the physical build
+ * lesson and the only environmental gate for sleeping here.
  */
 export function planFirstNightBase({ shipX = 0, shipZ = 0 } = {}) {
-    // Whole cells: the seal graph rounds module positions (baseSealGraph.js).
-    const x = Math.round(shipX + FIRST_NIGHT_BERTH_OFFSET.x);
-    const z = Math.round(shipZ + FIRST_NIGHT_BERTH_OFFSET.z);
+    const x = shipX + FIRST_NIGHT_BERTH_OFFSET.x;
+    const z = shipZ + FIRST_NIGHT_BERTH_OFFSET.z;
     const installSockets = Object.freeze([
         Object.freeze({
             id: 'ship-sleep-bay',
             acceptsTags: Object.freeze(['bed', 'sleep_anchor']),
             transform: Object.freeze({ x, z, yaw: Math.PI / 2 })
-        }),
-        Object.freeze({
-            id: 'ship-berth-wall-west',
-            acceptsTags: Object.freeze(['hull_patch']),
-            transform: Object.freeze({ x, z, yaw: Math.PI / 2 }),
-            side: 'west'
-        }),
-        Object.freeze({
-            id: 'ship-berth-door-east',
-            acceptsTags: Object.freeze(['seal_kit']),
-            transform: Object.freeze({ x, z, yaw: Math.PI / 2 }),
-            side: 'east'
         })
     ]);
     const shell = [
@@ -91,19 +44,12 @@ export function planFirstNightBase({ shipX = 0, shipZ = 0 } = {}) {
         { instanceId: 'starter-berth-wall-s', definitionId: 'straight_wall_1x1', x, z, side: 'south' },
         { instanceId: 'starter-berth-o2', definitionId: 'o2_regulator', x, z }
     ].map((module) => ({ ...module, socketId: 'crashed-ship-berth', transform: { x, z, yaw: 0 } }));
-    const recoveryCargo = RECOVERY_DEFINITIONS.map((recovery) => ({
-        ...recovery,
-        worldPosition: {
-            x: Math.round(shipX + recovery.sourceOffset.x),
-            z: Math.round(shipZ + recovery.sourceOffset.z)
-        }
-    }));
     return {
         installSocket: installSockets[0],
         installSockets,
         shell,
-        recoveryCargo,
-        cotSource: recoveryCargo[0].worldPosition
+        recoveryCargo: Object.freeze([]),
+        cotSource: Object.freeze({ x, z })
     };
 }
 
@@ -114,7 +60,10 @@ export function ensureFirstNightBaseState(state, options = {}) {
     const shipZ = options.shipZ ?? 0;
     const shellById = new Map(plan.shell.map((module) => [module.instanceId, module]));
     const installedWithoutLegacyGiveaways = state.installed
-        .filter(({ instanceId }) => !LEGACY_GIVEAWAY_MODULE_IDS.has(instanceId))
+        .filter(({ instanceId, missionId }) => (
+            !LEGACY_GIVEAWAY_MODULE_IDS.has(instanceId)
+            && missionId !== FIRST_NIGHT_SEAL_MISSION_ID
+        ))
         .map((module) => {
             const replacement = shellById.get(module.instanceId);
             const atLegacyBerth = replacement && LEGACY_BERTH_OFFSETS.some((offset) => (
@@ -124,76 +73,44 @@ export function ensureFirstNightBaseState(state, options = {}) {
             return atLegacyBerth ? { ...replacement } : module;
         });
     const installedIds = new Set(installedWithoutLegacyGiveaways.map(({ instanceId }) => instanceId));
-    let next = {
+    const cotSocket = plan.installSocket;
+    const existingCot = installedWithoutLegacyGiveaways.find(({ definitionId }) => definitionId === 'cot_bed')
+        ?? (state.carried?.definitionId === 'cot_bed' ? state.carried : null)
+        ?? state.worldObjects?.find(({ definitionId }) => definitionId === 'cot_bed')
+        ?? null;
+    const installedCotRecord = {
+        ...(existingCot ?? {}),
+        instanceId: existingCot?.instanceId ?? `cot_bed:${state.runId ?? 'campaign'}`,
+        definitionId: 'cot_bed',
+        missionId: FIRST_NIGHT_COT_MISSION_ID,
+        socketId: cotSocket.id,
+        transform: { ...cotSocket.transform },
+        x: cotSocket.transform.x,
+        z: cotSocket.transform.z,
+        yaw: cotSocket.transform.yaw
+    };
+    const installedWithoutCot = installedWithoutLegacyGiveaways.filter(({ definitionId }) => definitionId !== 'cot_bed');
+    const next = {
         ...state,
         installed: [
-            ...installedWithoutLegacyGiveaways,
-            ...plan.shell.filter(({ instanceId }) => !installedIds.has(instanceId))
+            ...installedWithoutCot,
+            ...plan.shell.filter(({ instanceId }) => !installedIds.has(instanceId)),
+            installedCotRecord
         ],
-        worldObjects: returnStrandedCot(state.worldObjects ?? [], plan, options)
+        carried: state.carried?.definitionId === 'cot_bed' || state.carried?.missionId === FIRST_NIGHT_SEAL_MISSION_ID
+            ? null
+            : state.carried,
+        worldObjects: (state.worldObjects ?? []).filter((object) => (
+            object.definitionId !== 'cot_bed'
+            && object.missionId !== FIRST_NIGHT_SEAL_MISSION_ID
+        ))
     };
-    // One step at a time (owner, 2026-10-15): the hull patch and door seal
-    // appear once the cot is in, not lying at the wreck from the start.
-    const cotIn = Boolean(installedCot(next));
-    if (!cotIn) next = { ...next, worldObjects: next.worldObjects.filter((object) => !untouchedSealCargo(object, plan)) };
-    const addedCargo = [];
-    for (const recovery of plan.recoveryCargo) {
-        if (recovery.missionId === FIRST_NIGHT_SEAL_MISSION_ID && !cotIn) continue;
-        const alreadyExists = next.installed.some(({ definitionId }) => definitionId === recovery.definitionId)
-            || next.carried?.definitionId === recovery.definitionId
-            || next.worldObjects.some(({ definitionId }) => definitionId === recovery.definitionId);
-        if (alreadyExists) continue;
-        const definition = getBaseModuleDefinition(recovery.definitionId);
-        const object = createCarryObject({
-            instanceId: `${recovery.definitionId}:${next.runId ?? 'campaign'}`,
-            definitionId: recovery.definitionId,
-            missionId: recovery.missionId,
-            massClass: definition?.massClass ?? 'medium',
-            worldPosition: recovery.worldPosition,
-            carrySocket: 'both-hands',
-            buildTags: definition?.buildTags ?? [],
-            runId: next.runId
-        });
-        const result = addCarryObject(next, object);
-        if (!result.ok) continue;
-        next = result.state;
-        addedCargo.push(object);
-    }
     return {
         state: next,
         plan,
-        addedCot: addedCargo.some(({ definitionId }) => definitionId === 'cot_bed'),
-        addedCargo
+        addedCot: !existingCot,
+        addedCargo: []
     };
-}
-
-// Older saves left the cot where the player was not looking: reserved at a
-// survivor camp's rack 120 m+ out (camp-handoff build a7abbb17), or untouched
-// at the old ship + (5, 2) spot under the HUD. Either goes to today's spot
-// beside the wreck; a cot the player already moved is left where it is.
-function returnStrandedCot(worldObjects, plan, { shipX = 0, shipZ = 0 } = {}) {
-    const legacyPositions = LEGACY_COT_SOURCE_OFFSETS.map((offset) => ({
-        x: Math.round(shipX + offset.x),
-        z: Math.round(shipZ + offset.z)
-    }));
-    return worldObjects.map((object) => {
-        if (object.definitionId !== 'cot_bed') return object;
-        const campReserved = object.handoff?.type === 'camp-cot' && object.handoff?.status === 'reserved';
-        const atLegacySpot = !object.handoff && legacyPositions.some(({ x, z }) => (
-            object.worldPosition?.x === x && object.worldPosition?.z === z
-        ));
-        if (!campReserved && !atLegacySpot) return object;
-        const rest = { ...object };
-        delete rest.handoff;
-        const home = { ...plan.cotSource };
-        return { ...rest, worldPosition: home, sourcePosition: { ...home }, lastSafePosition: { ...home } };
-    });
-}
-
-function untouchedSealCargo(object, plan) {
-    if (object.missionId !== FIRST_NIGHT_SEAL_MISSION_ID) return false;
-    const source = plan.recoveryCargo.find(({ definitionId }) => definitionId === object.definitionId)?.worldPosition;
-    return Boolean(source) && object.worldPosition?.x === source.x && object.worldPosition?.z === source.z;
 }
 
 export function availableFirstNightSocket(state, plan, object) {

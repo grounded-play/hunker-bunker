@@ -106,13 +106,14 @@ describe('DP-02: O2 runtime retains its shader light set', () => {
         expect(game.o2BubbleObjects.ring.visible).toBe(true);
     });
 
-    it('keeps the active generator fixture visible while it is offline and repairable', () => {
+    it('reveals the offline generator only after its physical camp core is installed', () => {
         const sprite = { visible: false, userData: { replacedBy3d: false } };
         const module3d = { visible: false };
         const shadow = { visible: false };
         const game = {
             playerType: 'SCOUT',
             unlocks: {},
+            carryState: { installed: [] },
             bank: { getUnlocks: () => ({}) },
             crashedShips: [{
                 type: 'SCOUT', o2ModuleSprite: sprite,
@@ -125,6 +126,17 @@ describe('DP-02: O2 runtime retains its shader light set', () => {
             o2BubbleObjects: null
         };
 
+        ThreeGame.prototype.ensureO2BubbleVisualState.call(game);
+        expect(sprite.userData.world3dDesiredVisible).toBe(false);
+        expect(sprite.visible).toBe(false);
+        expect(module3d.visible).toBe(false);
+        expect(shadow.visible).toBe(false);
+        expect(game.setupWorld3dReplacement).not.toHaveBeenCalled();
+
+        game.carryState.installed.push({
+            definitionId: 'camp_o2_generator_core',
+            socketId: 'camp-o2-generator'
+        });
         ThreeGame.prototype.ensureO2BubbleVisualState.call(game);
         expect(sprite.userData.world3dDesiredVisible).toBe(true);
         expect(sprite.visible).toBe(true);

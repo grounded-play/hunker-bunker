@@ -1,4 +1,4 @@
-export const CRASH_SITE_BUILD_VERSION = 5;
+export const CRASH_SITE_BUILD_VERSION = 6;
 
 const sectorZeroRooms = Object.freeze([
     Object.freeze({ id: 'impact_cradle', phase: 'phase_1_boot', left: 2, right: 16, top: 4, bottom: 16 }),
@@ -97,7 +97,9 @@ export const CRASH_SITE_BUILD = Object.freeze({
         departureThresholdZ: 2.75
     }),
     constructionSockets: Object.freeze([
-        Object.freeze({ id: 'first-bed', kind: 'bed', x: 2.5, z: 14.5, yaw: Math.PI / 2 }),
+        // The cot is part of the camp, not the wreck. Its whole 1x2 footprint
+        // sits comfortably inside the level-one O2 field centered at 12.5,9.5.
+        Object.freeze({ id: 'first-bed', kind: 'bed', x: 14.5, z: 11.5, yaw: Math.PI / 2 }),
         Object.freeze({ id: 'west-seal', kind: 'wall', x: 1.5, z: 13, yaw: Math.PI / 2 }),
         Object.freeze({ id: 'east-seal', kind: 'wall', x: 28.5, z: 13, yaw: -Math.PI / 2 }),
         Object.freeze({ id: 'base-arcade', kind: 'arcade', x: 12.5, z: 26.5, yaw: 0 })

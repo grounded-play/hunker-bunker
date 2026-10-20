@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 import { REST_PHASES, createDayState } from './dayCycle.js';
-import { beginCarry, createCarryState, installCarriedObject } from './carrySystem.js';
-import { availableFirstNightSocket, ensureFirstNightBaseState } from './firstNightBase.js';
+import { createCarryState } from './carrySystem.js';
+import { ensureFirstNightBaseState } from './firstNightBase.js';
 
 function stubs() {
     globalThis.CustomEvent = class CustomEvent {
@@ -12,16 +12,7 @@ function stubs() {
 }
 
 function installedCarryState() {
-    let { state, plan } = ensureFirstNightBaseState(createCarryState('run-test'), { shipX: 100, shipZ: 200 });
-    for (const definitionId of ['cot_bed', 'hull_patch_panel', 'door_seal_kit']) {
-        // The seal parts only appear once the cot is in.
-        state = ensureFirstNightBaseState(state, { shipX: 100, shipZ: 200 }).state;
-        const object = state.worldObjects.find((entry) => entry.definitionId === definitionId);
-        state = beginCarry(state, object.instanceId, 'local').state;
-        const socket = availableFirstNightSocket(state, plan, state.carried);
-        state = installCarriedObject(state, socket, { carrierPlayerId: 'local' }).state;
-    }
-    return state;
+    return ensureFirstNightBaseState(createCarryState('run-test'), { shipX: 100, shipZ: 200 }).state;
 }
 
 const bunkerGame = (overrides = {}) => ({
@@ -31,6 +22,8 @@ const bunkerGame = (overrides = {}) => ({
     canRestAt: ThreeGame.prototype.canRestAt,
     getBunkerRestPoint: ThreeGame.prototype.getBunkerRestPoint,
     getRestPointAt: ThreeGame.prototype.getRestPointAt,
+    getO2GeneratorState: () => ({ isOnline: true, radius: 4.5 }),
+    getActiveO2GeneratorPosition: () => ({ x: 103.5, z: 200.5 }),
     ...overrides
 });
 
@@ -77,6 +70,25 @@ describe('bunker cot rest point', () => {
     it('is inert for invalid player positions', () => {
         const game = bunkerGame();
         expect(game.getRestPointAt(Number.NaN, Number.NaN)).toBe(null);
+    });
+
+    it('unlocks sleep only after the generator reveal has completed', () => {
+        const offline = bunkerGame({ getO2GeneratorState: () => ({ isOnline: false, radius: 0 }) });
+        const cot = offline.getBunkerRestPoint();
+        expect(offline.canRestAt(cot)).toMatchObject({ allowed: false, reason: 'camp-o2-offline' });
+
+        const starting = bunkerGame({ _o2RevealPending: true });
+        expect(starting.canRestAt(starting.getBunkerRestPoint()))
+            .toMatchObject({ allowed: false, reason: 'camp-o2-starting' });
+
+        const online = bunkerGame();
+        expect(online.canRestAt(online.getBunkerRestPoint())).toMatchObject({ allowed: true, nextDay: 2 });
+    });
+
+    it('refuses a migrated bed outside the live O2 radius', () => {
+        const game = bunkerGame({ getActiveO2GeneratorPosition: () => ({ x: 0, z: 0 }) });
+        expect(game.canRestAt(game.getBunkerRestPoint()))
+            .toMatchObject({ allowed: false, reason: 'outside-camp-o2-field' });
     });
 });
 
