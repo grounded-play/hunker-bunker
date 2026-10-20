@@ -13,7 +13,8 @@ function fakeApi({ init, authorization = { authorized: true }, finalize = [{ ok:
         purchaseSteamKeys: vi.fn(async () => init ?? { ok: true, requiresConfirmation: true, transId: 't1', orderId: '42', sandbox: false, confirmUrl: null }),
         onMicroTxnAuthorization: vi.fn((handler) => {
             authHandler = handler;
-            if (authorization) queueMicrotask(() => authHandler?.({ appId: 1, orderId: '42', ...authorization }));
+            const effectiveOrderId = init?.orderId ?? '42';
+            if (authorization) queueMicrotask(() => authHandler?.({ appId: 1, orderId: effectiveOrderId, ...authorization }));
             return () => { authHandler = null; };
         }),
         openSteamOverlayToUrl: vi.fn(async () => ({ ok: true })),
@@ -50,6 +51,18 @@ describe('runSteamKeyPurchase', () => {
         const api = fakeApi({ init: { ok: true, requiresConfirmation: true, transId: 't1', orderId: '42', confirmUrl: 'https://store.steampowered.com/checkout' } });
         await runSteamKeyPurchase({ api, sku: 'key_1', onStatus: () => {}, pending: pendingStore(), retryDelayMs: 0 });
         expect(api.openSteamOverlayToUrl).toHaveBeenCalledWith('https://store.steampowered.com/checkout');
+    });
+
+    it('provides confirmUrl, orderId, and transId in awaiting_approval status', async () => {
+        const api = fakeApi({ init: { ok: true, requiresConfirmation: true, transId: 'txn-99', orderId: 'ord-88', confirmUrl: 'https://steam.store/checkout' } });
+        const status = vi.fn();
+        await runSteamKeyPurchase({ api, sku: 'key_1', onStatus: status, pending: pendingStore(), retryDelayMs: 0 });
+        expect(status.mock.calls[0][0]).toMatchObject({
+            key: 'awaiting_approval',
+            confirmUrl: 'https://steam.store/checkout',
+            orderId: 'ord-88',
+            transId: 'txn-99'
+        });
     });
 
     it('stops without finalizing when the player declines in Steam', async () => {

@@ -268,6 +268,7 @@
       "accessibility": "ACCESSIBILITY",
       "profile_saves": "PROFILE & SAVES",
       "session_display": "SESSION & DISPLAY",
+      "steam_overlay": "STEAM OVERLAY (SHIFT+TAB)",
       "return_to_game": "RETURN TO GAME",
       "resume": "RESUME",
       "skip_onboarding": "SKIP ONBOARDING",

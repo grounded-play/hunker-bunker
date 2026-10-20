@@ -409,6 +409,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ),
     getSteamLeaderboard,
     openSteamOverlayToUrl: (url) => ipcRenderer.invoke('hb:openSteamOverlayToUrl', url),
+    activateSteamOverlay: (dialog = 'friends') => ipcRenderer.invoke('hb:activateSteamOverlay', dialog),
+    activateSteamStore: (appId) => ipcRenderer.invoke('hb:activateSteamStore', appId),
     addSteamTimelineEvent: (event) => ipcRenderer.invoke('hb:addSteamTimelineEvent', event),
     setSteamTimelineGameMode: (mode) => ipcRenderer.invoke('hb:setSteamTimelineGameMode', mode),
     setSteamInputPhase: (phase) => ipcRenderer.send('hb:steamInputPhase', phase),

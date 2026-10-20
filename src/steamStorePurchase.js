@@ -68,7 +68,13 @@ export async function runSteamKeyPurchase({
         return { state: 'refused', reason, result: init };
     }
 
-    onStatus({ key: init.sandbox ? 'awaiting_sandbox' : 'awaiting_approval', tone: 'info' });
+    onStatus({
+        key: init.sandbox ? 'awaiting_sandbox' : 'awaiting_approval',
+        tone: 'info',
+        confirmUrl: init.confirmUrl ?? null,
+        orderId: init.orderId ?? null,
+        transId: init.transId ?? null
+    });
     // Subscribe before opening any overlay so a fast answer is not missed.
     const approval = waitForApproval(api, init.orderId, approvalTimeoutMs);
     if (init.confirmUrl) await api.openSteamOverlayToUrl?.(init.confirmUrl);

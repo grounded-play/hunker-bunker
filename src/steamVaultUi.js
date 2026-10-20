@@ -1229,6 +1229,19 @@ function showStorePurchaseStatus(status, { count = 0 } = {}) {
     };
     el.textContent = (messages[status.key] ?? messages.failed)();
     el.dataset.tone = status.tone ?? 'info';
+    if (status.key === 'awaiting_approval' || status.key === 'awaiting_sandbox') {
+        el.style.cursor = 'pointer';
+        el.onclick = () => {
+            if (status.confirmUrl && window.electronAPI?.openSteamOverlayToUrl) {
+                window.electronAPI.openSteamOverlayToUrl(status.confirmUrl);
+            } else if (window.electronAPI?.activateSteamOverlay) {
+                window.electronAPI.activateSteamOverlay('friends');
+            }
+        };
+    } else {
+        el.style.cursor = '';
+        el.onclick = null;
+    }
     el.classList.remove('hidden');
 }
 

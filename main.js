@@ -2867,6 +2867,11 @@ window.addEventListener('gamepadconnected', startBrowserGamepadFallback);
 window.addEventListener('keydown', (event) => {
     if (!event.isTrusted) return;
     setLastInputMode('keyboard', { cause: { type: 'keydown', code: event.code } });
+    if (event.key === 'Tab' && event.shiftKey) {
+        if (window.electronAPI?.activateSteamOverlay) {
+            window.electronAPI.activateSteamOverlay('friends');
+        }
+    }
 }, true);
 
 window.addEventListener('pointerdown', (event) => {
@@ -11703,6 +11708,11 @@ document.getElementById('setting-aim-sensitivity')?.addEventListener('change', (
     persistSettings();
 });
 document.getElementById('resume-settings')?.addEventListener('click', () => closeSettings?.click());
+document.getElementById('open-steam-overlay-btn')?.addEventListener('click', () => {
+    if (window.electronAPI?.activateSteamOverlay) {
+        window.electronAPI.activateSteamOverlay('friends');
+    }
+});
 document.getElementById('setting-camera-mode')?.addEventListener('change', (e) => {
     state.settings.cameraMode = e.target.value === 'isometric' ? 'isometric' : 'third-person';
     window.game?.setCameraMode?.(state.settings.cameraMode);
