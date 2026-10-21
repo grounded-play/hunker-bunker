@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { extractFile } from '@electron/asar';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
@@ -129,6 +130,77 @@ export function auditLinuxLauncher(root, { platform = process.platform } = {}) {
         failures.push({ file: 'hunker-bunker-bin', reason: 'Linux Electron binary is not executable.' });
     }
     return failures;
+}
+
+export function auditPackagedSteamRuntime({
+    mainSource,
+    preloadSource,
+    unpackedRoot,
+    file = 'resources/app.asar'
+}) {
+    const failures = [];
+    const earlyHook = mainSource.indexOf('steamworksEarly.electronEnableSteamOverlay(false)');
+    const readyHandler = mainSource.indexOf('app.whenReady().then');
+
+    if (earlyHook < 0 || readyHandler < 0 || earlyHook > readyHandler) {
+        failures.push({
+            file,
+            reason: 'Windows package must configure the Steam overlay with frame invalidation before app.whenReady().'
+        });
+    }
+    if (mainSource.includes('electronEnableSteamOverlay(true)')) {
+        failures.push({
+            file,
+            reason: 'Windows package disables Steam overlay frame invalidation.'
+        });
+    }
+    if (!mainSource.includes("steamClient.callback.register(steam.SteamCallback.MicroTxnAuthorizationResponse")) {
+        failures.push({
+            file,
+            reason: 'Windows package is missing the Steam Wallet authorization callback.'
+        });
+    }
+    if (!preloadSource.includes("activateSteamOverlay: (dialog = 'friends')")) {
+        failures.push({
+            file,
+            reason: 'Windows package is missing the renderer-to-Steam overlay bridge.'
+        });
+    }
+
+    for (const relativePath of [
+        'node_modules/steamworks.js/dist/win64/steam_api64.dll',
+        'node_modules/steamworks.js/dist/win64/steamworksjs.win32-x64-msvc.node'
+    ]) {
+        if (!fs.existsSync(path.join(unpackedRoot, relativePath))) {
+            failures.push({
+                file: `resources/app.asar.unpacked/${relativePath}`,
+                reason: 'Required Steamworks Windows runtime is missing from the package.'
+            });
+        }
+    }
+
+    return failures;
+}
+
+function auditWindowsPackage(root) {
+    const asarPath = path.join(root, 'resources', 'app.asar');
+    const unpackedRoot = path.join(root, 'resources', 'app.asar.unpacked');
+    if (!fs.existsSync(asarPath)) {
+        return [{ file: 'resources/app.asar', reason: 'Packaged Electron application is missing.' }];
+    }
+
+    try {
+        return auditPackagedSteamRuntime({
+            mainSource: extractFile(asarPath, 'electron/main.cjs').toString('utf8'),
+            preloadSource: extractFile(asarPath, 'electron/preload.cjs').toString('utf8'),
+            unpackedRoot
+        });
+    } catch (error) {
+        return [{
+            file: 'resources/app.asar',
+            reason: `Could not inspect packaged Steam runtime: ${error?.message ?? error}`
+        }];
+    }
 }
 
 function readTextIfExists(filePath) {
@@ -270,6 +342,9 @@ export async function auditSteamDepot({
         scannedFiles += files.length;
         if (path.basename(absoluteRoot) === 'linux-unpacked') {
             failures.push(...auditLinuxLauncher(absoluteRoot).map((failure) => ({ root, ...failure })));
+        }
+        if (path.basename(absoluteRoot) === 'win-unpacked') {
+            failures.push(...auditWindowsPackage(absoluteRoot).map((failure) => ({ root, ...failure })));
         }
         for (const file of files) {
             const failure = auditFile(file, absoluteRoot);

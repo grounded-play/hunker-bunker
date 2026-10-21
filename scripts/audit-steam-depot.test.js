@@ -2,7 +2,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { auditLinuxLauncher, auditSteamDepot, auditSteamVdfs } from './audit-steam-depot.js';
+import {
+    auditLinuxLauncher,
+    auditPackagedSteamRuntime,
+    auditSteamDepot,
+    auditSteamVdfs
+} from './audit-steam-depot.js';
 
 const tempDirs = [];
 
@@ -122,6 +127,50 @@ describe('auditSteamVdfs', () => {
                 file: 'steam/steam_input_manifest.vdf',
                 reason: 'Steam Input manifest has no bundled default controller configurations.'
             })
+        ]));
+    });
+});
+
+describe('auditPackagedSteamRuntime', () => {
+    it('accepts the early overlay hook, Wallet callback, bridge, and native runtime', () => {
+        const unpackedRoot = makeTempDir();
+        for (const relativePath of [
+            'node_modules/steamworks.js/dist/win64/steam_api64.dll',
+            'node_modules/steamworks.js/dist/win64/steamworksjs.win32-x64-msvc.node'
+        ]) {
+            const target = path.join(unpackedRoot, relativePath);
+            fs.mkdirSync(path.dirname(target), { recursive: true });
+            fs.writeFileSync(target, 'runtime');
+        }
+
+        expect(auditPackagedSteamRuntime({
+            mainSource: [
+                'steamworksEarly.electronEnableSteamOverlay(false);',
+                'app.whenReady().then(() => {});',
+                'steamClient.callback.register(steam.SteamCallback.MicroTxnAuthorizationResponse, () => {});'
+            ].join('\n'),
+            preloadSource: "activateSteamOverlay: (dialog = 'friends') => ipcRenderer.invoke('hb:activateSteamOverlay', dialog)",
+            unpackedRoot
+        })).toEqual([]);
+    });
+
+    it('rejects the post-ready hook and disabled frame invalidation', () => {
+        const failures = auditPackagedSteamRuntime({
+            mainSource: [
+                'app.whenReady().then(() => {});',
+                'steamworksEarly.electronEnableSteamOverlay(false);',
+                'steam.electronEnableSteamOverlay(true);'
+            ].join('\n'),
+            preloadSource: '',
+            unpackedRoot: makeTempDir()
+        });
+
+        expect(failures.map(({ reason }) => reason)).toEqual(expect.arrayContaining([
+            expect.stringContaining('before app.whenReady()'),
+            expect.stringContaining('disables Steam overlay frame invalidation'),
+            expect.stringContaining('Steam Wallet authorization callback'),
+            expect.stringContaining('overlay bridge'),
+            expect.stringContaining('Steamworks Windows runtime')
         ]));
     });
 });

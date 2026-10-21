@@ -5,11 +5,19 @@
 **Tested BuildID:** `25965936` (Branch: `public` / `beta`, Oct 15 @ 10:06 AM)  
 **Latest Auto-Submit BuildID:** `26062229` (Branch: `beta`, Oct 19 @ 2:25 PM)  
 **Remediation Commit:** `c0102b48` (`dev/sprint-53`)  
-**Status:** Code Implementation Complete & Verified — Pending Steamworks Store Metadata & Re-upload  
+**Status:** Code and packaged-depot checks pass — Pending installed-Steam smoke test, Steamworks metadata publish, and re-upload
 
 ---
 
 ## 1. Executive Summary & Build Comparison
+
+### Validation update — October 21, 2026
+
+- The current Windows package (`v2.4.17-beta-035d81df48b6`) contains the pre-`app.whenReady()` overlay hook with frame invalidation enabled, the `MicroTxnAuthorizationResponse` callback, the renderer overlay bridge, `steam_api64.dll`, and the Windows `steamworks.js` native module.
+- The packaged config points to `https://steam.tuesdaycinema.club`; its health endpoint reports Steam auth configured, and its store catalog reports live Microtransactions enabled with mock purchases disabled.
+- `npm test` passes all 6,565 tests, `npm run build` passes, `npm run steam:claims:check` passes, and `npm run steam:audit-depot` passes both depots.
+- `steam:audit-depot` now inspects the packaged Windows ASAR and native runtime. It rejects a late overlay hook, disabled frame invalidation, missing Wallet callback/bridge, or missing Steam DLL/native module.
+- Static and packaged validation cannot prove DLL injection or a Wallet authorization dialog on a reviewer's machine. Before resubmission, install the candidate from Steam, launch it from the Steam client, verify Shift+Tab, and complete one sandbox or approved live end-to-end purchase.
 
 Valve review tested **BuildID 25965936** on October 15, 2026, which was flagged with **1 Caution** and **2 Blocking Failures**:
 1. **Caution:** Steam Overlay does not appear upon pressing <kbd>Shift</kbd>+<kbd>Tab</kbd>.
@@ -21,11 +29,11 @@ Valve review tested **BuildID 25965936** on October 15, 2026, which was flagged 
 | Dimension | Tested Version (Valve) | Current Latest Uploaded Build | Current Local Repository |
 | :--- | :--- | :--- | :--- |
 | **BuildID** | **`25965936`** | **`26062229`** | Pre-build (`HEAD`) |
-| **Date & Time** | Oct 15, 2026 @ 10:06 AM | Oct 19, 2026 @ 2:25 PM | Oct 20, 2026 |
+| **Date & Time** | Oct 15, 2026 @ 10:06 AM | Oct 19, 2026 @ 2:25 PM | Validated Oct 21, 2026 |
 | **Branch** | `public` & `beta` | `beta` | `dev/sprint-53` |
 | **Release Tag / Description** | `Release v2.4.17-beta-preRelease` (`v2.4.17-beta`) | Auto-Submit (`26062229`) | Sprint 53 / 54 post-release |
 | **Commits Relative to Tested** | Baseline (`401e51d5`) | +18 Steam pipe builds | **+82 commits** ahead of tested build |
-| **Overlay Hook State** | Broken (deferred post-ready hook) | Broken (deferred post-ready hook) | Root-cause identified in `electron/main.cjs` |
+| **Overlay Hook State** | Broken (deferred post-ready hook) | Broken (deferred post-ready hook) | Fixed; present in packaged Windows ASAR and release-audited |
 | **Public Branch State** | Set live on `public` on Oct 15 | Not promoted to `public` | Awaiting clean build and promotion |
 
 > [!IMPORTANT]

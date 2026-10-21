@@ -135,6 +135,7 @@
     }
   },
   "devDependencies": {
+    "@electron/asar": "^3.4.1",
     "@eslint/js": "^10.0.1",
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.64.0",
