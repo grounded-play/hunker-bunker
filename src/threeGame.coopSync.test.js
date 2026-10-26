@@ -167,14 +167,13 @@ describe('a host enemy chases the same player on both screens', () => {
         sprite
     });
 
-    it('bites the guest it is hunting, once per attack cooldown', () => {
+    it('does not infer a bite from an interpolated guest replica', () => {
         const sprite = enemy({ netTargetX: 0, netTargetZ: 0, netAggroTargetId: 'guest-socket', netAggroMode: 'hunt' });
         const game = guest(sprite);
         ThreeGame.prototype.updateRemoteEnemyReplica.call(game, sprite, 1 / 60);
         ThreeGame.prototype.updateRemoteEnemyReplica.call(game, sprite, 1 / 60);
-        expect(game.takeDamage).toHaveBeenCalledTimes(1);
-        expect(game.takeDamage.mock.calls[0][0]).toBe(1);
-        expect(game.applySnailContactKnockback).toHaveBeenCalledTimes(1);
+        expect(game.takeDamage).not.toHaveBeenCalled();
+        expect(game.applySnailContactKnockback).not.toHaveBeenCalled();
     });
 
     it('leaves the guest alone while it chases the host', () => {
@@ -194,11 +193,11 @@ describe('a host enemy chases the same player on both screens', () => {
         expect(act2.takeDamage).not.toHaveBeenCalled();
     });
 
-    it("hurts on contact with a boss's body whoever it is after", () => {
+    it("does not infer boss body damage from the guest's render replica", () => {
         const sprite = enemy({ type: 'boss_cybersnail', isBoss: true, netTargetX: 0, netTargetZ: 0, netAggroTargetId: 'ship', netAggroMode: 'hunt' });
         const game = guest(sprite);
         ThreeGame.prototype.updateRemoteEnemyReplica.call(game, sprite, 1 / 60);
-        expect(game.takeDamage).toHaveBeenCalledWith(2, 'boss_cybersnail', expect.any(Number), expect.any(Number));
+        expect(game.takeDamage).not.toHaveBeenCalled();
     });
 
     it('turns to face the player it is hunting while it stands still', () => {

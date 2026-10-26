@@ -1,0 +1,128 @@
+/* Co-op QA 2026-10-26: critical result/deployment screens must fit the
+   1280x800 and 1280x720 Steam Deck stages without hidden scrolling. */
+@media (min-width: 769px) and (max-height: 820px) {
+  #game-viewport > #multiplayer-modal > .net-modal-content {
+    overflow: hidden !important;
+    gap: 5px !important;
+    padding: 10px 14px var(--advance-bottom) !important;
+  }
+
+  #multiplayer-modal .net-header {
+    padding-bottom: 4px;
+  }
+
+  #multiplayer-modal .net-header-kicker,
+  #multiplayer-modal .net-mode-card__meta,
+  #multiplayer-modal .net-mode-card__perks,
+  #multiplayer-modal .net-action-hints,
+  #multiplayer-modal .net-protocol-specs {
+    display: none;
+  }
+
+  #multiplayer-modal .net-modal-title {
+    font-size: clamp(18px, calc(var(--vu) * 2.4), 26px);
+  }
+
+  #multiplayer-modal .net-mode-selector {
+    gap: 6px;
+  }
+
+  #multiplayer-modal .net-mode-card {
+    min-height: 66px;
+    padding: 7px 9px;
+    gap: 3px;
+  }
+
+  #multiplayer-modal .net-mode-card__title {
+    font-size: clamp(12px, calc(var(--vu) * 1.65), 17px);
+  }
+
+  #multiplayer-modal .net-briefing-banner,
+  #multiplayer-modal .net-ledger-panel,
+  #multiplayer-modal .net-telemetry-box,
+  #multiplayer-modal .net-roster-container {
+    padding: 6px 8px;
+  }
+
+  #multiplayer-modal .net-deployment-ledger {
+    gap: 5px;
+  }
+
+  #multiplayer-modal .net-main-grid {
+    min-height: 0;
+    gap: 8px;
+  }
+
+  #multiplayer-modal .net-column {
+    min-height: 0;
+    gap: 4px;
+  }
+
+  #multiplayer-modal .net-roster-list {
+    min-height: 0;
+    max-height: 92px;
+  }
+
+  #game-over-modal {
+    overflow: hidden !important;
+  }
+
+  #game-over-modal .game-over-content {
+    width: min(96vw, 1120px) !important;
+    height: calc(100dvh - 16px);
+    max-height: calc(100dvh - 16px) !important;
+    padding: 10px 14px !important;
+    gap: 5px;
+    overflow: hidden !important;
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.8fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  #game-over-modal .game-over-header {
+    grid-column: 1 / -1;
+    padding-bottom: 4px;
+  }
+
+  #game-over-modal .game-over-title {
+    font-size: clamp(24px, 4vh, 36px);
+  }
+
+  #game-over-modal .go-expedition-report,
+  #game-over-modal .game-over-report {
+    grid-column: 1;
+    min-height: 0;
+  }
+
+  #game-over-modal .game-over-report {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: 4px 10px;
+  }
+
+  #game-over-modal .game-over-section-label,
+  #game-over-modal .return-manifest,
+  #game-over-modal .game-over-bank-note,
+  #game-over-modal .game-over-act2-summary {
+    grid-column: 1 / -1;
+  }
+
+  #game-over-modal .game-over-score-section,
+  #game-over-modal .go-leaderboard-container {
+    grid-column: 2;
+  }
+
+  #game-over-modal .game-over-score-section {
+    grid-row: 2;
+  }
+
+  #game-over-modal .go-leaderboard-container {
+    align-self: end;
+  }
+
+  #game-over-modal .game-over-actions {
+    grid-column: 1 / -1;
+    position: static;
+  }
+}

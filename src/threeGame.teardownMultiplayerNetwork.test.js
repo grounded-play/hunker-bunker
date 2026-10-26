@@ -93,6 +93,7 @@ describe('ThreeGame.teardownMultiplayerNetwork', () => {
             // PvP heals the relay accepted (Sprint 51).
             'playerHealthSync',
             'playerDownedBroadcast', 'playerExtractedBroadcast', 'enemyDamaged', 'enemyHitReported', 'enemyStateSnapshot',
+            'enemyContactHit', 'enemyContactHitConfirmed',
             // Co-op shared world beats and the friendly-fire shove.
             'worldEventBroadcast', 'playerNudged',
             'playerDisconnected', 'newPlayer', 'hostChanged',

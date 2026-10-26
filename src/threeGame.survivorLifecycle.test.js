@@ -92,6 +92,24 @@ describe('survivor runtime lifecycle', () => {
         expect(createInstance).toHaveBeenCalledTimes(2);
     });
 
+    it('promotes the visible survivor model without unloading or respawning it', async () => {
+        const fake = fixture();
+        const survivor = foxhole(fake);
+        const visibleActor = actor();
+        visibleActor.root.position.set(17, 0, 23);
+        fake.scene.add(visibleActor.root);
+        fake.activeWanderer = { ...survivor, instance3d: visibleActor };
+
+        await ThreeGame.prototype.handleWandererBefriend.call(fake, survivor);
+
+        expect(createInstance).not.toHaveBeenCalled();
+        expect(visibleActor.dispose).not.toHaveBeenCalled();
+        expect(visibleActor.root.parent).toBe(fake.scene);
+        expect(visibleActor.root.position.x).toBe(17);
+        expect(visibleActor.root.position.z).toBe(23);
+        expect(fake.companions[0].instance3d).toBe(visibleActor);
+    });
+
     it('delivers the contract through actual kill and camp completion methods', () => {
         const fake = fixture();
         fake.wandererManager.befriend(foxhole(fake));

@@ -107,6 +107,7 @@ import { getGameOverLeaderboardBoard, renderGameOverLeaderboard } from './src/le
 import { createFieldWorkbenchUi } from './src/fieldWorkbenchUi.js';
 import { createCampServicesUi } from './src/campServicesUi.js';
 import { createQuickCommandRadialUi } from './src/quickCommandRadialUi.js';
+import './src/styles/coopQaFixes.css';
 import { flushPendingRunSubmits, submitRunWithRetryQueue } from './src/steam/runSubmitQueue.js';
 import { FATIGUE_STATE_KEY, describeScars, normalizeFatigueState } from './src/fatigue.js';
 import { unlockSheenForMilestone, reconcileSheenUnlocks, unlockAllSheens, getSelectedSheen } from './src/weaponSheens.js';
@@ -7445,25 +7446,30 @@ objectiveRegistry.onChange((active) => {
 });
 
 window.addEventListener('camp-quest-progress', (event) => {
-    const { questId, label, current, target, compass } = event?.detail ?? {};
+    const { campId, questId, label, current, target, compass } = event?.detail ?? {};
     if (!label) return;
+    const canonicalId = `camp-quest:${campId ?? 'unknown'}:${questId ?? label}`;
+    const liveTarget = window.game?.getActiveCampQuestTargetPos?.();
     showCampQuestHUD(`${label}: ${current ?? 0}/${target ?? 1}`);
     objectiveRegistry.trackObjective({
-        id: `camp_quest:${questId ?? label}`,
+        id: canonicalId,
         source: 'camp-quest',
         label,
         current: current ?? 0,
         target: target ?? 1,
         priority: 40,
-        compass: compass ?? null
+        compass: compass ?? (liveTarget ? { x: liveTarget.x, z: liveTarget.z } : null)
     });
+    // Remove records created by pre-2.4.18 builds' underscore-form ID.
+    objectiveRegistry.resolveObjective(`camp_quest:${questId ?? label}`, 'migrated');
 });
 
 window.addEventListener('camp-quest-complete', (event) => {
-    const { questId } = event?.detail ?? {};
+    const { campId, questId } = event?.detail ?? {};
     hideCampQuestHUD();
     if (questId) {
-        objectiveRegistry.resolveObjective(`camp_quest:${questId}`, 'complete');
+        objectiveRegistry.resolveObjective(`camp-quest:${campId ?? 'unknown'}:${questId}`, 'complete');
+        objectiveRegistry.resolveObjective(`camp_quest:${questId}`, 'migrated');
     }
 });
 
@@ -12989,6 +12995,37 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             ctx.fillStyle = '#d0e0f0';
             ctx.font = '10px Space Mono, monospace';
             if (!compact) ctx.fillText(landmark.label ?? '', lx, ly + 14);
+        }
+    }
+
+    // Accepted camp quests are destinations, not static camp landmarks. Draw
+    // the live target after landmarks so it remains legible on both the full
+    // tactical map and the compact HUD map as props/enemies move or resolve.
+    const activeQuestTarget = window.game?.getActiveCampQuestTargetPos?.();
+    if (activeQuestTarget && Number.isFinite(activeQuestTarget.x) && Number.isFinite(activeQuestTarget.z)) {
+        const questPoint = worldToMap(activeQuestTarget.x, activeQuestTarget.z);
+        if (questPoint.x >= -40 && questPoint.x <= width + 40 && questPoint.y >= -40 && questPoint.y <= height + 40) {
+            const pulse = 1 + Math.sin(performance.now() * 0.006) * 0.16;
+            ctx.save();
+            ctx.translate(questPoint.x, questPoint.y);
+            ctx.scale(pulse, pulse);
+            ctx.strokeStyle = '#ffe14a';
+            ctx.fillStyle = 'rgba(255, 225, 74, 0.24)';
+            ctx.lineWidth = compact ? 2 : 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, compact ? 7 : 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#fff7b0';
+            ctx.font = `bold ${compact ? 10 : 13}px Space Mono, monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('!', 0, 0);
+            if (!compact) {
+                ctx.font = 'bold 9px Space Mono, monospace';
+                ctx.fillText('QUEST TARGET', 0, 18);
+            }
+            ctx.restore();
         }
     }
 

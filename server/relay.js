@@ -65,6 +65,7 @@ const PVE_HIT_RANGE = PVP_WEAPON_RANGE;
 // false-rejecting real simultaneous hits.
 const PVE_MIN_HIT_INTERVAL_MS = MIN_FIRE_INTERVAL_MS;
 const PVE_STATE_MIN_INTERVAL_MS = 75;
+const PVE_CONTACT_HIT_MIN_INTERVAL_MS = 120;
 // A world beat is a rare, deliberate event (a goal built, a boss staged), so a
 // low ceiling is generous while still bounding a misbehaving client.
 // A Tank slam can break several walls at once, each its own event.
@@ -391,6 +392,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
             lastWeaponHitAt: 0,
             lastEnemyHitAt: 0,
             lastEnemyStateAt: 0,
+            lastEnemyContactHits: new Map(),
             // Ready-up gate (see matchDeploy below): previously nonexistent --
             // any single socket emitting matchDeploy instantly launched the
             // whole room for everyone, with no wait for other players.
@@ -780,6 +782,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
             if (!player.roomCode || !payload || typeof payload !== 'object') return;
             const eventName = sanitizeString(payload.event, 64, '');
             if (!eventName) return;
+            if (eventName === 'mission-state' && !player.isHost) return;
             if (eventName === 'dressing-protocol') return;
             if (eventName === 'dressing-protocol-request') {
                 socket.emit('worldEventBroadcast', { event: 'dressing-protocol', originId: 'relay', detail: {
@@ -1042,7 +1045,70 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
             }) : undefined;
             const payload = { enemies, timestamp: now };
             if (companions && companions.length > 0) payload.companions = companions;
+            if (data.missionState && typeof data.missionState === 'object') {
+                const revision = Number(data.missionState.revision);
+                const type = sanitizeString(data.missionState.type, 24, '');
+                const status = sanitizeString(data.missionState.status, 32, '');
+                if (Number.isSafeInteger(revision) && revision >= 0 && type && status) {
+                    payload.missionState = {
+                        revision,
+                        type,
+                        status,
+                        killCount: Number.isFinite(data.missionState.killCount)
+                            ? Math.max(0, Math.min(10000, Math.round(data.missionState.killCount))) : 0,
+                        targetKills: Number.isFinite(data.missionState.targetKills)
+                            ? Math.max(0, Math.min(10000, Math.round(data.missionState.targetKills))) : 0
+                    };
+                }
+            }
             socket.to(player.roomCode).emit('enemyStateSnapshot', payload);
+        });
+
+        // Enemy AI and contact cooldowns are host-owned. Route the host's
+        // explicit bite to exactly one squadmate instead of asking a guest's
+        // interpolated render replica to rediscover the collision locally.
+        socket.on('enemyContactHit', (data = {}) => {
+            if (!player.roomCode || !player.isHost || player.mode === 'pvp') return;
+            const targetId = sanitizeString(data.targetId, 64, '');
+            const eventId = sanitizeString(data.eventId, 96, '');
+            const enemyType = sanitizeString(data.enemyType, 32, 'unknown');
+            const scatterKey = sanitizeString(data.scatterKey, 64, '') || null;
+            const x = sanitizeCoord(data.x);
+            const z = sanitizeCoord(data.z);
+            const damage = Number.isFinite(data.damage) ? Math.max(1, Math.min(8, Math.round(data.damage))) : 0;
+            const target = players.get(targetId);
+            const now = Date.now();
+            if (!targetId || !eventId || x === null || z === null || damage <= 0) return;
+            if (!target || target.roomCode !== player.roomCode || targetId === socket.id) return;
+            const contactKey = `${targetId}:${scatterKey ?? enemyType}`;
+            const lastContactAt = player.lastEnemyContactHits.get(contactKey) ?? 0;
+            if (now - lastContactAt < PVE_CONTACT_HIT_MIN_INTERVAL_MS) return;
+            player.lastEnemyContactHits.set(contactKey, now);
+            if (player.lastEnemyContactHits.size > 512) {
+                player.lastEnemyContactHits.delete(player.lastEnemyContactHits.keys().next().value);
+            }
+            io.to(targetId).emit('enemyContactHit', {
+                eventId, targetId, enemyType, scatterKey, x, z, damage,
+                hostId: socket.id, timestamp: now
+            });
+            logRelayEvent('ENEMY_CONTACT_HIT', {
+                roomCode: player.roomCode, eventId, hostId: socket.id, targetId,
+                enemyType, damage
+            });
+        });
+
+        socket.on('enemyContactHitAck', (data = {}) => {
+            if (!player.roomCode || player.mode === 'pvp') return;
+            const eventId = sanitizeString(data.eventId, 96, '');
+            const hostId = sanitizeString(data.hostId, 64, '');
+            const host = players.get(hostId);
+            if (!eventId || !host?.isHost || host.roomCode !== player.roomCode) return;
+            io.to(hostId).emit('enemyContactHitConfirmed', {
+                eventId,
+                targetId: socket.id,
+                applied: Boolean(data.applied),
+                timestamp: Date.now()
+            });
         });
 
         // Sprint 24 Milestone A item 5: a non-host client's candidate enemy

@@ -228,4 +228,51 @@ describe('Server Relay: co-op enemy-hit-sync validation', () => {
         guest.emit('enemyState', { enemies: snapshot.enemies });
         expect(await rejectedPromise).toBeNull();
     });
+
+    it('routes a host enemy contact hit only to its target and returns the target acknowledgement', async () => {
+        ({ httpServer, url } = await startTestServer());
+        const roomCode = 'ENEMY-CONTACT-HIT-TEST';
+        const host = await connectClient(url);
+        const guest = await connectClient(url);
+        sockets.push(host, guest);
+        host.emit('joinRoom', { roomCode, callsign: 'HOST', opClass: 'TANK' });
+        await waitForEvent(host, 'currentPlayers');
+        guest.emit('joinRoom', { roomCode, callsign: 'GUEST', opClass: 'SCOUT' });
+        await waitForEvent(guest, 'currentPlayers');
+
+        const hitPromise = waitForEvent(guest, 'enemyContactHit');
+        host.emit('enemyContactHit', {
+            eventId: 'crawler:guest:1', targetId: guest.id,
+            enemyType: 'crawler', scatterKey: '0,0:1:crawler', x: 10, z: 11, damage: 1
+        });
+        const hit = await hitPromise;
+        expect(hit).toMatchObject({
+            eventId: 'crawler:guest:1', targetId: guest.id,
+            hostId: host.id, enemyType: 'crawler', damage: 1
+        });
+
+        const confirmedPromise = waitForEvent(host, 'enemyContactHitConfirmed');
+        guest.emit('enemyContactHitAck', { eventId: hit.eventId, hostId: host.id, applied: true });
+        expect(await confirmedPromise).toMatchObject({
+            eventId: hit.eventId, targetId: guest.id, applied: true
+        });
+    });
+
+    it('rejects guest-authored enemy contact hits', async () => {
+        ({ httpServer, url } = await startTestServer());
+        const roomCode = 'ENEMY-CONTACT-AUTH-TEST';
+        const host = await connectClient(url);
+        const guest = await connectClient(url);
+        sockets.push(host, guest);
+        host.emit('joinRoom', { roomCode, callsign: 'HOST', opClass: 'TANK' });
+        await waitForEvent(host, 'currentPlayers');
+        guest.emit('joinRoom', { roomCode, callsign: 'GUEST', opClass: 'SCOUT' });
+        await waitForEvent(guest, 'currentPlayers');
+
+        const rejected = waitForEvent(host, 'enemyContactHit', 300);
+        guest.emit('enemyContactHit', {
+            eventId: 'spoof', targetId: host.id, enemyType: 'crawler', x: 9, z: 9, damage: 8
+        });
+        expect(await rejected).toBeNull();
+    });
 });

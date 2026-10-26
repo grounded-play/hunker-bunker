@@ -19,6 +19,7 @@ function fixture({ localAt = [100, 0, 0], remoteAt = [0.3, 0, 0], remote = {} } 
     const remoteMesh = new THREE.Object3D();
     remoteMesh.position.set(...remoteAt);
     const takeDamage = vi.fn(() => true);
+    const reportEnemyContactHit = vi.fn(() => true);
     const game = {
         player, isPlayerDead: false, takeDamage, playerRadius: 0.38,
         isMultiplayer: true, isMultiplayerHost: true,
@@ -32,6 +33,7 @@ function fixture({ localAt = [100, 0, 0], remoteAt = [0.3, 0, 0], remote = {} } 
         isSnailTileWalkable: () => true,
         pickSnailWanderTile: () => null,
         applySnailContactKnockback: vi.fn(),
+        reportEnemyContactHit,
         applyPlayerSlow: vi.fn(),
         damageShip: vi.fn(), damageBaseTurret: vi.fn(), damageSnail: vi.fn(),
         applySnailShipKnockback: vi.fn(),
@@ -46,14 +48,15 @@ function fixture({ localAt = [100, 0, 0], remoteAt = [0.3, 0, 0], remote = {} } 
         faceSpriteFromDir: () => {}, updateSheetSpriteFrame: () => {}
     };
     const tick = (dt = 0.016) => ThreeGame.prototype.updateSnailBehavior.call(game, snail, dt, null);
-    return { game, snail, takeDamage, tick };
+    return { game, snail, takeDamage, reportEnemyContactHit, tick };
 }
 
 describe('enemy attacks on remote squadmates', () => {
     it('does not damage the local player when the snail reaches a remote squadmate', () => {
-        const { takeDamage, tick } = fixture();
+        const { takeDamage, reportEnemyContactHit, tick } = fixture();
         tick();
         expect(takeDamage).not.toHaveBeenCalled();
+        expect(reportEnemyContactHit).toHaveBeenCalledWith(expect.objectContaining({ id: 'guest' }), expect.anything(), 1);
     });
 
     it('still damages the local player when the snail reaches them', () => {
@@ -66,5 +69,26 @@ describe('enemy attacks on remote squadmates', () => {
         const { game, snail } = fixture({ localAt: [20, 0, 0], remote: { isDown: true } });
         const target = game.selectSnailTarget(snail, null);
         expect(target?.id).toBe('local');
+    });
+
+    it('applies an explicit host contact hit once and acknowledges it', () => {
+        const emit = vi.fn();
+        const takeDamage = vi.fn(() => true);
+        const game = {
+            multiplayerLocalPlayerId: 'guest', multiplayerMode: 'coop', isPlayerDead: false,
+            player: { position: { x: 2, z: 0 } }, takeDamage,
+            pushPlayerAlong: vi.fn(), netSocket: { emit }
+        };
+        const payload = {
+            eventId: 'enemy-1:guest:1', targetId: 'guest', hostId: 'host',
+            enemyType: 'cryosnail', x: 1, z: 0, damage: 2
+        };
+
+        expect(ThreeGame.prototype.handleEnemyContactHit.call(game, payload)).toBe(true);
+        expect(ThreeGame.prototype.handleEnemyContactHit.call(game, payload)).toBe(false);
+        expect(takeDamage).toHaveBeenCalledTimes(1);
+        expect(emit).toHaveBeenCalledWith('enemyContactHitAck', {
+            eventId: payload.eventId, hostId: 'host', applied: true
+        });
     });
 });

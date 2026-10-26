@@ -7081,6 +7081,7 @@ export class ThreeGame {
         this.multiplayerLocalPlayerId = this.netSocket?.id || session.localPlayerId || null;
         this.lastNetBroadcastTime = 0;
         this.lastEnemyStateBroadcastTime = 0;
+        this._missionStateRevision = 0;
         // Sprint 24 Milestone A item 5 (docs/sprint24-multiplayer-runtime-2026-08-19.md):
         // captured by the lobby from the server's currentPlayers roster (the
         // only point the server tells a client its own isHost status) and
@@ -7188,6 +7189,14 @@ export class ThreeGame {
             on('enemyDamaged', (data) => this.handleRemoteEnemyDamage(data));
             on('enemyHitReported', (data) => this.handleEnemyHitReported(data));
             on('enemyStateSnapshot', (data) => this.handleEnemyStateSnapshot(data));
+            on('enemyContactHit', (data) => this.handleEnemyContactHit(data));
+            on('enemyContactHitConfirmed', (data) => {
+                debugLog.info('MULTIPLAYER', 'enemy-contact-hit-confirmed', {
+                    eventId: data?.eventId ?? null,
+                    targetId: data?.targetId ?? null,
+                    applied: Boolean(data?.applied)
+                });
+            });
             on('worldEventBroadcast', (data) => this.handleSharedWorldEvent(data));
             this.netSocket?.emit?.('worldEvent', { event: 'dressing-protocol-request', detail: { version: 1 } });
             on('playerNudged', (data) => this.handlePlayerNudged(data));
@@ -7273,6 +7282,7 @@ export class ThreeGame {
         this.isMultiplayerHost = false;
         this.lastNetBroadcastTime = 0;
         this.lastEnemyStateBroadcastTime = 0;
+        this._missionStateRevision = 0;
         // Sprint 26: undoes setupMultiplayerNetwork's world-seed sync (see
         // its own comment) -- without this, a solo run started after a
         // multiplayer match in the same tab would keep generating worlds
@@ -7856,6 +7866,60 @@ export class ThreeGame {
         }
     }
 
+    reportEnemyContactHit(target, sprite, damage) {
+        if (!this.isMultiplayerHost || !this.netSocket || !target?.id || target.id === 'local') return false;
+        this._enemyContactHitSequence = (this._enemyContactHitSequence ?? 0) + 1;
+        const eventId = `${sprite?.userData?.scatterKey ?? sprite?.userData?.type ?? 'enemy'}:${target.id}:${this._enemyContactHitSequence}`;
+        this.netSocket.emit('enemyContactHit', {
+            eventId,
+            targetId: target.id,
+            enemyType: sprite?.userData?.type ?? 'unknown',
+            scatterKey: sprite?.userData?.scatterKey ?? null,
+            x: sprite?.position?.x ?? target.x,
+            z: sprite?.position?.z ?? target.z,
+            damage
+        });
+        debugLog.info('MULTIPLAYER', 'enemy-contact-hit-sent', {
+            eventId, targetId: target.id, damage,
+            enemyType: sprite?.userData?.type ?? 'unknown'
+        });
+        return true;
+    }
+
+    handleEnemyContactHit(data) {
+        if (!data?.eventId || data.targetId !== this.multiplayerLocalPlayerId || this.multiplayerMode === 'pvp') return false;
+        this._appliedEnemyContactHits ??= new Set();
+        if (this._appliedEnemyContactHits.has(data.eventId)) return false;
+        this._appliedEnemyContactHits.add(data.eventId);
+        if (this._appliedEnemyContactHits.size > 256) {
+            this._appliedEnemyContactHits.delete(this._appliedEnemyContactHits.values().next().value);
+        }
+        const damage = Math.max(1, Math.min(8, Math.round(Number(data.damage) || 0)));
+        const sourceX = Number(data.x);
+        const sourceZ = Number(data.z);
+        const applied = !this.isPlayerDead && Number.isFinite(sourceX) && Number.isFinite(sourceZ)
+            ? this.takeDamage(damage, data.enemyType ?? 'enemy', sourceX, sourceZ) !== false
+            : false;
+        if (applied && this.player) {
+            const dx = this.player.position.x - sourceX;
+            const dz = this.player.position.z - sourceZ;
+            const length = Math.hypot(dx, dz);
+            if (length > 1e-4) this.pushPlayerAlong(dx / length, dz / length, SNAIL_HIT_PLAYER_KNOCKBACK);
+        }
+        this.netSocket?.emit('enemyContactHitAck', {
+            eventId: data.eventId,
+            hostId: data.hostId,
+            applied
+        });
+        debugLog.info('PLAYER', 'enemy-contact-hit-applied', {
+            eventId: data.eventId,
+            enemyType: data.enemyType ?? 'unknown',
+            damage,
+            applied
+        });
+        return applied;
+    }
+
     broadcastEnemyStateSnapshot(now = Date.now()) {
         if (!this.netSocket || !this.isMultiplayerHost) return false;
         if (now - (this.lastEnemyStateBroadcastTime ?? 0) < 100) return false;
@@ -7896,12 +7960,21 @@ export class ThreeGame {
                 z,
                 yaw,
                 anim: c.instance3d?.currentClipName ?? (c.isMoving ? 'run' : 'idle'),
-                isFiring: Boolean(c.isFiring),
+                isFiring: Boolean(c.isFiring || (c.firePulseUntil ?? 0) > now),
                 targetId: c.targetId ?? null
             };
         });
-        if (!enemies.length && !companions.length) return false;
-        this.netSocket.emit('enemyState', { enemies, companions });
+        const missionState = this.missionState ? {
+            revision: this._missionStateRevision ?? 0,
+            type: this.missionState.type ?? null,
+            status: this.missionState.status ?? null,
+            killCount: this.missionState.killCount ?? 0,
+            targetKills: this.missionState.targetKills ?? 0
+        } : null;
+        if (!enemies.length && !companions.length && !missionState) return false;
+        const payload = { enemies, companions };
+        if (missionState) payload.missionState = missionState;
+        this.netSocket.emit('enemyState', payload);
         return true;
     }
 
@@ -8019,6 +8092,78 @@ export class ThreeGame {
         return true;
     }
 
+    isMissionAuthority() {
+        return !this.isMultiplayer || this.multiplayerMode === 'pvp' || this.isMultiplayerHost;
+    }
+
+    publishMissionState(reason = 'update') {
+        if (!this.isMissionAuthority() || !this.missionState) return false;
+        this._missionStateRevision = (this._missionStateRevision ?? 0) + 1;
+        const detail = {
+            revision: this._missionStateRevision,
+            reason,
+            type: this.missionState.type ?? null,
+            status: this.missionState.status ?? null,
+            killCount: this.missionState.killCount ?? 0,
+            targetKills: this.missionState.targetKills ?? 0
+        };
+        if (this.isMultiplayer && this.multiplayerMode !== 'pvp') {
+            this.broadcastSharedWorldEvent('mission-state', detail);
+        }
+        debugLog.info('MULTIPLAYER', 'mission-state-authoritative', detail);
+        return true;
+    }
+
+    applyAuthoritativeMissionState(detail = {}) {
+        if (this.isMultiplayerHost || !this.missionState) return false;
+        const revision = Number(detail.revision);
+        if (!Number.isFinite(revision) || revision <= (this._missionStateRevision ?? 0)) return false;
+        if (detail.type && this.missionState.type && detail.type !== this.missionState.type) return false;
+        this._missionStateRevision = revision;
+        if (typeof detail.status === 'string') this.missionState.status = detail.status;
+        if (Number.isFinite(detail.killCount)) this.missionState.killCount = Math.max(0, detail.killCount);
+        if (Number.isFinite(detail.targetKills) && detail.targetKills > 0) this.missionState.targetKills = detail.targetKills;
+        window.objectiveRegistry?.trackObjective?.({
+            id: 'mission:active',
+            current: this.missionState.killCount ?? 0,
+            target: this.missionState.targetKills ?? 1
+        });
+        if (this.missionState.type === 'elimination') {
+            window.dispatchEvent(new CustomEvent('mission-kill-progress', {
+                detail: { count: this.missionState.killCount ?? 0, target: this.missionState.targetKills ?? 0, fromRemote: true }
+            }));
+        }
+        if (this.missionState.status === 'objective_complete') {
+            const uplink = this.getMothershipUplinkReadiness();
+            window.objectiveRegistry?.resolveObjective?.('mission:active', 'complete');
+            this.activateExtractionGuidance(`${this.missionState.type}_complete`);
+            window.dispatchEvent(new CustomEvent('mission-objective-complete', {
+                detail: { type: this.missionState.type, uplinkReady: uplink.ready, uplink, fromRemote: true }
+            }));
+        }
+        debugLog.info('MULTIPLAYER', 'mission-state-applied', {
+            revision,
+            type: this.missionState.type,
+            status: this.missionState.status,
+            killCount: this.missionState.killCount ?? 0
+        });
+        return true;
+    }
+
+    completeMissionObjective(type, reason = `${type}_complete`) {
+        if (!this.missionState || this.missionState.status !== 'active') return false;
+        if (!this.isMissionAuthority()) return false;
+        this.missionState.status = 'objective_complete';
+        const uplink = this.getMothershipUplinkReadiness();
+        window.objectiveRegistry?.resolveObjective?.('mission:active', 'complete');
+        this.activateExtractionGuidance(reason);
+        window.dispatchEvent(new CustomEvent('mission-objective-complete', {
+            detail: { type, uplinkReady: uplink.ready, uplink, revision: (this._missionStateRevision ?? 0) + 1 }
+        }));
+        this.publishMissionState(reason);
+        return true;
+    }
+
     // Apply a beat announced by anyone in the room, including our own echo, so
     // every client runs it from one ordering. `_appliedWorldEvents` keeps a beat
     // idempotent: the originator has usually already run its local effects.
@@ -8035,6 +8180,8 @@ export class ThreeGame {
         let dedupeKey = coopTransitionDedupeKey(event, detail);
         if (dedupeKey) {
             // Irreversible co-op transitions carry their own keys.
+        } else if (event === 'mission-state') {
+            dedupeKey = `${event}:${detail.revision ?? ''}`;
         } else if (event === 'wall-destroyed') {
             dedupeKey = `${event}:${detail.wallKey ?? `${detail.worldX},${detail.worldZ}`}`;
         } else if (event === 'fragile-ledge-state') {
@@ -8073,7 +8220,9 @@ export class ThreeGame {
         // would double the cutscene and the boss.
         if (isEcho) return false;
 
-        if (event === 'bunker-door-toggled') {
+        if (event === 'mission-state') {
+            this.applyAuthoritativeMissionState(detail);
+        } else if (event === 'bunker-door-toggled') {
             const seq = Number(detail.seq);
             if (Number.isFinite(seq)) {
                 if (seq <= (this._bunkerBlastDoorSequence ?? 0)) return false;
@@ -8165,6 +8314,11 @@ export class ThreeGame {
                     target.userData.fromRemote = true;
                     this.disposePickup?.(target);
                 }
+            }
+            if (this.isMultiplayerHost && this.missionState?.type === 'retrieval'
+                && this.missionState.status === 'active'
+                && detail.type === 'weapon' && detail.rarity === 'legendary') {
+                this.completeMissionObjective('retrieval', 'retrieval_complete');
             }
             // Co-op loot is shared (owner, 2026-10-07: "if one player gets
             // coins both get it"): the forward below re-dispatches this as a
@@ -8349,7 +8503,7 @@ export class ThreeGame {
 
     handleEnemyStateSnapshot(data) {
         if (this.isMultiplayerHost) return false;
-        if (!Array.isArray(data?.enemies) && !Array.isArray(data?.companions)) return false;
+        if (!Array.isArray(data?.enemies) && !Array.isArray(data?.companions) && !data?.missionState) return false;
         let applied = 0;
         let materialized = 0;
         if (Array.isArray(data?.enemies)) {
@@ -8403,6 +8557,7 @@ export class ThreeGame {
             this.handleRemoteCompanionsSnapshot?.(data.companions);
             applied += data.companions.length;
         }
+        if (data?.missionState && this.applyAuthoritativeMissionState?.(data.missionState)) applied += 1;
         return applied > 0;
     }
 
@@ -8477,6 +8632,12 @@ export class ThreeGame {
 
             if (remote.isFiring && !companion._lastWasFiring) {
                 this.spawnMuzzleFlash?.(remote.x, 1.0, remote.z);
+                const target = remote.targetId
+                    ? (this.scatterSprites ?? []).find((sprite) => sprite.userData?.scatterKey === remote.targetId)
+                    : null;
+                if (target?.position) {
+                    this.spawnCompanionTracer?.({ x: remote.x, y: 0, z: remote.z }, target.position);
+                }
                 if (typeof window !== 'undefined' && window.AudioManager) {
                     window.AudioManager.play?.('turret_fire', { volume: 0.35, playbackRate: 1.1 });
                 }
@@ -24901,19 +25062,50 @@ export class ThreeGame {
 
     async handleWandererBefriend(wanderer) {
         if (!this.activeWanderer || this._wandererResolvedForRun) return;
+        const recruitedActor = this.activeWanderer;
         this._wandererResolvedForRun = true;
         const res = this.wandererManager?.befriend?.(wanderer);
         if (!res) return;
 
         this.showBunkerLine(`${wanderer.name.toUpperCase()} HAS JOINED YOUR SQUAD.`);
-        if (this.activeWanderer?.instance3d?.root) {
-            this.scene.remove(this.activeWanderer.instance3d.root);
-            this.activeWanderer.instance3d.dispose?.();
-        }
         this.activeWanderer = null;
         this._wandererPromptLabel = null;
         window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+
+        // The encountered survivor is already the correct rigged model in the
+        // scene. Promote that exact instance instead of deleting it, waiting on
+        // another GLB load, and respawning it at the player's feet.
+        if (recruitedActor.instance3d?.root) {
+            for (const previous of this.companions ?? []) {
+                if (!previous.isWanderer) continue;
+                previous.instance3d?.root?.removeFromParent();
+                previous.instance3d?.dispose?.();
+            }
+            this.companions = (this.companions || []).filter((c) => !c.isWanderer);
+            this.companions.push({
+                id: wanderer.id || recruitedActor.id,
+                isWanderer: true,
+                wanderer,
+                instance3d: recruitedActor.instance3d,
+                assistCooldown: 0,
+                currentHp: 100,
+                maxHp: 100
+            });
+            this.syncSurvivorContract();
+            debugLog.info('PLAYER', 'companion-recruited', {
+                id: wanderer.id ?? wanderer.name ?? null,
+                x: recruitedActor.instance3d.root.position.x,
+                z: recruitedActor.instance3d.root.position.z,
+                reusedVisibleActor: true
+            });
+            return;
+        }
+
         await this.addHumanoidCompanion(wanderer);
+        debugLog.info('PLAYER', 'companion-recruited', {
+            id: wanderer.id ?? wanderer.name ?? null,
+            reusedVisibleActor: false
+        });
     }
 
     handleWandererChaseOff(wanderer) {
@@ -29604,13 +29796,7 @@ export class ThreeGame {
             const startPos = { x: CRASH_SITE_CENTER, z: CRASH_SITE_CENTER };
             const pathRes = this.explorationTracker?.computeScannedPath(startPos, relay);
             if (pathRes?.found || (pathRes?.scannedPercentage ?? 0) >= 0.85) {
-                this.missionState.status = 'objective_complete';
-                const uplink = this.getMothershipUplinkReadiness();
-                window.objectiveRegistry?.resolveObjective?.('mission:active', 'complete');
-                this.activateExtractionGuidance('mapping_complete');
-                window.dispatchEvent(new CustomEvent('mission-objective-complete', {
-                    detail: { type: 'mapping', uplinkReady: uplink.ready, uplink }
-                }));
+                this.completeMissionObjective('mapping', 'mapping_complete');
             }
         }
     }
@@ -30529,13 +30715,7 @@ export class ThreeGame {
         // Survey mission: complete when player reaches target depth from ship
         if (this.missionState?.type === 'survey' && this.missionState.status === 'active') {
             if (this.getActiveO2GeneratorDistance() >= this.missionState.targetDepth) {
-                this.missionState.status = 'objective_complete';
-                const uplink = this.getMothershipUplinkReadiness();
-                window.objectiveRegistry?.resolveObjective?.('mission:active', 'complete');
-                this.activateExtractionGuidance('survey_complete');
-                window.dispatchEvent(new CustomEvent('mission-objective-complete', {
-                    detail: { type: 'survey', uplinkReady: uplink.ready, uplink }
-                }));
+                this.completeMissionObjective('survey', 'survey_complete');
             }
         }
 
@@ -41662,13 +41842,7 @@ export class ThreeGame {
                         // Retrieval mission: first legendary weapon collected completes objective
                         if (this.missionState?.type === 'retrieval' && this.missionState.status === 'active') {
                             if (pickupType === 'weapon' && rarity === 'legendary') {
-                                this.missionState.status = 'objective_complete';
-                                const uplink = this.getMothershipUplinkReadiness();
-                                window.objectiveRegistry?.resolveObjective?.('mission:active', 'complete');
-                                this.activateExtractionGuidance('retrieval_complete');
-                                window.dispatchEvent(new CustomEvent('mission-objective-complete', {
-                                    detail: { type: 'retrieval', uplinkReady: uplink.ready, uplink }
-                                }));
+                                this.completeMissionObjective('retrieval', 'retrieval_complete');
                             }
                         }
 
@@ -42454,7 +42628,7 @@ export class ThreeGame {
         // rollEnemyLootDrop / rollsRareRelic).
         this.dropLootForKill?.(sprite, { isElite, isBoss: isBossEnemy });
 
-        if (this.missionState?.type === 'elimination' && this.missionState.status === 'active') {
+        if (this.missionState?.type === 'elimination' && this.missionState.status === 'active' && this.isMissionAuthority()) {
             this.missionState.killCount = (this.missionState.killCount ?? 0) + 1;
             window.objectiveRegistry?.trackObjective?.({
                 id: 'mission:active',
@@ -42465,14 +42639,8 @@ export class ThreeGame {
                 detail: { count: this.missionState.killCount, target: this.missionState.targetKills }
             }));
             if (this.missionState.killCount >= this.missionState.targetKills) {
-                this.missionState.status = 'objective_complete';
-                const uplink = this.getMothershipUplinkReadiness();
-                window.objectiveRegistry?.resolveObjective?.('mission:active', 'complete');
-                this.activateExtractionGuidance('elimination_complete');
-                window.dispatchEvent(new CustomEvent('mission-objective-complete', {
-                    detail: { type: 'elimination', uplinkReady: uplink.ready, uplink }
-                }));
-            }
+                this.completeMissionObjective('elimination', 'elimination_complete');
+            } else this.publishMissionState('elimination_kill');
         }
 
         if (sprite.userData.isElite && !sprite.userData.isRemoteReplica) {
@@ -44800,11 +44968,18 @@ export class ThreeGame {
         }
         if (!target) return false;
         companion.fireCooldown = 0.9;
+        companion.targetId = target.userData?.scatterKey ?? null;
+        companion.firePulseUntil = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + 250;
         root.rotation.y = Math.atan2(target.position.x - root.position.x, target.position.z - root.position.z);
         this.applyPlayerDamageToEnemy(target, 1);
         this.spawnCompanionTracer?.(root.position, target.position);
         this.spawnMuzzleFlash?.(root.position.x, 1.0, root.position.z);
         window.AudioManager?.play?.('turret_fire', { volume: 0.2, playbackRate: 1.25 });
+        debugLog.info('PLAYER', 'companion-fired', {
+            id: companion.wanderer?.id ?? companion.id ?? null,
+            targetId: companion.targetId,
+            shot: 'basic'
+        });
         return true;
     }
 
@@ -44822,6 +44997,7 @@ export class ThreeGame {
         if (!companion || !target) return false;
         companion.isFiring = true;
         companion.targetId = target.userData?.scatterKey || null;
+        companion.firePulseUntil = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + 250;
 
         const familyId = companion.wanderer?.familyId;
         const ability = companion.wanderer?.assistAbility;
@@ -45721,9 +45897,7 @@ export class ThreeGame {
             data.attackCooldown = SNAIL_ATTACK_COOLDOWN;
             const damage = data.isBoss ? 2 : 1;
             if (target.type === 'player' && target.id !== 'local') {
-                // A remote squadmate's own client owns their HP; the hit is
-                // theirs to take, never ours (QA 2026-09-30: hearts lost
-                // from ~100 m away to a snail chewing on the partner).
+                this.reportEnemyContactHit?.(target, sprite, damage);
             } else if (target.type === 'player') {
                 data.playerContactCooldown = SNAIL_ATTACK_COOLDOWN;
                 const damageApplied = this.takeDamage(damage, data.type, sprite.position.x, sprite.position.z);
@@ -45791,20 +45965,12 @@ export class ThreeGame {
                 this.faceSpriteFromDir(sprite, dx);
             }
         }
-        if (!player || this.isPlayerDead || (!huntingMe && !data.isBoss)) return;
-        if ((data.attackCooldown ?? 0) > 0) return;
-        // The same exemptions the host gives its own player: hive kin are left
-        // alone, and an Act 2 snail that would talk does not bite.
-        if (this.isHiveKinPassive?.(sprite) || this.canEnemyTargetPlayer?.(sprite) === false) return;
-        if (!data.isBoss && ['cybersnail', 'cryosnail', 'sporesnail'].includes(data.type)
-            && !data.isCompanion && !data.encounterResolved && this.isAct2Active?.()) return;
-        const reach = this.getSnailContactReach?.(data) ?? SNAIL_ATTACK_RADIUS * (data.isBoss ? 2.4 : 1.0);
-        if (Math.hypot(dx, dz) > reach) return;
-        data.attackCooldown = SNAIL_ATTACK_COOLDOWN;
-        const applied = this.takeDamage(data.isBoss ? 2 : 1, data.type, sprite.position.x, sprite.position.z);
-        if (applied === false) return;
-        this.applySnailContactKnockback?.(sprite, data);
-        if (data.type === 'cryosnail' || data.type === 'boss_cryosnail') this.applyPlayerSlow?.(2.5);
+        // Contact damage is an explicit host event. Replica interpolation is
+        // presentation only and must never independently decide player HP.
+        void player;
+        void huntingMe;
+        void dx;
+        void dz;
     }
 
     resolveCryosnailShockwave(sprite) {
