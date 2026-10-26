@@ -1540,6 +1540,11 @@
     "fungal_spore_vent.png",
     "fx_spark_burst.svg",
     "fx_steam_puff.svg",
+    "gear_door_alien.webp",
+    "gear_door_bio.webp",
+    "gear_door_cryo.webp",
+    "gear_door_nuclear.webp",
+    "gear_door_rust.webp",
     "gear_vault_inner.webp",
     "gear_vault_iris.webp",
     "gear_vault_main.webp",
@@ -33969,6 +33974,31 @@
       "path": "fx_tank_shockwave.webm",
       "bytes": 145941,
       "classification": "unknown"
+    },
+    {
+      "path": "gear_door_alien.webp",
+      "bytes": 183478,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "gear_door_bio.webp",
+      "bytes": 169242,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "gear_door_cryo.webp",
+      "bytes": 313390,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "gear_door_nuclear.webp",
+      "bytes": 274452,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "gear_door_rust.webp",
+      "bytes": 286262,
+      "classification": "runtime-required"
     },
     {
       "path": "gear_vault_inner.webp",

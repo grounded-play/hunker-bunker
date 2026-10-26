@@ -8256,8 +8256,9 @@ function ensureMissionManagers() {
 }
 
 
-function showRunLoadingScreen(status = 'SYNCHRONIZING DROP VECTOR', progress = 0, { overDoor = false } = {}) {
+function showRunLoadingScreen(status = 'SYNCHRONIZING DROP VECTOR', progress = 0, { overDoor = false, heroType = null } = {}) {
     clearLoaderBriefingMode();
+    applyGearThemeToElement(document.getElementById('loader-gear-spinner'), heroType);
     if (loaderTitle) loaderTitle.textContent = t('ui.loader.deployment_telemetry');
     const boundedProgress = Math.max(0, Math.min(100, progress));
     if (loaderStatus) loaderStatus.textContent = `${status} — ${Math.round(boundedProgress)}%`;
@@ -16080,6 +16081,65 @@ setupClickOutside('save-data-popup', () => setSaveDataOpen(false));
 setupClickOutside('crosshair-color-popup', () => setCrosshairColorOpen(false));
 setupClickOutside('language-select-popup', () => setLanguageSelectOpen(false));
 
+const DOOR_GEAR_THEMES = {
+    'SCOUT': {
+        outer: '/gear_door_bio.webp',
+        inner: '/gear_vault_inner.webp',
+        glow: 'radial-gradient(circle, rgba(57, 255, 136, 0.95) 0%, rgba(30, 180, 80, 0.45) 45%, transparent 70%)',
+        shadow: '0 0 calc(var(--vu) * 1.8) rgba(57, 255, 136, 0.7)'
+    },
+    'TANK': {
+        outer: '/gear_door_nuclear.webp',
+        inner: '/gear_vault_inner.webp',
+        glow: 'radial-gradient(circle, rgba(255, 190, 20, 0.95) 0%, rgba(255, 120, 0, 0.45) 45%, transparent 70%)',
+        shadow: '0 0 calc(var(--vu) * 1.8) rgba(255, 190, 20, 0.7)'
+    },
+    'ENGINEER': {
+        outer: '/gear_door_cryo.webp',
+        inner: '/gear_vault_inner.webp',
+        glow: 'radial-gradient(circle, rgba(46, 210, 255, 0.95) 0%, rgba(0, 150, 220, 0.45) 45%, transparent 70%)',
+        shadow: '0 0 calc(var(--vu) * 1.8) rgba(46, 210, 255, 0.7)'
+    },
+    'win': {
+        outer: '/gear_door_alien.webp',
+        inner: '/gear_vault_inner.webp',
+        glow: 'radial-gradient(circle, rgba(180, 80, 255, 0.95) 0%, rgba(120, 40, 200, 0.45) 45%, transparent 70%)',
+        shadow: '0 0 calc(var(--vu) * 1.8) rgba(180, 80, 255, 0.7)'
+    },
+    'lose': {
+        outer: '/gear_door_rust.webp',
+        inner: '/gear_vault_inner.webp',
+        glow: 'radial-gradient(circle, rgba(255, 42, 42, 0.95) 0%, rgba(180, 20, 20, 0.45) 45%, transparent 70%)',
+        shadow: '0 0 calc(var(--vu) * 1.8) rgba(255, 42, 42, 0.7)'
+    },
+    'base': {
+        outer: '/gear_vault_main.webp',
+        inner: '/gear_vault_inner.webp',
+        glow: 'radial-gradient(circle, rgba(255, 175, 40, 0.85) 0%, rgba(255, 120, 0, 0.4) 45%, transparent 70%)',
+        shadow: '0 0 calc(var(--vu) * 1.8) rgba(255, 159, 28, 0.55)'
+    }
+};
+
+function getDoorGear(key) {
+    if (key === 'win') return DOOR_GEAR_THEMES.win;
+    if (key === 'lose') return DOOR_GEAR_THEMES.lose;
+    if (key === 'base') return DOOR_GEAR_THEMES.base;
+    if (DOOR_GEAR_THEMES[key]) return DOOR_GEAR_THEMES[key];
+
+    const activeClass = window.game?.playerType || getSelectedHeroType() || activePreviewType || 'SCOUT';
+    return DOOR_GEAR_THEMES[activeClass] || DOOR_GEAR_THEMES.base;
+}
+
+function applyGearThemeToElement(el, key) {
+    if (!el) return;
+    const gearTheme = getDoorGear(key);
+    if (!gearTheme) return;
+    el.style.setProperty('--gear-outer-image', `url('${assetUrl(gearTheme.outer)}')`);
+    el.style.setProperty('--gear-inner-image', `url('${assetUrl(gearTheme.inner)}')`);
+    el.style.setProperty('--gear-core-glow-bg', gearTheme.glow);
+    el.style.setProperty('--gear-glow-shadow', gearTheme.shadow);
+}
+
 function getDoorImage(key) {
     const CLASS_DOORS = {
         'SCOUT': '/door_bio_keyart_v2.webp',
@@ -16115,7 +16175,15 @@ function preloadDoorAssets() {
         '/door_cryo_keyart_v2.webp',
         '/door_alien_keyart_v2.webp',
         '/door_rust_keyart_v2.webp',
-        '/ship_wreckage.webp'
+        '/ship_wreckage.webp',
+        '/gear_vault_main.webp',
+        '/gear_vault_inner.webp',
+        '/gear_vault_iris.webp',
+        '/gear_door_bio.webp',
+        '/gear_door_nuclear.webp',
+        '/gear_door_cryo.webp',
+        '/gear_door_alien.webp',
+        '/gear_door_rust.webp'
     ];
     // door_bio/nuclear/cryo/biomechanical.webp were preloaded here too but
     // nothing displays them: 1.4 MB per boot (Lighthouse, issue #106).
@@ -16190,6 +16258,7 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
     const preloader = new Image();
     preloader.src = doorImg;
     overlay.style.setProperty('--door-bg-image', `url('${doorImg}')`);
+    applyGearThemeToElement(overlay, doorKey);
 
     syncStageMetrics();
 

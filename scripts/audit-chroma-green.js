@@ -102,6 +102,7 @@ export const CHROMA_GREEN_ALLOWLIST = new Set([
     'public/Scout.full_v2.webp',
     'public/lore_portraits/queen_00.webp',
     'public/3d/runtime/kits/textures/hive_resin_floor_emissive.webp',
+    'public/gear_door_bio.webp',
 ]);
 
 export function decodeAndSamplePng(buffer) {
