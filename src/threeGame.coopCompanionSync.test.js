@@ -122,7 +122,10 @@ describe('Co-op companion networking and host authority', () => {
         expect(comp.instance3d.root.position.x).toBeGreaterThan(14.0);
         expect(comp.instance3d.root.position.z).toBeGreaterThan(19.0);
         expect(comp.instance3d.root.rotation.y).toBe(3.14);
-        expect(comp.instance3d.update).toHaveBeenCalledWith(0.1);
+        expect(comp.instance3d.update).toHaveBeenCalledWith(0.1, {
+            moving: true,
+            running: false
+        });
         // Guest does not run local damage calculation
         expect(game.applyPlayerDamageToEnemy).not.toHaveBeenCalled();
     });

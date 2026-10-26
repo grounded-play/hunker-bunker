@@ -11878,9 +11878,6 @@ export class ThreeGame {
         } else {
             if (result.installed.definitionId === 'cot_bed') {
                 this.bootstrapFirstNightBaseRecovery?.();
-                if (this.interactionSequenceRunner) {
-                    void this.interactionSequenceRunner.runSequence('base_cot_first_night');
-                }
             }
             this.showBunkerLine?.(`${label} INSTALLED — BRING THE CAMP O2 FIELD ONLINE TO UNLOCK SLEEP.`);
         }
@@ -23924,11 +23921,16 @@ export class ThreeGame {
         this.persistFatigueState?.();
         const night = this.simulateNightPassed?.() ?? null;
         this.setTimeOfDayToMorning?.();
-        // The Foundry interior is the first authored between-day tableau. Its
-        // existing pocket-plane isolation pauses surface combat while the
-        // player shops, and exiting later returns them to this exact camp.
-        const enteredRestSpace = this.enterFoundryInterior?.() ?? false;
+        // Rest starts and ends at the bed. The old flow entered the isolated
+        // Foundry pocket plane immediately before the sleep video, which made
+        // the player wake under its fabricator and sometimes unable to leave.
+        this._campRestWakePosition = this.player?.position ? {
+            x: this.player.position.x,
+            y: this.player.position.y,
+            z: this.player.position.z
+        } : null;
         this.setInputEnabled?.(false);
+        this.player3dOverlay?.trigger?.('rest_recovery', 1.5);
         window.dispatchEvent(new CustomEvent('day-rest-open', {
             detail: {
                 campId: camp?.id ?? null,
@@ -23943,7 +23945,7 @@ export class ThreeGame {
                 // rather than re-deriving what happened.
                 ledger: night?.ledger ?? [],
                 threat: night?.threat ?? null,
-                safeSpace: enteredRestSpace ? 'foundry-interior' : 'camp-exterior',
+                safeSpace: 'camp-bed',
                 sleepStyle: this.getSleepCutsceneStyle?.(camp) ?? 'bunker',
                 crashSiteName: this.getCrashSiteLocationName?.() ?? null,
                 objective: this.getCurrentDayObjective?.() ?? null
@@ -23957,6 +23959,16 @@ export class ThreeGame {
         if (!result.started) return false;
         this.dayState = result.state;
         this.persistDayCycleState();
+        if (this.player?.position && this._campRestWakePosition) {
+            const wake = this._campRestWakePosition;
+            this.player.position.set?.(wake.x, wake.y, wake.z);
+            if (typeof this.player.position.set !== 'function') {
+                this.player.position.x = wake.x;
+                this.player.position.y = wake.y;
+                this.player.position.z = wake.z;
+            }
+        }
+        this._campRestWakePosition = null;
         this.setInputEnabled?.(true);
         if (activePlane(this.planeState)?.id === 'foundry-interior') {
             this.showBunkerLine?.(`DAY ${this.dayState.day} // FOUNDRY SAFE PHASE COMPLETE // SOUTH AIRLOCK OPEN`);
@@ -44606,18 +44618,17 @@ export class ThreeGame {
             companion.path = null;
             companion.stuckTime = 0;
             debugLog.info('PLAYER', 'companion-relocated', { id: companion.wanderer?.id ?? companion.wanderer?.name ?? null });
+            return true;
         };
         if (!walkable(Math.round(root.position.x), Math.round(root.position.z))) {
-            relocate();
-            return;
+            return relocate();
         }
         if (toGoal > COMPANION_PATH_LIMITS.maxRange - 2) {
-            relocate();
-            return;
+            return relocate();
         }
         if (toGoal <= 0.35) {
             companion.stuckTime = 0;
-            return;
+            return false;
         }
         companion.repathTimer = (companion.repathTimer ?? 0) - delta;
         if (companion.repathTimer <= 0 || !companion.path) {
@@ -44630,7 +44641,7 @@ export class ThreeGame {
         const dist = Math.hypot(toX, toZ);
         if (dist <= 0.05) {
             companion.path = null;
-            return;
+            return false;
         }
         const speed = toGoal > 7 ? 5.5 : 2.6;
         const step = Math.min(dist, speed * delta);
@@ -44653,7 +44664,35 @@ export class ThreeGame {
             companion.repathTimer = 0;
             debugLog.info('PLAYER', 'companion-repath', { id: companion.wanderer?.id ?? companion.wanderer?.name ?? null });
         }
-        if (companion.stuckTime > 4 && toGoal > 3) relocate();
+        if (companion.stuckTime > 4 && toGoal > 3) return relocate();
+        return moved > 0.001;
+    }
+
+    spawnCompanionTracer(from, to, color = 0xffd27a) {
+        if (!this.scene || !from || !to) return null;
+        const startY = (from.y ?? this.getTerrainHeightAt?.(from.x, from.z) ?? 0) + 1.0;
+        const endY = (to.y ?? this.getTerrainHeightAt?.(to.x, to.z) ?? 0) + 0.45;
+        const geometry = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(from.x, startY, from.z),
+            new THREE.Vector3(to.x, endY, to.z)
+        ]);
+        const material = new THREE.LineBasicMaterial({
+            color,
+            transparent: true,
+            opacity: 1,
+            depthWrite: false
+        });
+        const line = new THREE.Line(geometry, material);
+        line.renderOrder = 32;
+        this.scene.add(line);
+        return registerTransientEffect(this, {
+            mesh: line,
+            age: 0,
+            duration: 0.16,
+            update(_delta, age) {
+                material.opacity = Math.max(0, 1 - age / 0.16);
+            }
+        });
     }
 
     fireCompanionBasicShot(companion, root, delta) {
@@ -44674,6 +44713,7 @@ export class ThreeGame {
         companion.fireCooldown = 0.9;
         root.rotation.y = Math.atan2(target.position.x - root.position.x, target.position.z - root.position.z);
         this.applyPlayerDamageToEnemy(target, 1);
+        this.spawnCompanionTracer?.(root.position, target.position);
         this.spawnMuzzleFlash?.(root.position.x, 1.0, root.position.z);
         window.AudioManager?.play?.('turret_fire', { volume: 0.2, playbackRate: 1.25 });
         return true;
@@ -44702,6 +44742,7 @@ export class ThreeGame {
 
         if (root?.position) {
             this.spawnMuzzleFlash?.(root.position.x, 1.0, root.position.z);
+            this.spawnCompanionTracer?.(root.position, target.position, 0x67e3e1);
         }
 
         if (familyId === 'manic_hacker') {
@@ -44775,10 +44816,12 @@ export class ThreeGame {
             for (const companion of this.companions) {
                 if (companion.instance3d?.root) {
                     const root = companion.instance3d.root;
+                    let netMoveDistance = 0;
                     if (Number.isFinite(companion.netTargetX) && Number.isFinite(companion.netTargetZ)) {
                         const curX = root.position.x;
                         const curZ = root.position.z;
                         const dist = Math.hypot(companion.netTargetX - curX, companion.netTargetZ - curZ);
+                        netMoveDistance = dist;
                         if (dist > 6.0) {
                             root.position.x = companion.netTargetX;
                             root.position.z = companion.netTargetZ;
@@ -44792,7 +44835,10 @@ export class ThreeGame {
                         }
                     }
                     root.position.y = this.getTerrainHeightAt?.(root.position.x, root.position.z) ?? root.position.y ?? 0;
-                    companion.instance3d.update?.(delta);
+                    companion.instance3d.update?.(delta, {
+                        moving: netMoveDistance > 0.03,
+                        running: netMoveDistance > 3
+                    });
                 } else if (companion.sprite) {
                     if (Number.isFinite(companion.netTargetX) && Number.isFinite(companion.netTargetZ)) {
                         const curX = companion.sprite.position.x;
@@ -44826,9 +44872,12 @@ export class ThreeGame {
                 const trail = coveringCarrier
                     ? companionCarrierCoverPosition(this.player.position, facing, companionIndex)
                     : computeTrailPosition(this.player.position, facing, 2.0);
-                this.stepCompanionAlongPath?.(companion, root, trail, delta);
+                const companionMoved = this.stepCompanionAlongPath?.(companion, root, trail, delta) === true;
                 root.position.y = this.getTerrainHeightAt?.(root.position.x, root.position.z) ?? root.position.y ?? 0;
-                companion.instance3d.update(delta);
+                companion.instance3d.update(delta, {
+                    moving: companionMoved,
+                    running: Math.hypot(trail.x - root.position.x, trail.z - root.position.z) > 7
+                });
 
                 // A steady basic shot between assist abilities (2026-09-24 QA:
                 // the companion fired once per 12-25 s and otherwise did nothing).

@@ -14095,7 +14095,20 @@ async function playSleepCutscene(style) {
 }
 window.addEventListener('day-rest-open', (event) => {
     const detail = event?.detail ?? {};
-    void playSleepCutscene(detail.sleepStyle).then(() => openMorningAfterRest(detail));
+    // Let the in-world rest animation read first, then close the bunker doors
+    // over the cutscene. Morning is prepared behind the closed doors and the
+    // player is revealed beside the same bed when they reopen.
+    window.setTimeout(() => {
+        triggerDoorTransition(
+            async () => {
+                await playSleepCutscene(detail.sleepStyle);
+                openMorningAfterRest(detail);
+            },
+            null,
+            'base',
+            { waitForClosedWork: true, openingHoldMs: 420 }
+        );
+    }, 900);
 });
 function openMorningAfterRest(detail) {
     const site = detail.crashSiteName ? formatLocationName(detail.crashSiteName, t) : '';

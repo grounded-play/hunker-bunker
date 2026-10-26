@@ -17,6 +17,7 @@ function game(overrides = {}) {
         getTerrainHeightAt: () => 0,
         isEnemyType: () => true,
         applyPlayerDamageToEnemy: vi.fn(),
+        spawnCompanionTracer: vi.fn(),
         spawnMuzzleFlash: vi.fn(),
         ...overrides
     };
@@ -68,6 +69,7 @@ describe('the companion fights', () => {
         // 3 s of fire at one shot per 0.9 s.
         expect(shots).toBeGreaterThanOrEqual(3);
         expect(g.applyPlayerDamageToEnemy).toHaveBeenCalledWith(hostile, 1);
+        expect(g.spawnCompanionTracer).toHaveBeenCalledWith(body.position, hostile.position);
     });
 
     it('does not shoot through walls', () => {
