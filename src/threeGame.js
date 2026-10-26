@@ -22046,6 +22046,11 @@ export class ThreeGame {
     // Two ambient civilians per living camp (miner + researcher walk sheets).
     // Pure dressing: non-hostile, wander inside the camp radius, hidden when
     // the camp dies. Makes a camp read as inhabited from further away.
+    //
+    // Keep these on their animated sprites until their GLBs contain real
+    // skinned walk clips. The current civilian GLBs have no skin and their
+    // only `idle` clip leaves every arm and leg fixed, so replacing the walk
+    // sheets made the people slide around camp in a bind/T-pose.
     ensureCampCivilians() {
         for (const civ of this.campCivilians) {
             if (civ.sprite) this.scene.remove(civ.sprite);
@@ -22084,8 +22089,6 @@ export class ThreeGame {
                 sprite.userData = { sheetSprite: true, sheetTime: Math.random() * 4, sheetRow: 0 };
                 sprite.renderOrder = 5;
                 this.scene.add(sprite);
-                const modelType = i % 2 === 0 ? 'npc_civilian_miner' : 'npc_civilian_researcher';
-                this.setupWorld3dReplacement(sprite, modelType);
                 this.campCivilians.push({
                     sprite,
                     campId: camp.id,
