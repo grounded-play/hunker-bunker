@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 const index = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8');
 const boot = readFileSync(new URL('./boot.js', import.meta.url), 'utf8');
+const style = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
 
 describe('boot payload', () => {
     it('keeps web fonts non-blocking and paints a critical loading shell inline', () => {
@@ -36,7 +37,6 @@ describe('boot payload', () => {
         expect(index).toContain('installArtwork(menuArtwork);');
         expect(index).toContain("document.documentElement.style.setProperty(property, 'url(\"' + resolved + '\")')");
 
-        const style = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
         expect(style).toContain('background-image: var(--asset-title-key-art)');
         expect(style).toContain('background: var(--bg-dark) var(--asset-briefing-menu-bg)');
         expect(style).toContain('background: var(--asset-menu-frame-overlay)');
@@ -52,6 +52,12 @@ describe('boot payload', () => {
         expect(gears).toContain('requestIdleCallback(install');
         const menu = index.slice(index.indexOf('var menuArtwork'), index.indexOf('var gearArtwork'));
         expect(menu).not.toContain('gear_vault');
+    });
+
+    it('shows one gear during over-door loading and keeps door themes on doors', () => {
+        expect(style).toMatch(/#loading-screen\.over-door-loader \.loader-gear-spinner\s*\{\s*display:\s*none;/);
+        expect(main).toContain('applyGearThemeToElement(overlay, doorKey)');
+        expect(main).not.toContain("applyGearThemeToElement(document.getElementById('loader-gear-spinner')");
     });
 
     it('never preloads a video in the page markup; videos load when they play', () => {

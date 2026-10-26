@@ -8256,9 +8256,8 @@ function ensureMissionManagers() {
 }
 
 
-function showRunLoadingScreen(status = 'SYNCHRONIZING DROP VECTOR', progress = 0, { overDoor = false, heroType = null } = {}) {
+function showRunLoadingScreen(status = 'SYNCHRONIZING DROP VECTOR', progress = 0, { overDoor = false } = {}) {
     clearLoaderBriefingMode();
-    applyGearThemeToElement(document.getElementById('loader-gear-spinner'), heroType);
     if (loaderTitle) loaderTitle.textContent = t('ui.loader.deployment_telemetry');
     const boundedProgress = Math.max(0, Math.min(100, progress));
     if (loaderStatus) loaderStatus.textContent = `${status} — ${Math.round(boundedProgress)}%`;

@@ -635,6 +635,13 @@ body {
     inset 0 0 calc(var(--vu) * 1.2) rgba(111, 213, 214, 0.08);
 }
 
+/* A closed transition door already owns the themed gear at its lock point.
+   The loading panel is layered above that door, so drawing its normal spinner
+   as well produced two overlapping gears during world generation/restarts. */
+#loading-screen.over-door-loader .loader-gear-spinner {
+  display: none;
+}
+
 #loading-screen.over-door-loader .loader-system-info,
 #loading-screen.tactical-mode .loader-system-info {
   display: none;
