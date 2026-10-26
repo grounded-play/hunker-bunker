@@ -15,8 +15,8 @@
        the loading-screen geometry from style.css. The full stylesheet can
        arrive later without showing unstyled text or a white frame. -->
   <style id="critical-loading-css">
-    :root{--accent-primary:#ff9f1c;--accent-secondary:#2ec4b6;--bg-dark:#0b0d0f;--border-subtle:rgba(255,255,255,.1);--vw-actual:100vw;--vh-actual:100dvh;--ui-scale-multiplier:1;--vu:min(calc(var(--vw-actual)/160),calc(var(--vh-actual)/100));--vu-text:calc(var(--vu)*var(--ui-scale-multiplier));--font-md:max(calc(var(--vu-text)*4),14px);--font-xs:max(calc(var(--vu-text)*1.8),12px);--asset-title-key-art:none;--asset-mobile-menu-bg:none;--asset-briefing-menu-bg:none;--asset-menu-frame-overlay:none;--asset-door-key-art:none}
-    html,body{width:100%;height:100%;margin:0;background:#000;overflow:hidden}body{display:flex;align-items:center;justify-content:center;font-family:Outfit,Arial,sans-serif}#game-viewport{--gutter:calc(var(--vu)*4);position:relative;width:min(var(--vw-actual),calc(var(--vh-actual)*1.6));height:min(var(--vh-actual),calc(var(--vw-actual)*.625));background:var(--bg-dark);overflow:hidden}#loading-screen{position:absolute;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-dark)}.loader-content{display:flex;flex-direction:column;align-items:center;width:calc(var(--vu)*80)}.loader-title{margin-bottom:calc(var(--vu)*4);color:var(--accent-primary);font-size:var(--font-md);font-weight:900;letter-spacing:4px}.loader-bar-container{width:100%;height:calc(var(--vu)*1.5);margin-bottom:calc(var(--vu)*2);overflow:hidden;border:1px solid var(--border-subtle);border-radius:4px;background:rgba(255,255,255,.05)}.loader-bar{width:0;height:100%;background:var(--accent-primary)}.loader-status{min-height:calc(var(--vu)*12.5);margin-top:calc(var(--vu)*2.5);color:var(--accent-secondary);font:700 var(--font-xs)/1.4 "Space Mono",monospace;text-align:center}.hidden{display:none!important}
+    :root{--accent-primary:#ff9f1c;--accent-secondary:#2ec4b6;--bg-dark:#0b0d0f;--border-subtle:rgba(255,255,255,.1);--vw-actual:100vw;--vh-actual:100dvh;--ui-scale-multiplier:1;--vu:min(calc(var(--vw-actual)/160),calc(var(--vh-actual)/100));--vu-text:calc(var(--vu)*var(--ui-scale-multiplier));--font-md:max(calc(var(--vu-text)*4),14px);--font-xs:max(calc(var(--vu-text)*1.8),12px);--asset-title-key-art:none;--asset-mobile-menu-bg:none;--asset-briefing-menu-bg:none;--asset-menu-frame-overlay:none;--asset-door-key-art:none;--asset-gear-vault-main:none;--asset-gear-vault-inner:none;--asset-gear-vault-iris:none}
+    html,body{width:100%;height:100%;margin:0;background:#000;overflow:hidden}body{display:flex;align-items:center;justify-content:center;font-family:Outfit,Arial,sans-serif}#game-viewport{--gutter:calc(var(--vu)*4);position:relative;width:min(var(--vw-actual),calc(var(--vh-actual)*1.6));height:min(var(--vh-actual),calc(var(--vw-actual)*.625));background:var(--bg-dark);overflow:hidden}#loading-screen{position:absolute;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-dark)}.loader-content{display:flex;flex-direction:column;align-items:center;width:calc(var(--vu)*80)}.loader-gear-spinner{position:relative;width:calc(var(--vu)*18);height:calc(var(--vu)*18);margin-bottom:calc(var(--vu)*2.5);display:flex;align-items:center;justify-content:center}.gear-stack{position:relative;width:100%;height:100%;transform-origin:center;will-change:transform}.gear-layer{position:absolute;inset:0;background-position:center;background-repeat:no-repeat;background-size:contain;transform-origin:center;will-change:transform}.loader-title{margin-bottom:calc(var(--vu)*4);color:var(--accent-primary);font-size:var(--font-md);font-weight:900;letter-spacing:4px}.loader-bar-container{width:100%;height:calc(var(--vu)*1.5);margin-bottom:calc(var(--vu)*2);overflow:hidden;border:1px solid var(--border-subtle);border-radius:4px;background:rgba(255,255,255,.05)}.loader-bar{width:0;height:100%;background:var(--accent-primary)}.loader-status{min-height:calc(var(--vu)*12.5);margin-top:calc(var(--vu)*2.5);color:var(--accent-secondary);font:700 var(--font-xs)/1.4 "Space Mono",monospace;text-align:center}.hidden{display:none!important}
     #splash{--hero-shift-x:0px;position:absolute;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#000 var(--asset-title-key-art) calc(50% + var(--hero-shift-x)) 50%/102% auto no-repeat}.splash-content{position:relative;z-index:2;display:flex;width:100%;height:100%;box-sizing:border-box;flex-direction:column;align-items:flex-end;justify-content:flex-end;padding:calc(var(--vu)*3.5) calc(var(--vu)*5);text-align:right}.splash-title{color:#fdfffc;font-size:calc(var(--vu)*5.8);font-weight:900;letter-spacing:4px;line-height:.78;text-transform:uppercase}.splash-title span{display:block}.splash-subtitle{margin-top:calc(var(--vu)*.8);color:var(--accent-primary);font-size:max(calc(var(--vu)*1.35),12px);font-weight:900;letter-spacing:.24em;text-transform:uppercase}.title-menu{display:grid;width:min(320px,92vw);max-width:100%;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:calc(var(--vu)*1)}.title-menu-btn{display:flex;min-height:44px;box-sizing:border-box;align-items:center;justify-content:center;margin:4px 0;padding:10px 16px;overflow:hidden;border:1px solid rgba(255,255,255,.05);border-radius:4px;background:rgba(8,10,12,.88);color:rgba(240,244,248,.92);font:800 max(calc(var(--vu-text)*1.45),14px)/1 Outfit,Arial,sans-serif;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap}
     @media(max-width:768px){#splash{background-image:var(--asset-mobile-menu-bg);background-size:cover}#splash .splash-content{justify-content:flex-start;overflow-y:auto;padding:60px 16px 16px}}
   </style>
@@ -84,7 +84,10 @@
         '--asset-mobile-menu-bg': 'menu_bg.webp',
         '--asset-briefing-menu-bg': 'menu_bg_v3.webp',
         '--asset-menu-frame-overlay': 'menu_frame_overlay.webp',
-        '--asset-door-key-art': 'door_biomech_keyart_v2.webp'
+        '--asset-door-key-art': 'door_biomech_keyart_v2.webp',
+        '--asset-gear-vault-main': 'gear_vault_main.webp',
+        '--asset-gear-vault-inner': 'gear_vault_inner.webp',
+        '--asset-gear-vault-iris': 'gear_vault_iris.webp'
       };
       Object.keys(menuArtwork).forEach(function (property) {
         var resolved = new URL(menuArtwork[property], document.baseURI).href;
@@ -244,6 +247,13 @@
         <div class="loader-briefing-avatar hidden" id="loader-briefing-avatar">
           <img id="loader-briefing-avatar-img" loading="lazy" decoding="async" src="/lore_portraits/survivor_08.webp" alt="" />
           <div class="loader-briefing-avatar__scanline"></div>
+        </div>
+        <div class="loader-gear-spinner" id="loader-gear-spinner" aria-hidden="true">
+          <div class="gear-stack">
+            <div class="gear-layer gear-outer"></div>
+            <div class="gear-layer gear-inner"></div>
+            <div class="gear-core-glow"></div>
+          </div>
         </div>
         <div data-i18n="ui.loading.initializing_systems" class="loader-title">INITIALIZING SYSTEMS</div>
         <div class="loader-bar-container">
@@ -3596,8 +3606,9 @@
 
       <div class="shared-gear focus-top-right">
         <div class="gear-stack">
-          <div class="gear-layer gear-base"></div>
-          <div class="gear-layer gear-ridge"></div>
+          <div class="gear-layer gear-outer"></div>
+          <div class="gear-layer gear-inner"></div>
+          <div class="gear-core-glow"></div>
         </div>
       </div>
     </div>

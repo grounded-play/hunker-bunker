@@ -11333,8 +11333,19 @@ function updateGearSpin(now) {
     if (overlay && isVisible) {
         const stacks = overlay.querySelectorAll('.gear-stack');
         const rot = `rotate(${gearSpinState.rotation.toFixed(1)}deg)`;
+        const rotInner = `rotate(${(-gearSpinState.rotation * 1.35).toFixed(1)}deg)`;
         for (let i = 0; i < stacks.length; i++) {
-            stacks[i].style.transform = rot;
+            if (Math.abs(gearSpinState.velocity) > 0.5) {
+                const outer = stacks[i].querySelector('.gear-outer, .gear-base');
+                const inner = stacks[i].querySelector('.gear-inner, .gear-ridge');
+                if (outer) outer.style.transform = rot;
+                if (inner) inner.style.transform = rotInner;
+            } else {
+                const outer = stacks[i].querySelector('.gear-outer, .gear-base');
+                const inner = stacks[i].querySelector('.gear-inner, .gear-ridge');
+                if (outer && outer.style.transform) outer.style.transform = '';
+                if (inner && inner.style.transform) inner.style.transform = '';
+            }
         }
     }
 

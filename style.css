@@ -704,7 +704,7 @@ body {
 #transition-overlay {
   --gear-focus-x: calc(var(--vu) * 80);
   --gear-focus-y: calc(var(--vu) * 50);
-  --gear-focus-size: calc(var(--vu) * 12);
+  --gear-focus-size: calc(var(--vu) * 15);
   --door-plane-size: calc(var(--vu) * 160);
   /* Half the logical stage width, so the opening-h.active exit translate
      (translate(calc(-50% + var(--door-half-span)), -50%)) carries the
@@ -857,42 +857,96 @@ body {
   display: block;
 }
 
+.loader-gear-spinner {
+  position: relative;
+  width: calc(var(--vu) * 18);
+  height: calc(var(--vu) * 18);
+  margin-bottom: calc(var(--vu) * 2.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+#loading-screen.briefing-mode .loader-gear-spinner {
+  width: calc(var(--vu) * 14);
+  height: calc(var(--vu) * 14);
+  margin-bottom: calc(var(--vu) * 1.8);
+}
+
 .gear-stack {
   position: relative;
   width: 100%;
   height: 100%;
   transform-origin: center;
   will-change: transform;
-  transform: rotate(var(--gear-rotation, 0deg));
 }
 
 .gear-layer {
-  --gear-icon: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%3E%3Cpath%20fill%3D'white'%20d%3D'M94.4%2043.2l-8.6-1.5a29.7%2029.7%200%200%200-2.6-5.8l5.2-7.1c.8-1.1.7-2.7-.3-3.7l-5.6-5.6c-1-1-2.6-1.1-3.7-.3l-7.1%205.2a29.7%2029.7%200%200%200-5.8-2.6l-1.5-8.6c-.2-1.4-1.4-2.4-2.8-2.4h-7.9c-1.4%200-2.6%201-2.8%202.4l-1.5%208.6a29.7%2029.7%200%200%200-5.8%202.6L28.3%2019c-1.1-.8-2.7-.7-3.7.3L19%2024.9c-1%201-1.1%202.6-.3%203.7l5.2%207.1a29.7%2029.7%200%200%200-2.6%205.8l-8.6%201.5c-1.4.2-2.4%201.4-2.4%202.8v7.9c0%201.4%201%202.6%202.4%202.8l8.6%201.5a29.7%2029.7%200%200%200%202.6%205.8l-5.2%207.1c-.8%201.1-.7%202.7.3%203.7l5.6%205.6c1%201%202.6%201.1%203.7.3l7.1-5.2a29.7%2029.7%200%200%200%205.8%202.6l1.5%208.6c.2%201.4%201.4%202.4%202.8%202.4h7.9c1.4%200%202.6-1%202.8-2.4l1.5-8.6a29.7%2029.7%200%200%200%205.8-2.6l7.1%205.2c1.1.8%202.7.7%203.7-.3l5.6-5.6c1-1%201.1-2.6.3-3.7l-5.2-7.1a29.7%2029.7%200%200%200%202.6-5.8l8.6-1.5c1.4-.2%202.4-1.4%202.4-2.8v-7.9c0-1.4-1-2.6-2.4-2.8zM50%2065c-8.3%200-15-6.7-15-15s6.7-15%2015-15%2015%206.7%2015%2015-6.7%2015-15%2015z'%2F%3E%3C%2Fsvg%3E");
   position: absolute;
   inset: 0;
   display: block;
-  -webkit-mask-image: var(--gear-icon);
-  mask-image: var(--gear-icon);
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-size: contain;
-  mask-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  transform-origin: center;
+  will-change: transform;
 }
 
+.gear-outer,
 .gear-base {
-  background: linear-gradient(145deg, #ffd27c 0%, #ffb347 35%, #ff9f1c 65%, #c86e0f 100%);
+  inset: 0;
+  background-image: var(--gear-outer-image, var(--asset-gear-vault-main));
   filter:
-    drop-shadow(0 0 calc(var(--vu) * 1.8) rgba(255, 159, 28, 0.6)) drop-shadow(0 0 calc(var(--vu) * 0.75) rgba(255, 225, 160, 0.8)) drop-shadow(0 calc(var(--vu) * 0.55) calc(var(--vu) * 0.6) rgba(0, 0, 0, 0.75));
+    drop-shadow(0 0 calc(var(--vu) * 1.8) rgba(255, 159, 28, 0.55))
+    drop-shadow(0 0 calc(var(--vu) * 0.8) rgba(255, 210, 120, 0.7))
+    drop-shadow(0 calc(var(--vu) * 0.7) calc(var(--vu) * 1.2) rgba(0, 0, 0, 0.85));
+  animation: gear-spin-cw 16s linear infinite;
 }
 
+.gear-inner,
 .gear-ridge {
-  inset: 18%;
-  background: linear-gradient(155deg, #734514 0%, #4d2e0d 55%, #221305 100%);
-  opacity: 0.92;
-  transform: translate(calc(var(--vu) * -0.25), calc(var(--vu) * 0.35));
-  filter: drop-shadow(0 calc(var(--vu) * 0.2) calc(var(--vu) * 0.45) rgba(0, 0, 0, 0.65));
+  inset: 21%;
+  background-image: var(--gear-inner-image, var(--asset-gear-vault-inner));
+  filter:
+    drop-shadow(0 0 calc(var(--vu) * 1.2) rgba(255, 159, 28, 0.75))
+    drop-shadow(0 calc(var(--vu) * 0.3) calc(var(--vu) * 0.6) rgba(0, 0, 0, 0.75));
+  animation: gear-spin-ccw 10s linear infinite;
+}
+
+.gear-core-glow {
+  position: absolute;
+  inset: 38%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 175, 40, 0.85) 0%, rgba(255, 120, 0, 0.4) 45%, transparent 70%);
+  filter: blur(calc(var(--vu) * 0.6));
+  pointer-events: none;
+  animation: gear-core-pulse 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes gear-spin-cw {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes gear-spin-ccw {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes gear-core-pulse {
+  0% { transform: scale(0.85); opacity: 0.5; }
+  100% { transform: scale(1.2); opacity: 0.95; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gear-outer,
+  .gear-base,
+  .gear-inner,
+  .gear-ridge,
+  .gear-core-glow {
+    animation: none;
+  }
 }
 
 #transition-overlay.visible .shared-gear {

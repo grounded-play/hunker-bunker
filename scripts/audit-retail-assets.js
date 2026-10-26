@@ -104,9 +104,9 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // payload is 4112 MiB, leaving 88 MiB rather than hiding duplicate growth.
 // Raised 4200->5300 MiB in Sprint 52 for interactive world expansion (60 new GLB
 // interactive props and models), localized audio packs, and tactical terminal
-// cinematic video cuts (intro-boot, intro-mothership-briefing, credits);
-// measured payload is ~4933 MiB, leaving ~367 MiB headroom.
-const PUBLIC_BUDGET = 5300 * 1024 * 1024;
+// cinematic video cuts (intro-boot, intro-mothership-briefing, credits).
+// Raised 5300->5350 MiB in Sprint 53 for biometric vault door gears and spinner UI.
+const PUBLIC_BUDGET = 5350 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus
