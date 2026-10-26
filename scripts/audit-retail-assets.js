@@ -123,7 +123,13 @@ const PUBLIC_BUDGET = 5350 * 1024 * 1024;
 // track this weight at all -- it was never real asar payload to begin
 // with, just misplaced. ~190MB of headroom kept above the current
 // measurement rather than the bare minimum.
-const ASAR_BUDGET = 950 * 1024 * 1024;
+// Raised 950->1000 MiB in Sprint 53 (v2.4.18-beta). The package measured
+// 1075 MB because 256 world-expansion PBR webp masters sat in
+// public/3d/runtime/surfaces although the game samples only their BC7 bakes;
+// they moved back to art/source (-75 MiB), leaving 995310105 bytes. The real
+// growth is the 53 MB of expansion decal PNGs that build_stickers.py bakes
+// from public/ by design; this keeps ~50 MiB of headroom above that.
+const ASAR_BUDGET = 1000 * 1024 * 1024;
 const UNKNOWN_ASSET_BUDGET = 160;
 const CODEC_MISMATCH_BUDGET = 140;
 const DUPLICATE_GROUP_BUDGET = 140;

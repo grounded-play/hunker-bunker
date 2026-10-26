@@ -2,17 +2,17 @@
   "version": 1,
   "budgets": {
     "publicBytes": 5609881600,
-    "appAsarBytes": 996147200,
+    "appAsarBytes": 1048576000,
     "unknownAssets": 160,
     "codecMismatches": 140,
     "duplicateGroups": 140
   },
   "measured": {
-    "publicBytes": 5537500209,
-    "publicFileCount": 7291
+    "publicBytes": 5457603911,
+    "publicFileCount": 7035
   },
   "classifications": {
-    "runtime-required": 6883,
+    "runtime-required": 6627,
     "source-reference": 23,
     "generated-intermediate": 269,
     "unknown": 116
@@ -834,36 +834,11 @@
         "3d/runtime/kits/textures/tex_pbr_evac_gantry_corrugated_deck_emissive.webp",
         "3d/runtime/kits/textures/tex_pbr_hive_chitin_plates_emissive.webp",
         "3d/runtime/kits/textures/tex_pbr_vesper_trench_treadplate_emissive.webp",
-        "3d/runtime/surfaces/tex_camp_private_worn_felt_a_emissive.webp",
-        "3d/runtime/surfaces/tex_camp_private_worn_felt_b_emissive.webp",
-        "3d/runtime/surfaces/tex_camp_private_worn_felt_c_emissive.webp",
-        "3d/runtime/surfaces/tex_camp_private_worn_felt_d_emissive.webp",
-        "3d/runtime/surfaces/tex_camp_robbed_contact_dust_a_emissive.webp",
-        "3d/runtime/surfaces/tex_camp_robbed_contact_dust_b_emissive.webp",
-        "3d/runtime/surfaces/tex_camp_robbed_contact_dust_c_emissive.webp",
-        "3d/runtime/surfaces/tex_camp_robbed_contact_dust_d_emissive.webp",
-        "3d/runtime/surfaces/tex_ceiling_service_condensate_b_emissive.webp",
-        "3d/runtime/surfaces/tex_ceiling_service_condensate_c_emissive.webp",
-        "3d/runtime/surfaces/tex_flood_tide_mineral_a_emissive.webp",
-        "3d/runtime/surfaces/tex_flood_tide_mineral_b_emissive.webp",
-        "3d/runtime/surfaces/tex_flood_tide_mineral_c_emissive.webp",
-        "3d/runtime/surfaces/tex_flood_tide_mineral_d_emissive.webp",
-        "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_a_emissive.webp",
-        "3d/runtime/surfaces/tex_moving_floor_recess_grease_a_emissive.webp",
-        "3d/runtime/surfaces/tex_moving_floor_recess_grease_b_emissive.webp",
-        "3d/runtime/surfaces/tex_moving_floor_recess_grease_c_emissive.webp",
-        "3d/runtime/surfaces/tex_moving_floor_recess_grease_d_emissive.webp",
         "3d/runtime/surfaces/tex_pbr_corp_sublevel_linoleum_emissive.webp",
         "3d/runtime/surfaces/tex_pbr_crash_hull_ablative_tile_emissive.webp",
         "3d/runtime/surfaces/tex_pbr_evac_gantry_corrugated_deck_emissive.webp",
         "3d/runtime/surfaces/tex_pbr_hive_chitin_plates_emissive.webp",
-        "3d/runtime/surfaces/tex_pbr_vesper_trench_treadplate_emissive.webp",
-        "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_a_emissive.webp",
-        "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_b_emissive.webp",
-        "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_c_emissive.webp",
-        "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_d_emissive.webp",
-        "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_a_emissive.webp",
-        "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_d_emissive.webp"
+        "3d/runtime/surfaces/tex_pbr_vesper_trench_treadplate_emissive.webp"
       ]
     },
     {

@@ -10221,28 +10221,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_a_baseColor.webp",
-      "bytes": 484644,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_a_detail.ktx2",
       "bytes": 280136,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_a_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_a_normal.webp",
-      "bytes": 540706,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_a_orm.webp",
-      "bytes": 292226,
       "classification": "runtime-required"
     },
     {
@@ -10251,28 +10231,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_b_baseColor.webp",
-      "bytes": 412760,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_b_detail.ktx2",
       "bytes": 276713,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_b_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_b_normal.webp",
-      "bytes": 497490,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_b_orm.webp",
-      "bytes": 258904,
       "classification": "runtime-required"
     },
     {
@@ -10281,28 +10241,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_c_baseColor.webp",
-      "bytes": 454034,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_c_detail.ktx2",
       "bytes": 279713,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_c_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_c_normal.webp",
-      "bytes": 509864,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_c_orm.webp",
-      "bytes": 275996,
       "classification": "runtime-required"
     },
     {
@@ -10311,28 +10251,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_d_baseColor.webp",
-      "bytes": 476410,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_d_detail.ktx2",
       "bytes": 284658,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_d_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_d_normal.webp",
-      "bytes": 549558,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_private_worn_felt_d_orm.webp",
-      "bytes": 302470,
       "classification": "runtime-required"
     },
     {
@@ -10341,28 +10261,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_a_baseColor.webp",
-      "bytes": 430722,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_a_detail.ktx2",
       "bytes": 284171,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_a_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_a_normal.webp",
-      "bytes": 527706,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_a_orm.webp",
-      "bytes": 262956,
       "classification": "runtime-required"
     },
     {
@@ -10371,28 +10271,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_b_baseColor.webp",
-      "bytes": 430002,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_b_detail.ktx2",
       "bytes": 282241,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_b_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_b_normal.webp",
-      "bytes": 537738,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_b_orm.webp",
-      "bytes": 259042,
       "classification": "runtime-required"
     },
     {
@@ -10401,28 +10281,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_c_baseColor.webp",
-      "bytes": 405324,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_c_detail.ktx2",
       "bytes": 282675,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_c_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_c_normal.webp",
-      "bytes": 520692,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_c_orm.webp",
-      "bytes": 259364,
       "classification": "runtime-required"
     },
     {
@@ -10431,28 +10291,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_d_baseColor.webp",
-      "bytes": 451820,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_d_detail.ktx2",
       "bytes": 284198,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_d_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_d_normal.webp",
-      "bytes": 552842,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_camp_robbed_contact_dust_d_orm.webp",
-      "bytes": 281574,
       "classification": "runtime-required"
     },
     {
@@ -10461,28 +10301,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_a_baseColor.webp",
-      "bytes": 385554,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_a_detail.ktx2",
       "bytes": 285198,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_a_emissive.webp",
-      "bytes": 1950,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_a_normal.webp",
-      "bytes": 532942,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_a_orm.webp",
-      "bytes": 251558,
       "classification": "runtime-required"
     },
     {
@@ -10491,28 +10311,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_b_baseColor.webp",
-      "bytes": 292692,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_b_detail.ktx2",
       "bytes": 279978,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_b_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_b_normal.webp",
-      "bytes": 443358,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_b_orm.webp",
-      "bytes": 214438,
       "classification": "runtime-required"
     },
     {
@@ -10521,28 +10321,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_c_baseColor.webp",
-      "bytes": 363094,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_c_detail.ktx2",
       "bytes": 282483,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_c_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_c_normal.webp",
-      "bytes": 484408,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_c_orm.webp",
-      "bytes": 221164,
       "classification": "runtime-required"
     },
     {
@@ -10551,28 +10331,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_d_baseColor.webp",
-      "bytes": 313514,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_d_detail.ktx2",
       "bytes": 280896,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_d_emissive.webp",
-      "bytes": 2012,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_d_normal.webp",
-      "bytes": 458038,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_ceiling_service_condensate_d_orm.webp",
-      "bytes": 209338,
       "classification": "runtime-required"
     },
     {
@@ -10581,28 +10341,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_a_baseColor.webp",
-      "bytes": 442242,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_a_detail.ktx2",
       "bytes": 293131,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_a_emissive.webp",
-      "bytes": 39502,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_a_normal.webp",
-      "bytes": 590376,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_a_orm.webp",
-      "bytes": 281552,
       "classification": "runtime-required"
     },
     {
@@ -10611,28 +10351,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_b_baseColor.webp",
-      "bytes": 391230,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_b_detail.ktx2",
       "bytes": 288061,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_b_emissive.webp",
-      "bytes": 62220,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_b_normal.webp",
-      "bytes": 544840,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_b_orm.webp",
-      "bytes": 223448,
       "classification": "runtime-required"
     },
     {
@@ -10641,28 +10361,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_c_baseColor.webp",
-      "bytes": 395148,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_c_detail.ktx2",
       "bytes": 293283,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_c_emissive.webp",
-      "bytes": 79038,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_c_normal.webp",
-      "bytes": 553636,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_c_orm.webp",
-      "bytes": 238516,
       "classification": "runtime-required"
     },
     {
@@ -10671,28 +10371,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_d_baseColor.webp",
-      "bytes": 345090,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_d_detail.ktx2",
       "bytes": 286091,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_d_emissive.webp",
-      "bytes": 16058,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_d_normal.webp",
-      "bytes": 494002,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_covenant_two_hand_ivory_d_orm.webp",
-      "bytes": 213982,
       "classification": "runtime-required"
     },
     {
@@ -10701,28 +10381,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_a_baseColor.webp",
-      "bytes": 409972,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_a_detail.ktx2",
       "bytes": 291125,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_a_emissive.webp",
-      "bytes": 10210,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_a_normal.webp",
-      "bytes": 596808,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_a_orm.webp",
-      "bytes": 270374,
       "classification": "runtime-required"
     },
     {
@@ -10731,28 +10391,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_b_baseColor.webp",
-      "bytes": 414106,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_b_detail.ktx2",
       "bytes": 286619,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_b_emissive.webp",
-      "bytes": 80376,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_b_normal.webp",
-      "bytes": 569284,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_b_orm.webp",
-      "bytes": 273378,
       "classification": "runtime-required"
     },
     {
@@ -10761,28 +10401,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_c_baseColor.webp",
-      "bytes": 441192,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_c_detail.ktx2",
       "bytes": 296744,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_c_emissive.webp",
-      "bytes": 13880,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_c_normal.webp",
-      "bytes": 614678,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_c_orm.webp",
-      "bytes": 296106,
       "classification": "runtime-required"
     },
     {
@@ -10791,28 +10411,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_d_baseColor.webp",
-      "bytes": 443450,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_d_detail.ktx2",
       "bytes": 281801,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_d_emissive.webp",
-      "bytes": 26110,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_d_normal.webp",
-      "bytes": 592904,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_coldchain_frost_deck_d_orm.webp",
-      "bytes": 293700,
       "classification": "runtime-required"
     },
     {
@@ -10821,28 +10421,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_a_baseColor.webp",
-      "bytes": 465306,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_a_detail.ktx2",
       "bytes": 287621,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_a_emissive.webp",
-      "bytes": 48072,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_a_normal.webp",
-      "bytes": 629552,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_a_orm.webp",
-      "bytes": 290564,
       "classification": "runtime-required"
     },
     {
@@ -10851,28 +10431,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_b_baseColor.webp",
-      "bytes": 404132,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_b_detail.ktx2",
       "bytes": 280279,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_b_emissive.webp",
-      "bytes": 25128,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_b_normal.webp",
-      "bytes": 573146,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_b_orm.webp",
-      "bytes": 249106,
       "classification": "runtime-required"
     },
     {
@@ -10881,28 +10441,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_c_baseColor.webp",
-      "bytes": 452594,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_c_detail.ktx2",
       "bytes": 294290,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_c_emissive.webp",
-      "bytes": 37360,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_c_normal.webp",
-      "bytes": 622348,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_c_orm.webp",
-      "bytes": 279262,
       "classification": "runtime-required"
     },
     {
@@ -10911,28 +10451,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_d_baseColor.webp",
-      "bytes": 397024,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_d_detail.ktx2",
       "bytes": 281205,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_d_emissive.webp",
-      "bytes": 17804,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_d_normal.webp",
-      "bytes": 574172,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_evac_queue_burnished_deck_d_orm.webp",
-      "bytes": 262506,
       "classification": "runtime-required"
     },
     {
@@ -10941,28 +10461,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_flood_tide_mineral_a_baseColor.webp",
-      "bytes": 450714,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_flood_tide_mineral_a_detail.ktx2",
       "bytes": 288248,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_flood_tide_mineral_a_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_flood_tide_mineral_a_normal.webp",
-      "bytes": 645076,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_flood_tide_mineral_a_orm.webp",
-      "bytes": 299506,
       "classification": "runtime-required"
     },
     {
@@ -10971,28 +10471,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_flood_tide_mineral_b_baseColor.webp",
-      "bytes": 470682,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_flood_tide_mineral_b_detail.ktx2",
       "bytes": 295535,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_flood_tide_mineral_b_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_flood_tide_mineral_b_normal.webp",
-      "bytes": 652884,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_flood_tide_mineral_b_orm.webp",
-      "bytes": 309750,
       "classification": "runtime-required"
     },
     {
@@ -11001,28 +10481,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_flood_tide_mineral_c_baseColor.webp",
-      "bytes": 471564,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_flood_tide_mineral_c_detail.ktx2",
       "bytes": 291903,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_flood_tide_mineral_c_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_flood_tide_mineral_c_normal.webp",
-      "bytes": 666178,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_flood_tide_mineral_c_orm.webp",
-      "bytes": 312592,
       "classification": "runtime-required"
     },
     {
@@ -11031,28 +10491,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_flood_tide_mineral_d_baseColor.webp",
-      "bytes": 473108,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_flood_tide_mineral_d_detail.ktx2",
       "bytes": 296005,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_flood_tide_mineral_d_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_flood_tide_mineral_d_normal.webp",
-      "bytes": 672396,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_flood_tide_mineral_d_orm.webp",
-      "bytes": 309716,
       "classification": "runtime-required"
     },
     {
@@ -12141,28 +11581,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_a_baseColor.webp",
-      "bytes": 337804,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_a_detail.ktx2",
       "bytes": 291382,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_a_emissive.webp",
-      "bytes": 20754,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_a_normal.webp",
-      "bytes": 511790,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_a_orm.webp",
-      "bytes": 220718,
       "classification": "runtime-required"
     },
     {
@@ -12171,28 +11591,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_b_baseColor.webp",
-      "bytes": 367192,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_b_detail.ktx2",
       "bytes": 295551,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_b_emissive.webp",
-      "bytes": 58478,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_b_normal.webp",
-      "bytes": 551120,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_b_orm.webp",
-      "bytes": 243898,
       "classification": "runtime-required"
     },
     {
@@ -12201,28 +11601,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_c_baseColor.webp",
-      "bytes": 356972,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_c_detail.ktx2",
       "bytes": 291536,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_c_emissive.webp",
-      "bytes": 25786,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_c_normal.webp",
-      "bytes": 539084,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_c_orm.webp",
-      "bytes": 232986,
       "classification": "runtime-required"
     },
     {
@@ -12231,28 +11611,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_d_baseColor.webp",
-      "bytes": 448120,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_d_detail.ktx2",
       "bytes": 298806,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_d_emissive.webp",
-      "bytes": 22820,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_d_normal.webp",
-      "bytes": 610616,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_hazard_routed_conduit_wall_d_orm.webp",
-      "bytes": 294034,
       "classification": "runtime-required"
     },
     {
@@ -12281,28 +11641,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_a_baseColor.webp",
-      "bytes": 344222,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_a_detail.ktx2",
       "bytes": 274160,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_a_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_a_normal.webp",
-      "bytes": 517218,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_a_orm.webp",
-      "bytes": 207178,
       "classification": "runtime-required"
     },
     {
@@ -12311,28 +11651,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_b_baseColor.webp",
-      "bytes": 344126,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_b_detail.ktx2",
       "bytes": 280503,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_b_emissive.webp",
-      "bytes": 3070,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_b_normal.webp",
-      "bytes": 529058,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_b_orm.webp",
-      "bytes": 199072,
       "classification": "runtime-required"
     },
     {
@@ -12341,28 +11661,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_c_baseColor.webp",
-      "bytes": 384224,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_c_detail.ktx2",
       "bytes": 274220,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_c_emissive.webp",
-      "bytes": 2624,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_c_normal.webp",
-      "bytes": 551818,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_c_orm.webp",
-      "bytes": 218292,
       "classification": "runtime-required"
     },
     {
@@ -12371,28 +11671,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_d_baseColor.webp",
-      "bytes": 415096,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_d_detail.ktx2",
       "bytes": 286200,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_d_emissive.webp",
-      "bytes": 2002,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_d_normal.webp",
-      "bytes": 587940,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_meridian_covenant_bus_floor_d_orm.webp",
-      "bytes": 270752,
       "classification": "runtime-required"
     },
     {
@@ -12401,28 +11681,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_a_baseColor.webp",
-      "bytes": 439722,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_a_detail.ktx2",
       "bytes": 286901,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_a_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_a_normal.webp",
-      "bytes": 600404,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_a_orm.webp",
-      "bytes": 277842,
       "classification": "runtime-required"
     },
     {
@@ -12431,28 +11691,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_b_baseColor.webp",
-      "bytes": 425988,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_b_detail.ktx2",
       "bytes": 289204,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_b_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_b_normal.webp",
-      "bytes": 605140,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_b_orm.webp",
-      "bytes": 285592,
       "classification": "runtime-required"
     },
     {
@@ -12461,28 +11701,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_c_baseColor.webp",
-      "bytes": 411572,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_c_detail.ktx2",
       "bytes": 289277,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_c_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_c_normal.webp",
-      "bytes": 600138,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_c_orm.webp",
-      "bytes": 281846,
       "classification": "runtime-required"
     },
     {
@@ -12491,28 +11711,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_d_baseColor.webp",
-      "bytes": 429614,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_d_detail.ktx2",
       "bytes": 291145,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_d_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_d_normal.webp",
-      "bytes": 598704,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_moving_floor_recess_grease_d_orm.webp",
-      "bytes": 282930,
       "classification": "runtime-required"
     },
     {
@@ -13241,28 +12441,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_a_baseColor.webp",
-      "bytes": 397500,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_a_detail.ktx2",
       "bytes": 282370,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_a_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_a_normal.webp",
-      "bytes": 507400,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_a_orm.webp",
-      "bytes": 235200,
       "classification": "runtime-required"
     },
     {
@@ -13271,28 +12451,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_b_baseColor.webp",
-      "bytes": 395406,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_b_detail.ktx2",
       "bytes": 277894,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_b_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_b_normal.webp",
-      "bytes": 487440,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_b_orm.webp",
-      "bytes": 217090,
       "classification": "runtime-required"
     },
     {
@@ -13301,28 +12461,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_c_baseColor.webp",
-      "bytes": 393952,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_c_detail.ktx2",
       "bytes": 285113,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_c_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_c_normal.webp",
-      "bytes": 519978,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_c_orm.webp",
-      "bytes": 242376,
       "classification": "runtime-required"
     },
     {
@@ -13331,28 +12471,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_d_baseColor.webp",
-      "bytes": 430428,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_d_detail.ktx2",
       "bytes": 283432,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_d_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_d_normal.webp",
-      "bytes": 545194,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_recruited_packdown_canvas_floor_d_orm.webp",
-      "bytes": 253536,
       "classification": "runtime-required"
     },
     {
@@ -13361,28 +12481,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_a_baseColor.webp",
-      "bytes": 330732,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_a_detail.ktx2",
       "bytes": 285701,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_a_emissive.webp",
-      "bytes": 7564,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_a_normal.webp",
-      "bytes": 515032,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_a_orm.webp",
-      "bytes": 203312,
       "classification": "runtime-required"
     },
     {
@@ -13391,28 +12491,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_b_baseColor.webp",
-      "bytes": 395972,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_b_detail.ktx2",
       "bytes": 293843,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_b_emissive.webp",
-      "bytes": 53712,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_b_normal.webp",
-      "bytes": 566536,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_b_orm.webp",
-      "bytes": 257118,
       "classification": "runtime-required"
     },
     {
@@ -13421,28 +12501,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_c_baseColor.webp",
-      "bytes": 387140,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_c_detail.ktx2",
       "bytes": 290904,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_c_emissive.webp",
-      "bytes": 30876,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_c_normal.webp",
-      "bytes": 566536,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_c_orm.webp",
-      "bytes": 239212,
       "classification": "runtime-required"
     },
     {
@@ -13451,28 +12511,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_d_baseColor.webp",
-      "bytes": 397352,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_d_detail.ktx2",
       "bytes": 290429,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_d_emissive.webp",
-      "bytes": 25062,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_d_normal.webp",
-      "bytes": 582076,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_refusal_cautery_scale_d_orm.webp",
-      "bytes": 248260,
       "classification": "runtime-required"
     },
     {
@@ -13481,28 +12521,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_secret_memory_membrane_a_baseColor.webp",
-      "bytes": 340930,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_secret_memory_membrane_a_detail.ktx2",
       "bytes": 273722,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_secret_memory_membrane_a_emissive.webp",
-      "bytes": 123676,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_secret_memory_membrane_a_normal.webp",
-      "bytes": 476076,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_secret_memory_membrane_a_orm.webp",
-      "bytes": 228702,
       "classification": "runtime-required"
     },
     {
@@ -13511,28 +12531,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_secret_memory_membrane_b_baseColor.webp",
-      "bytes": 344160,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_secret_memory_membrane_b_detail.ktx2",
       "bytes": 279397,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_secret_memory_membrane_b_emissive.webp",
-      "bytes": 64512,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_secret_memory_membrane_b_normal.webp",
-      "bytes": 483562,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_secret_memory_membrane_b_orm.webp",
-      "bytes": 223616,
       "classification": "runtime-required"
     },
     {
@@ -13541,28 +12541,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_secret_memory_membrane_c_baseColor.webp",
-      "bytes": 356214,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_secret_memory_membrane_c_detail.ktx2",
       "bytes": 278976,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_secret_memory_membrane_c_emissive.webp",
-      "bytes": 142238,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_secret_memory_membrane_c_normal.webp",
-      "bytes": 497086,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_secret_memory_membrane_c_orm.webp",
-      "bytes": 234600,
       "classification": "runtime-required"
     },
     {
@@ -13571,28 +12551,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_secret_memory_membrane_d_baseColor.webp",
-      "bytes": 323512,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_secret_memory_membrane_d_detail.ktx2",
       "bytes": 272413,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_secret_memory_membrane_d_emissive.webp",
-      "bytes": 127282,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_secret_memory_membrane_d_normal.webp",
-      "bytes": 459656,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_secret_memory_membrane_d_orm.webp",
-      "bytes": 200054,
       "classification": "runtime-required"
     },
     {
@@ -13721,28 +12681,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_a_baseColor.webp",
-      "bytes": 442422,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_a_detail.ktx2",
       "bytes": 291280,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_a_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_a_normal.webp",
-      "bytes": 620218,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_a_orm.webp",
-      "bytes": 291326,
       "classification": "runtime-required"
     },
     {
@@ -13751,28 +12691,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_b_baseColor.webp",
-      "bytes": 455470,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_b_detail.ktx2",
       "bytes": 296500,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_b_emissive.webp",
-      "bytes": 2946,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_b_normal.webp",
-      "bytes": 617222,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_b_orm.webp",
-      "bytes": 285192,
       "classification": "runtime-required"
     },
     {
@@ -13781,28 +12701,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_c_baseColor.webp",
-      "bytes": 416110,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_c_detail.ktx2",
       "bytes": 288426,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_c_emissive.webp",
-      "bytes": 2208,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_c_normal.webp",
-      "bytes": 600536,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_c_orm.webp",
-      "bytes": 271906,
       "classification": "runtime-required"
     },
     {
@@ -13811,28 +12711,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_d_baseColor.webp",
-      "bytes": 382630,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_d_detail.ktx2",
       "bytes": 294812,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_d_emissive.webp",
-      "bytes": 1926,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_d_normal.webp",
-      "bytes": 562300,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_tallow_red_mold_filter_floor_d_orm.webp",
-      "bytes": 255694,
       "classification": "runtime-required"
     },
     {
@@ -13841,28 +12721,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_turned_resin_ingress_a_baseColor.webp",
-      "bytes": 381000,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_turned_resin_ingress_a_detail.ktx2",
       "bytes": 293933,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_turned_resin_ingress_a_emissive.webp",
-      "bytes": 4796,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_turned_resin_ingress_a_normal.webp",
-      "bytes": 558660,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_turned_resin_ingress_a_orm.webp",
-      "bytes": 249954,
       "classification": "runtime-required"
     },
     {
@@ -13871,28 +12731,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_turned_resin_ingress_b_baseColor.webp",
-      "bytes": 372946,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_turned_resin_ingress_b_detail.ktx2",
       "bytes": 290682,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_turned_resin_ingress_b_emissive.webp",
-      "bytes": 10788,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_turned_resin_ingress_b_normal.webp",
-      "bytes": 546652,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_turned_resin_ingress_b_orm.webp",
-      "bytes": 243832,
       "classification": "runtime-required"
     },
     {
@@ -13901,28 +12741,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_turned_resin_ingress_c_baseColor.webp",
-      "bytes": 377424,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_turned_resin_ingress_c_detail.ktx2",
       "bytes": 284339,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_turned_resin_ingress_c_emissive.webp",
-      "bytes": 3694,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_turned_resin_ingress_c_normal.webp",
-      "bytes": 553810,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_turned_resin_ingress_c_orm.webp",
-      "bytes": 246068,
       "classification": "runtime-required"
     },
     {
@@ -13931,28 +12751,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_turned_resin_ingress_d_baseColor.webp",
-      "bytes": 419566,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_turned_resin_ingress_d_detail.ktx2",
       "bytes": 297217,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_turned_resin_ingress_d_emissive.webp",
-      "bytes": 7364,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_turned_resin_ingress_d_normal.webp",
-      "bytes": 604660,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_turned_resin_ingress_d_orm.webp",
-      "bytes": 278794,
       "classification": "runtime-required"
     },
     {
@@ -13961,28 +12761,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_a_baseColor.webp",
-      "bytes": 362908,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_a_detail.ktx2",
       "bytes": 291055,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_a_emissive.webp",
-      "bytes": 11140,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_a_normal.webp",
-      "bytes": 552994,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_a_orm.webp",
-      "bytes": 245862,
       "classification": "runtime-required"
     },
     {
@@ -13991,28 +12771,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_b_baseColor.webp",
-      "bytes": 412330,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_b_detail.ktx2",
       "bytes": 285187,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_b_emissive.webp",
-      "bytes": 27900,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_b_normal.webp",
-      "bytes": 592712,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_b_orm.webp",
-      "bytes": 264916,
       "classification": "runtime-required"
     },
     {
@@ -14021,28 +12781,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_c_baseColor.webp",
-      "bytes": 416970,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_c_detail.ktx2",
       "bytes": 282407,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_c_emissive.webp",
-      "bytes": 11474,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_c_normal.webp",
-      "bytes": 592442,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_c_orm.webp",
-      "bytes": 268100,
       "classification": "runtime-required"
     },
     {
@@ -14051,28 +12791,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_d_baseColor.webp",
-      "bytes": 386078,
-      "classification": "runtime-required"
-    },
-    {
       "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_d_detail.ktx2",
       "bytes": 290249,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_d_emissive.webp",
-      "bytes": 31332,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_d_normal.webp",
-      "bytes": 588172,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/surfaces/tex_vesper_oiled_tally_deck_d_orm.webp",
-      "bytes": 258014,
       "classification": "runtime-required"
     },
     {
@@ -35252,17 +33972,17 @@
     },
     {
       "path": "gear_vault_inner.webp",
-      "bytes": 193870,
+      "bytes": 51406,
       "classification": "runtime-required"
     },
     {
       "path": "gear_vault_iris.webp",
-      "bytes": 289472,
+      "bytes": 76424,
       "classification": "runtime-required"
     },
     {
       "path": "gear_vault_main.webp",
-      "bytes": 293078,
+      "bytes": 74752,
       "classification": "runtime-required"
     },
     {

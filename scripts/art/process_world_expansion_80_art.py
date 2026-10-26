@@ -5,7 +5,7 @@ Inputs are preserved in art/raw. Outputs:
 - alpha-keyed compatibility decals in public/
 - keyed archive in art/source/decals/world-expansion-80-2026-10-16/keyed/
 - seamless WebP PBR suites in art/source/textures/world-expansion-80-2026-10-16/pbr/
-  and public/3d/runtime/surfaces/
+  and BC7 bakes in public/3d/runtime/surfaces/ (PBR webp masters stay in art/source)
 - BC7 KTX2 albedo/detail layers for every surface variant
 
 The source `(2)`..`(4)` files are visual variants, not PBR channels.
@@ -139,13 +139,16 @@ def save_surface(stem: str, variant: int, path: Path, config: dict) -> dict:
     detail = np.dstack([normal, rough, height])
     albedo = np.dstack([rgb, metal])
 
-    for target in (PBR_SOURCE, RUNTIME_SURFACES):
+    # The PBR maps are masters: the game samples only the BC7 bakes below, so
+    # webp copies in public/ were 75 MiB of dead payload (retail-asset audit).
+    for target in (PBR_SOURCE,):
         target.mkdir(parents=True, exist_ok=True)
         Image.fromarray(base, 'RGB').save(target / f'{name}_baseColor.webp', 'WEBP', quality=92, method=6)
         Image.fromarray((normal_rgb * 255).astype(np.uint8), 'RGB').save(target / f'{name}_normal.webp', 'WEBP', quality=91, method=6)
         Image.fromarray((orm * 255).astype(np.uint8), 'RGB').save(target / f'{name}_orm.webp', 'WEBP', quality=90, method=6)
         Image.fromarray((emissive * 255).astype(np.uint8), 'RGB').save(target / f'{name}_emissive.webp', 'WEBP', quality=90, method=6)
 
+    RUNTIME_SURFACES.mkdir(parents=True, exist_ok=True)
     write_ktx2(RUNTIME_SURFACES / f'{name}_albedo.ktx2', bc7_levels((albedo * 255).astype(np.uint8), False), SIZE, srgb=True)
     write_ktx2(RUNTIME_SURFACES / f'{name}_detail.ktx2', bc7_levels((detail * 255).astype(np.uint8), True), SIZE, srgb=False)
     edge_error = max(float(np.abs(rgb[0] - rgb[-1]).mean()), float(np.abs(rgb[:, 0] - rgb[:, -1]).mean()))

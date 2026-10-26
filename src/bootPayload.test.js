@@ -32,7 +32,8 @@ describe('boot payload', () => {
         ]) {
             expect(index).toContain(`: '${asset}'`);
         }
-        expect(index).toContain("new URL(menuArtwork[property], document.baseURI).href");
+        expect(index).toContain("new URL(artwork[property], document.baseURI).href");
+        expect(index).toContain('installArtwork(menuArtwork);');
         expect(index).toContain("document.documentElement.style.setProperty(property, 'url(\"' + resolved + '\")')");
 
         const style = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
@@ -40,6 +41,17 @@ describe('boot payload', () => {
         expect(style).toContain('background: var(--bg-dark) var(--asset-briefing-menu-bg)');
         expect(style).toContain('background: var(--asset-menu-frame-overlay)');
         expect(style).not.toMatch(/url\(['"]\/(?:title_key_art_v2|menu_bg(?:_v3)?|menu_frame_overlay|door_biomech_keyart_v2)\.webp/);
+    });
+
+    it('installs the vault gear art after load, never ahead of the first paint', () => {
+        const gears = index.slice(index.indexOf('var gearArtwork'), index.indexOf('var origFetch'));
+        for (const asset of ['gear_vault_main.webp', 'gear_vault_inner.webp', 'gear_vault_iris.webp']) {
+            expect(gears).toContain(`: '${asset}'`);
+        }
+        expect(gears).toContain("window.addEventListener('load', installGearArtwork, { once: true })");
+        expect(gears).toContain('requestIdleCallback(install');
+        const menu = index.slice(index.indexOf('var menuArtwork'), index.indexOf('var gearArtwork'));
+        expect(menu).not.toContain('gear_vault');
     });
 
     it('never preloads a video in the page markup; videos load when they play', () => {
