@@ -1458,10 +1458,7 @@ html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays :is(
   margin: 0 !important;
 }
 
-html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays :is(
-  #expedition-briefing-card,
-  #compound-location-title
-) {
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays #expedition-briefing-card {
   position: absolute !important;
   left: 0 !important;
   right: auto !important;

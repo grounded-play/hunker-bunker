@@ -10290,11 +10290,15 @@ html[data-camp-dialog="open"] .hud-notification-stack {
   /* Below the header row (vitals / sidearm / integrity end near 5.7vu). */
   top: calc(var(--vu) * 7);
   left: 50%;
-  max-width: min(calc(var(--vu) * 72), 88vw);
+  /* Stacked, never truncated: the player must read what they uncovered.
+     Tag (kicker) over the full room name, subtitle beneath. */
+  width: max-content;
+  max-width: min(calc(var(--vu) * 90), 94%);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: calc(var(--vu) * 1.2);
-  padding: calc(var(--vu) * 0.7) calc(var(--vu) * 2);
+  gap: calc(var(--vu) * 0.35);
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 4);
   border-top: 1px solid rgba(133, 208, 255, 0.55);
   border-bottom: 1px solid rgba(133, 208, 255, 0.55);
   background: linear-gradient(90deg, transparent, rgba(8, 13, 18, 0.86) 18%, rgba(8, 13, 18, 0.86) 82%, transparent);
@@ -10304,7 +10308,7 @@ html[data-camp-dialog="open"] .hud-notification-stack {
   transition: opacity 420ms ease-out, transform 420ms ease-out;
   pointer-events: none;
   font-family: 'Outfit', sans-serif;
-  white-space: nowrap;
+  text-align: center;
 }
 
 .compound-location-title.visible {
@@ -10333,13 +10337,14 @@ html[data-camp-dialog="open"] .hud-notification-stack {
 }
 
 .compound-location-title__text {
-  font-size: calc(var(--vu) * 1.9);
+  font-size: calc(var(--vu) * 2.4);
   font-weight: 800;
   letter-spacing: 3px;
   color: #e4f7ff;
   text-transform: uppercase;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
 .compound-location-title__subtitle {
@@ -10348,8 +10353,8 @@ html[data-camp-dialog="open"] .hud-notification-stack {
   letter-spacing: 1.8px;
   color: #7ec8e3;
   text-transform: uppercase;
-  border-left: 1px solid rgba(133, 208, 255, 0.35);
-  padding-left: calc(var(--vu) * 0.9);
+  line-height: 1.2;
+  text-wrap: balance;
 }
 
 .compound-location-title__tag {
@@ -10360,6 +10365,7 @@ html[data-camp-dialog="open"] .hud-notification-stack {
   background: #ffd166;
   border-radius: 3px;
   padding: calc(var(--vu) * 0.2) calc(var(--vu) * 0.7);
+  order: -1;
 }
 
 body.mission-intro-active .expedition-briefing-card,

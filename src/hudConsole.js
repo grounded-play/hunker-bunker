@@ -25,8 +25,9 @@ const SLOT_CONTENT = Object.freeze({
         '#hazard-status-panel',
         '#queens-ledger-hud',
         '#tutorial-prompt',
-        '#expedition-briefing-card',
-        '#compound-location-title'
+        '#expedition-briefing-card'
+        // #compound-location-title stays a top-center card in #game-viewport:
+        // the console's bottom-left overlay slot truncated every room name.
     ]
 });
 
