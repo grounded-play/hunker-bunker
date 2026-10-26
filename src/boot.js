@@ -1,3 +1,7 @@
+import { registerWebServiceWorker } from './serviceWorkerRegistration.js';
+
+registerWebServiceWorker();
+
 // Page entry (index.html). The Lighthouse route is a first-paint probe: the
 // full game never starts there, so downloading and evaluating its 200+ KiB
 // boot graph only delays the title screen and measures work the route cannot
