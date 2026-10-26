@@ -25582,9 +25582,11 @@ export class ThreeGame {
                 this._seenCampFirstContact.add(camp.id);
                 if (camp.id === 'camp_meridian') {
                     const deadline = this.resolveDayDeadline?.('meridian_first_contact');
+                    // A late arrival still meets the camp through its card; it
+                    // used to skip straight to the leader, so Meridian's video
+                    // never played for anyone who missed the window.
                     if (deadline && ['expired', 'deadline passed'].includes(deadline.reason)) {
                         this.showBunkerLine?.('MERIDIAN GRID CLOSED // FIRST-CONTACT WINDOW MISSED');
-                        return this.talkToLeader('camp', camp);
                     }
                 }
                 window.dispatchEvent(new CustomEvent('camp-first-contact', {
