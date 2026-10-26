@@ -75,8 +75,16 @@ export function parseEndingCardRows(text) {
 }
 
 function durationOf(action, fallback) {
-    const match = /(\d+(?:\.\d+)?)\s*s\b/.exec(action ?? '');
+    const match = /(\d+(?:\.\d+)?)\s*(?:s|secs?|seconds?)\b/.exec(action ?? '');
     return match ? Number(match[1]) : fallback;
+}
+
+/** The action without its trailing length note ("Single shot, 7 seconds." / "; 7 s"). */
+export function actionOnly(action) {
+    return String(action ?? '')
+        .replace(/\s*Single (?:continuous )?shot, \d+(?:\.\d+)? seconds?\.?\s*$/i, '')
+        .replace(/;?\s*\d+(?:\.\d+)?\s*s\.?\s*$/, '')
+        .trim();
 }
 
 export function buildClipJobs(doc) {
@@ -90,7 +98,7 @@ export function buildClipJobs(doc) {
             kind: 'side-story',
             title: spec.title,
             firstFrame: { image: spec.image },
-            action: entry.action,
+            action: actionOnly(entry.action),
             lastFrame: sceneOnly(entry.lastFrame),
             durationSec: durationOf(entry.action, 6),
             audio: spec.audio,
@@ -106,7 +114,7 @@ export function buildClipJobs(doc) {
             kind: 'song-card',
             title: spec.title,
             firstFrame: { image: spec.image },
-            action: row.action.replace(/;?\s*\d+(?:\.\d+)?\s*s\s*$/, '').trim(),
+            action: actionOnly(row.action),
             lastFrame: sceneOnly(row.lastFrame),
             durationSec: durationOf(row.action, 6),
             audio: spec.audio,
@@ -122,7 +130,7 @@ export function buildClipJobs(doc) {
             kind: 'sleep',
             title: entry.id,
             firstFrame: { prompt: sceneOnly(entry.firstFrame) },
-            action: entry.action.replace(/;?\s*\d+(?:\.\d+)?\s*s\s*$/, '').trim(),
+            action: actionOnly(entry.action),
             lastFrame: sceneOnly(entry.lastFrame),
             durationSec: durationOf(entry.action, 7),
             audio: SLEEP_AUDIO,

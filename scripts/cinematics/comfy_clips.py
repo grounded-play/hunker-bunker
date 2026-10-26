@@ -8,9 +8,12 @@ http://127.0.0.1:8188 with locally installed models:
   still   FLUX.2 klein 4B (distilled) first frame for a job without key art
   clip    image-to-video take: LTX-Video 2B 0.9.8 distilled (default, fits
           8 GB) or Wan 2.2 TI2V 5B (--model wan, slower, offloads)
+  sound   layered sound design for a job (AudioGen; scripts/cinematics/
+          sound_layers.py in the AudioCraft venv, sound-layers.json)
   encode  a chosen take -> the runtime files (1280x720, 24 fps, VP9/Opus
-          WebM + H.264/AAC MP4 + poster), music muxed from the job's track;
-          --preview writes them beside the take for review instead
+          WebM + H.264/AAC MP4 + poster): the job's music with the newest
+          sound bed under it; --preview writes them beside the take instead
+  make    clip + sound + preview encode: one full clip to review
   status  what each job has: first frame, takes, encoded files
 
 Takes and first frames are masters: they stay in art/source/cinematics/<job>/
@@ -40,6 +43,7 @@ MASTERS = ROOT / 'art/source/cinematics'
 PUBLIC = ROOT / 'public'
 COMFY = os.environ.get('HB_COMFY_URL', 'http://127.0.0.1:8188')
 COMFY_ROOT = Path(os.environ.get('HB_COMFY_ROOT', str(Path.home() / 'Desktop/icecave/xpsr/ComfyUI')))
+AUDIOCRAFT_PY = os.environ.get('HB_AUDIOCRAFT_PY', str(Path.home() / 'tools/audiocraft/.venv/bin/python'))
 FPS = 24
 
 MODELS = {
@@ -262,31 +266,93 @@ def cmd_clip(args):
         print(f'[clip] {out.relative_to(ROOT)} ({len(pngs)} frames) sheet {sheet.relative_to(ROOT)}')
 
 
+def probe_duration(path):
+    out = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', str(path)],
+                         check=True, capture_output=True, text=True).stdout.strip()
+    return float(out)
+
+
+def sound_take(job_id, name=None):
+    """The chosen (or newest) AudioGen bed for a job, with its take.json."""
+    folder = MASTERS / job_id / 'sound'
+    takes = sorted((p for p in folder.glob('take_*') if (p / 'bed.wav').exists()), key=lambda p: int(p.name.split('_')[-1])) if folder.exists() else []
+    if name:
+        takes = [p for p in takes if p.name == name]
+        if not takes:
+            raise SystemExit(f'no sound {name} for {job_id}')
+    return takes[-1] if takes else None
+
+
+def audio_graph(duration, music_gain_db, with_bed, bed_gain_db=-5.0):
+    """Music (job track) under the sound bed, both loudness-matched, then faded and limited."""
+    fade = max(0.0, duration - 0.8)
+    music = f'[1:a]atrim=0:{duration:.3f},asetpts=PTS-STARTPTS,loudnorm=I=-18:TP=-2,aresample=48000,volume={music_gain_db:.1f}dB'
+    if not with_bed:
+        return f'{music},afade=t=in:d=0.3,afade=t=out:st={fade:.2f}:d=0.8[aout]'
+    bed = f'[2:a]atrim=0:{duration:.3f},asetpts=PTS-STARTPTS,loudnorm=I=-18:TP=-2,aresample=48000,volume={bed_gain_db:.1f}dB'
+    return (f'{music}[m];{bed}[b];[m][b]amix=inputs=2:normalize=0:dropout_transition=0,'
+            f'afade=t=in:d=0.3,afade=t=out:st={fade:.2f}:d=0.8,alimiter=limit=0.89[aout]')
+
+
 def cmd_encode(args):
     _, jobs = load_jobs()
     job = jobs[args.job]
     take = job_dir(job['id']) / f'{args.take}.mp4'
     if not take.exists():
         raise SystemExit(f'no take {take.relative_to(ROOT)}')
-    duration = job['durationSec']
-    audio = PUBLIC / job['audio'].lstrip('/')
-    fade = max(0.0, duration - 0.8)
+    duration = min(float(job['durationSec']), probe_duration(take))
+    music = PUBLIC / job['audio'].lstrip('/')
+    bed_take = None if args.no_sound else sound_take(job['id'], args.sound)
+    music_gain, bed_gain = 0.0, -5.0
+    if bed_take:
+        mix = json.loads((bed_take / 'take.json').read_text())
+        music_gain = float(mix.get('musicGainDb', 0))
+        bed_gain = float(mix.get('bedGainDb', -5))
+    graph = audio_graph(duration, music_gain, bool(bed_take), bed_gain)
+    sources = ['-i', str(take), '-i', str(music)] + (['-i', str(bed_take / 'bed.wav')] if bed_take else [])
     video = 'scale=1280:720:flags=lanczos,fps=24,format=yuv420p'
-    audio_filter = f'afade=t=in:d=0.3,afade=t=out:st={fade:.2f}:d=0.8'
     preview = job_dir(job['id']) / 'preview'
+    label = f"{args.take}{'_' + bed_take.name if bed_take else ''}"
     for kind, target in job['targets'].items():
-        out = (preview / f'{args.take}{Path(target).suffix}') if args.preview else PUBLIC / target.lstrip('/')
+        out = (preview / f'{label}{Path(target).suffix}') if args.preview else PUBLIC / target.lstrip('/')
         out.parent.mkdir(parents=True, exist_ok=True)
         if kind == 'poster':
             run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(take), '-vf', 'scale=1280:720:flags=lanczos', '-frames:v', '1', '-q:v', '3', str(out)])
             continue
-        codec = (['-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '33', '-row-mt', '1', '-c:a', 'libopus', '-b:a', '96k'] if kind == 'webm'
-                 else ['-c:v', 'libx264', '-crf', '20', '-preset', 'slow', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart'])
-        run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(take), '-i', str(audio), '-map', '0:v:0', '-map', '1:a:0',
-             '-t', f'{duration}', '-vf', video, '-af', audio_filter, *codec, str(out)])
-        print(f'[encode] {out.relative_to(ROOT)} ({out.stat().st_size // 1024} KB)')
+        codec = (['-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '33', '-row-mt', '1', '-c:a', 'libopus', '-b:a', '128k'] if kind == 'webm'
+                 else ['-c:v', 'libx264', '-crf', '20', '-preset', 'slow', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart'])
+        run(['ffmpeg', '-y', '-loglevel', 'error', *sources, '-filter_complex', f'[0:v]{video}[vout];{graph}',
+             '-map', '[vout]', '-map', '[aout]', '-t', f'{duration:.3f}', *codec, str(out)])
+        print(f'[encode] {out.relative_to(ROOT)} ({out.stat().st_size // 1024} KB, {"music + " + bed_take.name if bed_take else "music only"})')
     if not args.preview:
         print('[encode] the clip is not live until its registry entry lists it (docs/cinematics-comfyui-pipeline.md)')
+
+
+def free_comfy_vram():
+    """AudioGen shares the 8 GB card: unload ComfyUI's models when its queue is empty."""
+    try:
+        queue = comfy_json('/queue')
+        if not queue.get('queue_running') and not queue.get('queue_pending'):
+            comfy_json('/free', {'unload_models': True, 'free_memory': True})
+    except OSError:
+        pass
+
+
+def cmd_sound(args):
+    free_comfy_vram()
+    command = [AUDIOCRAFT_PY, str(ROOT / 'scripts/cinematics/sound_layers.py'), 'render', args.job]
+    if args.seed is not None:
+        command += ['--seed', str(args.seed)]
+    subprocess.run(command, check=True)
+
+
+def cmd_make(args):
+    """One full clip: a video take, a sound bed, and the finished preview encode."""
+    cmd_clip(argparse.Namespace(job=args.job, model=args.model, seed=args.seed, steps=None, max_seconds=args.max_seconds))
+    cmd_sound(argparse.Namespace(job=args.job, seed=args.seed))
+    folder = job_dir(args.job)
+    newest = max(folder.glob(f'take_{args.model}_*.mp4'), key=lambda p: int(p.stem.split('_')[-1]))
+    cmd_encode(argparse.Namespace(job=args.job, take=newest.stem, preview=True, sound=None, no_sound=False))
 
 
 def cmd_status(args):
@@ -296,7 +362,8 @@ def cmd_status(args):
         takes = sorted(p.stem for p in folder.glob('take_*.mp4')) if folder.exists() else []
         first = 'key art' if job['firstFrame'].get('image') else ('chosen' if (folder / 'first_frame.png').exists() else 'needs still')
         encoded = all((PUBLIC / t.lstrip('/')).exists() for t in job['targets'].values())
-        print(f"{job['id']:<28} {job['kind']:<10} first frame: {first:<11} takes: {', '.join(takes) or '-':<30} encoded: {'yes' if encoded else 'no'}")
+        sound = sound_take(job['id'])
+        print(f"{job['id']:<28} {job['kind']:<10} first frame: {first:<11} takes: {', '.join(takes) or '-':<30} sound: {sound.name if sound else '-':<8} encoded: {'yes' if encoded else 'no'}")
 
 
 def main():
@@ -307,9 +374,14 @@ def main():
     c.add_argument('--seed', type=int); c.add_argument('--steps', type=int); c.add_argument('--max-seconds', type=float, default=8.0)
     e = sub.add_parser('encode'); e.add_argument('job'); e.add_argument('take', help='take file stem, e.g. take_ltxv_2')
     e.add_argument('--preview', action='store_true', help='write next to the take for review, not into public/')
+    e.add_argument('--sound', help='sound take to lay under the music, e.g. take_2 (default: newest)')
+    e.add_argument('--no-sound', action='store_true', help='music only')
+    so = sub.add_parser('sound'); so.add_argument('job', help="a job id, or 'all'"); so.add_argument('--seed', type=int)
+    m = sub.add_parser('make'); m.add_argument('job'); m.add_argument('--model', choices=sorted(MODELS), default='ltxv')
+    m.add_argument('--seed', type=int); m.add_argument('--max-seconds', type=float, default=8.0)
     sub.add_parser('status')
     args = parser.parse_args()
-    {'still': cmd_still, 'clip': cmd_clip, 'encode': cmd_encode, 'status': cmd_status}[args.command](args)
+    {'still': cmd_still, 'clip': cmd_clip, 'encode': cmd_encode, 'sound': cmd_sound, 'make': cmd_make, 'status': cmd_status}[args.command](args)
 
 
 if __name__ == '__main__':

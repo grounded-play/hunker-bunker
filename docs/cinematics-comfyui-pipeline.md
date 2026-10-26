@@ -2,7 +2,7 @@
 
 Status: current tooling guide | Owner: cinematics + audio | Updated: 2026-10-26 | Review: when a model or the clip list changes
 
-Makes the game's missing motion clips on this workstation with locally installed models, no paid service. The clip list and prompts come from the [cinematics audit §10](planning/camp-interaction-and-cinematics-audit-2026-10-16.md#10-movie-prompts-first-frame-last-frame-action); the result lands exactly where the runtime already looks.
+Makes the game's missing motion clips, with layered sound under their music, on this workstation with locally installed models, no paid service. The clip list and prompts come from the [cinematics audit §10](planning/camp-interaction-and-cinematics-audit-2026-10-16.md#10-movie-prompts-first-frame-last-frame-action); the result lands exactly where the runtime already looks.
 
 ## What it makes
 
@@ -36,10 +36,16 @@ python3 scripts/cinematics/comfy_clips.py status      # what each job has
 python3 scripts/cinematics/comfy_clips.py still sleep-cryo --takes 3
 cp art/source/cinematics/sleep-cryo/still_2.png art/source/cinematics/sleep-cryo/first_frame.png
 
-# Takes (each run adds take_<model>_<n>.mp4 + .json + .sheet.jpg)
+# One full clip to review: a video take, a sound bed, the finished preview encode
+python3 scripts/cinematics/comfy_clips.py make card_33
+
+# Or step by step. Takes (each run adds take_<model>_<n>.mp4 + .json + .sheet.jpg)
 python3 scripts/cinematics/comfy_clips.py clip card_33
 python3 scripts/cinematics/comfy_clips.py clip card_33 --model wan
 python3 scripts/cinematics/comfy_clips.py clip all          # every job with a first frame
+
+# Sound design takes (art/source/cinematics/<job>/sound/take_<n>/)
+python3 scripts/cinematics/comfy_clips.py sound card_33
 
 # Watch the finished encode (scaled, trimmed, music muxed) beside the take
 python3 scripts/cinematics/comfy_clips.py encode card_33 take_ltxv_1 --preview
@@ -48,6 +54,14 @@ python3 scripts/cinematics/comfy_clips.py encode card_33 take_ltxv_1
 ```
 
 Takes, stills and their sidecars (prompt, seed, steps, render time) are masters in `art/source/cinematics/<job>/` and are git-ignored. The contact sheet (`.sheet.jpg`, six frames) is the fast review; watch the take before encoding.
+
+## Sound
+
+Every clip gets layered sound design under its music, made locally with AudioGen (`facebook/audiogen-medium`, cached in the AudioCraft venv at `~/tools/audiocraft`, the same setup as the footstep banks).
+
+- `scripts/cinematics/sound-layers.json` holds 3–4 layers per clip: an ambience bed, the action's foley, and an accent or two, each an AudioGen prompt with a start time, fades and a gain (dB relative to -10). Name concrete sounds; AudioGen renders what is named, not story.
+- `comfy_clips.py sound <job>` frees ComfyUI's VRAM (AudioGen shares the 8 GB card), then renders all layers in one batch, masters each (soxr to 48 kHz, high-pass, exciter to restore air above AudioGen's 8 kHz ceiling, Haas widening to stereo, -20 LUFS) and mixes the bed into `art/source/cinematics/<job>/sound/take_<n>/bed.wav`.
+- `encode` lays the newest bed under the job's music: both are loudness-matched, then set by `musicGainDb` / `bedGainDb` (the song leads on cards and side stories, the bed 5 dB under it; on sleep clips the bed leads and the ambient track sits 6 dB under), faded and limited. `--sound take_2` picks a take; `--no-sound` gives music only.
 
 ## Prompts
 

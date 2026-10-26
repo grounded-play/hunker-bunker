@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { AUDIT_DOC, buildClipJobs, parseClipEntries, parseEndingCardRows, sceneOnly } from './build-clip-jobs.mjs';
 import { SIDE_STORY_INTERSTITIALS, getSongInterstitial } from '../../src/songInterstitials.js';
@@ -40,5 +41,23 @@ describe('motion clip jobs from the cinematics audit', () => {
         expect(entries.map((e) => [e.code, e.id, e.title])).toEqual([['K-1', 'kaelen_x', 'Title'], ['SL-1', 'sleep-camp', null]]);
         expect(sceneOnly(entries[0].firstFrame)).toBe('a bay.');
         expect(parseEndingCardRows('| 33 The Cave | the wall | push in; 7 s |')).toEqual([{ id: '33', title: 'The Cave', lastFrame: 'the wall', action: 'push in; 7 s' }]);
+    });
+
+    it('gives every clip a sound design whose layers fit inside the clip', () => {
+        const design = JSON.parse(fs.readFileSync(path.join(path.dirname(AUDIT_DOC), '../../scripts/cinematics/sound-layers.json'), 'utf8'));
+        for (const job of built.jobs) {
+            const spec = design.jobs[job.id];
+            expect(spec, job.id).toBeTruthy();
+            expect(spec.layers.length, job.id).toBeGreaterThanOrEqual(3);
+            const ids = new Set();
+            for (const layer of spec.layers) {
+                expect(layer.prompt, `${job.id}.${layer.id}`).toMatch(/\w{3,}/);
+                expect(ids.has(layer.id), `${job.id}.${layer.id} duplicated`).toBe(false);
+                ids.add(layer.id);
+                expect(layer.start ?? 0, `${job.id}.${layer.id}`).toBeLessThan(job.durationSec - 0.5);
+                expect(layer.gainDb, `${job.id}.${layer.id}`).toBeLessThanOrEqual(0);
+            }
+        }
+        expect(Object.keys(design.jobs).sort()).toEqual(built.jobs.map((job) => job.id).sort());
     });
 });
