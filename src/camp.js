@@ -1183,7 +1183,10 @@ export class SurvivorCamp {
         // --- AUDIO WIRING ---
         if (this.revealed) {
             if (lit) {
-                if (!this.fireAudio) {
+                const gameplayAudioReady = typeof window === 'undefined'
+                    || typeof window.isGameplayReady !== 'function'
+                    || window.isGameplayReady();
+                if (!this.fireAudio && gameplayAudioReady) {
                     this.fireAudio = audio?.play('camp_fire_loop', { loop: true, volume: 0.0, pan: 0, bus: 'world' });
                 }
             } else {

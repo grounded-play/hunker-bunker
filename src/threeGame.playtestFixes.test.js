@@ -44,6 +44,25 @@ describe('Log1 playtest regressions', () => {
         });
     });
 
+    it('restores an already revealed Foundry without replaying discovery presentation', () => {
+        const foundry = {
+            isRevealed: false,
+            built: true,
+            getPosition: () => ({ x: 4, z: 8 }),
+            revealInstant: vi.fn(() => { foundry.isRevealed = true; })
+        };
+        const game = { foundry, player: null, getActiveShip: () => null };
+
+        ThreeGame.prototype.revealFoundry.call(game, {
+            instant: true,
+            source: 'o2-bubble-state-restore',
+            announce: false
+        });
+
+        expect(foundry.revealInstant).toHaveBeenCalledOnce();
+        expect(window.dispatchEvent).not.toHaveBeenCalled();
+    });
+
     it('lets the player escape a telegraphed Cryosnail shockwave', () => {
         const game = {
             player: { position: { x: 5, z: 0 } },

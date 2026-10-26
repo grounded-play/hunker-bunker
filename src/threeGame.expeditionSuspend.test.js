@@ -24,7 +24,19 @@ function savedSnapshot() {
             classType: 'ENGINEER', x: 14, z: -9, facingYaw: 2.2,
             vitals: { hp: 2, maxHp: 5, o2: 47, maxO2: 90 },
             inventory: { health: 2, ammo: 11, weapon: 4, coin: 3 },
-            weapon: { clipAmmo: 2, clipSize: 6 }
+            weapon: { clipAmmo: 2, clipSize: 6 },
+            fieldWeapon: {
+                runId: 'run:resume',
+                equipped: {
+                    instanceId: 'gun:equipped', profileId: 'rail_marksman',
+                    ammoInWeapon: 3, reserveAmmo: 7, runId: 'run:resume'
+                },
+                worldDrops: [{
+                    instanceId: 'gun:ground', profileId: 'scatter_rep',
+                    ammoInWeapon: 5, reserveAmmo: 10, runId: 'run:resume',
+                    worldPosition: { x: 20, z: 21 }
+                }]
+            }
         },
         run: {
             elapsedMs: 123000,
@@ -80,6 +92,14 @@ describe('ThreeGame expedition continuation', () => {
             playerVitals: { hp: 2, maxHp: 5, o2: 47, maxO2: 90 },
             weaponClipAmmo: 2,
             weaponClipSize: 6,
+            fieldWeaponRunState: {
+                runId: 'run:capture',
+                equipped: {
+                    instanceId: 'gun:capture', profileId: 'rail_marksman',
+                    ammoInWeapon: 2, reserveAmmo: 6, runId: 'run:capture'
+                },
+                worldDrops: []
+            },
             getSessionInventory: () => ({ health: 2, ammo: 11, weapon: 4, coin: 3 }),
             missionState: { status: 'active', killCount: 4 },
             currentRunModifier: { key: 'blackout' },
@@ -100,7 +120,10 @@ describe('ThreeGame expedition continuation', () => {
         };
         const value = ThreeGame.prototype.createExpeditionSuspendSnapshot.call(fake);
         expect(value).toMatchObject({
-            player: { x: 14, z: -9, inventory: { ammo: 11 } },
+            player: {
+                x: 14, z: -9, inventory: { ammo: 11 },
+                fieldWeapon: { equipped: { profileId: 'rail_marksman', reserveAmmo: 6 } }
+            },
             run: {
                 missionState: { status: 'active', killCount: 4 },
                 overclockIds: ['cryo_rime'],
@@ -122,18 +145,22 @@ describe('ThreeGame expedition continuation', () => {
             playerMarker: { position: position() },
             playerMarkerHeight: 0.05,
             playerVitals: {},
+            fieldWeaponRunState: { runId: 'fresh', equipped: null, worldDrops: [] },
             scatterSprites: [liveEnemy],
+            getSpawnTile: vi.fn(() => ({ x: 2, y: 3 })),
+            resolveSpawnPoint: vi.fn(() => ({ x: 4, z: 5 })),
             restoreMazePersistenceState: vi.fn(() => true),
             updateFacingYaw: vi.fn(),
             clearLoadedChunksForRunReset: vi.fn(),
             syncVisibleChunks: vi.fn(),
             applySuspendedEnemyState: ThreeGame.prototype.applySuspendedEnemyState,
+            syncEquippedFieldWeapon: vi.fn(),
             emitHealthState: vi.fn(), emitO2State: vi.fn(), emitWeaponClipState: vi.fn(),
             createExpeditionSuspendSnapshot: vi.fn(() => snapshot),
             saveExpeditionSuspend: ThreeGame.prototype.saveExpeditionSuspend
         };
         expect(ThreeGame.prototype.restoreExpeditionSuspend.call(fake, snapshot)).toBe(true);
-        expect(fake.player.position).toMatchObject({ x: 14, z: -9 });
+        expect(fake.player.position).toMatchObject({ x: 4, z: 5 });
         expect(fake.playerVitals).toMatchObject({ hp: 2, maxHp: 5, o2: 47, maxO2: 90 });
         expect(window.restorePickupCounterState).toHaveBeenCalledWith(snapshot.player.inventory, 'ENGINEER');
         expect(fake.missionState).toMatchObject({ status: 'active', killCount: 4 });
@@ -142,6 +169,12 @@ describe('ThreeGame expedition continuation', () => {
         expect(fake.campRecalibrations).toEqual(new Set(['camp-meridian']));
         expect(fake.campRerolls).toEqual({ 'camp-meridian': 1 });
         expect(fake.killedEnemyScatterKeys).toEqual(new Set(['dead:1']));
+        expect(fake.fieldWeaponRunState).toMatchObject({
+            runId: 'run:resume',
+            equipped: { profileId: 'rail_marksman', ammoInWeapon: 3, reserveAmmo: 7 },
+            worldDrops: [{ profileId: 'scatter_rep', worldPosition: { x: 20, z: 21 } }]
+        });
+        expect(fake.syncEquippedFieldWeapon).toHaveBeenCalledWith({ announce: false });
         expect(liveEnemy.userData.hp).toBe(2);
         expect(expeditionSuspendStore.save).toHaveBeenCalledOnce();
         expect(fake._pendingExpeditionResume).toBeNull();

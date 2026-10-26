@@ -32,6 +32,36 @@ describe('fresh deployment transaction', () => {
             .toBeLessThan(prepare.indexOf("announceDeploymentStage('PRESENT'"));
     });
 
+    it('keeps deployment out of live gameplay until prepared doors begin opening', () => {
+        const launchStart = main.indexOf('function launchStandardRun(');
+        const launchEnd = main.indexOf('\nif (startBtn)', launchStart);
+        const launch = main.slice(launchStart, launchEnd);
+        const deploymentPhase = launch.indexOf("setAppPhase('deployment')");
+        const prepare = launch.indexOf('prepareGameplayForDialogue({');
+        const gameplayPhase = launch.indexOf("setAppPhase('gameplay')");
+
+        expect(deploymentPhase).toBeGreaterThan(-1);
+        expect(prepare).toBeGreaterThan(deploymentPhase);
+        expect(gameplayPhase).toBeGreaterThan(prepare);
+        expect(launch.slice(0, prepare)).not.toContain("setAppPhase('gameplay')");
+    });
+
+    it('ends sleep at the bed without automatically opening the Foundry', () => {
+        const sleepStart = main.indexOf("window.addEventListener('day-rest-open'");
+        const sleepEnd = main.indexOf('\nfunction updateCampaignCycleIndicator', sleepStart);
+        const sleepFlow = main.slice(sleepStart, sleepEnd);
+
+        const closedWork = sleepFlow.indexOf('await playSleepCutscene(detail.sleepStyle)');
+        const wake = sleepFlow.indexOf('window.game?.finishCampRest?.()');
+        const opened = sleepFlow.indexOf('() => openMorningAfterRest(detail)');
+        // Video, then bed wake, both behind closed doors; morning HUD on open.
+        expect(closedWork).toBeGreaterThan(-1);
+        expect(wake).toBeGreaterThan(closedWork);
+        expect(opened).toBeGreaterThan(wake);
+        expect(sleepFlow).not.toContain('openFabricationModal()');
+        expect(sleepFlow).not.toContain('fabricationBay.beginCampRest()');
+    });
+
     it('reserves deployment progress for every post-mount stage and reaches 100 only after first render', () => {
         const stageStart = threeGame.indexOf('async prepareVisibleChunksForGameplay(');
         const stageEnd = threeGame.indexOf('\n    validatePreparedDeployment(', stageStart);

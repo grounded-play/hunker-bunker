@@ -725,6 +725,10 @@ export class AudioManager {
 
     static playVoiceCallout(cueType, options = {}) {
         if (this.globalMuted || !this.voiceEnabled) return null;
+        // Field callouts belong to live play; world restore behind the title or
+        // deployment doors must not speak. Auditions and the run-end card opt in.
+        if (!options.audition && !options.allowOutsideGameplay && typeof window !== 'undefined'
+            && typeof window.isGameplayPhase === 'function' && !window.isGameplayPhase()) return null;
         if (!this.isUnlocked && audioCtx?.state === 'running') {
             this.isUnlocked = true;
         }

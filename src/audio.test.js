@@ -207,6 +207,22 @@ describe('AudioManager Voice Channel & Soundsets Toggle', () => {
         playback.mockRestore();
     });
 
+    it('holds field callouts until gameplay while letting the run-end card speak', () => {
+        AudioManager.buffers.voice_aura_reloading = {};
+        globalThis.window = globalThis.window || {};
+        globalThis.window.loadout = { state: { voicePackId: '4149' } };
+        const previousPhase = globalThis.window.isGameplayPhase;
+        globalThis.window.isGameplayPhase = () => false;
+        AudioManager.beginVoiceRun('deployment-gate');
+        const playback = vi.spyOn(AudioManager, 'playVoiceTrack').mockReturnValue({ source: {} });
+
+        expect(AudioManager.playVoiceCallout('reload')).toBeNull();
+        expect(AudioManager.playVoiceCallout('reload', { allowOutsideGameplay: true })).not.toBeNull();
+
+        playback.mockRestore();
+        globalThis.window.isGameplayPhase = previousPhase;
+    });
+
     it('keeps unsupported contexts silent instead of borrowing unrelated speech', () => {
         AudioManager.buffers.voice_commander_low_health = {};
         AudioManager.buffers.voice_aura_shield_critical = {};

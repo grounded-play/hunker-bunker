@@ -560,6 +560,7 @@ function setAppPhase(phase) {
         splash: 'TITLE READY — awaiting operator command',
         menu: 'LOADOUT CONSOLE — operator configuration active',
         armory: 'PRE-MISSION ARMORY — weapon and module loadout active',
+        deployment: 'DEPLOYMENT LOADING — world restore behind closed doors',
         gameplay: 'DEPLOYMENT — live simulation and input active',
         gameover: 'RUN COMPLETE — telemetry finalized',
         'demo-end': 'DEMO COMPLETE — session awaiting operator command'
@@ -4981,7 +4982,7 @@ window.addEventListener('biome-changed', (event) => {
         hud.style.setProperty('--biome-label-color', biomeCols.label);
         hud.style.setProperty('--biome-label-glow', biomeCols.glow);
     }
-    if (!isResettingRun) {
+    if (!isResettingRun && isGameplayPhase()) {
         if (biomeKey === 'cryo') {
             AudioManager.play('ui_scan_ping', { volume: 0.22, playbackRate: 0.48, bus: 'sfx' });
             fireMothershipReactiveLine('first_cryo');
@@ -5636,7 +5637,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     // Trigger Game Over audio cues
     AudioManager.unlock();
     AudioManager.play(isVictory ? 'generator_complete' : 'terminal_deny', { volume: 0.75 });
-    AudioManager.playVoiceCallout(isVictory ? 'victory' : 'operator_down', { volume: 0.95 });
+    AudioManager.playVoiceCallout(isVictory ? 'victory' : 'operator_down', { volume: 0.95, allowOutsideGameplay: true });
 
     // Stagger bar animations for a readout effect
     requestAnimationFrame(() => {
@@ -7673,6 +7674,9 @@ function transitionToMenuMusic() {
 window.transitionToMenuMusic = transitionToMenuMusic;
 
 function updateMusicTension() {
+    // World construction emits biome/vitals events. They may update HUD state,
+    // but must not start gameplay audio behind the title or loading doors.
+    if (!isGameplayReady()) return;
     const menuEl = document.getElementById('menu');
     if (menuEl && !menuEl.classList.contains('hidden')) return;
 
@@ -9851,13 +9855,13 @@ function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapsho
     // single rendered-world flash while the first doors are opening.
     if (playIntro) document.body.classList.add('mission-intro-active');
     const deploymentHold = playIntro ? suspendGameForFullscreenVideo() : null;
+    setAppPhase('deployment');
     triggerDoorTransition(
         () => {
             if (!resumeSnapshot) profile.recordExpeditionStarted();
             showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
             splash?.classList.add('hidden');
             menu?.classList.add('hidden');
-            setAppPhase('gameplay');
             // Deployment is a transaction: select the world profile and class
             // before respawn asks either of them for the spawn coordinate.
             // Reversing this order parks the operative in menu chunk (100,100),
@@ -9897,6 +9901,7 @@ function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapsho
             if (!playIntro) {
                 window.game?.setInputEnabled?.(true);
                 notifyGameplayReady();
+                updateMusicTension();
             }
         },
         playerType,
@@ -9904,6 +9909,7 @@ function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapsho
             waitForClosedWork: true,
             openingHoldMs: 160,
             onOpeningStart: () => {
+                setAppPhase('gameplay');
                 if (playIntro) {
                     void runMissionIntroSequence({ deploymentHold, forceSectorZero });
                 }
@@ -14090,11 +14096,16 @@ function playSleepInterstitial() {
     });
 }
 async function playSleepCutscene(style) {
-    if (isSleepCutsceneShipped(style)) {
-        await playCutsceneVideo(sleepCutsceneBase(style), { tone: 'event' });
-        return;
+    document.body.classList.add('sleep-cutscene-active');
+    try {
+        if (isSleepCutsceneShipped(style)) {
+            await playCutsceneVideo(sleepCutsceneBase(style), { tone: 'event' });
+            return;
+        }
+        await playSleepInterstitial();
+    } finally {
+        document.body.classList.remove('sleep-cutscene-active');
     }
-    await playSleepInterstitial();
 }
 window.addEventListener('day-rest-open', (event) => {
     const detail = event?.detail ?? {};
@@ -14104,10 +14115,12 @@ window.addEventListener('day-rest-open', (event) => {
     window.setTimeout(() => {
         triggerDoorTransition(
             async () => {
+                // Film plays over the closed panels, then the operator is
+                // moved to the bed's wake spot while the doors still hide it.
                 await playSleepCutscene(detail.sleepStyle);
-                openMorningAfterRest(detail);
+                window.game?.finishCampRest?.();
             },
-            null,
+            () => openMorningAfterRest(detail),
             'base',
             { waitForClosedWork: true, openingHoldMs: 420 }
         );
@@ -14127,7 +14140,6 @@ function openMorningAfterRest(detail) {
         progress: 100,
         duration: 2800
     });
-    fabricationBay.beginCampRest();
     showBiomePrompt(`> DAY ${detail.day} // ${detail.campLabel ?? 'CAMP'} REST CYCLE COMPLETE // THREAT ${Number(detail.difficulty ?? 1).toFixed(2)}×`);
     if (objective) {
         showBiomePrompt(`> ${t('ui.sleep.morning_objective', { objective })}`);
@@ -14144,7 +14156,6 @@ function openMorningAfterRest(detail) {
     if (detail.gainedScar) {
         showBiomePrompt(`> ${t('ui.camp.scar_gained', { scar: String(detail.gainedScar).replaceAll('_', ' ') })}`);
     }
-    openFabricationModal();
 }
 
 function updateCampaignCycleIndicator(detail = {}) {

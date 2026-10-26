@@ -28,7 +28,19 @@ function snapshot(overrides = {}) {
             classType: 'ENGINEER', x: 12, z: -4, facingYaw: 1,
             vitals: { hp: 2, maxHp: 4, o2: 51, maxO2: 90 },
             inventory: { health: 1, ammo: 8, weapon: 3, coin: 2 },
-            weapon: { clipAmmo: 4, clipSize: 6 }
+            weapon: { clipAmmo: 4, clipSize: 6 },
+            fieldWeapon: {
+                runId: 'run:42',
+                equipped: {
+                    instanceId: 'gun:1', profileId: 'rail_marksman',
+                    ammoInWeapon: 3, reserveAmmo: 11, runId: 'run:42'
+                },
+                worldDrops: [{
+                    instanceId: 'gun:2', profileId: 'scatter_rep',
+                    ammoInWeapon: 5, reserveAmmo: 9, runId: 'run:42',
+                    worldPosition: { x: 7, z: -2 }
+                }]
+            }
         },
         run: {
             missionState: { status: 'active' },
@@ -47,7 +59,14 @@ describe('expedition suspend snapshot', () => {
         const value = normalizeExpeditionSuspendSnapshot(snapshot());
         expect(value).toMatchObject({
             expedition: { campaignSeed: 42, expeditionIndex: 2 },
-            player: { classType: 'ENGINEER', inventory: { ammo: 8 } },
+            player: {
+                classType: 'ENGINEER', inventory: { ammo: 8 },
+                fieldWeapon: {
+                    runId: 'run:42',
+                    equipped: { profileId: 'rail_marksman', ammoInWeapon: 3, reserveAmmo: 11 },
+                    worldDrops: [{ profileId: 'scatter_rep', worldPosition: { x: 7, z: -2 } }]
+                }
+            },
             run: {
                 overclockIds: ['cryo_rime'],
                 relicIds: ['shatter_engine'],

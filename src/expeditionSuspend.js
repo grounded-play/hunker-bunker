@@ -61,6 +61,39 @@ function normalizeEnemy(value) {
     };
 }
 
+function normalizeFieldWeaponEntry(value, { worldDrop = false } = {}) {
+    if (!value || typeof value !== 'object') return null;
+    if (typeof value.instanceId !== 'string' || !value.instanceId
+        || typeof value.profileId !== 'string' || !value.profileId) return null;
+    const entry = {
+        instanceId: value.instanceId,
+        profileId: value.profileId,
+        ammoInWeapon: nonNegativeInt(value.ammoInWeapon),
+        reserveAmmo: nonNegativeInt(value.reserveAmmo),
+        sourceEncounterId: typeof value.sourceEncounterId === 'string' ? value.sourceEncounterId : null,
+        runId: typeof value.runId === 'string' ? value.runId : null,
+        rarity: typeof value.rarity === 'string' ? value.rarity : null
+    };
+    if (worldDrop) {
+        entry.worldPosition = {
+            x: finite(value.worldPosition?.x),
+            z: finite(value.worldPosition?.z)
+        };
+    }
+    return entry;
+}
+
+function normalizeFieldWeaponState(value) {
+    if (!value || typeof value !== 'object') return null;
+    return {
+        runId: typeof value.runId === 'string' ? value.runId : null,
+        equipped: normalizeFieldWeaponEntry(value.equipped),
+        worldDrops: (Array.isArray(value.worldDrops) ? value.worldDrops : [])
+            .map((entry) => normalizeFieldWeaponEntry(entry, { worldDrop: true }))
+            .filter(Boolean)
+    };
+}
+
 export function normalizeExpeditionSuspendSnapshot(raw) {
     if (!raw || typeof raw !== 'object' || raw.version !== EXPEDITION_SUSPEND_VERSION) return null;
     if (raw.mode !== 'solo' || typeof raw.resumeId !== 'string' || !raw.resumeId) return null;
@@ -98,7 +131,8 @@ export function normalizeExpeditionSuspendSnapshot(raw) {
             weapon: {
                 clipAmmo: nonNegativeInt(raw.player?.weapon?.clipAmmo),
                 clipSize: Math.max(1, nonNegativeInt(raw.player?.weapon?.clipSize, 1))
-            }
+            },
+            fieldWeapon: normalizeFieldWeaponState(raw.player?.fieldWeapon)
         },
         run: {
             startedAt: nonNegativeInt(raw.run?.startedAt),

@@ -15289,6 +15289,14 @@ body.cutscene-video-active .tactical-overlay {
   transition: opacity 0.18s ease-out;
 }
 
+/* Sleep begins after the bunker panels finish closing. Its film is the next
+   authored layer, so raise only that cutscene over the door curtain; normal
+   cinematics still remain behind doors used to conceal world swaps. */
+body.sleep-cutscene-active .class-intro-overlay,
+body.sleep-cutscene-active .sleep-interstitial {
+  z-index: 260000;
+}
+
 .class-intro-skip {
   position: absolute;
   right: calc(var(--vu) * 4);

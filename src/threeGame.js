@@ -17141,7 +17141,8 @@ export class ThreeGame {
                 facingYaw: this.facingYaw,
                 vitals: this.playerVitals,
                 inventory,
-                weapon: { clipAmmo: this.weaponClipAmmo, clipSize: this.weaponClipSize }
+                weapon: { clipAmmo: this.weaponClipAmmo, clipSize: this.weaponClipSize },
+                fieldWeapon: this.fieldWeaponRunState
             },
             run: {
                 startedAt: this.runStartTime,
@@ -17205,13 +17206,58 @@ export class ThreeGame {
         this.visitedChunks = new Set(snapshot.world.visitedChunks);
         this._suspendedEnemyStateByKey = new Map(snapshot.world.enemies.map((enemy) => [enemy.scatterKey, enemy]));
 
-        this.player.position.set(snapshot.player.x, 0, snapshot.player.z);
-        this.playerGlow?.position?.set?.(snapshot.player.x, 1.6, snapshot.player.z);
-        this.playerMarker?.position?.set?.(snapshot.player.x, this.playerMarkerHeight, snapshot.player.z);
+        // Continuations restore progress, not an arbitrary unsafe coordinate.
+        // Always hand control back at the crash-site/base spawn so a suspend
+        // beside a black box, boss, pocket entrance, or unloaded chunk cannot
+        // strand the operator on the next launch.
+        const rawSpawn = this.getSpawnTile?.() ?? { x: snapshot.player.x, y: snapshot.player.z };
+        const safeSpawn = this.resolveSpawnPoint?.(rawSpawn.x, rawSpawn.y)
+            ?? { x: rawSpawn.x, z: rawSpawn.y };
+        this.player.position.set(safeSpawn.x, 0, safeSpawn.z);
+        this.playerGlow?.position?.set?.(safeSpawn.x, 1.6, safeSpawn.z);
+        this.playerMarker?.position?.set?.(safeSpawn.x, this.playerMarkerHeight, safeSpawn.z);
         this.updateFacingYaw?.(snapshot.player.facingYaw);
         Object.assign(this.playerVitals, snapshot.player.vitals, { o2HealthTimer: 0 });
-        this.weaponClipSize = snapshot.player.weapon.clipSize;
-        this.weaponClipAmmo = Math.min(snapshot.player.weapon.clipAmmo, this.weaponClipSize);
+        const restoreFieldWeaponEntry = (entry, worldDrop = false) => {
+            if (!entry) return null;
+            const restored = createFieldWeaponDrop({
+                ...entry,
+                worldPosition: worldDrop ? entry.worldPosition : { x: safeSpawn.x, z: safeSpawn.z }
+            });
+            if (restored && !worldDrop) delete restored.worldPosition;
+            return restored;
+        };
+        if (snapshot.player.fieldWeapon) {
+            this.fieldWeaponRunState = createFieldWeaponRunState(snapshot.player.fieldWeapon.runId);
+            this.fieldWeaponRunState.equipped = restoreFieldWeaponEntry(snapshot.player.fieldWeapon.equipped);
+            this.fieldWeaponRunState.worldDrops = snapshot.player.fieldWeapon.worldDrops
+                .map((entry) => restoreFieldWeaponEntry(entry, true))
+                .filter(Boolean);
+            this.syncEquippedFieldWeapon?.({ announce: false });
+        } else {
+            // Version-1 snapshots written before field-weapon persistence only
+            // know their generic clip. Give those saves a usable sidearm rather
+            // than faithfully restoring the historical no-weapon bug.
+            const legacyProfileId = getFieldWeaponDropDefinition(window.loadout?.getEquippedId?.(snapshot.player.classType))
+                ? window.loadout.getEquippedId(snapshot.player.classType)
+                : 'mk1_sidearm';
+            const legacy = createFieldWeaponDrop({
+                instanceId: `${snapshot.resumeId}:legacy-weapon`,
+                profileId: legacyProfileId,
+                ammoInWeapon: snapshot.player.weapon.clipAmmo,
+                reserveAmmo: snapshot.player.inventory.ammo,
+                worldPosition: safeSpawn,
+                sourceEncounterId: 'expedition-resume-migration',
+                runId: this.fieldWeaponRunState?.runId ?? `resume:${snapshot.resumeId}`
+            });
+            if (legacy) delete legacy.worldPosition;
+            this.fieldWeaponRunState = {
+                runId: legacy?.runId ?? `resume:${snapshot.resumeId}`,
+                equipped: legacy,
+                worldDrops: []
+            };
+            this.syncEquippedFieldWeapon?.({ announce: false });
+        }
         window.restorePickupCounterState?.(snapshot.player.inventory, snapshot.player.classType);
 
         this.missionState = snapshot.run.missionState ?? this.missionState;
@@ -17252,7 +17298,14 @@ export class ThreeGame {
         this._pendingExpeditionResume = null;
         const committed = this.saveExpeditionSuspend();
         window.dispatchEvent?.(new CustomEvent('expedition-resumed', {
-            detail: { resumeId: snapshot.resumeId, generation: committed?.generation ?? snapshot.generation }
+            detail: {
+                resumeId: snapshot.resumeId,
+                generation: committed?.generation ?? snapshot.generation,
+                spawnMode: 'base',
+                x: safeSpawn.x,
+                z: safeSpawn.z,
+                fieldWeaponId: this.fieldWeaponRunState?.equipped?.profileId ?? null
+            }
         }));
         return true;
     }
@@ -19914,7 +19967,7 @@ export class ThreeGame {
     }
 
     // Reveal/power-up the Fabrication Foundry after the O2 counterattack.
-    revealFoundry({ instant = false, randomEdge = false, source = 'unspecified' } = {}) {
+    revealFoundry({ instant = false, randomEdge = false, source = 'unspecified', announce = true } = {}) {
         if (!this.foundry) return;
         if (this.foundry.isRevealed) return;
         const builtBeforeReveal = Boolean(this.foundry.built);
@@ -19924,6 +19977,7 @@ export class ThreeGame {
         const cz = Number.isFinite(site?.z) ? site.z : (Number.isFinite(ship?.tileZ) ? ship.tileZ : 9);
         if (instant) this.foundry.revealInstant(cx, cz);
         else this.foundry.reveal(cx, cz);
+        if (!announce) return;
         window.dispatchEvent(new CustomEvent('foundry-discovered', {
             detail: {
                 x: cx,
@@ -26113,7 +26167,7 @@ export class ThreeGame {
         // Returning to an already-online base: snap the flood-light grid and the
         // Foundry on with no theatrics. The animated versions only play on the live
         // first repair, which fires via the o2-generator-upgraded event before this.
-        this.revealFoundry({ instant: true, source: 'o2-bubble-state-restore' });
+        this.revealFoundry({ instant: true, source: 'o2-bubble-state-restore', announce: false });
         // Restoring an already-completed rebuild ladder also restores the cave
         // signal (no theatrics), unless the reveal has already played.
         if (this.hasUpgrade('reactorCompressor')) {
