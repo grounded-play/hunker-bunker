@@ -71,5 +71,53 @@
     "by": "developer",
     "date": "2026-10-04",
     "notes": "developer's own voice: 37.9 s public-comment read cut from YouTube 6NJbX_XMhzc at 36:03.8; full 3-min source kept in art/source/voice/sources/developer"
+  },
+  "aria": {
+    "take": 1,
+    "by": "auto-qa",
+    "date": "2026-10-26",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.000); confirm by listening"
+  },
+  "tina": {
+    "take": 1,
+    "by": "auto-qa",
+    "date": "2026-10-26",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.008); confirm by listening"
+  },
+  "wanderer_abg": {
+    "take": 2,
+    "by": "auto-qa",
+    "date": "2026-10-26",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.007); confirm by listening"
+  },
+  "wanderer_chrysalis": {
+    "take": 1,
+    "by": "auto-qa",
+    "date": "2026-10-26",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.000); confirm by listening"
+  },
+  "wanderer_corpo": {
+    "take": 1,
+    "by": "auto-qa",
+    "date": "2026-10-26",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.008); confirm by listening"
+  },
+  "wanderer_foxhole": {
+    "take": 1,
+    "by": "auto-qa",
+    "date": "2026-10-26",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.008); confirm by listening"
+  },
+  "wanderer_hacker": {
+    "take": 2,
+    "by": "auto-qa",
+    "date": "2026-10-26",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.000); confirm by listening"
+  },
+  "wanderer_survivor": {
+    "take": 2,
+    "by": "auto-qa",
+    "date": "2026-10-26",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.000); confirm by listening"
   }
 }
