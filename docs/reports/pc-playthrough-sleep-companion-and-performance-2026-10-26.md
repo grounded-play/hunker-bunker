@@ -36,6 +36,7 @@ npm run logs:analyze -- logs/hunker-bunker-session-2026-10-26T05-11-11-681Z-mvos
 | OCT26-03 | Engineer companion follows while seated/hovering. | Recruited `Engineer: Foxhole Shadow` at 21:51:44.057. Its GLB contains only the `sittingAngry` animation, and `wanderer3d` looped that clip during translation. Repeated repath/relocate records also occur throughout the run. | **Fixed in source.** Moving companions stop the seated action and use a lightweight procedural Mixamo-rig walk/run cycle; idle presentation resumes when movement stops. No second 10–14 MB character asset is loaded. |
 | OCT26-04 | Companion gunfire has no visible bullets. | Companion basic and assist fire applied damage immediately and spawned only a muzzle flash; no projectile or tracer existed. | **Fixed in source.** Basic and assist shots now render a short-lived line-of-fire tracer without adding a second damaging projectile. |
 | OCT26-05 | Packaged performance remains far outside the Sprint 53 release target. | Presented gameplay averaged 24.54 ms with p95 47.6 ms (~40.7 FPS). GPU telemetry averaged 7.85 ms but peaked at 4,359.85 ms with 2,147 dropped samples. Final estimated GPU memory was 3,879.2 MiB; timeline peak was 4,098.8 MiB GPU / 3,585.8 MiB heap. There were 5,963 long-task records, 91 sampled windows at or above 100 ms, and a 39,135 ms maximum. Initial composer compilation took about 13.1 s and the first companion/video-model fetch window about 39.4 s. | **Confirmed open.** This is not a fixed-route before/after benchmark, but it is strong regression evidence for issue #52 and the no-unexplained-stalls gate in #45. |
+| OCT26-06 | The deployment loader reaches 100% and appears frozen while substantial work continues. | `prepareVisibleChunksForGameplay()` mapped only the visible-chunk fraction directly to 0–100%, then awaited lighting setup, three composer shader phases, common world models, corpse templates, kill-effect shaders, deployment validation, and the first rendered frame after the callback already reported 100%. | **Fixed in source.** Progress is now weighted across the complete transaction: world 5–52%, lighting 54%, shaders 56–74%, models 76–84%, corpse/effect preparation 84–97%, first-frame presentation 98%, and ready 100%. The bar shows its numeric value, continuously scans while a stage is active, yields before shader work, and exposes shader sub-phase completion. |
 
 The repeated `companion-repath` / `companion-relocated` events corroborate a
 path-following quality problem, but they do not alone prove every relocation
@@ -89,3 +90,7 @@ On the next Windows package containing these source changes:
    from companion to target and each attack applies damage only once.
 6. Export a fresh log and re-run the analyzer. These functional fixes do not
    close #52; performance still requires its prescribed fixed-route benchmark.
+7. During both fresh deploy and **TRY AGAIN**, confirm the percentage never
+   moves backward or reaches 100 before the first rendered sector frame. The
+   status should advance through WORLD, LIGHTING, SHADERS, MODELS, CORPSES,
+   EFFECTS, VERIFY, PRESENT, and READY rather than sitting at 100 during work.

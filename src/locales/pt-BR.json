@@ -457,6 +457,7 @@
     },
     "loading": {
       "aria_label_build_and_developer": "Informações de build e desenvolvedor",
+      "aria_label_deployment_progress": "Progresso da mobilização",
       "system_build": "BUILD DO SISTEMA",
       "dev_console": "CONSOLE DEV",
       "initializing_systems": "INICIALIZANDO SISTEMAS",

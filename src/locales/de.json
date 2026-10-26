@@ -457,6 +457,7 @@
     },
     "loading": {
       "aria_label_build_and_developer": "Build- und Entwicklerinformationen",
+      "aria_label_deployment_progress": "Bereitstellungsfortschritt",
       "system_build": "SYSTEM-BUILD",
       "dev_console": "DEV-KONSOLE",
       "initializing_systems": "SYSTEME WERDEN INITIALISIERT",

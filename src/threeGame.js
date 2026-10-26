@@ -34834,6 +34834,10 @@ export class ThreeGame {
     async prepareVisibleChunksForGameplay({ batchSize = 2, onProgress = null } = {}) {
         if (this.performanceProfile !== 'gameplay' || !this.player) return;
 
+        const reportProgress = (progress, stage, status) => {
+            onProgress?.(Math.max(0, Math.min(1, progress)), { stage, status });
+        };
+
         // Preload common 3D world models in background during chunk staging & warmup
         const preloadPromise = preloadWorld3dModels().catch(() => null);
 
@@ -34847,14 +34851,18 @@ export class ThreeGame {
             batchSize
         });
         let mounted = 0;
-        onProgress?.(initialPending === 0 ? 1 : 0);
+        reportProgress(0.05, 'WORLD', 'GENERATING SECTOR TOPOLOGY');
 
         while (this.pendingChunkMounts.length > 0) {
             const before = this.pendingChunkMounts.length;
             this.processPendingChunkMounts(batchSize, { maxDurationMs: CHUNK_MOUNT_BATCH_BUDGET_MS });
             mounted += Math.max(0, before - this.pendingChunkMounts.length);
             const total = Math.max(1, initialPending);
-            onProgress?.(Math.min(1, mounted / total));
+            // Chunk staging is only about half of deployment. The previous
+            // callback mapped this fraction directly to 100%, leaving the bar
+            // apparently frozen while shaders, models and first render ran.
+            reportProgress(0.05 + (Math.min(1, mounted / total) * 0.47), 'WORLD',
+                'GENERATING AND MOUNTING SECTOR');
             await new Promise((resolve) => requestAnimationFrame(resolve));
         }
 
@@ -34865,17 +34873,29 @@ export class ThreeGame {
         // count the warm-up needs to compile against, and creating them later
         // (lazily, on the first gameplay frame) would itself change the count
         // and force exactly the recompile this is all here to avoid.
+        reportProgress(0.54, 'LIGHTING', 'CONFIGURING GAMEPLAY LIGHT POOL');
         this._ensureEnvLightPool();
-        await this.warmUpShaderPrograms();
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        reportProgress(0.56, 'SHADERS', 'COMPILING GAMEPLAY MATERIALS');
+        await this.warmUpShaderPrograms({
+            onProgress: (completed, total, phase) => {
+                const fraction = total > 0 ? completed / total : 1;
+                reportProgress(0.56 + (fraction * 0.18), 'SHADERS',
+                    `COMPILING GAMEPLAY MATERIALS — ${phase}`);
+            }
+        });
 
+        reportProgress(0.76, 'MODELS', 'FINALIZING WORLD MODELS');
         await preloadPromise;
+        reportProgress(0.84, 'CORPSES', 'PREPARING ENEMY REMAINS');
         // Compile after the scene warmup restores its final shadow and
         // composer state. Running this in parallel would race the warmup's
         // temporary render targets and compile a cache key gameplay never uses.
         await prewarmCommonCorpse3dTemplates(this);
+        reportProgress(0.93, 'EFFECTS', 'PREPARING COMBAT EFFECTS');
         await this.prewarmKillEffectShaders();
 
-        onProgress?.(1);
+        reportProgress(0.97, 'VERIFY', 'VERIFYING DEPLOYMENT INTEGRITY');
         debugLog.info('STREAM', 'Initial chunk staging ready', {
             mounted: this.chunkMeshes.size,
             queued: this.pendingChunkMounts.length
@@ -46499,7 +46519,7 @@ export class ThreeGame {
     // i.e. always into a render target, so every material compiled here was a
     // cache miss again on its first real frame. Warming through the composer
     // compiles exactly what gameplay will ask for.
-    async warmUpShaderPrograms() {
+    async warmUpShaderPrograms({ onProgress = null } = {}) {
         if (!this.renderer || !this.camera || !this.scene) return;
         const shadowMap = this.renderer.shadowMap;
         const configuredShadows = Boolean(shadowMap?.enabled);
@@ -46510,6 +46530,10 @@ export class ThreeGame {
             if (typeof requestAnimationFrame === 'function') requestAnimationFrame(resolve);
             else resolve();
         });
+        const phaseNames = configuredPostprocessing
+            ? ['composer-compile', 'composer-render-1', 'composer-render-2']
+            : ['direct-compile', 'direct-render'];
+        let completedPhases = 0;
         const prepare = async (name, work) => {
             // Let the loader paint between driver operations. Compilation can
             // be polled asynchronously on drivers supporting parallel shaders.
@@ -46520,6 +46544,8 @@ export class ThreeGame {
             } catch (error) {
                 debugLog.warn('STARTUP', 'shader-warmup-failed', { phase: name, reason: error?.message });
             } finally {
+                completedPhases += 1;
+                onProgress?.(completedPhases, phaseNames.length, name);
                 debugLog.info('STARTUP', 'shader-warmup-phase', {
                     phase: name,
                     durationMs: Math.round(performance.now() - startedAt),

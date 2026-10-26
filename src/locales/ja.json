@@ -457,6 +457,7 @@
     },
     "loading": {
       "aria_label_build_and_developer": "ビルドと開発者情報",
+      "aria_label_deployment_progress": "展開の進行状況",
       "system_build": "システムビルド",
       "dev_console": "開発コンソール",
       "initializing_systems": "システム初期化中",

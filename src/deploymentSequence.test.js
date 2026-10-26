@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8');
+const threeGame = readFileSync(new URL('./threeGame.js', import.meta.url), 'utf8');
 
 describe('fresh deployment transaction', () => {
     it('selects gameplay profile and class before reset can resolve a spawn tile', () => {
@@ -29,6 +30,27 @@ describe('fresh deployment transaction', () => {
         const prepare = main.slice(prepareStart, prepareEnd);
         expect(prepare.indexOf('validatePreparedDeployment?.({ expectedSectorZero })'))
             .toBeLessThan(prepare.indexOf("announceDeploymentStage('PRESENT'"));
+    });
+
+    it('reserves deployment progress for every post-mount stage and reaches 100 only after first render', () => {
+        const stageStart = threeGame.indexOf('async prepareVisibleChunksForGameplay(');
+        const stageEnd = threeGame.indexOf('\n    validatePreparedDeployment(', stageStart);
+        const staging = threeGame.slice(stageStart, stageEnd);
+        const prepareStart = main.indexOf('async function prepareGameplayForDialogue(');
+        const prepareEnd = main.indexOf('\nfunction setSnailSpawnState(', prepareStart);
+        const presentation = main.slice(prepareStart, prepareEnd);
+
+        expect(staging.indexOf("reportProgress(0.54, 'LIGHTING'"))
+            .toBeGreaterThan(staging.indexOf('while (this.pendingChunkMounts.length > 0)'));
+        expect(staging.indexOf("reportProgress(0.76, 'MODELS'"))
+            .toBeGreaterThan(staging.indexOf('await this.warmUpShaderPrograms'));
+        expect(staging.indexOf("reportProgress(0.84, 'CORPSES'"))
+            .toBeGreaterThan(staging.indexOf('await preloadPromise'));
+        expect(staging.indexOf("reportProgress(0.93, 'EFFECTS'"))
+            .toBeGreaterThan(staging.indexOf('await prewarmCommonCorpse3dTemplates'));
+        expect(staging).not.toContain('onProgress?.(1)');
+        expect(presentation.indexOf("announceDeploymentStage('READY'"))
+            .toBeGreaterThan(presentation.indexOf('game.renderer?.render?.(game.scene, game.camera)'));
     });
 
     it('flushes electron storage and reloads immediately after destructive reset', () => {

@@ -521,7 +521,28 @@ body {
   width: 0%;
   background: var(--accent-primary);
   box-shadow: 0 0 20px var(--accent-primary);
-  transition: width 0.3s ease;
+  transition: width 0.55s cubic-bezier(0.22, 0.72, 0.32, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.loader-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 32%;
+  transform: translateX(-140%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  animation: loader-progress-scan 1.1s linear infinite;
+}
+
+@keyframes loader-progress-scan {
+  to { transform: translateX(420%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader-bar { transition-duration: 0.01ms; }
+  .loader-bar::after { animation: none; }
 }
 
 .loader-briefing-speaker {

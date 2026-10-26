@@ -457,6 +457,7 @@
     },
     "loading": {
       "aria_label_build_and_developer": "Сведения о сборке и разработчике",
+      "aria_label_deployment_progress": "Ход развертывания",
       "system_build": "СБОРКА СИСТЕМЫ",
       "dev_console": "КОНСОЛЬ DEV",
       "initializing_systems": "ИНИЦИАЛИЗАЦИЯ СИСТЕМ",

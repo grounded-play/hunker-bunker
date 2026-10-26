@@ -8223,8 +8223,12 @@ function ensureMissionManagers() {
 function showRunLoadingScreen(status = 'SYNCHRONIZING DROP VECTOR', progress = 0, { overDoor = false } = {}) {
     clearLoaderBriefingMode();
     if (loaderTitle) loaderTitle.textContent = t('ui.loader.deployment_telemetry');
-    if (loaderStatus) loaderStatus.textContent = status;
-    if (loaderBar) loaderBar.style.width = `${Math.max(0, Math.min(100, progress))}%`;
+    const boundedProgress = Math.max(0, Math.min(100, progress));
+    if (loaderStatus) loaderStatus.textContent = `${status} — ${Math.round(boundedProgress)}%`;
+    if (loaderBar) {
+        loaderBar.style.width = `${boundedProgress}%`;
+        loaderBar.setAttribute('aria-valuenow', String(Math.round(boundedProgress)));
+    }
     loadingScreen?.classList.toggle('over-door-loader', Boolean(overDoor));
     loadingScreen?.classList.remove('is-fading');
     loadingScreen?.classList.remove('hidden');
@@ -8371,22 +8375,21 @@ async function prepareGameplayForDialogue({ loaderOverDoor = false, expectedSect
     announceDeploymentStage('PROFILE', 'VALIDATING OPERATOR PROFILE AND LOADOUT...', 0);
     game.setLoadingPaused?.(true);
     try {
-        announceDeploymentStage('VIEWPORT', 'CALIBRATING VIEWPORT AND INPUT...', 6);
+        announceDeploymentStage('VIEWPORT', 'CALIBRATING VIEWPORT AND INPUT...', 2);
         await settleGameLayoutForWarmup();
-        announceDeploymentStage('WORLD', 'GENERATING SECTOR TOPOLOGY...', 10);
+        announceDeploymentStage('WORLD', 'GENERATING SECTOR TOPOLOGY...', 4);
         await game.prepareVisibleChunksForGameplay({
             batchSize: 3,
-            onProgress: (progress) => {
+            onProgress: (progress, detail = {}) => {
                 const pct = Math.round(Math.max(0, Math.min(1, progress)) * 100);
-                if (pct < 70) {
-                    announceDeploymentStage('WORLD', `GENERATING SECTOR TOPOLOGY... ${pct}%`, pct);
-                } else if (pct < 94) {
-                    announceDeploymentStage('MOUNT', `MOUNTING TERRAIN, ROOMS, AND ENCOUNTERS... ${pct}%`, pct);
-                } else {
-                    announceDeploymentStage('RENDER', `WARMING MATERIALS AND LIGHTING... ${pct}%`, pct);
-                }
+                announceDeploymentStage(
+                    detail.stage ?? 'WORLD',
+                    `${detail.status ?? 'PREPARING DEPLOYMENT'}...`,
+                    pct
+                );
             }
         });
+        announceDeploymentStage('VERIFY', 'VERIFYING DEPLOYMENT INTEGRITY...', 97);
         game.validatePreparedDeployment?.({ expectedSectorZero });
         game.snapCameraToPlayer?.();
         announceDeploymentStage('PRESENT', 'PRESENTING FIRST RENDERED SECTOR FRAME...', 98);

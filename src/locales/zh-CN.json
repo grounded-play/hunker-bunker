@@ -457,6 +457,7 @@
     },
     "loading": {
       "aria_label_build_and_developer": "版本与开发者信息",
+      "aria_label_deployment_progress": "部署进度",
       "system_build": "系统版本",
       "dev_console": "开发者控制台",
       "initializing_systems": "正在初始化系统",

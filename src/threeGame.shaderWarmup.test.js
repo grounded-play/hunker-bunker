@@ -57,6 +57,19 @@ describe('shader warm-up', () => {
         expect(game.renderer.shadowMap.enabled).toBe(true);
     });
 
+    it('reports each real warm-up phase instead of appearing complete before rendering', async () => {
+        const { game } = makeHarness('gameplay');
+        const progress = vi.fn();
+
+        await game.warmUpShaderPrograms({ onProgress: progress });
+
+        expect(progress.mock.calls).toEqual([
+            [1, 3, 'composer-compile'],
+            [2, 3, 'composer-render-1'],
+            [3, 3, 'composer-render-2']
+        ]);
+    });
+
     it('primes the shadow map so the first lit frame is not a shadow rebuild', async () => {
         const { game } = makeHarness('gameplay');
         await game.warmUpShaderPrograms();
