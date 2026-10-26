@@ -46,6 +46,21 @@ describe('fresh deployment transaction', () => {
         expect(launch.slice(0, prepare)).not.toContain("setAppPhase('gameplay')");
     });
 
+    it('plays every song card behind the one stage-door system', () => {
+        const start = main.indexOf('let stageCardQueue');
+        const end = main.indexOf('\n// The camp', start);
+        const flow = main.slice(start, end);
+        expect(flow).toContain('triggerDoorTransition(');
+        expect(flow).toContain('stageDoors: true');
+        // Every caller goes through showCardThenScene, never the controller's own doors.
+        expect(main.match(/songInterstitial\.show\(/g)).toHaveLength(1);
+        expect(flow).toContain('songInterstitial.show(spec, { ...options, stageDoors: true })');
+    });
+
+    it('recovers the black box with one cinematic, not the legacy film then the card', () => {
+        expect(main).not.toMatch(/playAuthoredEventOnce\('black_box_recovered'/);
+    });
+
     it('ends sleep at the bed without automatically opening the Foundry', () => {
         const sleepStart = main.indexOf("window.addEventListener('day-rest-open'");
         const sleepEnd = main.indexOf('\nfunction updateCampaignCycleIndicator', sleepStart);

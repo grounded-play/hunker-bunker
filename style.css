@@ -5105,6 +5105,11 @@ input:checked+.slider:before {
   transition: transform 520ms cubic-bezier(.7, 0, .24, 1);
 }
 
+/* Behind the stage doors the card is the film layer over the shut bunker
+   doors (hero/area art), so it rises above them and drops its own panels. */
+.song-interstitial.uses-stage-doors { z-index: 260000; }
+.song-interstitial.uses-stage-doors .song-interstitial__door { display: none; }
+
 .song-interstitial__door--left { left: 0; transform: translateX(-101%); }
 .song-interstitial__door--right { right: 0; transform: translateX(101%) scaleX(-1); }
 .song-interstitial.is-closing .song-interstitial__door { transform: translateX(0); }

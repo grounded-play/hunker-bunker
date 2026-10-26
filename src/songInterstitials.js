@@ -330,13 +330,16 @@ export class SongInterstitialController {
         return next;
     }
 
-    async _showNow(specOrId, { holdMs = 1050, onBehindDoors = null } = {}) {
+    // `stageDoors`: the host's bunker doors (hero/area art) are already shut
+    // and will open afterwards, so the card skips its own doors and bookend.
+    async _showNow(specOrId, { holdMs = 1050, onBehindDoors = null, stageDoors = false } = {}) {
         const spec = typeof specOrId === 'object' ? specOrId : getSongInterstitial(specOrId);
         if (!spec || !this.root) return { shown: false, fallback: true };
         const run = ++this._run;
         const closeStartedAt = Date.now();
         this.root.classList.remove('hidden', 'is-open', 'is-settled', 'is-closing-out', 'is-revealing', 'has-motion');
         this.root.classList.add('is-closing');
+        this.root.classList.toggle('uses-stage-doors', stageDoors);
         this.root.setAttribute('aria-hidden', 'false');
         if (this.title) this.title.textContent = spec.title;
         if (this.track) {
@@ -382,7 +385,7 @@ export class SongInterstitialController {
         // Asset decoding may finish instantly or slowly, so wait against the
         // original close start instead of adding an arbitrary post-load delay.
         const closeDuration = this.reducedMotion ? 100 : 540;
-        const closeRemaining = Math.max(0, closeDuration - (Date.now() - closeStartedAt));
+        const closeRemaining = stageDoors ? 0 : Math.max(0, closeDuration - (Date.now() - closeStartedAt));
         await new Promise((resolve) => setTimeout(resolve, closeRemaining));
         this.root.classList.remove('is-closing');
         this.root.classList.add('is-open');
@@ -441,6 +444,11 @@ export class SongInterstitialController {
             }, this.reducedMotion ? 120 : fallbackTimeoutMs);
         });
 
+        if (stageDoors) {
+            this.hide();
+            return { shown: true, fallback: !loaded };
+        }
+
         if (typeof onBehindDoors === 'function') {
             // Bookend: the doors shut over the last frame, the next scene (a
             // conversation window) mounts behind them, and they open on live
@@ -469,7 +477,7 @@ export class SongInterstitialController {
     hide() {
         if (!this.root) return;
         this.root.classList.add('hidden');
-        this.root.classList.remove('is-closing', 'is-open', 'is-settled', 'is-closing-out', 'is-revealing', 'has-placeholder', 'has-motion');
+        this.root.classList.remove('is-closing', 'is-open', 'is-settled', 'is-closing-out', 'is-revealing', 'has-placeholder', 'has-motion', 'uses-stage-doors');
         this.root.setAttribute('aria-hidden', 'true');
         if (this.video) {
             this.video.pause?.();

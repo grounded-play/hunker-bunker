@@ -94,6 +94,37 @@ describe('song interstitial manifest', () => {
         await transition;
     });
 
+    it('plays above the host stage doors without its own panels or bookend', async () => {
+        vi.useFakeTimers();
+        const classes = new Set(['hidden']);
+        const root = {
+            classList: {
+                add: (...names) => names.forEach((name) => classes.add(name)),
+                remove: (...names) => names.forEach((name) => classes.delete(name)),
+                toggle: (name, force) => force ? classes.add(name) : classes.delete(name),
+                contains: (name) => classes.has(name)
+            },
+            setAttribute() {}
+        };
+        const controller = new SongInterstitialController({ root, reducedMotion: false });
+        controller.loadStill = async () => true;
+        controller.loadMotion = async () => false;
+        controller.startSong = async () => true;
+
+        const transition = controller.show(1, { holdMs: 100, stageDoors: true });
+        // The stage doors are already shut: the card opens at once.
+        await vi.advanceTimersByTimeAsync(0);
+        expect(classes.has('uses-stage-doors')).toBe(true);
+        expect(classes.has('is-open')).toBe(true);
+        await vi.advanceTimersByTimeAsync(100);
+        const result = await transition;
+        expect(result).toMatchObject({ shown: true });
+        expect(result.behindDoors).toBeUndefined();
+        expect(classes.has('is-closing-out')).toBe(false);
+        expect(classes.has('hidden')).toBe(true);
+        expect(classes.has('uses-stage-doors')).toBe(false);
+    });
+
     it('closes the doors again and mounts the next scene behind them before revealing gameplay', async () => {
         vi.useFakeTimers();
         const classes = new Set(['hidden']);

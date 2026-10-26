@@ -9389,10 +9389,9 @@ window.addEventListener('foundry-discovered', (event) => {
         eventDetail: event?.detail ?? {}
     });
 });
-window.addEventListener('black-box-recovered', () => {
-    window.AudioManager?.playOST?.(32, { volume: 0.58, loop: false });
-    playAuthoredEventOnce('black_box_recovered', { videoBase: 'event-black-box-recovered' });
-});
+// Black box recovery is one cinematic: song card 32 (beat `black_box_first`,
+// src/cinematicBeats.js) behind the stage doors, carrying its own song. The
+// legacy event-black-box-recovered film used to play first, then the card.
 window.addEventListener('queen-fight-started', () => {
     window.AudioManager?.playOST?.(31, { volume: 0.65, loop: true });
     playAuthoredEventOnce('queen_encounter', { videoBase: 'event-queen-encounter' });
@@ -14733,30 +14732,85 @@ const songInterstitial = new SongInterstitialController({
 
 window.playSideStoryInterstitial = async (id) => {
     if (!songInterstitial) return { shown: false };
-    return await songInterstitial.show(id, { holdMs: 1400 });
+    return await showCardThenScene(id, null, { holdMs: 1400 });
 };
 
-// Doors shut over play -> card -> doors shut again -> `openScene` mounts the
-// conversation behind them -> doors open on play with the window on top
+// One door system for every card: the stage doors (hero/area art) shut over
+// play -> the card plays above them -> `openScene` mounts the conversation
+// behind them -> they open on play with the window on top
 // (docs/planning/camp-interaction-and-cinematics-audit-2026-10-16.md §13.1).
-// `openScene` runs exactly once, even when the card can't show.
-async function showCardThenScene(specOrId, openScene, options = {}) {
+// `openScene` runs exactly once, even when the card can't show. Cards queue:
+// a second triggerDoorTransition would cancel the first one's timers.
+let stageCardQueue = Promise.resolve();
+function showCardThenScene(specOrId, openScene, options = {}) {
+    const run = stageCardQueue.then(() => playCardBehindStageDoors(specOrId, openScene, options));
+    stageCardQueue = run.catch(() => {});
+    return run;
+}
+window.showCardThenScene = showCardThenScene;
+
+function isStageDoorTransitionActive() {
+    const overlay = transitionOverlay || document.getElementById('transition-overlay');
+    return Boolean(overlay?.classList.contains('visible'));
+}
+
+function waitForStageDoorsIdle(timeoutMs = 15000) {
+    if (!isStageDoorTransitionActive()) return Promise.resolve();
+    return new Promise((resolve) => {
+        const startedAt = Date.now();
+        const poll = window.setInterval(() => {
+            if (isStageDoorTransitionActive() && Date.now() - startedAt < timeoutMs) return;
+            window.clearInterval(poll);
+            resolve();
+        }, 100);
+    });
+}
+
+async function playCardBehindStageDoors(specOrId, openScene, options) {
     let opened = false;
     const open = async () => {
         if (opened) return;
         opened = true;
         await openScene?.();
     };
+    const spec = typeof specOrId === 'object' && specOrId ? specOrId : getSongInterstitial(specOrId);
+    if (!spec) {
+        await open();
+        return { shown: false, fallback: true };
+    }
+    await waitForStageDoorsIdle();
+    let result = { shown: false, fallback: true };
     try {
-        return await songInterstitial.show(specOrId, {
-            ...options,
-            onBehindDoors: typeof openScene === 'function' ? open : null
+        await new Promise((resolve) => {
+            let settled = false;
+            let closedStarted = false;
+            const finish = () => {
+                if (settled) return;
+                settled = true;
+                resolve();
+            };
+            triggerDoorTransition(
+                async () => {
+                    closedStarted = true;
+                    try {
+                        result = await songInterstitial.show(spec, { ...options, stageDoors: true });
+                    } finally {
+                        // Never strand the queue if another flow takes the doors over.
+                        window.setTimeout(finish, 2500);
+                        await open();
+                    }
+                },
+                finish,
+                undefined,
+                { waitForClosedWork: true, openingHoldMs: 300 }
+            );
+            window.setTimeout(() => { if (!closedStarted) finish(); }, 4000);
         });
     } finally {
         await open();
     }
+    return result;
 }
-window.showCardThenScene = showCardThenScene;
 
 // The camp's title card plays once, on first contact (owner, 2026-10-08:
 // "first contact only"); the decision opens straight away.
@@ -15149,7 +15203,8 @@ window.addEventListener('leader-dialogue', async (event) => {
 // owns image/audio/motion paths and the controller owns all fallback behavior.
 window.addEventListener('song-interstitial-open', async (event) => {
     const trackId = event?.detail?.trackId;
-    const result = await songInterstitial.show(trackId, event?.detail ?? {});
+    const { onBehindDoors = null, ...options } = event?.detail ?? {};
+    const result = await showCardThenScene(trackId, onBehindDoors, options);
     window.dispatchEvent(new CustomEvent('song-interstitial-settled', {
         detail: { trackId, ...result }
     }));
@@ -15231,8 +15286,8 @@ const cinematicBeats = new CinematicBeatDirector({
     play: (beat, detail) => showCardThenScene(beat.card, () => openCinematicBeatScene(beat, detail)),
     isInCombat: () => Boolean(window.game?.inCombat),
     isMultiplayer: () => Boolean(window.game?.isMultiplayer),
-    // Another cutscene, dialogue, window or card is up: wait it out.
-    isBusy: () => Boolean(window.game?.hasBlockingGameplayOverlay?.()),
+    // Another cutscene, dialogue, window, card or door transition is up: wait it out.
+    isBusy: () => Boolean(window.game?.hasBlockingGameplayOverlay?.()) || isStageDoorTransitionActive(),
     toast: (title) => window.showToastNotification?.(title, { tone: 'info', duration: 5000 }),
     titleFor: (beat) => getSongInterstitial(beat.card)?.title ?? beat.card
 });
