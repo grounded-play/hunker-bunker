@@ -97,10 +97,16 @@ export const CRASH_SITE_BUILD = Object.freeze({
         departureThresholdZ: 2.75
     }),
     firstBossBreach: Object.freeze({
-        spawn: Object.freeze({ x: 15, z: 5 }),
+        // A short exterior attack lane gives the first boss an entrance the
+        // player can read: it appears outside the berth, advances on the hull,
+        // then opens a two-tile breach. The old z=5 spawn was already inside
+        // the room and its z=4 "wall" tiles were actually walkable floor.
+        spawn: Object.freeze({ x: 15, z: 1 }),
+        approach: Object.freeze({ x: 15, z: 5 }),
+        exteriorLane: Object.freeze({ left: 14, right: 16, top: 1, bottom: 2 }),
         tiles: Object.freeze([
-            Object.freeze({ x: 15, z: 4 }),
-            Object.freeze({ x: 16, z: 4 })
+            Object.freeze({ x: 15, z: 3 }),
+            Object.freeze({ x: 16, z: 3 })
         ])
     }),
     survivorArrival: Object.freeze({

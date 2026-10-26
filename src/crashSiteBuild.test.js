@@ -202,6 +202,24 @@ describe('two-zone crash site build', () => {
         }
     });
 
+    it('stages the first boss outside an intact two-tile hull breach', () => {
+        const grid = blank('.');
+        stampCrashSiteOrigin(grid);
+        const breach = CRASH_SITE_BUILD.firstBossBreach;
+
+        expect(breach.spawn.z).toBeLessThan(CRASH_SITE_BUILD.primaryChamber.top);
+        expect(Math.hypot(
+            breach.spawn.x - CRASH_SITE_BUILD.center.x,
+            breach.spawn.z - CRASH_SITE_BUILD.center.z
+        )).toBeGreaterThanOrEqual(10);
+        expect(grid[breach.spawn.z][breach.spawn.x]).toBe('O');
+        for (let z = breach.exteriorLane.top; z <= breach.exteriorLane.bottom; z += 1) {
+            expect(grid[z][breach.spawn.x]).toBe('O');
+        }
+        for (const tile of breach.tiles) expect(grid[tile.z][tile.x]).toBe('#');
+        expect(grid[breach.approach.z][breach.approach.x]).toBe('.');
+    });
+
     it('places partitions outside the ship safe ring and gives every partition opening five cells', () => {
         const { x: centerX, z: centerZ } = CRASH_SITE_BUILD.center;
         for (const partition of CRASH_SITE_BUILD.sectorZero.partitions) {

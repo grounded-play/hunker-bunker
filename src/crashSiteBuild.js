@@ -1,7 +1,7 @@
 import { addWallShell, carveDisk, carveLine, constrainBorderSockets } from './architecturalMaze.js';
 import { CRASH_SITE_BUILD } from './data/crashSiteBuild.js';
 
-const WALKABLE = new Set(['.', 'D', 'R', 'B', 'L']);
+const WALKABLE = new Set(['.', 'D', 'R', 'B', 'L', 'O']);
 
 function fill(grid, value) {
     for (const row of grid ?? []) row.fill(value);
@@ -10,7 +10,8 @@ function fill(grid, value) {
 export function stampCrashSiteOrigin(grid, build = CRASH_SITE_BUILD, {
     exteriorTile = 'C',
     wallTile = '#',
-    floorTile = '.'
+    floorTile = '.',
+    exteriorGroundTile = 'O'
 } = {}) {
     if (!Array.isArray(grid) || grid.length === 0) return false;
     fill(grid, exteriorTile);
@@ -40,6 +41,16 @@ export function stampCrashSiteOrigin(grid, build = CRASH_SITE_BUILD, {
             const x = partition.axis === 'vertical' ? partition.at : cursor;
             const y = partition.axis === 'horizontal' ? partition.at : cursor;
             if (grid[y]?.[x] !== undefined) grid[y][x] = wallTile;
+        }
+    }
+    // This lane ends at the intact hull, so the boss must breach it before
+    // either it or the player can enter the berth through this route.
+    const attackLane = build.firstBossBreach?.exteriorLane;
+    if (attackLane) {
+        for (let y = attackLane.top; y <= attackLane.bottom; y += 1) {
+            for (let x = attackLane.left; x <= attackLane.right; x += 1) {
+                if (grid[y]?.[x] !== undefined) grid[y][x] = exteriorGroundTile;
+            }
         }
     }
     return true;

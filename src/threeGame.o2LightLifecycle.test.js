@@ -106,7 +106,7 @@ describe('DP-02: O2 runtime retains its shader light set', () => {
         expect(game.o2BubbleObjects.ring.visible).toBe(true);
     });
 
-    it('reveals the offline generator only after its physical camp core is installed', () => {
+    it('keeps the installed core hidden until the paid generator rebuild is online', () => {
         const sprite = { visible: false, userData: { replacedBy3d: false } };
         const module3d = { visible: false };
         const shadow = { visible: false };
@@ -137,6 +137,14 @@ describe('DP-02: O2 runtime retains its shader light set', () => {
             definitionId: 'camp_o2_generator_core',
             socketId: 'camp-o2-generator'
         });
+        ThreeGame.prototype.ensureO2BubbleVisualState.call(game);
+        expect(sprite.userData.world3dDesiredVisible).toBe(false);
+        expect(sprite.visible).toBe(false);
+        expect(module3d.visible).toBe(false);
+        expect(shadow.visible).toBe(false);
+        expect(game.setupWorld3dReplacement).not.toHaveBeenCalled();
+
+        game.getO2GeneratorState = () => ({ isOnline: true, radius: 3.9 });
         ThreeGame.prototype.ensureO2BubbleVisualState.call(game);
         expect(sprite.userData.world3dDesiredVisible).toBe(true);
         expect(sprite.visible).toBe(true);

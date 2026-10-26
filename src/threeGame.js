@@ -26027,12 +26027,12 @@ export class ThreeGame {
         if (this.crashedShips) {
             for (const ship of this.crashedShips) {
                 const isActiveShip = ship.type === this.playerType;
-                // This is the repair target, so it remains present while
-                // unpowered. Only the safe bubble depends on isOnline.
-                const coreInstalled = isCampO2CoreInstalled(this.carryState);
+                // Installing the recovered core only arms the repair action.
+                // The completed machine is first seen during the paid rebuild
+                // rise; an offline level-zero core must not preview it.
                 const o2ModuleVisible = isActiveShip
                     && !revealPending
-                    && (coreInstalled || generatorState.isOnline);
+                    && generatorState.isOnline;
                 // These legacy sprites belong to the crash wreck. The actual
                 // three flight systems render from installed carry modules at
                 // the separate escape-craft yard.
@@ -36738,6 +36738,18 @@ export class ThreeGame {
                 });
             }
         }
+        const authoredBreach = data.campBreachTiles;
+        if (Array.isArray(authoredBreach)
+            && authoredBreach.some((tile) => tile.x === tileX && tile.z === tileZ)) {
+            data.campBreachCommitted = true;
+            data.campBreachTarget = null;
+            this.showBunkerLine?.('CAMP HULL BREACH — HOSTILE FORCING ENTRY.');
+            if (typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('first-boss-camp-breached', {
+                    detail: { tiles: authoredBreach }
+                }));
+            }
+        }
         globalThis.window?.AudioManager?.playMetalStress?.({ volume: 0.32, playbackRate: 0.65, force: true });
         globalThis.window?.AudioManager?.play?.('enemy_break_wall', (this.audioAt?.(tileX, tileZ, { volume: 0.42, playbackRate: 0.75 }) ?? { volume: 0.42, playbackRate: 0.75 }));
         data.wallBreakCooldown = BOSS_WALL_BREAK_COOLDOWN;
@@ -43111,29 +43123,17 @@ export class ThreeGame {
     }
 
     stageFirstBossCampBreach(boss) {
-        const tiles = CRASH_SITE_BUILD.firstBossBreach?.tiles ?? [];
-        let breached = 0;
-        for (const tile of tiles) {
-            if (this.getTileType?.(tile.x, tile.z) !== '#') continue;
-            const wall = this.findWallMeshAt?.(tile.x, tile.z);
-            const destroyed = wall
-                ? this.destroyWall?.(wall, { source: 'boss', force: true })
-                : Boolean(this.markWallTileDestroyed?.(tile.x, tile.z));
-            if (destroyed) breached += 1;
-        }
-        if (!breached) return false;
-        if (boss?.userData) {
-            boss.userData.campBreachCommitted = true;
-            boss.userData.wallBreakCooldown = BOSS_WALL_BREAK_COOLDOWN;
-            boss.userData.pathNodes = null;
-            boss.userData.pathRetargetTimer = 0;
-        }
-        this.showBunkerLine?.('CAMP HULL BREACH — HOSTILE FORCING ENTRY.');
-        if (typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('first-boss-camp-breached', {
-                detail: { tiles: tiles.slice(0, breached) }
-            }));
-        }
+        const breach = CRASH_SITE_BUILD.firstBossBreach;
+        const tiles = breach?.tiles ?? [];
+        if (!boss?.userData || !breach?.approach || tiles.length === 0) return false;
+        if (!tiles.every((tile) => this.getTileType?.(tile.x, tile.z) === '#')) return false;
+        boss.userData.campBreachTarget = { ...breach.approach };
+        boss.userData.campBreachTiles = tiles.map((tile) => ({ ...tile }));
+        boss.userData.campBreachCommitted = false;
+        boss.userData.wallBreakCooldown = 0;
+        boss.userData.pathNodes = null;
+        boss.userData.pathRetargetTimer = 0;
+        this.showBunkerLine?.('PERIMETER ALERT — HOSTILE APPROACHING THE CAMP HULL.');
         return true;
     }
 
@@ -43394,6 +43394,21 @@ export class ThreeGame {
     }
 
     selectSnailTarget(sprite, activeShip) {
+        const breachTarget = sprite?.userData?.campBreachTarget;
+        if (breachTarget && !sprite.userData.campBreachCommitted) {
+            return {
+                type: 'breach',
+                x: breachTarget.x,
+                z: breachTarget.z,
+                mode: 'breach',
+                goalX: breachTarget.x,
+                goalZ: breachTarget.z,
+                distance: Math.hypot(
+                    breachTarget.x - sprite.position.x,
+                    breachTarget.z - sprite.position.z
+                )
+            };
+        }
         const targets = [];
         if (this.player && !this.isPlayerDead && !this.isHiveKinPassive(sprite)
             && this.canEnemyTargetPlayer?.(sprite) !== false) {
