@@ -448,7 +448,7 @@ const PROPS = [
         noun: 'covenant weight stone', theme: 'shared physical oath', mats: 'squat black stone weight, iron lifting frame, leather human grip, carapace shoulder socket',
         body: 'a squat black stone weight captured in an iron lifting frame with a leather-wrapped human hand grip on one side and a broad curved carapace shoulder socket on the other, so it can only be raised by both together. Show it at rest on its frame.',
         story: 'Rhun trusts what is carried together; lifting the stone is the oath.',
-        accent: `amber ember in the stone\'s core visible through a crack (${AMBER})`,
+        accent: `amber ember in the stone's core visible through a crack (${AMBER})`,
         accept: 'Accepting requires holding the lift with Rhun for a duration.'
     },
     {
@@ -902,12 +902,11 @@ md.push(`| **Total** | **${PROPS.length}** |`);
 md.push('');
 md.push('Every nearest-model reference below is a registered `WORLD_3D_MODELS` key; the script refuses to run otherwise.');
 md.push('');
-let row = 13;
 for (const suite of suites) {
     md.push(`## ${suite}`);
     md.push('');
     for (const p of PROPS.filter((x) => x.suite === suite)) {
-        row = 14 + PROPS.indexOf(p);
+        const row = 14 + PROPS.indexOf(p);
         md.push(`### ${row}. \`${p.id}\``);
         md.push('');
         md.push(`- **Story hook:** ${p.hook}`);

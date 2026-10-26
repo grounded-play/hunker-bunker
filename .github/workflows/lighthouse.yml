@@ -42,5 +42,6 @@ jobs:
         uses: treosh/lighthouse-ci-action@v12
         with:
           configPath: ./${{ matrix.config }}
+          artifactName: lighthouse-results-${{ matrix.config }}
           uploadArtifacts: true
           temporaryPublicStorage: false

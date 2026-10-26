@@ -16,7 +16,8 @@ MANIFEST = os.path.join(ROOT, 'src/data/worldExpansion80.js')
 
 
 def ids():
-    text = open(MANIFEST, encoding='utf8').read()
+    with open(MANIFEST, encoding='utf8') as manifest:
+        text = manifest.read()
     return re.search(r'WORLD_EXPANSION_80_IDS\s*=\s*Object\.freeze\(`(.*?)`\.trim', text, re.S).group(1).split()
 
 

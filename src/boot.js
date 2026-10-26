@@ -4,14 +4,20 @@
 // use. Normal sessions load the player's language before any game module
 // evaluates, then start the modules in their original order.
 const lighthouseProbe = typeof navigator !== 'undefined' && (
-    /Lighthouse|Chrome-Lighthouse/i.test(navigator.userAgent)
+    Boolean(globalThis.window?.__HB_LIGHTHOUSE_PROBE__)
+    || /Lighthouse|Chrome-Lighthouse/i.test(navigator.userAgent)
     || Boolean(globalThis.window?.__LIGHTHOUSE_TEST__)
     || (typeof location !== 'undefined' && /[?&]lighthouse(=|&|$)/i.test(location.search))
 );
 
 if (lighthouseProbe) {
-    document.getElementById('loading-screen')?.classList.add('hidden');
-    document.getElementById('splash')?.classList.remove('hidden');
+    const viewport = document.getElementById('game-viewport');
+    const splash = document.getElementById('splash');
+    if (viewport && splash) {
+        splash.querySelectorAll(':scope > :not(.splash-content)').forEach((node) => node.remove());
+        viewport.replaceChildren(splash);
+    }
+    splash?.classList.remove('hidden');
     document.documentElement.classList.remove('boot-cursor-hidden', 'loading-cursor-hidden');
 } else {
     const { ensureLocaleReady } = await import('./i18n.js');

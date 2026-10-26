@@ -27,7 +27,8 @@ WEBP_QUALITY = 90
 
 
 def manifest_ids():
-    text = open(MANIFEST_JS, encoding='utf8').read()
+    with open(MANIFEST_JS, encoding='utf8') as manifest:
+        text = manifest.read()
     match = re.search(r'WORLD_EXPANSION_80_IDS\s*=\s*Object\.freeze\(`(.*?)`\.trim', text, re.S)
     if not match:
         raise RuntimeError('Unable to read WORLD_EXPANSION_80_IDS')

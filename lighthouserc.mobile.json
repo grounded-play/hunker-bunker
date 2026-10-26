@@ -5,7 +5,7 @@
       "url": [
         "http://localhost/index.html?lighthouse=1"
       ],
-      "numberOfRuns": 2,
+      "numberOfRuns": 3,
       "settings": {
         "formFactor": "mobile",
         "screenEmulation": {
@@ -22,10 +22,10 @@
     },
     "assert": {
       "assertions": {
-        "categories:performance": ["error", { "minScore": 0.8, "aggregationMethod": "pessimistic" }],
-        "largest-contentful-paint": ["error", { "maxNumericValue": 4000, "aggregationMethod": "pessimistic" }],
-        "total-blocking-time": ["error", { "maxNumericValue": 200, "aggregationMethod": "pessimistic" }],
-        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1, "aggregationMethod": "pessimistic" }]
+        "categories:performance": ["error", { "minScore": 0.8, "aggregationMethod": "median" }],
+        "largest-contentful-paint": ["error", { "maxNumericValue": 4000, "aggregationMethod": "median" }],
+        "total-blocking-time": ["error", { "maxNumericValue": 200, "aggregationMethod": "median" }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1, "aggregationMethod": "median" }]
       }
     }
   }

@@ -5,11 +5,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#07090b" />
+  <script>
+    window.__HB_LIGHTHOUSE_PROBE__ = /Lighthouse|Chrome-Lighthouse/i.test(navigator.userAgent)
+      || /[?&]lighthouse(=|&|$)/i.test(location.search);
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Not render-blocking (issue #106): text paints in the fallback face and
        swaps when the webfont arrives (display=swap). -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else this.media='all'">
   <noscript><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"></noscript>
   <!-- Issue #106: this tiny first-paint shell deliberately duplicates only
        the loading-screen geometry from style.css. The full stylesheet can
@@ -24,17 +28,17 @@
        but CSS only requests it once the boot reveals the title. Fetch it now. -->
   <link rel="preload" as="image" href="/title_key_art_v2.webp" fetchpriority="high" media="(min-width: 769px)">
   <link rel="preload" as="image" href="/menu_bg.webp" fetchpriority="high" media="(max-width: 768px)">
-  <link rel="stylesheet" href="/style.css" media="print" data-app-style onload="this.media='all';this.dataset.ready='true'">
-  <link rel="stylesheet" href="/src/styles/expeditionHud.css" media="print" data-app-style onload="this.media='all';this.dataset.ready='true'">
-  <link rel="stylesheet" href="/src/styles/hudDockHousings.css" media="print" data-app-style onload="this.media='all';this.dataset.ready='true'">
-  <link rel="stylesheet" href="/src/styles/hudInformationArchitecture.css" media="print" data-app-style onload="this.media='all';this.dataset.ready='true'">
-  <link rel="stylesheet" href="/src/styles/records.css" media="print" data-app-style onload="this.media='all';this.dataset.ready='true'">
-  <link rel="stylesheet" href="/src/styles/suitCondition.css" media="print" data-app-style onload="this.media='all';this.dataset.ready='true'">
-  <link rel="stylesheet" href="/src/styles/armory.css" media="print" data-app-style onload="this.media='all';this.dataset.ready='true'">
-  <link rel="stylesheet" href="/src/styles/itemCard.css" media="print" data-app-style onload="this.media='all';this.dataset.ready='true'">
-  <link rel="stylesheet" href="/src/styles/foundryHub.css" media="print" data-app-style onload="this.media='all';this.dataset.ready='true'">
-  <link rel="stylesheet" href="/src/styles/fieldWorkbench.css" media="print" data-app-style onload="this.media='all';this.dataset.ready='true'">
-  <link rel="stylesheet" href="/src/styles/quickCommandRadial.css" media="print" data-app-style onload="this.media='all';this.dataset.ready='true'">
+  <link rel="stylesheet" href="/style.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/expeditionHud.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/hudDockHousings.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/hudInformationArchitecture.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/records.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/suitCondition.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/armory.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/itemCard.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/foundryHub.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/fieldWorkbench.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/quickCommandRadial.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />

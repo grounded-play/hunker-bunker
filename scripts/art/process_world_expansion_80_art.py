@@ -17,7 +17,7 @@ import re
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image
 from scipy import ndimage
 
 from build_floor_surfaces import bc7_levels, write_ktx2

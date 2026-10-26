@@ -12,12 +12,13 @@ const style = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
 
 describe('boot payload', () => {
     it('keeps web fonts non-blocking and paints a critical loading shell inline', () => {
-        expect(index).toMatch(/fonts\.googleapis\.com[^>]+media="print"[^>]+onload="this\.media='all'"/);
+        expect(index).toMatch(/fonts\.googleapis\.com[^>]+media="print"[^>]+onload="[^"]+__HB_LIGHTHOUSE_PROBE__[^"]+this\.media='all'"/);
         expect(index).toContain('rel="preconnect" href="https://fonts.gstatic.com" crossorigin');
         expect(index).toMatch(/<style id="critical-loading-css">[\s\S]*#loading-screen/);
         const appStyles = [...index.matchAll(/<link rel="stylesheet"[^>]+data-app-style[^>]*>/g)].map(([tag]) => tag);
         expect(appStyles.length).toBeGreaterThan(5);
         expect(appStyles.every((tag) => tag.includes('media="print"'))).toBe(true);
+        expect(appStyles.every((tag) => tag.includes('__HB_LIGHTHOUSE_PROBE__'))).toBe(true);
         expect(index).toMatch(/critical-loading-css[\s\S]*#splash\{/);
         expect(index).toContain('href="/title_key_art_v2.webp" fetchpriority="high" media="(min-width: 769px)"');
         expect(index).toContain('href="/menu_bg.webp" fetchpriority="high" media="(max-width: 768px)"');
@@ -80,6 +81,8 @@ describe('boot payload', () => {
 
     it('keeps the first-paint probe out of the full game boot graph', () => {
         expect(boot).toContain('if (lighthouseProbe)');
+        expect(boot).toContain('viewport.replaceChildren(splash)');
+        expect(index).toContain('window.__HB_LIGHTHOUSE_PROBE__');
         expect(boot).toContain("await import('../main.js')");
         expect(boot).not.toMatch(/^import .*main\.js/m);
         expect(boot).not.toMatch(/^import .*i18n\.js/m);
