@@ -1,10 +1,12 @@
 # Hunker Bunker — Product State
 
-Updated: 2026-10-17
+Updated: 2026-10-26
 
 Active branch: `dev/sprint-53`
 
-Package: `2.4.17-beta`
+Package: `2.4.18-beta`
+
+Plan of record for the docs audit: [Sprint 49](docs/planning/sprint-49.md) (`dev/sprint-49`), consolidated into the [Sprint 53 master verification plan](docs/planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md).
 
 Active milestone: **The Definitive First Expedition**
 

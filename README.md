@@ -20,9 +20,7 @@
 
 🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📚 **[Documentation Map](docs/README.md)**
 
-> **Status (2026-10-18):** Sprint 53 candidate validation on `dev/sprint-53`, source baseline `7add8c30`.
->
-> The current package still identifies itself as `v2.4.17-beta`; `v2.4.18-beta` is the intended promoted release after packaged PvE, PvP, Steam Deck, performance, cloud, and operations acceptance. Local documentation edits made after the baseline are not part of the build under test.
+> **Status (2026-10-26):** `v2.4.18-beta` (Sprint 53) is in review as a PR from `dev/sprint-53` to `mothership`. Packaged PvE, PvP, Steam Deck, performance, cloud and operations acceptance is still open.
 >
 > **Sprint 53 highlights:**
 >
@@ -33,7 +31,7 @@
 > - **Multiplayer parity:** moving and breakable props, items, enemy state, deaths, redeploys, and recalibration effects use host-authoritative replication paths.
 > - **Feel and performance:** hit-stop, footsteps, combat audio, arcade/achievement integration, bounded light pools, scene batching, mixer culling, deferred boot assets, and mobile Lighthouse 93/93 clearance.
 >
-> Read the local [candidate release notes](docs/releases/v2.4.18-beta.md), [PR description draft](docs/releases/pr-body-v2.4.18-beta.md), and [master verification plan](docs/planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md). Acceptance remains open until the evidence gates in that plan pass.
+> Read the [release notes](docs/releases/v2.4.18-beta.md), [PR description](docs/releases/pr-body-v2.4.18-beta.md), and [master verification plan](docs/planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md). Acceptance remains open until the evidence gates in that plan pass.
 
 ---
 

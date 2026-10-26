@@ -6,7 +6,7 @@
 Status: active plan | Owner: repository maintainers | Updated: 2026-10-17 | Review: Sprint 53 master verification plan
 
 Baseline branch: `dev/sprint-49`
-Baseline version: `2.4.17-beta` (Sprint 49 opened at `2.4.13-beta`; `2.4.14-beta` released 2026-10-06 as PR #100; `2.4.15-beta` dependency maintenance; `2.4.16-beta` is Sprint 50's first PR; `2.4.17-beta` is the Sprint 52 release, [notes](../releases/v2.4.17-beta.md))
+Baseline version: `2.4.18-beta` (Sprint 49 opened at `2.4.13-beta`; `2.4.14-beta` released 2026-10-06 as PR #100; `2.4.15-beta` dependency maintenance; `2.4.16-beta` is Sprint 50's first PR; `2.4.17-beta` is the Sprint 52 release, [notes](../releases/v2.4.17-beta.md); `2.4.18-beta` is the Sprint 53 release, [notes](../releases/v2.4.18-beta.md))
 Implementation baseline: `ba9298df` (2026-10-01, v2.4.14-beta slice). The initial audit used `379f87e1`
 on Sprint 48. Implementation proceeds on `dev/sprint-49`; first release slice deployed
 to backend (`7783278f`). Read the [implementation handoff](sprint-49-implementation-handoff.md)

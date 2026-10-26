@@ -114,3 +114,14 @@ The Steam Deck result is below a playable target and is a release blocker indepe
 7. Open multiplayer selection at 1280x800 and 1280x720; verify every action is visible without scrolling or cropping.
 8. Reach game over at both sizes and repeat the fit check.
 9. Run `uploadlogs` on both clients and retain a screenshot/video for the visual-only checks.
+
+## Addendum: verified against the server uploads (2026-10-26, later the same day)
+
+Re-read from `https://steam.tuesdaycinema.club/logs/session` (all four 21:03–21:21 uploads).
+
+- **Build correction.** Every capture reports build commit `cf925ae9` with the old `2.4.17-beta` label (the version bump `55a4e20a` came later). So this round **does** include the resume/loading-audio fix (`6dc702a6`), the single door system and single black-box cinematic (`d4e96f2b`), full room titles (`3648eac6`), the briefing pill and the voiced code lines (`e41db11e`, `cf925ae9`). The "cannot validate" note above applies only to the version label.
+- **Companion pop is in the logs.** The earlier co-op pair (Scout host, `…21-03-24…` / `…21-11-01…`) records `companion-relocated` 11 times and `companion-repath` 16 times for *Foxhole Shadow* within 40 s of recruitment: the follower is being snapped to new spots, not walked. This matches the "disappears, then reappears at the side" report.
+- **Enemy damage is intermittent, not absent.** That earlier pair logs 12 `player-damaged` events and 2 deaths, so contact damage worked there; the latest pair (Tank host, Engineer guest) logs none despite repeated spore-snail attack audio. Retest both host and guest as victims.
+- **Unvoiced on-screen speech (new telemetry from `e41db11e`).** 26–38 `VOICE unvoiced-line` entries per capture. Nearly all are HUD notices routed through the radio as "OPERATOR" / "BUNKER AUTO-ANNOUNCER" (weapon equips, sector changes, alerts) and should stay silent or move off the radio channel. A few are director lines worth voicing: "Distress beacon, Ring 1. A human voice on loop…", "Scan: the heartbeat is wrong — too many, too slow. It is bait.", "The door opens on a nest. It was bait.", "Unstable salvage vault, Ring 1…".
+- **Raw ids reach the player.** The overnight report prints `camp_vesper raided overnight — now strained.` and `hive_suture creep spread one ring (now 1).`; these need display names and i18n.
+- **Recruitment reaches the guest.** The Deck logged "SCOUT: FOXHOLE SHADOW HAS JOINED YOUR SQUAD." 1.3 s after the host's RECRUIT click, so the event replicates; only the follower's presentation and movement are broken.
