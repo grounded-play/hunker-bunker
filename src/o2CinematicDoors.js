@@ -137,6 +137,7 @@ async function executeO2MilestoneChoreography(options = {}) {
     game?.closeConsoleModal?.();
     game?.setInputEnabled?.(false);
     game?.setCinematicLock?.(true);
+    void game?.prewarmBossEncounter?.(bossType);
 
     // ── Beat 2 & 3: Doors close then open to O2 upgrade video ──
     setPhase(O2_CHOREOGRAPHY_PHASES.DOORS_CLOSE_GENERATOR);

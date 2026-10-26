@@ -3,7 +3,9 @@ import { createWorld3dModel, hasWorld3dModel } from './world3dOverlay.js';
 export const COMMON_CORPSE_3D_TYPES = Object.freeze([
     'cybersnail_dead',
     'cryosnail_dead',
-    'sporesnail_dead'
+    'sporesnail_dead',
+    'boss_cybersnail_dead',
+    'boss_cryosnail_dead'
 ]);
 
 const prewarmedCorpseRootsByRenderer = new WeakMap();

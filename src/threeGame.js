@@ -477,7 +477,7 @@ import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinch
 import { resolveSafeSpawn } from './safeSpawn.js';
 import { WORLD_3D_FACING_YAW, WORLD_3D_SWAP_PREFETCH_DISTANCE, world3dModelTypeFor, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, resolveScatterWorld3dType, syncWorld3dReplacement } from './world3dOverlay.js';
 import { isTerrainTextureReady } from './terrainTextureReadiness.js';
-import { prepareCorpse3dModel, prewarmCommonCorpse3dTemplates } from './corpse3d.js';
+import { prepareCorpse3dModel, prewarmCommonCorpse3dTemplates, prewarmCorpse3dTemplate } from './corpse3d.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { intersectWallMeshes } from './wallRaycastIndex.js';
 import { createFlatMaterialSweeper, useSinglePassForFlatMaterials } from './singlePassFlatMaterials.js';
@@ -19952,6 +19952,7 @@ export class ThreeGame {
             detail: { level: 1, bossType }
         }));
         this._pendingO2BossType = bossType;
+        void this.prewarmBossEncounter?.(bossType);
         this.o2StartupPhase = 'popup';
         this.o2StartupTime = 0;
     }
@@ -27664,6 +27665,7 @@ export class ThreeGame {
             this._milestoneBossRestagePending = false;
             return null;
         }
+        void this.prewarmBossEncounter?.(next.presentationEnemyType);
         const boss = this.spawnMilestoneBoss?.(next.presentationEnemyType, {
             sourceGoalKey: next.goalKey
         }) ?? null;
@@ -42894,7 +42896,15 @@ export class ThreeGame {
     async prewarmKillEffectShaders() {
         const root = new THREE.Group();
         root.name = 'kill-effect-shader-warmup';
-        for (const type of ['fx_spark_burst', 'cybersnail_dead', 'cryosnail_dead', 'sporesnail_dead']) {
+        for (const type of [
+            'fx_spark_burst',
+            'cybersnail_dead',
+            'cryosnail_dead',
+            'sporesnail_dead',
+            'boss_cybersnail_dead',
+            'boss_cryosnail_dead',
+            'boss_sporesnail_dead'
+        ]) {
             const material = this.scatterMaterials?.[type]?.clone?.();
             if (material) root.add(new THREE.Sprite(material));
         }
@@ -42903,6 +42913,35 @@ export class ThreeGame {
         // reference lets Three release its program and defeats the warmup.
         this.killEffectShaderWarmup = root;
         return root;
+    }
+
+    async prewarmBossEncounter(bossType) {
+        if (!bossType) return;
+        this._prewarmedBossEncounters ??= new Set();
+        if (this._prewarmedBossEncounters.has(bossType)) return;
+        this._prewarmedBossEncounters.add(bossType);
+
+        const tasks = [];
+        if (typeof createEnemy3dVisual === 'function') {
+            tasks.push(createEnemy3dVisual(bossType).then(async (visual) => {
+                if (visual?.root) {
+                    if (typeof this.prewarmLateModel === 'function') {
+                        await this.prewarmLateModel(visual.root);
+                    } else if (this.renderer?.compileAsync && this.camera && this.scene) {
+                        await this.renderer.compileAsync(visual.root, this.camera, this.scene);
+                    }
+                }
+            }).catch((err) => {
+                console.warn(`[boss-prewarm] visual prewarm failed for ${bossType}`, err);
+            }));
+        }
+        const deadType = `${bossType}_dead`;
+        if (hasWorld3dModel(deadType)) {
+            tasks.push(prewarmCorpse3dTemplate(this, deadType).catch((err) => {
+                console.warn(`[boss-prewarm] corpse prewarm failed for ${deadType}`, err);
+            }));
+        }
+        await Promise.allSettled(tasks);
     }
 
     async prewarmEnemyGibShaders(type, enemyRoot) {
@@ -42925,7 +42964,6 @@ export class ThreeGame {
     }
 
     async attachCorpse3d(corpse, modelType, enemySprite) {
-        corpse.material.visible = false;
         try {
             const root = await (this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType));
             // Fade-ready materials first, then prewarm: transparency is part of
@@ -42943,6 +42981,9 @@ export class ThreeGame {
             corpse.parent.add(root);
             corpse.userData.corpse3d = root;
             this.syncCorpse3d(corpse);
+            // Seamless handoff: only hide the 2D billboard sprite once the 3D model
+            // is successfully prewarmed, positioned, and added to the world.
+            corpse.material.visible = false;
         } catch (error) {
             console.warn(`[corpse-3d] ${modelType} unavailable; keeping sprite`, error);
             corpse.material.visible = true;

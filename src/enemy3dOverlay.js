@@ -94,11 +94,9 @@ export function getEnemyAssetYaw(type) {
     return MODEL_CONFIG[type]?.yaw ?? 0;
 }
 
-// Boss/queen encounters are rare, once-per-run, and already a big cinematic
-// moment -- a lazy-load pause there is far less disruptive than the same
-// pause mid-firefight against a common enemy. Preload only the regular
-// roster; bosses keep the original lazy path.
-const PRELOAD_TYPES = ['cybersnail', 'cryosnail', 'sporesnail', 'fungal_spore_vent', 'spore_mortar', 'crawler', 'chitin_scuttler', 'mycelium_stalker'];
+// Preload the regular roster plus the first milestone boss (Cyber Snail)
+// so the initial retaliation breach doesn't hitch the game loop.
+const PRELOAD_TYPES = ['cybersnail', 'cryosnail', 'sporesnail', 'fungal_spore_vent', 'spore_mortar', 'crawler', 'chitin_scuttler', 'mycelium_stalker', 'boss_cybersnail'];
 
 // Enemy GLBs used to load lazily on each type's first spawn -- fine on paper
 // since it's async, but GLTFLoader's parse step (meshopt decompress, skeleton

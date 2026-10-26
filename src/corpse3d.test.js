@@ -24,14 +24,18 @@ describe('corpse 3D shader preparation', () => {
         expect(root.children[0].material.transparent).toBe(true);
     });
 
-    it('maps only regular enemies with retained corpse warmups', () => {
+    it('maps regular and boss enemies with retained corpse warmups', () => {
         expect(COMMON_CORPSE_3D_TYPES).toEqual([
             'cybersnail_dead',
             'cryosnail_dead',
-            'sporesnail_dead'
+            'sporesnail_dead',
+            'boss_cybersnail_dead',
+            'boss_cryosnail_dead'
         ]);
         expect(corpse3dTypeForEnemy('cybersnail')).toBe('cybersnail_dead');
-        expect(corpse3dTypeForEnemy('boss_cybersnail')).toBeNull();
+        expect(corpse3dTypeForEnemy('boss_cybersnail')).toBe('boss_cybersnail_dead');
+        expect(corpse3dTypeForEnemy('boss_cryosnail')).toBe('boss_cryosnail_dead');
+        expect(corpse3dTypeForEnemy('boss_sporesnail')).toBeNull();
         expect(corpse3dTypeForEnemy('crawler')).toBeNull();
     });
 
@@ -76,7 +80,7 @@ describe('corpse 3D shader preparation', () => {
 
         const roots = await prewarmCommonCorpse3dTemplates(game, loadModel);
 
-        expect(roots).toHaveLength(3);
+        expect(roots).toHaveLength(5);
         expect(order).toEqual(COMMON_CORPSE_3D_TYPES.flatMap((type) => [
             `load:${type}`,
             `compile:${type}`

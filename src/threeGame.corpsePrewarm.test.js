@@ -99,4 +99,20 @@ describe('corpse model prewarm', () => {
         expect(first.children[0].material.transparent).toBe(true);
         expect(first.children[1].material.isMeshBasicMaterial).toBe(true);
     });
+
+    it('prewarms both live boss visual and dead corpse model once per encounter', async () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const game = Object.create(ThreeGame.prototype);
+        const prewarmLateModel = vi.fn(async () => {});
+        game.prewarmLateModel = prewarmLateModel;
+        game.camera = new THREE.PerspectiveCamera();
+        game.scene = new THREE.Scene();
+        game.renderer = { compileAsync: vi.fn(async () => {}) };
+
+        await game.prewarmBossEncounter('boss_cybersnail');
+        await game.prewarmBossEncounter('boss_cybersnail');
+
+        expect(game._prewarmedBossEncounters.has('boss_cybersnail')).toBe(true);
+        warnSpy.mockRestore();
+    });
 });
