@@ -2,7 +2,7 @@
 """Process the 2026-10-16 World Expansion 80 raster intake.
 
 Inputs are preserved in art/raw. Outputs:
-- alpha-keyed compatibility decals in public/ and public/3d/runtime/decals/
+- alpha-keyed compatibility decals in public/
 - keyed archive in art/source/decals/world-expansion-80-2026-10-16/keyed/
 - seamless WebP PBR suites in art/source/textures/world-expansion-80-2026-10-16/pbr/
   and public/3d/runtime/surfaces/
@@ -27,7 +27,6 @@ RAW = ROOT / 'art/raw'
 DECAL_SOURCE = ROOT / 'art/source/decals/world-expansion-80-2026-10-16/keyed'
 PBR_SOURCE = ROOT / 'art/source/textures/world-expansion-80-2026-10-16/pbr'
 PUBLIC = ROOT / 'public'
-RUNTIME_DECALS = PUBLIC / '3d/runtime/decals'
 RUNTIME_SURFACES = PUBLIC / '3d/runtime/surfaces'
 SIZE = 1024
 SURFACE_VARIANT_SUFFIX = ['_a', '_b', '_c', '_d']
@@ -201,7 +200,6 @@ def key_decal(path: Path) -> tuple[Image.Image, dict]:
 
 def process_decals() -> list[dict]:
     DECAL_SOURCE.mkdir(parents=True, exist_ok=True)
-    RUNTIME_DECALS.mkdir(parents=True, exist_ok=True)
     stems = sorted({re.sub(r' \([234]\)$', '', p.stem) for p in RAW.glob('decal_*.jpg')
                     if p.stat().st_mtime >= 1792162200})
     report = []
@@ -211,8 +209,10 @@ def process_decals() -> list[dict]:
             suffix = DECAL_VARIANT_SUFFIX[variant]
             name = f'{stem}{suffix}'
             keyed.save(DECAL_SOURCE / f'{name}.png', 'PNG', optimize=True)
+            # The game loads /decal_*.png and build_stickers.py bakes the PBR
+            # layers from the same root copy; a second copy under
+            # 3d/runtime/decals was an unused duplicate (retail-asset audit).
             keyed.save(PUBLIC / f'{name}.png', 'PNG', optimize=True)
-            keyed.save(RUNTIME_DECALS / f'{name}.png', 'PNG', optimize=True)
             report.append({'name': name, 'source': path.name, **stats})
     return report
 

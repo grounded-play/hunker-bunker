@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WORLD_EXPANSION_80_MODELS } from '../src/data/worldExpansion80.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MANIFEST_PATH = path.join(ROOT, 'steam/referenced-assets.json');
@@ -177,7 +178,17 @@ export function extractAssetReferences(text) {
             || /^(?:opt|tmp)\//.test(ref)) continue;
         refs.add(ref);
     }
+    // index.html installs the menu artwork as bare names in a CSS custom
+    // property map ('--asset-gear-vault-main': 'gear_vault_main.webp') so they
+    // resolve against document.baseURI in both HTTP and file:// builds.
+    const cssAsset = /['"]--asset-[\w-]+['"]\s*:\s*['"]([^'"\/\s]+\.(?:avif|gif|jpe?g|png|svg|webp))['"]/g;
+    for (const match of String(text ?? '').matchAll(cssAsset)) refs.add(match[1]);
     return [...refs].sort();
+}
+
+// Model families resolved from data ids, so no literal path exists in source.
+export function dataKeyedAssetReferences() {
+    return Object.values(WORLD_EXPANSION_80_MODELS).map(({ url }) => url.replace(/^\/+/, ''));
 }
 
 function collectSourceTexts(root) {
@@ -256,7 +267,7 @@ function fileSizeTotal(files) {
 export function buildRetailAssetAudit(root = ROOT) {
     const publicRoot = path.join(root, 'public');
     const publicFiles = walkFiles(publicRoot);
-    const references = new Set(collectSourceTexts(root).flatMap(extractAssetReferences));
+    const references = new Set([...collectSourceTexts(root).flatMap(extractAssetReferences), ...dataKeyedAssetReferences()]);
     const missingReferences = [...references].filter((ref) => !fs.existsSync(path.join(publicRoot, ref)));
     const assets = publicFiles.map((file) => {
         const relativePath = posix(path.relative(publicRoot, file));

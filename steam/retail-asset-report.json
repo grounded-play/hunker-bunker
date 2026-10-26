@@ -8,14 +8,14 @@
     "duplicateGroups": 140
   },
   "measured": {
-    "publicBytes": 5562674205,
-    "publicFileCount": 7047
+    "publicBytes": 5537500209,
+    "publicFileCount": 7291
   },
   "classifications": {
-    "runtime-required": 6522,
+    "runtime-required": 6883,
     "source-reference": 23,
     "generated-intermediate": 269,
-    "unknown": 233
+    "unknown": 116
   },
   "missingReferences": [],
   "invalidMedia": [],
@@ -612,230 +612,6 @@
     }
   ],
   "duplicateChecksums": [
-    {
-      "sha256": "494089c7eebad09cf06f17717ef85e2c93f6f2f5f293bcce21e0e8fc22ffd572",
-      "files": [
-        "3d/runtime/decals/decal_coring_chain_cut.png",
-        "decal_coring_chain_cut.png"
-      ]
-    },
-    {
-      "sha256": "d844bc9bdd886b44547ece07331bc57c385ee26b69e163ec45bb761702af588f",
-      "files": [
-        "3d/runtime/decals/decal_cryogen_header_fallout_b.png",
-        "decal_cryogen_header_fallout_b.png"
-      ]
-    },
-    {
-      "sha256": "c62840dd8bbc5c5ea864bdc657cc62d53719a332334bf9d1da2ed1ee55c76d96",
-      "files": [
-        "3d/runtime/decals/decal_cryogen_header_fallout_c.png",
-        "decal_cryogen_header_fallout_c.png"
-      ]
-    },
-    {
-      "sha256": "af6d508fcaa580e6ffa75be32effb76fa2fcea4404a08d3b52e125d286c8681d",
-      "files": [
-        "3d/runtime/decals/decal_cryogen_header_fallout_d.png",
-        "decal_cryogen_header_fallout_d.png"
-      ]
-    },
-    {
-      "sha256": "d97296e72c2502301ce748816e90b97b85a99cea468c6de9eae6bdf593251636",
-      "files": [
-        "3d/runtime/decals/decal_cryogen_header_fallout.png",
-        "decal_cryogen_header_fallout.png"
-      ]
-    },
-    {
-      "sha256": "4b913136baa2bca5fb48c31f48f47f738b8f1a1cd82d4202c0b5a80951cf210e",
-      "files": [
-        "3d/runtime/decals/decal_egg_harness_condensate.png",
-        "decal_egg_harness_condensate.png"
-      ]
-    },
-    {
-      "sha256": "21cc6afc5182424d7f44255dd9783ae30974e16cfbbde65366d063d2a20163f5",
-      "files": [
-        "3d/runtime/decals/decal_escort_tether_drag.png",
-        "decal_escort_tether_drag.png"
-      ]
-    },
-    {
-      "sha256": "9d59a8d03fa2e5c2b7d856b66c9f09525e0121ecd177e8a4ba48fc83c0b6ea83",
-      "files": [
-        "3d/runtime/decals/decal_evac_muster_positions_b.png",
-        "decal_evac_muster_positions_b.png"
-      ]
-    },
-    {
-      "sha256": "128d87d9be2e32239854833c8fe8665d2368c5387db39a3bfb28c6c6362b1ec1",
-      "files": [
-        "3d/runtime/decals/decal_evac_muster_positions.png",
-        "decal_evac_muster_positions.png"
-      ]
-    },
-    {
-      "sha256": "313ca09affdd2d05d2977e7c64905214fbc2c7b40109fb005a65233d68cbd98b",
-      "files": [
-        "3d/runtime/decals/decal_flood_baffle_tide.png",
-        "decal_flood_baffle_tide.png"
-      ]
-    },
-    {
-      "sha256": "fb2519e77693dba722a5b74b19caa33f1de7eeed355bc7645385c6493e4e706f",
-      "files": [
-        "3d/runtime/decals/decal_grid_covenant_witness_arc.png",
-        "decal_grid_covenant_witness_arc.png"
-      ]
-    },
-    {
-      "sha256": "e2abed4fed41300ad8118d4dfb35303c6d1adef7e2d5f1eb24649a2a18d29e71",
-      "files": [
-        "3d/runtime/decals/decal_iron_ledger_chalk_ring.png",
-        "decal_iron_ledger_chalk_ring.png"
-      ]
-    },
-    {
-      "sha256": "dac99acd5c3e194f4859242a62d8a7545d580e022666b4e67adfc46c7dd3b4e9",
-      "files": [
-        "3d/runtime/decals/decal_lift_recess_rim.png",
-        "decal_lift_recess_rim.png"
-      ]
-    },
-    {
-      "sha256": "8036ddcdb5afacb1bcf443d80b2c15383aea8d7fe83b21f87f75d26f0c373e64",
-      "files": [
-        "3d/runtime/decals/decal_memory_skin_pressure_b.png",
-        "decal_memory_skin_pressure_b.png"
-      ]
-    },
-    {
-      "sha256": "dd5346ad2cbb24c87be2934a1f993666887a549fea84be76546f05008ac32cb7",
-      "files": [
-        "3d/runtime/decals/decal_memory_skin_pressure.png",
-        "decal_memory_skin_pressure.png"
-      ]
-    },
-    {
-      "sha256": "9dfb7e37922c81a1aaac84ed2ec084f31e44e3523c56c3c97cfdb4b9a263d394",
-      "files": [
-        "3d/runtime/decals/decal_nahl_covenant_loop.png",
-        "decal_nahl_covenant_loop.png"
-      ]
-    },
-    {
-      "sha256": "76ef46729df82627f7efb858031a19721b90ff7c3affd471ef169bc86d17ddcf",
-      "files": [
-        "3d/runtime/decals/decal_packdown_drag_route.png",
-        "decal_packdown_drag_route.png"
-      ]
-    },
-    {
-      "sha256": "e3dd63da0d7a0187fbe574f140fbaf51b8561e754a04580c94627efce3662d7e",
-      "files": [
-        "3d/runtime/decals/decal_probe_capture_skid.png",
-        "decal_probe_capture_skid.png"
-      ]
-    },
-    {
-      "sha256": "d70532895c945ce77f82b3674ca262e071913521c221ff55bb0cc0e8b5488075",
-      "files": [
-        "3d/runtime/decals/decal_queen_restraint_sweep.png",
-        "decal_queen_restraint_sweep.png"
-      ]
-    },
-    {
-      "sha256": "6ed50e7f4f43144b6eb3ef08fb728f04b4ae3ba2b6e60981d73ab3896c9fc8ca",
-      "files": [
-        "3d/runtime/decals/decal_red_mold_quarantine_edge.png",
-        "decal_red_mold_quarantine_edge.png"
-      ]
-    },
-    {
-      "sha256": "bdfda2e7850f85bf5e29645b3dc3755379c81d9fb60689679dc57cdff06968c2",
-      "files": [
-        "3d/runtime/decals/decal_refusal_cautery_fan.png",
-        "decal_refusal_cautery_fan.png"
-      ]
-    },
-    {
-      "sha256": "40b40834f92628aa499376c083f452c911009f4592b8484acda4fa33f05ec288",
-      "files": [
-        "3d/runtime/decals/decal_restored_grid_halo.png",
-        "decal_restored_grid_halo.png"
-      ]
-    },
-    {
-      "sha256": "6cca2439c8bb82e52ad8ef823ad7cf3c9f4e03b777f04fc30e4c098706d54d60",
-      "files": [
-        "3d/runtime/decals/decal_rhun_weight_set.png",
-        "decal_rhun_weight_set.png"
-      ]
-    },
-    {
-      "sha256": "2bc7a44e36b0d692e565a0cde96fec6587b16c4fae533406178e6eccae8e9241",
-      "files": [
-        "3d/runtime/decals/decal_stolen_weapon_ghosts_b.png",
-        "decal_stolen_weapon_ghosts_b.png"
-      ]
-    },
-    {
-      "sha256": "bd00f103fb387e94c6a6290c73f678a7388e0db5476c68a56d14d25ab5eb3f29",
-      "files": [
-        "3d/runtime/decals/decal_stolen_weapon_ghosts.png",
-        "decal_stolen_weapon_ghosts.png"
-      ]
-    },
-    {
-      "sha256": "a4f6ae28db902a96224ba3e9fde1e58c061e2aad98fb621054db1241d2bb9d5b",
-      "files": [
-        "3d/runtime/decals/decal_stripped_copper_scatter_b.png",
-        "decal_stripped_copper_scatter_b.png"
-      ]
-    },
-    {
-      "sha256": "6a7bce1196aac30a814d6c9f575c6cccccf7c9b2260d4c05284fc9f92fbebe72",
-      "files": [
-        "3d/runtime/decals/decal_stripped_copper_scatter_c.png",
-        "decal_stripped_copper_scatter_c.png"
-      ]
-    },
-    {
-      "sha256": "d2136e79f2d041c3115df3870720f0107316c1b0d4d4bcafdd62b695e3925800",
-      "files": [
-        "3d/runtime/decals/decal_stripped_copper_scatter.png",
-        "decal_stripped_copper_scatter.png"
-      ]
-    },
-    {
-      "sha256": "c58232a15f7d82bcca5936ddf64bae3f7df2c18395a90c7f235e7d08c738f72b",
-      "files": [
-        "3d/runtime/decals/decal_turned_resin_veins_fan.png",
-        "decal_turned_resin_veins_fan.png"
-      ]
-    },
-    {
-      "sha256": "e8b8d4998d60ae0aec98e7c9c50c6434c1842917041484ece74b985d22b50d6c",
-      "files": [
-        "3d/runtime/decals/decal_vey_resonance_nodes.png",
-        "decal_vey_resonance_nodes.png"
-      ]
-    },
-    {
-      "sha256": "fb4127447b3d15cd4bbcf0b2328e4f1fa81db9e06e5dc2332e2e9e9bcd6dfa08",
-      "files": [
-        "3d/runtime/decals/decal_vote_turnstile_wear.png",
-        "decal_vote_turnstile_wear.png"
-      ]
-    },
-    {
-      "sha256": "17059f719801bd5c39308c74501dac35795041401e0b5ebe26f1673962fa12f4",
-      "files": [
-        "3d/runtime/decals/decal_warm_pipe_body_polish.png",
-        "decal_warm_pipe_body_polish.png"
-      ]
-    },
     {
       "sha256": "eb4cca8e9501b5bc41f39845a761cfbba815417285dec85fdc3d1b8147ae1b97",
       "files": [
@@ -1808,8 +1584,5 @@
       ]
     }
   ],
-  "failures": [
-    "unknown assets exceed 160",
-    "duplicate groups exceed 140"
-  ]
+  "failures": []
 }

@@ -161,6 +161,7 @@
     "3d/runtime/new3ds/boss_corrupted_martha.glb",
     "3d/runtime/new3ds/boss_cryosnail_dead.glb",
     "3d/runtime/new3ds/boss_cybersnail_dead.glb",
+    "3d/runtime/new3ds/briggs_field_strip_ritual_mat.glb",
     "3d/runtime/new3ds/bunker_junk_rare.glb",
     "3d/runtime/new3ds/bunker_junk_uncommon.glb",
     "3d/runtime/new3ds/camp_canvas_tent.glb",
@@ -169,6 +170,9 @@
     "3d/runtime/new3ds/carapace_ossuary_anvil.glb",
     "3d/runtime/new3ds/carapace_sentry_chrysalis.glb",
     "3d/runtime/new3ds/carry_field_cot_folded.glb",
+    "3d/runtime/new3ds/ceiling_brood_shadow_perch.glb",
+    "3d/runtime/new3ds/ceiling_cable_transfer_carriage.glb",
+    "3d/runtime/new3ds/ceiling_condensate_return_tree.glb",
     "3d/runtime/new3ds/charm_amber_bio_flask.glb",
     "3d/runtime/new3ds/charm_bunker404.glb",
     "3d/runtime/new3ds/charm_dark_matter.glb",
@@ -221,7 +225,15 @@
     "3d/runtime/new3ds/chassis_tank_old_iron.glb",
     "3d/runtime/new3ds/chassis_trench_warden_heavy.glb",
     "3d/runtime/new3ds/chassis_void_commando_recon.glb",
+    "3d/runtime/new3ds/chen_boardroom_hologram_plinth.glb",
+    "3d/runtime/new3ds/chen_bullion_smuggling_trunk.glb",
+    "3d/runtime/new3ds/chen_executive_bodyguard_rack.glb",
+    "3d/runtime/new3ds/chen_executive_mahogany_desk.glb",
+    "3d/runtime/new3ds/chen_holding_cell_shock_gate.glb",
+    "3d/runtime/new3ds/chen_pneumatic_capsule_chute.glb",
     "3d/runtime/new3ds/chen_sealed_confession_console.glb",
+    "3d/runtime/new3ds/chen_shredder_furnace_hopper.glb",
+    "3d/runtime/new3ds/chen_whiskey_decanter_caddy.glb",
     "3d/runtime/new3ds/corp_asset_incinerator_chute.glb",
     "3d/runtime/new3ds/corp_biometric_collar_chute.glb",
     "3d/runtime/new3ds/corp_biometric_wall_safe.glb",
@@ -261,13 +273,23 @@
     "3d/runtime/new3ds/engineer_robotic_welding_arm.glb",
     "3d/runtime/new3ds/engineer_wave_relay_dynamo.glb",
     "3d/runtime/new3ds/evac_avionics_gyro_gimbal.glb",
+    "3d/runtime/new3ds/evac_boarding_vote_turnstile.glb",
     "3d/runtime/new3ds/evac_cabin_co2_scrubber.glb",
     "3d/runtime/new3ds/evac_cargo_ballast_scale.glb",
+    "3d/runtime/new3ds/evac_crew_belongings_mesh.glb",
     "3d/runtime/new3ds/evac_cryo_hypergolic_manifold.glb",
+    "3d/runtime/new3ds/evac_egg_coldchain_harness.glb",
+    "3d/runtime/new3ds/evac_empty_seat_memorial_latches.glb",
     "3d/runtime/new3ds/evac_four_seat_cockpit_module.glb",
+    "3d/runtime/new3ds/evac_infection_screening_arch.glb",
+    "3d/runtime/new3ds/evac_launch_mass_trim_track.glb",
     "3d/runtime/new3ds/evac_manifest_allocation_terminal.glb",
     "3d/runtime/new3ds/evac_manual_abort_detonator.glb",
+    "3d/runtime/new3ds/evac_mixed_crew_translation_rail.glb",
+    "3d/runtime/new3ds/evac_passenger_muster_abacus.glb",
     "3d/runtime/new3ds/evac_preflight_fuel_umbilical.glb",
+    "3d/runtime/new3ds/evac_queen_restraint_arc.glb",
+    "3d/runtime/new3ds/evac_turned_passenger_jettison_seat.glb",
     "3d/runtime/new3ds/fixture_clock_dead.glb",
     "3d/runtime/new3ds/fixture_sconce_vine.glb",
     "3d/runtime/new3ds/fungal_spore_vent.glb",
@@ -277,6 +299,14 @@
     "3d/runtime/new3ds/gun_scout_talon_c.glb",
     "3d/runtime/new3ds/gun_scout_vector9_talon.glb",
     "3d/runtime/new3ds/gun_tank_siege_breaker50.glb",
+    "3d/runtime/new3ds/hazard_beneficiary_seed_warmer.glb",
+    "3d/runtime/new3ds/hazard_beneficiary_steam_rotary_airlock.glb",
+    "3d/runtime/new3ds/hazard_controller_air_scrub_diverter.glb",
+    "3d/runtime/new3ds/hazard_controller_phase_slug.glb",
+    "3d/runtime/new3ds/hazard_controller_relief_logic_cam.glb",
+    "3d/runtime/new3ds/hazard_source_cryogen_header.glb",
+    "3d/runtime/new3ds/hazard_source_spore_pressure_gland.glb",
+    "3d/runtime/new3ds/hazard_source_steam_heart.glb",
     "3d/runtime/new3ds/hive_amniotic_feeder_trough.glb",
     "3d/runtime/new3ds/hive_assimilated_generator.glb",
     "3d/runtime/new3ds/hive_brood_dome.glb",
@@ -293,6 +323,7 @@
     "3d/runtime/new3ds/ind_biomass_grinder.glb",
     "3d/runtime/new3ds/ind_fuel_rod_cask.glb",
     "3d/runtime/new3ds/ind_hydraulic_manifold.glb",
+    "3d/runtime/new3ds/kaelen_drafting_scroll_reel.glb",
     "3d/runtime/new3ds/life_acoustic_ear_horn.glb",
     "3d/runtime/new3ds/life_algae_tank.glb",
     "3d/runtime/new3ds/life_ammo_ovipositor.glb",
@@ -390,14 +421,22 @@
     "3d/runtime/new3ds/life_weight_bench.glb",
     "3d/runtime/new3ds/life_welding_station.glb",
     "3d/runtime/new3ds/life_wind_mast.glb",
+    "3d/runtime/new3ds/martha_warm_pipe_return_nest.glb",
     "3d/runtime/new3ds/meridian_capacitor_bomb.glb",
     "3d/runtime/new3ds/meridian_cyber_graft_bench.glb",
+    "3d/runtime/new3ds/meridian_grid_covenant_seal.glb",
+    "3d/runtime/new3ds/meridian_grid_restored_bus_crown.glb",
     "3d/runtime/new3ds/meridian_logic_core_drum.glb",
     "3d/runtime/new3ds/meridian_mainframe_altar.glb",
     "3d/runtime/new3ds/meridian_optic_nerve_patchbay.glb",
+    "3d/runtime/new3ds/meridian_probe_return_catchframe.glb",
+    "3d/runtime/new3ds/meridian_reactor_vent_load_selector.glb",
+    "3d/runtime/new3ds/meridian_recruited_packdown_sled.glb",
+    "3d/runtime/new3ds/meridian_robbed_stripped_transformer_carcass.glb",
     "3d/runtime/new3ds/meridian_servitor_dock.glb",
     "3d/runtime/new3ds/meridian_servitor_recharge_cradle.glb",
     "3d/runtime/new3ds/meridian_soldering_hearth.glb",
+    "3d/runtime/new3ds/meridian_turned_resin_choked_breaker_gallery.glb",
     "3d/runtime/new3ds/mod_archivist_lens.glb",
     "3d/runtime/new3ds/mod_ballast_plating.glb",
     "3d/runtime/new3ds/mod_bio_hazard_filter.glb",
@@ -416,6 +455,10 @@
     "3d/runtime/new3ds/mod_zero_point_flux.glb",
     "3d/runtime/new3ds/mothership_docking_umbilical_collar.glb",
     "3d/runtime/new3ds/mycelium_stalker.glb",
+    "3d/runtime/new3ds/nahl_covenant_suture_knot.glb",
+    "3d/runtime/new3ds/nahl_gift_mercy_carrier.glb",
+    "3d/runtime/new3ds/nahl_refusal_cautery_scar.glb",
+    "3d/runtime/new3ds/nahl_shared_repair_tendon_jig.glb",
     "3d/runtime/new3ds/npc_alien_rhun.glb",
     "3d/runtime/new3ds/npc_alien_vey.glb",
     "3d/runtime/new3ds/npc_aria.glb",
@@ -515,6 +558,10 @@
     "3d/runtime/new3ds/relay_acoustic_diaphragm.glb",
     "3d/runtime/new3ds/relay_false_beacon_spire.glb",
     "3d/runtime/new3ds/relay_harmonic_tuning_fork.glb",
+    "3d/runtime/new3ds/rhun_covenant_weight_stone.glb",
+    "3d/runtime/new3ds/rhun_gift_load_bearing_yoke.glb",
+    "3d/runtime/new3ds/rhun_refusal_split_anvil_wedge.glb",
+    "3d/runtime/new3ds/rhun_shared_breach_brace.glb",
     "3d/runtime/new3ds/royal_egg_clutch_caul.glb",
     "3d/runtime/new3ds/salvage_tagged_heap.glb",
     "3d/runtime/new3ds/scatter_bolts.glb",
@@ -523,6 +570,8 @@
     "3d/runtime/new3ds/scout_ejection_pod_chassis.glb",
     "3d/runtime/new3ds/scout_tachyon_radar_mast.glb",
     "3d/runtime/new3ds/scout_tracking_beacon_core.glb",
+    "3d/runtime/new3ds/secret_floor_confessional_cache.glb",
+    "3d/runtime/new3ds/secret_wall_memory_skin.glb",
     "3d/runtime/new3ds/sector_zero_bore_drillhead.glb",
     "3d/runtime/new3ds/sentinel.glb",
     "3d/runtime/new3ds/sentinel_A.glb",
@@ -566,15 +615,27 @@
     "3d/runtime/new3ds/state_wall_breached_03.glb",
     "3d/runtime/new3ds/substation_breaker_interlock.glb",
     "3d/runtime/new3ds/substation_stepdown_transformer.glb",
+    "3d/runtime/new3ds/sump_acid_skimmer_separator.glb",
+    "3d/runtime/new3ds/sump_caustic_barrel_crusher.glb",
+    "3d/runtime/new3ds/sump_chemical_neutralizer_vat.glb",
+    "3d/runtime/new3ds/sump_emergency_eyewash_station.glb",
+    "3d/runtime/new3ds/sump_sewage_macerator_pump.glb",
     "3d/runtime/new3ds/suture_flesh_mending_bath.glb",
     "3d/runtime/new3ds/suture_larval_nursery_urn.glb",
     "3d/runtime/new3ds/suture_mercy_cocoon_canopy.glb",
     "3d/runtime/new3ds/tallow_apothecary_dryer_rack.glb",
+    "3d/runtime/new3ds/tallow_communal_dose_wheel.glb",
     "3d/runtime/new3ds/tallow_compost_fermenter.glb",
+    "3d/runtime/new3ds/tallow_cultist_escort_tether_reel.glb",
     "3d/runtime/new3ds/tallow_flesh_trellis.glb",
+    "3d/runtime/new3ds/tallow_harvest_restored_canopy.glb",
     "3d/runtime/new3ds/tallow_irrigation_sluice_gate.glb",
+    "3d/runtime/new3ds/tallow_recruited_mobile_clinic_harness.glb",
+    "3d/runtime/new3ds/tallow_red_mold_quarantine_loom.glb",
+    "3d/runtime/new3ds/tallow_robbed_seed_absence_niche.glb",
     "3d/runtime/new3ds/tallow_sacrificial_altar.glb",
     "3d/runtime/new3ds/tallow_spore_cradle.glb",
+    "3d/runtime/new3ds/tallow_turned_spore_lockdown_iris.glb",
     "3d/runtime/new3ds/tallow_vaccine_alembic.glb",
     "3d/runtime/new3ds/tank_kinetic_ram_breech.glb",
     "3d/runtime/new3ds/tank_orbital_siege_cannon.glb",
@@ -588,6 +649,14 @@
     "3d/runtime/new3ds/tina_shedding_cocoon_niche.glb",
     "3d/runtime/new3ds/tina_trophy_trove.glb",
     "3d/runtime/new3ds/tina_vocal_mimic_synthesizer.glb",
+    "3d/runtime/new3ds/traversal_ballast_tilt_floor.glb",
+    "3d/runtime/new3ds/traversal_catwalk_swing_span.glb",
+    "3d/runtime/new3ds/traversal_collapsible_chasm_stitcher.glb",
+    "3d/runtime/new3ds/traversal_door_pressure_equalizer_bladder.glb",
+    "3d/runtime/new3ds/traversal_flood_baffle_wedge.glb",
+    "3d/runtime/new3ds/traversal_floor_recess_lift_drum.glb",
+    "3d/runtime/new3ds/traversal_thermal_ice_underbite.glb",
+    "3d/runtime/new3ds/traversal_wall_coring_chain.glb",
     "3d/runtime/new3ds/vass_acoustic_resonator_tank.glb",
     "3d/runtime/new3ds/vass_bio_centrifuge_rack.glb",
     "3d/runtime/new3ds/vass_containment_bell_jar.glb",
@@ -600,12 +669,23 @@
     "3d/runtime/new3ds/vesper_autocannon_bipod.glb",
     "3d/runtime/new3ds/vesper_ballistic_chronograph.glb",
     "3d/runtime/new3ds/vesper_barricade_welding_rig.glb",
+    "3d/runtime/new3ds/vesper_defense_grid_fire_director.glb",
     "3d/runtime/new3ds/vesper_dogtag_retrieval_crypt.glb",
+    "3d/runtime/new3ds/vesper_grown_moving_target_rail.glb",
     "3d/runtime/new3ds/vesper_hanging_cage.glb",
+    "3d/runtime/new3ds/vesper_iron_ledger_totem.glb",
     "3d/runtime/new3ds/vesper_mortar_loading_cradle.glb",
     "3d/runtime/new3ds/vesper_ordnance_disarm_table.glb",
+    "3d/runtime/new3ds/vesper_recruited_gun_limber.glb",
     "3d/runtime/new3ds/vesper_reloading_station.glb",
+    "3d/runtime/new3ds/vesper_robbed_armory_shadowboard.glb",
+    "3d/runtime/new3ds/vesper_surrender_weapon_tree.glb",
     "3d/runtime/new3ds/vesper_trench_warning_klaxon.glb",
+    "3d/runtime/new3ds/vesper_turned_execution_interlock.glb",
+    "3d/runtime/new3ds/vey_covenant_twin_listening_cowl.glb",
+    "3d/runtime/new3ds/vey_gift_route_memory_orb.glb",
+    "3d/runtime/new3ds/vey_refusal_silence_baffle.glb",
+    "3d/runtime/new3ds/vey_shared_signal_braider.glb",
     "3d/runtime/new3ds/wall_macro_buttress_3.glb",
     "3d/runtime/new3ds/wall_macro_straight_4.glb",
     "3d/runtime/new3ds/weapon_flamethrower_case.glb",
@@ -1460,6 +1540,9 @@
     "fungal_spore_vent.png",
     "fx_spark_burst.svg",
     "fx_steam_puff.svg",
+    "gear_vault_inner.webp",
+    "gear_vault_iris.webp",
+    "gear_vault_main.webp",
     "hex_decal_cracks.png",
     "ice_base_rock.png",
     "ice_wall_glacier.png",
@@ -1511,6 +1594,8 @@
     "martha_camp_walk.png",
     "martha_camp_walk_v2.png",
     "menu_bg.webp",
+    "menu_bg_v3.webp",
+    "menu_frame_overlay.webp",
     "module_hull_matrix.png",
     "module_o2_generator.png",
     "module_radar_dish.png",
@@ -2206,11 +2291,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/decals/decal_coring_chain_cut.png",
-      "bytes": 1223580,
-      "classification": "unknown"
-    },
-    {
       "path": "3d/runtime/decals/decal_corp_confidential_seal.png",
       "bytes": 1786784,
       "classification": "unknown"
@@ -2218,26 +2298,6 @@
     {
       "path": "3d/runtime/decals/decal_crash_drag_skid_trench.png",
       "bytes": 1374238,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_cryogen_header_fallout.png",
-      "bytes": 858818,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_cryogen_header_fallout_b.png",
-      "bytes": 1020580,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_cryogen_header_fallout_c.png",
-      "bytes": 1026079,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_cryogen_header_fallout_d.png",
-      "bytes": 1169874,
       "classification": "unknown"
     },
     {
@@ -2401,33 +2461,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/decals/decal_egg_harness_condensate.png",
-      "bytes": 1618053,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_escort_tether_drag.png",
-      "bytes": 518770,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_evac_muster_positions.png",
-      "bytes": 1632061,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_evac_muster_positions_b.png",
-      "bytes": 1182232,
-      "classification": "unknown"
-    },
-    {
       "path": "3d/runtime/decals/decal_evac_seat_assignment_stencil.png",
       "bytes": 1124512,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_flood_baffle_tide.png",
-      "bytes": 902053,
       "classification": "unknown"
     },
     {
@@ -2516,48 +2551,13 @@
       "classification": "unknown"
     },
     {
-      "path": "3d/runtime/decals/decal_grid_covenant_witness_arc.png",
-      "bytes": 1300639,
-      "classification": "unknown"
-    },
-    {
       "path": "3d/runtime/decals/decal_hive_symbiont_trail.png",
       "bytes": 1186892,
       "classification": "unknown"
     },
     {
-      "path": "3d/runtime/decals/decal_iron_ledger_chalk_ring.png",
-      "bytes": 1615625,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_lift_recess_rim.png",
-      "bytes": 1340540,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_memory_skin_pressure.png",
-      "bytes": 1007686,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_memory_skin_pressure_b.png",
-      "bytes": 903052,
-      "classification": "unknown"
-    },
-    {
       "path": "3d/runtime/decals/decal_meridian_binary_litany.png",
       "bytes": 1286083,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_nahl_covenant_loop.png",
-      "bytes": 1621465,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_packdown_drag_route.png",
-      "bytes": 974835,
       "classification": "unknown"
     },
     {
@@ -2599,36 +2599,6 @@
       "path": "3d/runtime/decals/decal_paper_scatter_d_detail.ktx2",
       "bytes": 479616,
       "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/decals/decal_probe_capture_skid.png",
-      "bytes": 589545,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_queen_restraint_sweep.png",
-      "bytes": 1777467,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_red_mold_quarantine_edge.png",
-      "bytes": 2317595,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_refusal_cautery_fan.png",
-      "bytes": 1180027,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_restored_grid_halo.png",
-      "bytes": 1709752,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_rhun_weight_set.png",
-      "bytes": 1574238,
-      "classification": "unknown"
     },
     {
       "path": "3d/runtime/decals/decal_spent_casings_a_albedo.ktx2",
@@ -2711,38 +2681,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "3d/runtime/decals/decal_stolen_weapon_ghosts.png",
-      "bytes": 1859800,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_stolen_weapon_ghosts_b.png",
-      "bytes": 1682892,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_stripped_copper_scatter.png",
-      "bytes": 1153689,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_stripped_copper_scatter_b.png",
-      "bytes": 1423904,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_stripped_copper_scatter_c.png",
-      "bytes": 1397087,
-      "classification": "unknown"
-    },
-    {
       "path": "3d/runtime/decals/decal_tina_dermis_shed_residue.png",
       "bytes": 1021913,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_turned_resin_veins_fan.png",
-      "bytes": 1127689,
       "classification": "unknown"
     },
     {
@@ -2753,16 +2693,6 @@
     {
       "path": "3d/runtime/decals/decal_vesper_kill_tally.png",
       "bytes": 649085,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_vey_resonance_nodes.png",
-      "bytes": 1432917,
-      "classification": "unknown"
-    },
-    {
-      "path": "3d/runtime/decals/decal_vote_turnstile_wear.png",
-      "bytes": 1453302,
       "classification": "unknown"
     },
     {
@@ -2884,11 +2814,6 @@
       "path": "3d/runtime/decals/decal_wall_soot_plume_d_detail.ktx2",
       "bytes": 408290,
       "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/decals/decal_warm_pipe_body_polish.png",
-      "bytes": 1291101,
-      "classification": "unknown"
     },
     {
       "path": "3d/runtime/decals/legacy/decal_abandoned_meal_tray_albedo.ktx2",
@@ -6523,7 +6448,7 @@
     {
       "path": "3d/runtime/new3ds/briggs_field_strip_ritual_mat.glb",
       "bytes": 2130296,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/bunker_junk_rare.glb",
@@ -6568,17 +6493,17 @@
     {
       "path": "3d/runtime/new3ds/ceiling_brood_shadow_perch.glb",
       "bytes": 2342988,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/ceiling_cable_transfer_carriage.glb",
       "bytes": 2807360,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/ceiling_condensate_return_tree.glb",
       "bytes": 2779472,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/charm_amber_bio_flask.glb",
@@ -6843,32 +6768,32 @@
     {
       "path": "3d/runtime/new3ds/chen_boardroom_hologram_plinth.glb",
       "bytes": 2158592,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chen_bullion_smuggling_trunk.glb",
       "bytes": 2276232,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chen_executive_bodyguard_rack.glb",
       "bytes": 2243396,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chen_executive_mahogany_desk.glb",
       "bytes": 2009152,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chen_holding_cell_shock_gate.glb",
       "bytes": 2227364,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chen_pneumatic_capsule_chute.glb",
       "bytes": 1919340,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chen_sealed_confession_console.glb",
@@ -6878,12 +6803,12 @@
     {
       "path": "3d/runtime/new3ds/chen_shredder_furnace_hopper.glb",
       "bytes": 2227116,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chen_whiskey_decanter_caddy.glb",
       "bytes": 2375516,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/corp_asset_incinerator_chute.glb",
@@ -7083,7 +7008,7 @@
     {
       "path": "3d/runtime/new3ds/evac_boarding_vote_turnstile.glb",
       "bytes": 2091616,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/evac_cabin_co2_scrubber.glb",
@@ -7098,7 +7023,7 @@
     {
       "path": "3d/runtime/new3ds/evac_crew_belongings_mesh.glb",
       "bytes": 2545768,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/evac_cryo_hypergolic_manifold.glb",
@@ -7108,12 +7033,12 @@
     {
       "path": "3d/runtime/new3ds/evac_egg_coldchain_harness.glb",
       "bytes": 2534888,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/evac_empty_seat_memorial_latches.glb",
       "bytes": 2905596,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/evac_four_seat_cockpit_module.glb",
@@ -7123,12 +7048,12 @@
     {
       "path": "3d/runtime/new3ds/evac_infection_screening_arch.glb",
       "bytes": 2910724,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/evac_launch_mass_trim_track.glb",
       "bytes": 2314172,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/evac_manifest_allocation_terminal.glb",
@@ -7143,12 +7068,12 @@
     {
       "path": "3d/runtime/new3ds/evac_mixed_crew_translation_rail.glb",
       "bytes": 1830300,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/evac_passenger_muster_abacus.glb",
       "bytes": 2136584,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/evac_preflight_fuel_umbilical.glb",
@@ -7158,12 +7083,12 @@
     {
       "path": "3d/runtime/new3ds/evac_queen_restraint_arc.glb",
       "bytes": 3045632,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/evac_turned_passenger_jettison_seat.glb",
       "bytes": 2114392,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/fixture_clock_dead.glb",
@@ -7213,42 +7138,42 @@
     {
       "path": "3d/runtime/new3ds/hazard_beneficiary_seed_warmer.glb",
       "bytes": 2915696,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/hazard_beneficiary_steam_rotary_airlock.glb",
       "bytes": 2733112,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/hazard_controller_air_scrub_diverter.glb",
       "bytes": 2689132,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/hazard_controller_phase_slug.glb",
       "bytes": 2078580,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/hazard_controller_relief_logic_cam.glb",
       "bytes": 2274888,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/hazard_source_cryogen_header.glb",
       "bytes": 2408568,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/hazard_source_spore_pressure_gland.glb",
       "bytes": 2649832,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/hazard_source_steam_heart.glb",
       "bytes": 2645960,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/hive_amniotic_feeder_trough.glb",
@@ -7333,7 +7258,7 @@
     {
       "path": "3d/runtime/new3ds/kaelen_drafting_scroll_reel.glb",
       "bytes": 2475500,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_acoustic_ear_horn.glb",
@@ -7823,7 +7748,7 @@
     {
       "path": "3d/runtime/new3ds/martha_warm_pipe_return_nest.glb",
       "bytes": 2226088,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/meridian_capacitor_bomb.glb",
@@ -7838,12 +7763,12 @@
     {
       "path": "3d/runtime/new3ds/meridian_grid_covenant_seal.glb",
       "bytes": 1970888,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/meridian_grid_restored_bus_crown.glb",
       "bytes": 2583428,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/meridian_logic_core_drum.glb",
@@ -7863,22 +7788,22 @@
     {
       "path": "3d/runtime/new3ds/meridian_probe_return_catchframe.glb",
       "bytes": 2117944,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/meridian_reactor_vent_load_selector.glb",
       "bytes": 2733060,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/meridian_recruited_packdown_sled.glb",
       "bytes": 2036716,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/meridian_robbed_stripped_transformer_carcass.glb",
       "bytes": 2368432,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/meridian_servitor_dock.glb",
@@ -7898,7 +7823,7 @@
     {
       "path": "3d/runtime/new3ds/meridian_turned_resin_choked_breaker_gallery.glb",
       "bytes": 2812756,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mod_archivist_lens.glb",
@@ -7993,22 +7918,22 @@
     {
       "path": "3d/runtime/new3ds/nahl_covenant_suture_knot.glb",
       "bytes": 2203972,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/nahl_gift_mercy_carrier.glb",
       "bytes": 2320648,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/nahl_refusal_cautery_scar.glb",
       "bytes": 2017884,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/nahl_shared_repair_tendon_jig.glb",
       "bytes": 1929512,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/npc_alien_rhun.glb",
@@ -8508,22 +8433,22 @@
     {
       "path": "3d/runtime/new3ds/rhun_covenant_weight_stone.glb",
       "bytes": 2153016,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/rhun_gift_load_bearing_yoke.glb",
       "bytes": 2581596,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/rhun_refusal_split_anvil_wedge.glb",
       "bytes": 1892000,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/rhun_shared_breach_brace.glb",
       "bytes": 1876424,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/royal_egg_clutch_caul.glb",
@@ -8568,12 +8493,12 @@
     {
       "path": "3d/runtime/new3ds/secret_floor_confessional_cache.glb",
       "bytes": 2221276,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/secret_wall_memory_skin.glb",
       "bytes": 2248832,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/sector_zero_bore_drillhead.glb",
@@ -8793,27 +8718,27 @@
     {
       "path": "3d/runtime/new3ds/sump_acid_skimmer_separator.glb",
       "bytes": 2227620,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/sump_caustic_barrel_crusher.glb",
       "bytes": 2385972,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/sump_chemical_neutralizer_vat.glb",
       "bytes": 2483080,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/sump_emergency_eyewash_station.glb",
       "bytes": 1753008,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/sump_sewage_macerator_pump.glb",
       "bytes": 2354440,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/suture_flesh_mending_bath.glb",
@@ -8838,7 +8763,7 @@
     {
       "path": "3d/runtime/new3ds/tallow_communal_dose_wheel.glb",
       "bytes": 2037872,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/tallow_compost_fermenter.glb",
@@ -8848,7 +8773,7 @@
     {
       "path": "3d/runtime/new3ds/tallow_cultist_escort_tether_reel.glb",
       "bytes": 2298312,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/tallow_flesh_trellis.glb",
@@ -8858,7 +8783,7 @@
     {
       "path": "3d/runtime/new3ds/tallow_harvest_restored_canopy.glb",
       "bytes": 2991308,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/tallow_irrigation_sluice_gate.glb",
@@ -8868,17 +8793,17 @@
     {
       "path": "3d/runtime/new3ds/tallow_recruited_mobile_clinic_harness.glb",
       "bytes": 2253656,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/tallow_red_mold_quarantine_loom.glb",
       "bytes": 3213308,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/tallow_robbed_seed_absence_niche.glb",
       "bytes": 2543844,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/tallow_sacrificial_altar.glb",
@@ -8893,7 +8818,7 @@
     {
       "path": "3d/runtime/new3ds/tallow_turned_spore_lockdown_iris.glb",
       "bytes": 2761372,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/tallow_vaccine_alembic.glb",
@@ -8963,42 +8888,42 @@
     {
       "path": "3d/runtime/new3ds/traversal_ballast_tilt_floor.glb",
       "bytes": 2565832,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/traversal_catwalk_swing_span.glb",
       "bytes": 3020384,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/traversal_collapsible_chasm_stitcher.glb",
       "bytes": 2284152,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/traversal_door_pressure_equalizer_bladder.glb",
       "bytes": 2635548,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/traversal_flood_baffle_wedge.glb",
       "bytes": 2265528,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/traversal_floor_recess_lift_drum.glb",
       "bytes": 2103384,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/traversal_thermal_ice_underbite.glb",
       "bytes": 2405516,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/traversal_wall_coring_chain.glb",
       "bytes": 2500788,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/vass_acoustic_resonator_tank.glb",
@@ -9063,7 +8988,7 @@
     {
       "path": "3d/runtime/new3ds/vesper_defense_grid_fire_director.glb",
       "bytes": 2460440,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/vesper_dogtag_retrieval_crypt.glb",
@@ -9073,7 +8998,7 @@
     {
       "path": "3d/runtime/new3ds/vesper_grown_moving_target_rail.glb",
       "bytes": 1756820,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/vesper_hanging_cage.glb",
@@ -9083,7 +9008,7 @@
     {
       "path": "3d/runtime/new3ds/vesper_iron_ledger_totem.glb",
       "bytes": 2043948,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/vesper_mortar_loading_cradle.glb",
@@ -9098,7 +9023,7 @@
     {
       "path": "3d/runtime/new3ds/vesper_recruited_gun_limber.glb",
       "bytes": 2777644,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/vesper_reloading_station.glb",
@@ -9108,12 +9033,12 @@
     {
       "path": "3d/runtime/new3ds/vesper_robbed_armory_shadowboard.glb",
       "bytes": 2498480,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/vesper_surrender_weapon_tree.glb",
       "bytes": 2526216,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/vesper_trench_warning_klaxon.glb",
@@ -9123,27 +9048,27 @@
     {
       "path": "3d/runtime/new3ds/vesper_turned_execution_interlock.glb",
       "bytes": 2396232,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/vey_covenant_twin_listening_cowl.glb",
       "bytes": 2269424,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/vey_gift_route_memory_orb.glb",
       "bytes": 1756872,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/vey_refusal_silence_baffle.glb",
       "bytes": 2218760,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/vey_shared_signal_braider.glb",
       "bytes": 1997420,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/wall_macro_buttress_3.glb",
@@ -20576,6 +20501,1386 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/voice/lines/en/code.briggs.1094afdc47.mp3",
+      "bytes": 51279,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.1dc3c2f201.mp3",
+      "bytes": 44061,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.2b70d0df28.mp3",
+      "bytes": 92093,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.3474b8ca40.mp3",
+      "bytes": 91866,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.44014c3a71.mp3",
+      "bytes": 73363,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.46e36e6cc1.mp3",
+      "bytes": 78155,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.4c5300de82.mp3",
+      "bytes": 76261,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.660c219b3a.mp3",
+      "bytes": 86228,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.75b7fb944d.mp3",
+      "bytes": 88868,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.793d69e752.mp3",
+      "bytes": 85331,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.8486c89db0.mp3",
+      "bytes": 110901,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.c41a5e68a5.mp3",
+      "bytes": 91767,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.c4f4e96b98.mp3",
+      "bytes": 80290,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.cdf781ea8a.mp3",
+      "bytes": 78793,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.dad23e70dc.mp3",
+      "bytes": 93919,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.db3b45e995.mp3",
+      "bytes": 83468,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.dd60d39048.mp3",
+      "bytes": 83694,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.e3e91469c7.mp3",
+      "bytes": 40995,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.e655154faf.mp3",
+      "bytes": 93189,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.eaaa1fd1da.mp3",
+      "bytes": 73490,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.briggs.ee5236f19f.mp3",
+      "bytes": 87059,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.036d56d060.mp3",
+      "bytes": 44593,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.06bedeedf1.mp3",
+      "bytes": 40620,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.1f27ef7675.mp3",
+      "bytes": 72374,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.3955703b44.mp3",
+      "bytes": 89612,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.488ac36233.mp3",
+      "bytes": 46605,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.6447ed8d44.mp3",
+      "bytes": 89012,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.65fa8dde74.mp3",
+      "bytes": 83816,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.769f4d5aa7.mp3",
+      "bytes": 77059,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.85d8b0a76e.mp3",
+      "bytes": 99730,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.a1a811d1c8.mp3",
+      "bytes": 116068,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.a85e642b38.mp3",
+      "bytes": 95027,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.a8f434794f.mp3",
+      "bytes": 64118,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.aaf7fb5ca0.mp3",
+      "bytes": 76900,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.b1fc42ad14.mp3",
+      "bytes": 101779,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.b5873a31e2.mp3",
+      "bytes": 106529,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.ba56d1f40c.mp3",
+      "bytes": 89655,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.d15b9f7157.mp3",
+      "bytes": 91049,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.df6bf22474.mp3",
+      "bytes": 88599,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.efb02ae9fa.mp3",
+      "bytes": 92129,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.fc6e384fa8.mp3",
+      "bytes": 99552,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.kaelen.ff3c616181.mp3",
+      "bytes": 110825,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.0f7488e430.mp3",
+      "bytes": 71415,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.1832227825.mp3",
+      "bytes": 65023,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.1e956f8335.mp3",
+      "bytes": 77452,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.1f288af536.mp3",
+      "bytes": 67965,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.207c65f0f5.mp3",
+      "bytes": 67050,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.25f52d1b69.mp3",
+      "bytes": 67521,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.28727f4a02.mp3",
+      "bytes": 69257,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.57c4323c50.mp3",
+      "bytes": 60133,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.59005ca37c.mp3",
+      "bytes": 32247,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.598d7b9e53.mp3",
+      "bytes": 90189,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.5c101bd89f.mp3",
+      "bytes": 69798,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.75e3f0f52e.mp3",
+      "bytes": 40540,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.8b9e8b55ab.mp3",
+      "bytes": 85695,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.92ed42f678.mp3",
+      "bytes": 78607,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.99b100ef4c.mp3",
+      "bytes": 76878,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.a102727296.mp3",
+      "bytes": 83270,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.ad08fe1a06.mp3",
+      "bytes": 73119,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.b17a4a48f0.mp3",
+      "bytes": 36742,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.e137d08830.mp3",
+      "bytes": 69129,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.ef29ea0ea8.mp3",
+      "bytes": 67844,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.martha.fc768284e1.mp3",
+      "bytes": 72690,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.03d8d2ff47.mp3",
+      "bytes": 42615,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.07aec33582.mp3",
+      "bytes": 20430,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.1b8f817f05.mp3",
+      "bytes": 17412,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.29e75698f7.mp3",
+      "bytes": 49428,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.2d1813c072.mp3",
+      "bytes": 22087,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.383f1ac17e.mp3",
+      "bytes": 48202,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.39d2482e29.mp3",
+      "bytes": 37340,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.3a983c43de.mp3",
+      "bytes": 52419,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.4c2e9ca25a.mp3",
+      "bytes": 40158,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.533c46d701.mp3",
+      "bytes": 49769,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.59940ff46d.mp3",
+      "bytes": 47745,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.5c6e271bef.mp3",
+      "bytes": 50630,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.669494d7fd.mp3",
+      "bytes": 42814,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.75af1b93bc.mp3",
+      "bytes": 53259,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.7719bf9420.mp3",
+      "bytes": 32131,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.78ba702ccf.mp3",
+      "bytes": 40488,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.8083603033.mp3",
+      "bytes": 22187,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.815d6b7398.mp3",
+      "bytes": 33960,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.82cb09d207.mp3",
+      "bytes": 31250,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.831dc5070f.mp3",
+      "bytes": 37657,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.85d09572df.mp3",
+      "bytes": 62992,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.8e252c0eb0.mp3",
+      "bytes": 48388,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.9d616313d2.mp3",
+      "bytes": 45967,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.9fdeb72944.mp3",
+      "bytes": 42437,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.a3582eadb8.mp3",
+      "bytes": 39277,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.a5d6a5ea95.mp3",
+      "bytes": 47164,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.a9628a4afc.mp3",
+      "bytes": 51892,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.aa07aebade.mp3",
+      "bytes": 50679,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.aad6eb7777.mp3",
+      "bytes": 40289,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.ad7d0f5971.mp3",
+      "bytes": 45193,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.aea17fe99e.mp3",
+      "bytes": 38000,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.af574ddc35.mp3",
+      "bytes": 57841,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.affe633c87.mp3",
+      "bytes": 29802,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.b5ee31fcd3.mp3",
+      "bytes": 49481,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.b779a88677.mp3",
+      "bytes": 31100,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.be056763a9.mp3",
+      "bytes": 35697,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.c069fdb7f9.mp3",
+      "bytes": 36878,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.d995eb915a.mp3",
+      "bytes": 30830,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.e44318ceeb.mp3",
+      "bytes": 43313,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.e4fd6b3f1f.mp3",
+      "bytes": 50819,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.e728e15fd3.mp3",
+      "bytes": 49150,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.ec980234ff.mp3",
+      "bytes": 37173,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.eed5e47009.mp3",
+      "bytes": 64216,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.efbabdd042.mp3",
+      "bytes": 41192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.f498200700.mp3",
+      "bytes": 39968,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.mothership.fe8846384e.mp3",
+      "bytes": 48181,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.0897d928f6.mp3",
+      "bytes": 56055,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.1b8e00a0a5.mp3",
+      "bytes": 32832,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.23d1705cb1.mp3",
+      "bytes": 32623,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.2c3c7aaba4.mp3",
+      "bytes": 51237,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.392182d971.mp3",
+      "bytes": 36221,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.3b395d9e51.mp3",
+      "bytes": 47337,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.44f0ae0117.mp3",
+      "bytes": 20407,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.45a2f597fb.mp3",
+      "bytes": 47453,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.46da303bd3.mp3",
+      "bytes": 33846,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.4d4104ca87.mp3",
+      "bytes": 37811,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.56fc1f8a94.mp3",
+      "bytes": 49303,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.57ceb9d2cf.mp3",
+      "bytes": 32286,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.68a4d1baa0.mp3",
+      "bytes": 59400,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.6ce5779928.mp3",
+      "bytes": 35368,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.71a9d1ec6f.mp3",
+      "bytes": 53777,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.818feecb29.mp3",
+      "bytes": 45460,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.8e8d56d0f1.mp3",
+      "bytes": 34273,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.976cf5acfc.mp3",
+      "bytes": 32672,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.a22694212a.mp3",
+      "bytes": 45469,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.ac7c7490ae.mp3",
+      "bytes": 40381,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.b309770669.mp3",
+      "bytes": 35668,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.c32e9e4389.mp3",
+      "bytes": 58505,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.c9f0480599.mp3",
+      "bytes": 45924,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.cb28f3d7f2.mp3",
+      "bytes": 39763,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.d0b18ab6f5.mp3",
+      "bytes": 37739,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.ed392588e3.mp3",
+      "bytes": 49609,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.queen.f086e18234.mp3",
+      "bytes": 62347,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.sequence.base_cot_first_night.4.mp3",
+      "bytes": 53850,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.sequence.meridian_first_meeting.6.mp3",
+      "bytes": 56830,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.sequence.meridian_grid_covenant.6.mp3",
+      "bytes": 57135,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.0142d95bc5.mp3",
+      "bytes": 30210,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.058a810448.mp3",
+      "bytes": 32926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.0aca96fa14.mp3",
+      "bytes": 31964,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.0cf68e7226.mp3",
+      "bytes": 33532,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.1b8902747b.mp3",
+      "bytes": 35515,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.22ca4d46d4.mp3",
+      "bytes": 39701,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.2ec7b252d3.mp3",
+      "bytes": 27893,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.2ef40ef031.mp3",
+      "bytes": 41921,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.36106bea57.mp3",
+      "bytes": 37538,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.38f0d2d09d.mp3",
+      "bytes": 54761,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.3d52a22da0.mp3",
+      "bytes": 47038,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.40f6146dec.mp3",
+      "bytes": 44366,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.4131f9e7b5.mp3",
+      "bytes": 50431,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.4e23eeb73e.mp3",
+      "bytes": 35377,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.5015552e18.mp3",
+      "bytes": 43688,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.53abd642c9.mp3",
+      "bytes": 41547,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.599929f03a.mp3",
+      "bytes": 25823,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.5a4c5940e3.mp3",
+      "bytes": 35745,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.5beab924b2.mp3",
+      "bytes": 40592,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.5f1e55fa3d.mp3",
+      "bytes": 53592,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.6962a3c7e0.mp3",
+      "bytes": 27821,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.6c6d55a0e2.mp3",
+      "bytes": 29436,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.706dcf1278.mp3",
+      "bytes": 38546,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.716ab7d400.mp3",
+      "bytes": 31606,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.78cfc9ca36.mp3",
+      "bytes": 32058,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.80967cdf8d.mp3",
+      "bytes": 38739,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.82f7f74830.mp3",
+      "bytes": 61025,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.83bc33aaba.mp3",
+      "bytes": 31469,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.8dc2681eb9.mp3",
+      "bytes": 44629,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.9136bff0b2.mp3",
+      "bytes": 42711,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.936495759f.mp3",
+      "bytes": 41143,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.9505ef4234.mp3",
+      "bytes": 24097,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.950fd2231c.mp3",
+      "bytes": 39658,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.95e9a0167d.mp3",
+      "bytes": 33523,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.9a75da2dff.mp3",
+      "bytes": 33481,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.9b92021e4e.mp3",
+      "bytes": 61057,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.a298dd132b.mp3",
+      "bytes": 40664,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.a544d2be63.mp3",
+      "bytes": 34392,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.aaf21787ab.mp3",
+      "bytes": 20390,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.ad8aeb327b.mp3",
+      "bytes": 38056,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.ae8dfea944.mp3",
+      "bytes": 34829,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.ba82235034.mp3",
+      "bytes": 57319,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.baac5d417d.mp3",
+      "bytes": 30602,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.bb6feb4d42.mp3",
+      "bytes": 32560,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.c0341a112f.mp3",
+      "bytes": 44672,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.c120ad0cab.mp3",
+      "bytes": 28575,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.c8c146e69f.mp3",
+      "bytes": 31877,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.c9f35ea5dd.mp3",
+      "bytes": 39758,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.d0c4071de4.mp3",
+      "bytes": 41054,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.d17d6403e3.mp3",
+      "bytes": 31863,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.d72307d43f.mp3",
+      "bytes": 48829,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.e0f59d236d.mp3",
+      "bytes": 42642,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.e19f85654e.mp3",
+      "bytes": 27578,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.e73f67e08f.mp3",
+      "bytes": 41112,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.e95fc1ce0e.mp3",
+      "bytes": 40976,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.ea16eb821d.mp3",
+      "bytes": 58414,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.ea76ede8cc.mp3",
+      "bytes": 21119,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.system.fbc98e0a3d.mp3",
+      "bytes": 42155,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.01bf8878d5.mp3",
+      "bytes": 70861,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.0e67a7d67e.mp3",
+      "bytes": 64033,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.3c75eec21e.mp3",
+      "bytes": 59652,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.3feffd2653.mp3",
+      "bytes": 54558,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.489fdccca3.mp3",
+      "bytes": 22970,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.4c2d13321e.mp3",
+      "bytes": 57422,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.4cf1e8d1a9.mp3",
+      "bytes": 26184,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.55885c8a0b.mp3",
+      "bytes": 49858,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.5e40d44057.mp3",
+      "bytes": 26652,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.626d843cae.mp3",
+      "bytes": 20411,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.6666d01df5.mp3",
+      "bytes": 51863,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.74118f9de7.mp3",
+      "bytes": 20911,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.86217248ed.mp3",
+      "bytes": 35533,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.8e234aabfe.mp3",
+      "bytes": 62607,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.a01eb480b8.mp3",
+      "bytes": 19374,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.ad8bbac826.mp3",
+      "bytes": 51734,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.b5a98c7942.mp3",
+      "bytes": 52661,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.bcf0f5ee77.mp3",
+      "bytes": 62984,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.c20ec7c95e.mp3",
+      "bytes": 68453,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.c3f8f320ce.mp3",
+      "bytes": 20543,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.de144b1ac8.mp3",
+      "bytes": 64272,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.e11ca04ef7.mp3",
+      "bytes": 63492,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.e6d5cb4473.mp3",
+      "bytes": 17884,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tina.eff9746215.mp3",
+      "bytes": 23417,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.aria_queen_mimic.aria_duel_response.mp3",
+      "bytes": 98558,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.aria_queen_mimic.aria_intimate_climax.mp3",
+      "bytes": 65970,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.aria_queen_mimic.aria_resist_response.mp3",
+      "bytes": 80670,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.aria_queen_mimic.aria_surrender_response.mp3",
+      "bytes": 108669,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.aria_queen_mimic.aria_whisper.mp3",
+      "bytes": 123263,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.commander_briggs.briggs_armory_pointer.mp3",
+      "bytes": 76630,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.commander_briggs.briggs_clasps_response.mp3",
+      "bytes": 108163,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.commander_briggs.briggs_greeting.mp3",
+      "bytes": 133473,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.commander_briggs.briggs_history.mp3",
+      "bytes": 132176,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.commander_briggs.briggs_intimate_climax.mp3",
+      "bytes": 117220,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.commander_briggs.briggs_ready_response.mp3",
+      "bytes": 43095,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.commander_briggs.briggs_scars_response.mp3",
+      "bytes": 122215,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.commander_briggs.briggs_tactics_response.mp3",
+      "bytes": 119921,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.commander_briggs.briggs_trusted.mp3",
+      "bytes": 108771,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.dr_nahl.nahl_greeting.mp3",
+      "bytes": 128084,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.dr_nahl.nahl_individuality_response.mp3",
+      "bytes": 117330,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.dr_nahl.nahl_intimate_climax.mp3",
+      "bytes": 84735,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.dr_nahl.nahl_ready_response.mp3",
+      "bytes": 50750,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.dr_nahl.nahl_symbiosis_response.mp3",
+      "bytes": 113433,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.overseer_kaelen.kaelen_biolink_response.mp3",
+      "bytes": 137304,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.overseer_kaelen.kaelen_greeting.mp3",
+      "bytes": 124684,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.overseer_kaelen.kaelen_grid_response.mp3",
+      "bytes": 143691,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.overseer_kaelen.kaelen_history.mp3",
+      "bytes": 148936,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.overseer_kaelen.kaelen_intimate_climax.mp3",
+      "bytes": 112643,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.overseer_kaelen.kaelen_probe_pointer.mp3",
+      "bytes": 106619,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.overseer_kaelen.kaelen_ready_response.mp3",
+      "bytes": 47052,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.overseer_kaelen.kaelen_tease_response.mp3",
+      "bytes": 124795,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.overseer_kaelen.kaelen_trusted.mp3",
+      "bytes": 158780,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.sister_val.val_embrace_response.mp3",
+      "bytes": 130084,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.sister_val.val_greeting.mp3",
+      "bytes": 130875,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.sister_val.val_history.mp3",
+      "bytes": 130429,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.sister_val.val_intimate_climax.mp3",
+      "bytes": 117992,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.sister_val.val_massage_response.mp3",
+      "bytes": 156417,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.sister_val.val_mold_pointer.mp3",
+      "bytes": 85193,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.sister_val.val_ready_buff.mp3",
+      "bytes": 49034,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.sister_val.val_spores_response.mp3",
+      "bytes": 103020,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.tree.sister_val.val_trusted.mp3",
+      "bytes": 123328,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.abg_tripper.dialogueBefriend.mp3",
+      "bytes": 46785,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.abg_tripper.dialogueChase.mp3",
+      "bytes": 34765,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.abg_tripper.greeting.mp3",
+      "bytes": 72379,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.corpo_runner.dialogueBefriend.mp3",
+      "bytes": 90076,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.corpo_runner.dialogueChase.mp3",
+      "bytes": 57141,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.corpo_runner.greeting.mp3",
+      "bytes": 90639,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.crash_queen.dialogueBefriend.mp3",
+      "bytes": 67272,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.crash_queen.dialogueChase.mp3",
+      "bytes": 71395,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.crash_queen.greeting.mp3",
+      "bytes": 90238,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.foxhole_buddy.dialogueBefriend.mp3",
+      "bytes": 55613,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.foxhole_buddy.dialogueChase.mp3",
+      "bytes": 48282,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.foxhole_buddy.greeting.mp3",
+      "bytes": 80448,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.manic_hacker.dialogueBefriend.mp3",
+      "bytes": 57460,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.manic_hacker.dialogueChase.mp3",
+      "bytes": 54737,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.manic_hacker.greeting.mp3",
+      "bytes": 84157,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.species_hybrid.dialogueBefriend.mp3",
+      "bytes": 46523,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.species_hybrid.dialogueChase.mp3",
+      "bytes": 57409,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/code.wanderer.species_hybrid.greeting.mp3",
+      "bytes": 68942,
+      "classification": "runtime-required"
+    },
+    {
       "path": "audio/voice/lines/en/narrative.classWreckageLogs.ENGINEER.payload.mp3",
       "bytes": 115393,
       "classification": "runtime-required"
@@ -25197,7 +26502,7 @@
     },
     {
       "path": "audio/voice/lines/manifest.json",
-      "bytes": 111951,
+      "bytes": 158949,
       "classification": "runtime-required"
     },
     {
@@ -33948,17 +35253,17 @@
     {
       "path": "gear_vault_inner.webp",
       "bytes": 193870,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "gear_vault_iris.webp",
       "bytes": 289472,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "gear_vault_main.webp",
       "bytes": 293078,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "hex_decal_cracks.png",
@@ -34948,12 +36253,12 @@
     {
       "path": "menu_bg_v3.webp",
       "bytes": 61928,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "menu_frame_overlay.webp",
       "bytes": 457048,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "minigames/rgb/ASSET_PROVENANCE.md",
