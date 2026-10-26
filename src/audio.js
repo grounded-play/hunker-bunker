@@ -833,6 +833,14 @@ export class AudioManager {
         return null;
     }
 
+    static reportUnvoicedLine(speakerName, text) {
+        this._unvoicedLines ??= new Set();
+        const id = `${speakerName}|${text}`;
+        if (this._unvoicedLines.has(id) || this._unvoicedLines.size >= 200) return;
+        this._unvoicedLines.add(id);
+        if (typeof window !== 'undefined') window.hbLog?.('VOICE', 'info', 'unvoiced-line', { speaker: speakerName || null, text });
+    }
+
     static playVoiceForMessage(speakerInfo = {}, messageText = '', options = {}) {
         if (this.globalMuted || !this.voiceEnabled) return null;
         if (!this.isUnlocked) {
@@ -867,7 +875,7 @@ export class AudioManager {
 
         // 0. The exact recorded line, when generated audio exists for it.
         const recorded = options.isChirp ? null : this.voiceLines?.resolve?.(text);
-        if (recorded) {
+        const playRecorded = () => {
             const semanticId = options.semanticId ?? `line:${recorded.key}`;
             if (!options.audition && this._playedVoiceSemantics.has(semanticId)) return null;
             const playback = this._playVoiceLineUrl(recorded.key, recorded.url, { priority, speakerName, volume: options.volume ?? 1.0, varyPitch: false, ...options });
@@ -876,7 +884,10 @@ export class AudioManager {
                 this.emitVoiceLine({ cue: 'dialogue', semanticId, subtitle: text, take: recorded.key, speakerName, audition: Boolean(options.audition) });
             }
             return playback;
-        }
+        };
+        // Catalog lines are the authored script. A code line's generated read
+        // yields to an authored keyword clip for the same moment (step 1).
+        if (recorded && recorded.source !== 'code') return playRecorded();
 
         // 1. Check direct key match or character script mapping
         let targetKey = null;
@@ -991,6 +1002,12 @@ export class AudioManager {
             });
             return playback;
         }
+
+        if (recorded) return playRecorded();
+
+        // Nothing recorded says this line. Note it once per session, so a
+        // playtest export lists exactly which on-screen speech is unvoiced.
+        if (!options.isChirp && text) this.reportUnvoicedLine(speakerName, text);
 
         // If voice is currently speaking, do not override with procedural fallback
         if (this.isVoiceSpeaking()) {

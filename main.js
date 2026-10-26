@@ -577,6 +577,8 @@ function setAppPhase(phase) {
     }
     const isGameplay = phase === 'gameplay';
     document.documentElement.classList.toggle('phase-gameplay', isGameplay);
+    // The run-long briefing pill belongs to the run that drew it.
+    if (!isGameplay) document.getElementById('expedition-briefing-card')?.classList.remove('visible');
     document.documentElement.classList.toggle('phase-menu', !isGameplay);
     // Sprint 29 §1: entering gameplay is itself enough to show the reticle.
     // This used to only ever hide it, leaving the reveal to the first mousemove
@@ -7015,7 +7017,6 @@ function fadeHudCard(card, visibleMs, timerRef) {
     }, visibleMs);
 }
 
-const expeditionBriefingTimerRef = { get current() { return expeditionBriefingTimer; }, set current(value) { expeditionBriefingTimer = value; } };
 const compoundLocationTimerRef = { get current() { return compoundLocationTimer; }, set current(value) { compoundLocationTimer = value; } };
 
 function renderExpeditionBriefing(detail = {}) {
@@ -7037,9 +7038,34 @@ function renderExpeditionBriefing(detail = {}) {
         meta.push(t('ui.expedition.bounty', { label: t(EXPEDITION_BOUNTY_KEYS[detail.bountyId]) }));
     }
     setHudCardText('expedition-briefing-meta', meta.join(' · '));
-    fadeHudCard(card, EXPEDITION_BRIEFING_VISIBLE_MS, expeditionBriefingTimerRef);
+    setExpeditionBriefingCollapsed(card, false);
+    card.classList.remove('hidden');
+    requestAnimationFrame(() => card.classList.add('visible'));
+    scheduleExpeditionBriefingCollapse(card);
     return true;
 }
+
+// The briefing stays for the whole run: it reads in full on landing, then
+// folds to a pill at the top (EXPEDITION N · CONDITION). Click or tap the
+// pill to reopen it; an opened briefing folds itself again after a while.
+let expeditionBriefingCollapseTimer = null;
+function setExpeditionBriefingCollapsed(card, collapsed) {
+    card.classList.toggle('is-collapsed', collapsed);
+    card.setAttribute('aria-expanded', String(!collapsed));
+}
+function scheduleExpeditionBriefingCollapse(card, delayMs = EXPEDITION_BRIEFING_VISIBLE_MS) {
+    clearTimeout(expeditionBriefingCollapseTimer);
+    expeditionBriefingCollapseTimer = setTimeout(() => setExpeditionBriefingCollapsed(card, true), delayMs);
+}
+document.getElementById('expedition-briefing-card')?.addEventListener('click', (event) => {
+    const card = event.currentTarget;
+    if (!card.classList.contains('visible')) return;
+    const expand = card.classList.contains('is-collapsed');
+    setExpeditionBriefingCollapsed(card, !expand);
+    window.AudioManager?.play?.('ui_click', { volume: 0.3 });
+    if (expand) scheduleExpeditionBriefingCollapse(card, EXPEDITION_BRIEFING_VISIBLE_MS + 2500);
+    else clearTimeout(expeditionBriefingCollapseTimer);
+});
 
 window.addEventListener('expedition-briefing', (event) => {
     const detail = event?.detail ?? {};
@@ -14990,6 +15016,10 @@ function renderLeaderConversationTree(state = {}) {
         leaderConversationLine.append(spoken);
     }
     leaderConversation3d.react(dialogueReactionForLine(node.dialogue ?? ''));
+    // Tree nodes are spoken too (scripts/voice code lines), not just shown.
+    if (node.dialogue) {
+        window.AudioManager?.playVoiceForMessage?.({ name: node.speaker || leaderConversationIdentity?.name || 'LEADER' }, node.dialogue);
+    }
     // The stats line already shows camp trust (BOND x/5); the tree's own
     // point score beside it read as a second, contradicting bond.
     if (leaderConversationContinue) leaderConversationContinue.hidden = true;

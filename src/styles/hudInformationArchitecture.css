@@ -1458,18 +1458,6 @@ html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays :is(
   margin: 0 !important;
 }
 
-html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays #expedition-briefing-card {
-  position: absolute !important;
-  left: 0 !important;
-  right: auto !important;
-  top: auto !important;
-  bottom: calc(54 * var(--u)) !important;
-  width: calc(360 * var(--u)) !important;
-  max-width: 30vw !important;
-  transform: none !important;
-  box-sizing: border-box !important;
-}
-
 @media (max-width: 1100px) {
   html[data-hud-layout="dock"] #game-viewport {
     --hud-console-h: calc(160 * var(--u));

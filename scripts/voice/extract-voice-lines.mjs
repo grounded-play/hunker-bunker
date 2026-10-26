@@ -16,6 +16,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanPerformanceText } from './build-voice-cast.mjs';
+import { extractCodeVoiceLines } from './extract-code-voice-lines.mjs';
+import { normalizeVoiceText } from '../../src/voiceLines.js';
 
 // Mixed-script numerals derail the TTS: a zh-CN commentary line with
 // "2026 年 6 月" rendered 35 s of babble on all three seeds (2026-10-05).
@@ -104,9 +106,16 @@ export function extractVoiceLines(localesDir = path.join(ROOT, 'src/locales')) {
     return lines;
 }
 
+/** Catalog lines in every language, then the English-only lines that live in code. */
+export function extractAllVoiceLines() {
+    const catalog = extractVoiceLines();
+    const recordedTexts = new Set(catalog.filter((l) => l.locale === 'en').map((l) => normalizeVoiceText(l.display)));
+    return [...catalog, ...extractCodeVoiceLines({ recordedTexts })];
+}
+
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-    const lines = extractVoiceLines();
-    fs.writeFileSync(OUT, `${JSON.stringify({ generatedFrom: 'src/locales/*.json', lines }, null, 1)}\n`);
+    const lines = extractAllVoiceLines();
+    fs.writeFileSync(OUT, `${JSON.stringify({ generatedFrom: ['src/locales/*.json', 'code: scripts/voice/extract-code-voice-lines.mjs'], lines }, null, 1)}\n`);
     const perRole = {};
     for (const line of lines.filter((l) => l.locale === 'en')) perRole[line.role] = (perRole[line.role] ?? 0) + 1;
     console.log(`[voice-lines] ${lines.length} lines across ${LOCALES.length} locales -> ${path.relative(ROOT, OUT)}`);

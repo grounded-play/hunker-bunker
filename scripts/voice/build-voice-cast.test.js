@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CASTING_DOC, ROLE_IDS, buildVoiceCast, cleanPerformanceText } from './build-voice-cast.mjs';
+import { CASTING_DOC, ROLE_IDS, SUPPORTING_ROLE_IDS, buildFullVoiceCast, buildVoiceCast, cleanPerformanceText } from './build-voice-cast.mjs';
 
 const cast = buildVoiceCast(fs.readFileSync(CASTING_DOC, 'utf8'));
 
@@ -35,6 +35,18 @@ describe('voice cast from the casting bible', () => {
         expect(mothership.reject.length).toBeGreaterThan(2);
         expect(mothership.postChain).toMatch(/band-pass/i);
         expect(cast.roles.find((r) => r.id === 'briggs').postChain).toMatch(/cleanup/i);
+    });
+
+    it('adds the supporting cast after the core eleven, under the same casting rules', () => {
+        const full = buildFullVoiceCast();
+        expect(full.roles.map((r) => r.id)).toEqual([...Object.values(ROLE_IDS), ...Object.values(SUPPORTING_ROLE_IDS)]);
+        for (const role of full.roles.slice(11)) {
+            expect(role.description.length, role.id).toBeGreaterThan(300);
+            expect(role.description, role.id).not.toMatch(/\b(reverb|vocoder|telephone|echo)\b/i);
+            expect(role.referenceText.split(/\s+/).length, role.id).toBeGreaterThanOrEqual(25);
+            expect(role.reject.length, role.id).toBeGreaterThan(0);
+            expect(role.postChain, role.id).not.toBe('');
+        }
     });
 
     it('applies the script preparation rules to spoken text', () => {

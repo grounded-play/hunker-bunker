@@ -10236,6 +10236,49 @@ html[data-camp-dialog="open"] .hud-notification-stack {
 .expedition-briefing-card.visible {
   opacity: 1;
   transform: translate(-50%, 0);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Folded briefing: a pill pinned to the top edge, above the room title. */
+.expedition-briefing-card.is-collapsed {
+  top: calc(var(--vu) * 1.2);
+  width: max-content;
+  max-width: min(calc(var(--vu) * 70), 90%);
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--vu) * 1);
+  padding: calc(var(--vu) * 0.45) calc(var(--vu) * 1.6);
+  border-radius: 999px;
+  background: rgba(8, 13, 18, 0.78);
+}
+
+.expedition-briefing-card.is-collapsed :is(
+  .expedition-briefing-card__tagline,
+  .expedition-briefing-card__effect,
+  .expedition-briefing-card__meta
+) {
+  display: none;
+}
+
+.expedition-briefing-card.is-collapsed .expedition-briefing-card__kicker {
+  font-size: calc(var(--vu) * 1.05);
+  opacity: 0.75;
+}
+
+.expedition-briefing-card.is-collapsed .expedition-briefing-card__title {
+  margin-top: 0;
+  font-size: calc(var(--vu) * 1.7);
+}
+
+.expedition-briefing-card.is-collapsed::after {
+  content: '+';
+  font-weight: 900;
+  color: rgba(158, 224, 255, 0.85);
+}
+
+html:not(.phase-gameplay) .expedition-briefing-card {
+  display: none !important;
 }
 
 .expedition-briefing-card.hidden,

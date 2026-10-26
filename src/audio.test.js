@@ -254,6 +254,49 @@ describe('AudioManager Voice Channel & Soundsets Toggle', () => {
 
         playSpy.mockRestore();
     });
+
+    it('lets an authored keyword clip win over a generated code line, and catalog lines win over both', () => {
+        const previousLines = AudioManager.voiceLines;
+        AudioManager.buffers.voice_queen_01_two_heartbeats = { duration: 3 };
+        const recorded = vi.spyOn(AudioManager, '_playVoiceLineUrl').mockReturnValue({ source: {} });
+        const track = vi.spyOn(AudioManager, 'playVoiceTrack').mockReturnValue({ source: {} });
+
+        AudioManager.voiceLines = { resolve: () => ({ key: 'code.queen.abc', url: '/x.mp3', source: 'code' }) };
+        AudioManager.playVoiceForMessage('QUEEN', 'TWO HEARTBEATS. ONE PURPOSE.', { semanticId: 'test:authored' });
+        expect(track).toHaveBeenCalledWith('voice_queen_01_two_heartbeats', expect.anything());
+        expect(recorded).not.toHaveBeenCalled();
+
+        AudioManager.voiceLines = { resolve: () => ({ key: 'code.tina.abc', url: '/t.mp3', source: 'code' }) };
+        AudioManager.playVoiceForMessage('MAYOR TINA', 'PUT THAT DOWN. I AM ASKING ONCE.', { semanticId: 'test:code' });
+        expect(recorded).toHaveBeenCalledWith('code.tina.abc', '/t.mp3', expect.anything());
+
+        recorded.mockClear();
+        AudioManager.voiceLines = { resolve: () => ({ key: 'narrative.q.0', url: '/q.mp3', source: 'catalog' }) };
+        AudioManager.playVoiceForMessage('QUEEN', 'TWO HEARTBEATS. ONE PURPOSE.', { semanticId: 'test:catalog' });
+        expect(recorded).toHaveBeenCalledWith('narrative.q.0', '/q.mp3', expect.anything());
+
+        recorded.mockRestore();
+        track.mockRestore();
+        delete AudioManager.buffers.voice_queen_01_two_heartbeats;
+        AudioManager.voiceLines = previousLines;
+    });
+
+    it('logs each unvoiced on-screen line once, never typewriter chirps', () => {
+        const previousLines = AudioManager.voiceLines;
+        AudioManager.voiceLines = { resolve: () => null };
+        globalThis.window = globalThis.window || {};
+        const previousLog = globalThis.window.hbLog;
+        globalThis.window.hbLog = vi.fn();
+
+        AudioManager.playVoiceForMessage('BUNKER', 'A LINE NOBODY RECORDED.');
+        AudioManager.playVoiceForMessage('BUNKER', 'A LINE NOBODY RECORDED.');
+        AudioManager.playVoiceForMessage('BUNKER', 'A L', { isChirp: true });
+
+        expect(globalThis.window.hbLog).toHaveBeenCalledTimes(1);
+        expect(globalThis.window.hbLog).toHaveBeenCalledWith('VOICE', 'info', 'unvoiced-line', { speaker: 'BUNKER', text: 'A LINE NOBODY RECORDED.' });
+        globalThis.window.hbLog = previousLog;
+        AudioManager.voiceLines = previousLines;
+    });
 });
 
 

@@ -8,9 +8,14 @@
  * "BRIGGS: ..."); this maps a displayed line back to its key by comparing it,
  * normalized, with each recorded key's text in the current language.
  *
+ * Lines that live in code (camp trees, wanderers, "MOTHERSHIP: ..." literals)
+ * have no i18n key: they are English everywhere, recorded once under `en`,
+ * and the manifest's `texts` carries what they display.
+ *
  * Until a manifest ships (or for a line nobody recorded) resolve() returns
  * null and AudioManager falls back to its keyword-matched clips.
  */
+const CODE_LINE_LOCALE = 'en';
 export const VOICE_LINES_ROOT = '/audio/voice/lines';
 
 export function voiceLineUrl(locale, key) {
@@ -66,6 +71,20 @@ export function createVoiceLineLibrary({ fetchJson, getLocale, translate }) {
         return indexes.get(locale);
     }
 
+    // Code lines, matched by their own text in every language.
+    let codeIndex = null;
+    function codeLines() {
+        if (!codeIndex) {
+            codeIndex = new Map();
+            const recorded = new Set(keysFor(CODE_LINE_LOCALE));
+            for (const [key, text] of Object.entries(manifest?.texts ?? {})) {
+                const normalized = normalizeVoiceText(text);
+                if (normalized && recorded.has(key) && !codeIndex.has(normalized)) codeIndex.set(normalized, key);
+            }
+        }
+        return codeIndex;
+    }
+
     function urlFor(key) {
         if (!manifest) { void load(); return null; }
         const locale = getLocale();
@@ -75,8 +94,11 @@ export function createVoiceLineLibrary({ fetchJson, getLocale, translate }) {
     function resolve(text) {
         if (!manifest) { void load(); return null; }
         const locale = getLocale();
-        const key = indexFor(locale).byText.get(normalizeVoiceText(text));
-        return key ? { key, url: voiceLineUrl(locale, key) } : null;
+        const normalized = normalizeVoiceText(text);
+        const key = indexFor(locale).byText.get(normalized);
+        if (key) return { key, url: voiceLineUrl(locale, key), source: 'catalog' };
+        const codeKey = codeLines().get(normalized);
+        return codeKey ? { key: codeKey, url: voiceLineUrl(CODE_LINE_LOCALE, codeKey), source: 'code' } : null;
     }
 
     return { load, resolve, urlFor };
