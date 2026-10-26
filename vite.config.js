@@ -48,6 +48,7 @@ export default defineConfig({
     // The remaining index chunk is the single-page game's boot graph, which is
     // required up front and is loaded locally by the Steam file:// build.
     chunkSizeWarningLimit: 1600,
+    modulePreload: false,
     // No manualChunks: under Vite 8 (Rolldown) a manual group drags in its
     // members' dependencies, so the old `debug-tools` group (which holds the
     // boot-time logger) carried Three.js, all seven locales and several menus

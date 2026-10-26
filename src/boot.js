@@ -1,6 +1,14 @@
-import { registerWebServiceWorker } from './serviceWorkerRegistration.js';
-
-registerWebServiceWorker();
+// Web build only: register public/sw.js so the game is an installable PWA
+// without pulling a separate module into the critical request chain.
+if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
+    const registerSW = () => {
+        if (import.meta.env?.PROD && 'serviceWorker' in navigator && !window.electronAPI && (window.location?.protocol === 'https:' || window.location?.protocol === 'http:')) {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+        }
+    };
+    if (document.readyState === 'complete') registerSW();
+    else window.addEventListener('load', registerSW, { once: true });
+}
 
 // Page entry (index.html). The Lighthouse route is a first-paint probe: the
 // full game never starts there, so downloading and evaluating its 200+ KiB
