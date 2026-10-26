@@ -1,0 +1,400 @@
+{
+  "source": "docs/planning/camp-interaction-and-cinematics-audit-2026-10-16.md",
+  "style": {
+    "prefix": "Hunker Bunker key art, 16:9 cinematic still, deep-space corporate industrial horror with restrained biomechanical ribbing and bone-ivory machinery:",
+    "suffix": "Soot-black iron, bone ivory, bruised maroon tissue only at seams, amber practical light, sparse teal diagnostics; mature and suggestive, never explicit; adults only; no readable text, logos or watermarks.",
+    "motionSuffix": "Single continuous shot, cinematic camera, consistent characters and lighting, subtle film grain, no cuts, no text.",
+    "negative": "low quality, worst quality, deformed, distorted, disfigured, motion smear, motion artifacts, fused fingers, bad anatomy, extra limbs, flicker, jitter, morphing face, text, watermark, logo, subtitles, cartoon"
+  },
+  "jobs": [
+    {
+      "id": "kaelen_diagnostic_cradle",
+      "kind": "side-story",
+      "title": "Diagnostic Cradle",
+      "firstFrame": {
+        "image": "/interstitials/int_kaelen_diagnostic_cradle_key_v2.webp"
+      },
+      "action": "Slow overhead jib that settles to eye level. Kaelen's eyelids flicker; the cradle's ribs tick through a calibration cycle with small mechanical clicks; a wave of cyan light runs along the cable from the cradle into the port behind his ear and out across the wall conduits. He exhales, sits up, and rests his hand on the ivory rib as the grid hum steadies. Single continuous shot, 7 seconds.",
+      "lastFrame": "close shot of Kaelen sitting up in the cradle, eyes open and steady, one scorched gloved hand resting on the cradle's ivory rib while a slow wave of cyan light settles along the grid conduits behind him; the condensation on the glass has cleared.",
+      "durationSec": 6,
+      "audio": "/audio/ost/Kaelen's Sleeping Machine.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_kaelen_diagnostic_cradle_motion_v1.webm"
+      }
+    },
+    {
+      "id": "kaelen_frequency_overclock",
+      "kind": "side-story",
+      "title": "Frequency Overclock",
+      "firstFrame": {
+        "image": "/interstitials/int_kaelen_frequency_overclock_key_v2.webp"
+      },
+      "action": "Steady dolly-in. Kaelen seats the probe; a bright cyan arc jumps the bus bars and runs the length of the gallery, switch by switch, each pilot lamp snapping on in sequence. Corona discharge crawls over his gloves; he leans into it for a second, then pulls back and lowers the probe as the hum settles to a deep, even tone. Single shot, 7 seconds.",
+      "lastFrame": "the same gallery blazing with steady cyan light, every pilot lamp lit; Kaelen stands back from the contact with the probe lowered, breathing hard, faint corona still crawling on his scorched gloves, a thin smile of relief.",
+      "durationSec": 6,
+      "audio": "/audio/ost/Meridian Remembers You.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_kaelen_frequency_overclock_motion_v1.webm"
+      }
+    },
+    {
+      "id": "kaelen_supercharged_matrix",
+      "kind": "side-story",
+      "title": "Supercharged Matrix",
+      "firstFrame": {
+        "image": "/interstitials/int_kaelen_supercharged_matrix_key_v1.webp"
+      },
+      "action": "Slow push-in from behind the two figures. Together they draw the lever down; the actuator locks with a heavy clunk; rings of gold-teal light pulse outward through the glass floor and race up the conduits into the tunnels. Camera arcs to a side two-shot as Kaelen turns his head toward the operator and smiles. Single shot, 8 seconds.",
+      "lastFrame": "the reactor well fully lit, concentric rings of gold-teal light pulsing out along the conduits into distant tunnels; Kaelen turns toward the operator with a rare open smile, the lever locked down between them.",
+      "durationSec": 6,
+      "audio": "/audio/ost/Kaelen Is the Grid.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_kaelen_supercharged_matrix_motion_v1.webm"
+      }
+    },
+    {
+      "id": "val_hearth_warmth",
+      "kind": "side-story",
+      "title": "Warmth of the Suture",
+      "firstFrame": {
+        "image": "/interstitials/int_val_hearth_warmth_key_v2.webp"
+      },
+      "action": "Slow dolly-in to the saddle. Martha lifts a ladle of warm balm, breathes on it, and reaches out of frame; the camera follows her hands down to the operator's frost-white knuckles, which slowly flush as she works the balm in; frost on the cuff melts to beads. Steam curls through the amber light. Single shot, 7 seconds.",
+      "lastFrame": "close shot of Martha's steam-reddened hands working balm into the frost-burned knuckles of an armoured operator's bare hand, amber pipe glow behind them, the frost on the operator's cuff melted to droplets.",
+      "durationSec": 6,
+      "audio": "/audio/ost/Warmth Beneath the Ice.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_val_hearth_warmth_motion_v1.webm"
+      }
+    },
+    {
+      "id": "val_spore_communion",
+      "kind": "side-story",
+      "title": "Botanical Spore Oil",
+      "firstFrame": {
+        "image": "/interstitials/int_val_spore_communion_key_v1.webp"
+      },
+      "action": "Slow arc around the loom. Martha lays her palm on the spore sac; light pulses out along the mycelium in gold-green waves; with her other hand she draws the woven filter across the mouldy edge and it seals against the floor ribs. She turns toward camera and breathes out. Single shot, 7 seconds.",
+      "lastFrame": "the loom glowing evenly green-gold, the crimson mould sealed behind a drawn filter curtain; Martha framed in an arch of glowing threads, hand at her chest, calm.",
+      "durationSec": 6,
+      "audio": "/audio/ost/Tallow Keeps the Steam.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_val_spore_communion_motion_v1.webm"
+      }
+    },
+    {
+      "id": "val_eternal_hearth",
+      "kind": "side-story",
+      "title": "The Eternal Hearth",
+      "firstFrame": {
+        "image": "/interstitials/int_val_eternal_hearth_key_v1.webp"
+      },
+      "action": "Slow tilt down and push along the catwalk. Martha hauls the valve wheel a half-turn; a deep thud runs through the pipes; vents open one after another up the vault, steam rolling out; cold blue light at the edges gives way to amber as the heat comes up. Single shot, 8 seconds.",
+      "lastFrame": "the whole vault glowing warm amber, white steam rolling up from every vent; Martha stands with the valve locked, silhouetted against the furnace light, quilted layers lifting in the warm draft.",
+      "durationSec": 6,
+      "audio": "/audio/ost/Warmth Beneath the Ice.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_val_eternal_hearth_motion_v1.webm"
+      }
+    },
+    {
+      "id": "briggs_scorched_rig",
+      "kind": "side-story",
+      "title": "The Scorched Rig",
+      "firstFrame": {
+        "image": "/interstitials/int_briggs_scorched_rig_key_v2.webp"
+      },
+      "action": "Steady push past sandbags. Briggs unlatches his helmet collar with a pneumatic hiss, lifts the helmet off, wipes his brow with the back of a heavy glove and exhales a long cloud; he surveys the canyon as the red lamp sweeps over him. Single shot, 7 seconds.",
+      "lastFrame": "close shot of Briggs bare-headed, soot on his face, breath fogging, grey hair cropped close, looking out over the barricade with tired resolve, the red lamp sweeping across him.",
+      "durationSec": 6,
+      "audio": "/audio/ost/Briggs Keeps the Ledger.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_briggs_scorched_rig_motion_v1.webm"
+      }
+    },
+    {
+      "id": "briggs_scar_tissue",
+      "kind": "side-story",
+      "title": "Scar Tissue",
+      "firstFrame": {
+        "image": "/interstitials/int_briggs_scar_tissue_key_v1.webp"
+      },
+      "action": "Slow orbit around the crate. Briggs fits the last pins with practised speed, works the bolt once, glances at the scar on his shoulder and presses a thumb to it, then turns the rifle around and holds it out stock first. Single shot, 7 seconds.",
+      "lastFrame": "Briggs holds the reassembled rifle across his knees and offers it, stock first, toward camera; his eyes meet the viewer; the bulb swings slightly.",
+      "durationSec": 6,
+      "audio": "/audio/ost/Vesper Sleeps in Shifts.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_briggs_scar_tissue_motion_v1.webm"
+      }
+    },
+    {
+      "id": "briggs_vanguard_fire",
+      "kind": "side-story",
+      "title": "Vanguard Unyielding",
+      "firstFrame": {
+        "image": "/interstitials/int_briggs_vanguard_fire_key_v1.webp"
+      },
+      "action": "Crane down to a tight two-shot. Briggs swings the yoke; the three cables snap taut; out of frame the guns fire and the canyon flashes white; the deck shudders; Briggs holds through the shockwave and nods to the viewer. Single shot, 6 seconds.",
+      "lastFrame": "the canyon lit white by muzzle flare dissipating into smoke; Briggs braced at the yoke, turning his head toward camera with a grim nod; red beacons pulse along the rampart.",
+      "durationSec": 6,
+      "audio": "/audio/ost/Briggs Became the Barricade.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_briggs_vanguard_fire_motion_v1.webm"
+      }
+    },
+    {
+      "id": "nahl_mind_link",
+      "kind": "side-story",
+      "title": "Synaptic Inoculation",
+      "firstFrame": {
+        "image": "/interstitials/int_nahl_mind_link_key_v2.webp"
+      },
+      "action": "Slow push-in. Nahl's hand touches the visor; red static rippling across the visor glass slows and resolves into a steady amber line; Nahl's antennae brighten in rhythm; the relays around them quiet to a low hum. Single shot, 7 seconds.",
+      "lastFrame": "close shot of Nahl's three fingers resting on the operator's visor; the visor's red interference glitches have smoothed into a calm amber line; Nahl's antennae glow softly.",
+      "durationSec": 6,
+      "audio": "/audio/ost/Dr. Nahl Remembers the Tissue.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_nahl_mind_link_motion_v1.webm"
+      }
+    },
+    {
+      "id": "nahl_co_evolution",
+      "kind": "side-story",
+      "title": "Cellular Empathy",
+      "firstFrame": {
+        "image": "/interstitials/int_nahl_co_evolution_key_v1.webp"
+      },
+      "action": "Slow tracking shot across the stand. Both draw their hoop back at once; the seam tightens; the clasp closes with a soft wet click and glows amber; light pulses out along the threads into the chamber walls. Single shot, 6 seconds.",
+      "lastFrame": "the seam pulled tight into a glowing resin clasp between the two hoops, amber light pulsing through it; Nahl's head bowed; the operator's hand still on the human hoop.",
+      "durationSec": 6,
+      "audio": "/audio/ost/Dr. Nahl Remembers the Tissue.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_nahl_co_evolution_motion_v1.webm"
+      }
+    },
+    {
+      "id": "nahl_transcendence",
+      "kind": "side-story",
+      "title": "Neural Sovereignty",
+      "firstFrame": {
+        "image": "/interstitials/int_nahl_transcendence_key_v1.webp"
+      },
+      "action": "Slow 180-degree orbit. Nahl raises both hands; amber light spreads from its antennae across the dome, pushing the violet veins back into the walls until they fade; the operator straightens as the light reaches them. Single shot, 8 seconds.",
+      "lastFrame": "the dome cleared of violet, glowing warm amber from Nahl's antennae outward; the operator stands upright and steady; Nahl's hand lowered.",
+      "durationSec": 6,
+      "audio": "/audio/ost/We Escaped Together, Technically.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_nahl_transcendence_motion_v1.webm"
+      }
+    },
+    {
+      "id": "aria_whispers_abyss",
+      "kind": "side-story",
+      "title": "Whispers in the Abyss",
+      "firstFrame": {
+        "image": "/interstitials/int_aria_whispers_abyss_key_v1.webp"
+      },
+      "action": "Slow push toward the operator's back as spores drift; the silhouette glides closer without walking; the camera rounds to the visor where its reflection settles beside the operator's ear; the helmet lamp flickers once. Single shot, 7 seconds.",
+      "lastFrame": "extreme close shot of the visor; reflected in the glass, the silhouette leans close beside the operator's head; teal pinpoints flicker on the visor rim.",
+      "durationSec": 6,
+      "audio": "/audio/ost/Her Voice Inside Your Helmet.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_aria_whispers_abyss_motion_v1.webm"
+      }
+    },
+    {
+      "id": "aria_silk_trance",
+      "kind": "side-story",
+      "title": "The Silk Trance",
+      "firstFrame": {
+        "image": "/interstitials/int_aria_silk_trance_key_v1.webp"
+      },
+      "action": "Slow dolly-in. The threads tighten and draw the operator a half-step forward; the operator stops, braces, and tears free; threads snap and drift; the silhouette pulls back into the silk and dims. Single shot, 7 seconds.",
+      "lastFrame": "the silk parted around the operator, who has stepped back with a hand up; the silhouette recedes into the threads, its light dimming.",
+      "durationSec": 6,
+      "audio": "/audio/ost/The Queen Makes a Reasonable Offer.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_aria_silk_trance_motion_v1.webm"
+      }
+    },
+    {
+      "id": "aria_queens_mark",
+      "kind": "side-story",
+      "title": "The Queen's Mark",
+      "firstFrame": {
+        "image": "/interstitials/int_aria_queens_mark_key_v1.webp"
+      },
+      "action": "Top-down slow descent. The silhouette's hand lowers; teal light seeps into the gauntlet's seams and curls into a spiral; the egg-shell ring fades to dark around them. Single shot, 6 seconds.",
+      "lastFrame": "close shot of the gauntlet palm, a faint teal glyph-free spiral glowing beneath the plating seams; the egg-shell ring dark.",
+      "durationSec": 6,
+      "audio": "/audio/ost/Mother of the Last World.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_aria_queens_mark_motion_v1.webm"
+      }
+    },
+    {
+      "id": "card_33",
+      "kind": "song-card",
+      "title": "The Cave Was Breathing",
+      "firstFrame": {
+        "image": "/interstitials/int_33_the_cave_was_breathing_key_v1.webp"
+      },
+      "action": "slow push into the cave; walls expand and contract twice like lungs; dust lifts off the floor on each exhale",
+      "lastFrame": "the cave mouth wall seen from inside, its ribbed stone walls swelled outward mid-breath, warm air fogging the operator's helmet lamp",
+      "durationSec": 7,
+      "audio": "/audio/ost/The Cave Was Breathing.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_33_the_cave_was_breathing_motion_v1.webm",
+        "mp4": "/interstitials/int_33_the_cave_was_breathing_key_v1.mp4"
+      }
+    },
+    {
+      "id": "card_34",
+      "kind": "song-card",
+      "title": "Four Seats, One Survivor",
+      "firstFrame": {
+        "image": "/interstitials/int_34_four_seats_one_survivor_key_v1.webp"
+      },
+      "action": "slow pan across the empty seats, landing on the operator who turns to look back",
+      "lastFrame": "the escape cockpit's four seats, three empty with straps hanging, one occupied by the operator looking back at the hatch",
+      "durationSec": 6,
+      "audio": "/audio/ost/Four Seats, One Survivor.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_34_four_seats_one_survivor_motion_v1.webm",
+        "mp4": "/interstitials/int_34_four_seats_one_survivor_key_v1.mp4"
+      }
+    },
+    {
+      "id": "card_35",
+      "kind": "song-card",
+      "title": "Contraband Sunrise",
+      "firstFrame": {
+        "image": "/interstitials/int_35_contraband_sunrise_key_v1.webp"
+      },
+      "action": "climb through cloud into sunrise; the camera tilts into the hold where the cargo cell pulses",
+      "lastFrame": "the escape vessel breaking through cloud into a cold dawn, a frosted cargo cell glowing faintly in the hold",
+      "durationSec": 7,
+      "audio": "/audio/ost/Contraband Sunrise.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_35_contraband_sunrise_motion_v1.webm",
+        "mp4": "/interstitials/int_35_contraband_sunrise_key_v1.mp4"
+      }
+    },
+    {
+      "id": "card_36",
+      "kind": "song-card",
+      "title": "We Escaped Together, Technically",
+      "firstFrame": {
+        "image": "/interstitials/int_36_we_escaped_together_technically_key_v1.webp"
+      },
+      "action": "slow track down the aisle; heads turn as the vessel shudders; the alien hand settles on the armrest",
+      "lastFrame": "a crowded cabin of humans and aliens strapped in side by side, an awkward shared silence, one alien hand resting on a human armrest",
+      "durationSec": 7,
+      "audio": "/audio/ost/We Escaped Together, Technically.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_36_we_escaped_together_technically_motion_v1.webm",
+        "mp4": "/interstitials/int_36_we_escaped_together_technically_key_v1.mp4"
+      }
+    },
+    {
+      "id": "card_37",
+      "kind": "song-card",
+      "title": "The Ice Gets Smaller",
+      "firstFrame": {
+        "image": "/interstitials/int_37_the_ice_gets_smaller_key_v1.webp"
+      },
+      "action": "pull back from the window as the ice field falls away beneath",
+      "lastFrame": "the glacier and the bunker's crash scar shrinking far below through a frosted window",
+      "durationSec": 6,
+      "audio": "/audio/ost/The Ice Gets Smaller.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_37_the_ice_gets_smaller_motion_v1.webm",
+        "mp4": "/interstitials/int_37_the_ice_gets_smaller_key_v1.mp4"
+      }
+    },
+    {
+      "id": "card_38",
+      "kind": "song-card",
+      "title": "Destination: Core Worlds",
+      "firstFrame": {
+        "image": "/interstitials/int_38_destination_core_worlds_key_v1.webp"
+      },
+      "action": "the vessel glides toward the ring; docking lights sweep across its scarred hull",
+      "lastFrame": "a bright corporate orbital ring ahead, docking lights blinking, the battered vessel small against it",
+      "durationSec": 8,
+      "audio": "/audio/ost/Destination Core Worlds.mp3",
+      "targets": {
+        "webm": "/interstitials/motion/int_38_destination_core_worlds_motion_v1.webm",
+        "mp4": "/interstitials/int_38_destination_core_worlds_key_v1.mp4"
+      }
+    },
+    {
+      "id": "sleep-camp",
+      "kind": "sleep",
+      "title": "sleep-camp",
+      "firstFrame": {
+        "prompt": "a survivor bunkhouse at night, workers asleep in quilted rolls beside warm radiator pipes, a lantern burning low, the operator sitting against a locker in armour."
+      },
+      "action": "a slow glide past the lantern; a resident lays a blanket over the operator; the lantern dims to nothing; 7 s.",
+      "lastFrame": "the bunkhouse dark, the lantern out, a blanket over the sleeping operator's shoulders, frost on the shutter.",
+      "durationSec": 7,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-camp.webm",
+        "mp4": "/cutscenes/sleep-camp.mp4",
+        "poster": "/cutscenes/sleep-camp-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-cryo",
+      "kind": "sleep",
+      "title": "sleep-cryo",
+      "firstFrame": {
+        "prompt": "an open cryo pod rimed with frost, nitrogen vapour spilling over the edge, the operator lying back on the gel cushion."
+      },
+      "action": "the canopy swings down and seals with a hiss; frost spreads across the glass; the heartbeat light slows; 7 s.",
+      "lastFrame": "the sealed pod alone in a frosted vault, one green heartbeat light blinking.",
+      "durationSec": 7,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-cryo.webm",
+        "mp4": "/cutscenes/sleep-cryo.mp4",
+        "poster": "/cutscenes/sleep-cryo-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-hive",
+      "kind": "sleep",
+      "title": "sleep-hive",
+      "firstFrame": {
+        "prompt": "the operator curled in a warm hive alcove of pale ribbed tissue, faint amber pulse in the walls, helmet beside them."
+      },
+      "action": "the alcove's ribs fold gently inward; the pulse slows to match breathing; the light dims; 7 s.",
+      "lastFrame": "the alcove closed softly around the sleeping operator like cupped hands, the amber pulse slow and even.",
+      "durationSec": 7,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-hive.webm",
+        "mp4": "/cutscenes/sleep-hive.mp4",
+        "poster": "/cutscenes/sleep-hive-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-squad",
+      "kind": "sleep",
+      "title": "sleep-squad",
+      "firstFrame": {
+        "prompt": "two or three operators asleep back to back in a sealed berth, one still awake on watch with a rifle across their knees."
+      },
+      "action": "a slow pan across the sleepers; the watch-stander checks the regulator, sets the rifle down and leans back; 7 s.",
+      "lastFrame": "the watch-stander's head finally lowered, all asleep, the berth's O2 regulator glowing steady.",
+      "durationSec": 7,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-squad.webm",
+        "mp4": "/cutscenes/sleep-squad.mp4",
+        "poster": "/cutscenes/sleep-squad-poster.jpg"
+      }
+    }
+  ]
+}
