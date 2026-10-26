@@ -924,6 +924,17 @@ body {
   animation: gear-core-pulse 2.2s ease-in-out infinite alternate;
 }
 
+/* The door overlay sits in the DOM all session. Its gears only turn while it
+   is shown, and no gear turns before index.html installs the art after load
+   (html.gear-art-ready): idle, their filtered layers cost style work every
+   frame during boot (mobile Lighthouse LCP, issue #106). */
+#transition-overlay:not(.visible) .gear-layer,
+#transition-overlay:not(.visible) .gear-core-glow,
+html:not(.gear-art-ready) .gear-layer,
+html:not(.gear-art-ready) .gear-core-glow {
+  animation-play-state: paused;
+}
+
 @keyframes gear-spin-cw {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

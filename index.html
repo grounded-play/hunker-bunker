@@ -103,7 +103,10 @@
       }
       installArtwork(menuArtwork);
       function installGearArtwork() {
-        var install = function () { installArtwork(gearArtwork); };
+        var install = function () {
+          installArtwork(gearArtwork);
+          document.documentElement.classList.add('gear-art-ready');
+        };
         if (window.requestIdleCallback) window.requestIdleCallback(install, { timeout: 2000 });
         else window.setTimeout(install, 200);
       }
