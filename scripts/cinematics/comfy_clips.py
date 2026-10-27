@@ -108,7 +108,9 @@ def run_workflow(workflow, label, front=False, retries=0):
         if status.get('status_str') == 'error':
             messages = status.get('messages', [])
             is_interrupted = any(m[0] == 'execution_interrupted' for m in messages)
-            if is_interrupted and retries < 3:
+            # An interrupt is usually someone stopping the render on purpose;
+            # retry only when asked (HB_RETRY_INTERRUPTED=1).
+            if is_interrupted and retries < 3 and os.environ.get('HB_RETRY_INTERRUPTED') == '1':
                 print(f'[comfy] {label}: execution interrupted, auto-retrying ({retries + 1}/3)...', flush=True)
                 time.sleep(2)
                 return run_workflow(workflow, label, front=front, retries=retries + 1)
@@ -671,7 +673,7 @@ def cmd_batch(args):
             takes = sorted(folder.glob(f'take_{args.model}_*.mp4'), key=lambda p: int(p.stem.split('_')[-1]))
         if not takes:
             continue
-        cmd_encode(argparse.Namespace(job=job_id, take=takes[-1].stem, preview=False, sound=None,
+        cmd_encode(argparse.Namespace(job=job_id, take=takes[-1].stem, preview=getattr(args, 'preview', False), sound=None,
                                       no_sound=jobs[job_id].get('kind') == 'loadout', no_end_lock=False))
 
 
@@ -716,6 +718,7 @@ def main():
     b = sub.add_parser('batch'); b.add_argument('jobs', nargs='*', help='job ids (default: every job not live yet)')
     b.add_argument('--model', choices=sorted(MODELS), default='wan'); b.add_argument('--max-seconds', type=float)
     b.add_argument('--redo', action='store_true', help='render a new take even if the job has one or is live')
+    b.add_argument('--preview', action='store_true', help='encode beside the takes for review; ship nothing')
     sub.add_parser('status')
     args = parser.parse_args()
     {'prop': cmd_prop, 'still': cmd_still, 'last': cmd_last, 'clip': cmd_clip, 'encode': cmd_encode, 'sound': cmd_sound, 'make': cmd_make, 'batch': cmd_batch, 'status': cmd_status}[args.command](args)
