@@ -12,6 +12,8 @@
  *   sub-bass audio, free-play) and an overclock fuse with salvage rewards.
  */
 
+import { t } from './i18n.js';
+
 export const SECRET_PIN_CODES = Object.freeze({
     '0451': { message: 'OVERRIDE: MERIDIAN COMPONENT STASH DISPENSED (+25 COIN)', reward: { coin: 25 } },
     '1984': { message: 'MINISTRY OF TRUTH ONLINE // SYSTEM SURVEILLANCE ACTIVE', reward: null },
@@ -76,7 +78,7 @@ export class TerminalBezelController {
                     </div>
 
                     <!-- Auxiliary LED 7-Segment Readout -->
-                    <div class="bezel-aux-display" id="bezel-aux-display" aria-live="polite">READY // _</div>
+                    <div class="bezel-aux-display" id="bezel-aux-display" data-i18n="ui.terminal.ready" aria-live="polite">READY // _</div>
 
                     <!-- 12-Key Tactical Numpad -->
                     <div class="bezel-keypad-grid" role="group" aria-label="ATM Numpad">
@@ -367,7 +369,7 @@ export class TerminalBezelController {
         const btn = this.container?.querySelector(`[data-dip="${dipName}"]`);
         if (btn) {
             btn.setAttribute('aria-pressed', String(val));
-            btn.textContent = val ? 'ON' : 'OFF';
+            btn.textContent = val ? t('common.on', 'ON') : t('common.off', 'OFF');
             btn.classList.toggle('dip-active', val);
         }
 
