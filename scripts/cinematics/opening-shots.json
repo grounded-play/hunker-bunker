@@ -1,15 +1,15 @@
 {
-  "source": "docs/planning/opening-clips-reshoot-2026-10-27.md. Style and avoid list are docs/design/art-style-bible.md §5 verbatim (owner's bible); story beat from the opening text: the ship takes a hypersonic strike on descent and crashes into Sector 9's frozen bunker.",
+  "source": "docs/planning/opening-clips-reshoot-2026-10-27.md. Style is docs/design/art-style-bible.md §5b, the production style matched to the recent world props; story beat from the opening text: the ship takes a hypersonic strike on descent and crashes into Sector 9's frozen bunker.",
   "style": {
-    "prefix": "\"Nordic Cathedral Biomech\" style for the game \"Hunker Bunker\": the hard-line beauty of Nordic Jugendstil / National Romantic architecture — monumental stepped granite massing, deep round arches with heavy keystones, blackened-iron strap bindings and ring clasps, carved bone and stone relief, abstract serpentine interlace carving, frost-etched leaded glass, restrained taut curves — transposed into the sacred bunkers of a dead megacorporation's space-god cult and DECAYED: spalled granite, rust-bled iron, verdigris bronze, lichen and soot, failing lanterns. From WITHIN that design, H.R. Giger-like biology takes form: ribs, vertebrae, tendons, tubes and wet membranes grow out of joints, bindings and cracks, and deeper in adopt the design — vertebrae following the arches, carved interlace becoming living tendrils. Sensual organic curvature carried by form only (no nudity). Beautiful, dark, decorative decay; the juxtaposition of hard-line craft and organic form is the subject. 2D illustration: heavy black contours, woodcut/etching hatching on stone and iron, looser organic hatching with wet highlights on the biology, soft cel shading with painted texture. Mostly darkness; amber lantern light, pale cold light on stone, teal only for screens, bioluminescent green only on the biology. No text unless specified.",
-    "suffix": "16:9 cinematic frame.",
+    "prefix": "Hunker Bunker production style: photoreal biomechanical corporate hardware. Brushed chrome and gunmetal machinery with white enamel and bone-ivory panels, ribs and vertebrae fused into the mechanisms, glossy black latex and lacquer, wet maroon and flesh-pink tissue swelling through every seam and port. Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic hatches and sphincter valves, breast-like pressure domes, ribbed tubes that pulse, glistening fluids and mucous strands. Functional industrial objects with the biology growing through them and taking them over. Near-black deep-space corporate interiors, soft studio key light, small teal screens, amber lamps, acid-green fluids; sharp physically based detail, wet specular highlights.",
+    "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
     "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
     "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
     "motionSuffix": "Single continuous shot, one camera move, natural weight and inertia; hold the final composition for twelve frames. No cuts, no new subjects, no text.",
-    "negative": "readable text, logos with real brands, watermarks, photorealism, 3D render look, lens flare, depth of field, nudity, genitals, sexual acts, gore beyond blood splatter, clean sterile sci-fi, flat vector minimalism, French Art Nouveau excess, Mucha florals, whiplash everywhere, Viking clichés, horned helmets, longships, literal runes, real scripts, gold-leaf opulence, extra hues outside the palette, deformed anatomy, duplicated operator, identity drift, morphing ship, flicker"
+    "negative": "readable text, logos, watermarks, cartoon, anime, flat illustration, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform"
   },
   "refs": {
-    "style": "public/title_key_art_v2.png",
+    "style": "art/source/style-refs/biomech_props_style.png",
     "mothership": "public/sky/body_mothership_derelict.png",
     "planet": "public/sky/body_planet_dead_ocean.png",
     "deepSpace": "public/sky/cinematic_deep_space_panorama.jpg",
@@ -78,7 +78,6 @@
       "durationSec": 5,
       "target": "{class}-intro",
       "refs": [
-        "style",
         "ship",
         "mothership"
       ],
@@ -103,7 +102,6 @@
       "durationSec": 6,
       "target": "{class}-crash",
       "refs": [
-        "style",
         "ship",
         "wreck"
       ],

@@ -164,6 +164,47 @@ French Art Nouveau excess (Mucha florals, whiplash everywhere), Viking clichés 
 helmets, longships), literal runes or real scripts, gold-leaf opulence, extra hues
 outside the palette.
 
+## 5b. Production style: biomech corporate hardware, the explicit cut
+
+> Owner, 2026-10-27: the key art had drifted; the style is redefined to match the
+> ~160 world props generated most recently (World Expansion 80, the 59-model
+> interactive set, world-story pass 2; renders in `art/source/style-refs/props/`,
+> the six-prop reference `art/source/style-refs/biomech_props_style.png`), and
+> pushed as graphic and sexual as the Adults Only rating allows.
+
+This block drives every cinematic frame and every new prop. Section 5 remains the
+architecture and UI language; where they disagree on a cutscene or a prop, this
+block wins.
+
+```
+Hunker Bunker production style: photoreal biomechanical corporate hardware. Brushed
+chrome and gunmetal machinery with white enamel and bone-ivory panels, ribs and
+vertebrae fused into the mechanisms, glossy black latex and lacquer, wet maroon and
+flesh-pink tissue swelling through every seam and port. Overtly sexual
+biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic
+hatches and sphincter valves, breast-like pressure domes, ribbed tubes that pulse,
+glistening fluids and mucous strands. Functional industrial objects with the
+biology growing through them and taking them over. Near-black deep-space corporate
+interiors, soft studio key light, small teal screens, amber lamps, acid-green
+fluids; sharp physically based detail, wet specular highlights. No stone, no
+runes, no readable text.
+```
+
+**Graphic:** gore is shown, not implied: torn flesh, viscera, blood and ichor spray,
+bodies of monsters ruptured by the machinery. **Sexual:** nudity and explicit sex
+between characters, and the machines themselves sexual, as above.
+
+**Hard limits, always:** every person depicted is a consenting adult over
+twenty-five, with an age in the prompt and `child, minor, teenager, youthful face`
+in the negative. Nobody asleep, unconscious, restrained or coerced is the subject of
+a sexual act. Gore is done to monsters and hardware, never to a sexual partner, and
+is never sexualised. The player operator keeps their identity sheet's look.
+
+**Avoid (negative prompts):** readable text, logos, watermarks, cartoon, anime,
+flat illustration, stone masonry, Nordic carving, runes, stained glass, extra limbs,
+deformed anatomy, duplicated subject, identity drift, child, minor, teenager,
+youthful face.
+
 ## 6. Applying it across the game
 
 | Surface | Treatment |

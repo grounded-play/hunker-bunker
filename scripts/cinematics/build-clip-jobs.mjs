@@ -145,7 +145,7 @@ function sceneJob(cut, id, kind, spec, extra) {
  */
 export function openingJobs(opening) {
     const ROLE = {
-        style: 'the game key art, for style and architecture',
+        style: "the game's props, for style and materials",
         identity: 'the exact operator in nine views (identity sheet)',
         ship: 'the ship',
         wreck: 'the ship after the crash',
