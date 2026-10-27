@@ -9806,8 +9806,45 @@ function ensureArmoryInitialized() {
     return armoryInitPromise;
 }
 
-function closeArmoryScreen({ embark }) {
+// The opening's first shot (docs/planning/armory-opening-identity-capture-
+// 2026-10-27.md): on EMBARK every bit of UI goes, the camera loses the sidebar
+// pan, and the player's exact operator -- every cosmetic, live -- turns and
+// walks out to screen right before the doors close. Any key or click skips;
+// reduced motion and hb_armory_departure=0 skip it entirely.
+const ARMORY_DEPARTURE_MAX_MS = 4200;
+async function playArmoryDeparture() {
+    const scene = armorySceneInstance;
+    let optedOut;
+    try { optedOut = window.localStorage?.getItem('hb_armory_departure') === '0'; } catch { optedOut = false; }
+    if (!scene?.beginDeparture || optedOut || window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return;
+    const hud = document.getElementById('armory-hud-overlay');
+    hud?.classList.add('armory-departing');
+    document.documentElement.classList.add('presentation-cursor-hidden');
+    scene.setBenchVisible?.(false);
+    scene.setCaptureCamera?.('departure');
+    window.hbLog?.('CINEMATIC', 'info', 'Armory departure');
+    await new Promise((resolve) => {
+        let done = false;
+        const finish = () => {
+            if (done) return;
+            done = true;
+            window.removeEventListener('keydown', finish, true);
+            window.removeEventListener('pointerdown', finish, true);
+            window.clearTimeout(guard);
+            resolve();
+        };
+        const guard = window.setTimeout(finish, ARMORY_DEPARTURE_MAX_MS);
+        window.addEventListener('keydown', finish, true);
+        window.addEventListener('pointerdown', finish, true);
+        // Let the clean frame land before they move.
+        window.setTimeout(() => scene.beginDeparture().then(finish), 450);
+    });
+    document.documentElement.classList.remove('presentation-cursor-hidden');
+}
+
+async function closeArmoryScreen({ embark }) {
     const playerType = getSelectedHeroType();
+    if (embark) await playArmoryDeparture();
     triggerDoorTransition(
         () => {
             document.getElementById('armory-screen')?.classList.add('hidden');

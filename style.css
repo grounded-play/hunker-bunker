@@ -21908,6 +21908,13 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   display: none !important;
 }
 
+/* The Armory departure: every bit of UI goes (main.js playArmoryDeparture). */
+#armory-hud-overlay.armory-departing {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease-out;
+}
+
 #armory-canvas {
   position: absolute;
   inset: 0;

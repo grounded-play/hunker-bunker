@@ -667,6 +667,29 @@ export async function createArmoryScene(canvas) {
     let heldPresentation = null;
     let pinnedBenchYaw = null;
     let armoryAimBlend = 0;
+    // Cinematic capture and the Armory departure
+    // (docs/planning/armory-opening-identity-capture-2026-10-27.md).
+    const ARMORY_CAMERA = { position: camera.position.clone(), target: new THREE.Vector3(0.1 + STAGE_PAN_X, 1.08, 0) };
+    const OPERATOR_HOME = operatorGroup.position.clone();
+    let captureMode = null;
+    let departure = null;
+    // Lights the operator's back for the rear views; only in capture mode.
+    const captureBackLight = new THREE.DirectionalLight(0xffffff, 2.4);
+    captureBackLight.position.set(-1.5, 3.5, -4.0);
+    captureBackLight.visible = false;
+    scene.add(captureBackLight);
+    // The operator's size at yaw 0, so every view frames the same body.
+    function measureOperator() {
+        const root = currentOverlay?.root;
+        if (!root) return { center: operatorGroup.position.clone().setY(0.95), height: 1.9 };
+        const yaw = root.rotation.y;
+        root.rotation.y = 0;
+        root.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(root);
+        root.rotation.y = yaw;
+        root.updateMatrixWorld(true);
+        return { center: box.getCenter(new THREE.Vector3()), height: box.max.y - box.min.y, top: box.max.y };
+    }
 
     function animate(now) {
         if (!isRunning) return;
@@ -677,8 +700,23 @@ export async function createArmoryScene(canvas) {
         idleTimer += dt;
 
         // 1. Procedural breathing/sway on operator if not dragging
-        if (currentOverlay?.root && !isDraggingOperator) {
+        if (currentOverlay?.root && !isDraggingOperator && !captureMode) {
             currentOverlay.root.position.y = Math.sin(idleTimer * 1.8) * 0.006;
+        }
+        if (departure) {
+            // Wall-clock, not the capped dt: the walk keeps its pace on a slow frame.
+            const elapsed = (now - departure.start) / 1000;
+            if (currentOverlay?.root) {
+                const turn = Math.min(1, elapsed / 0.35);
+                currentOverlay.root.rotation.y = departure.fromYaw + (Math.PI / 2 - departure.fromYaw) * turn;
+            }
+            operatorGroup.position.x = OPERATOR_HOME.x + departure.speed * Math.max(0, elapsed - 0.15);
+            if (operatorGroup.position.x >= departure.exitX) {
+                const done = departure;
+                departure = null;
+                if (currentOverlay?.root) currentOverlay.root.visible = false;
+                done.resolve();
+            }
         }
 
         // Armory operator animation state machine:
@@ -703,7 +741,13 @@ export async function createArmoryScene(canvas) {
             dt
         );
 
-        if (currentOverlay?.update) {
+        if (currentOverlay?.update && departure) {
+            // Walking out to screen right: the real walk cycle, facing +x.
+            currentOverlay.update(dt, {
+                isFalling: false, isReloading: false, isMoving: true, isSprinting: false, isInjured: false,
+                hasAim: false, moveX: 1, moveZ: 0, aimX: 1, aimZ: 0, presentationAim: 0, idleActionName: 'heroIdle'
+            });
+        } else if (currentOverlay?.update) {
             currentOverlay.update(dt, {
                 isFalling: false,
                 isReloading: false,
@@ -817,6 +861,101 @@ export async function createArmoryScene(canvas) {
         },
         getOperatorRoot() {
             return currentOverlay?.root ?? null;
+        },
+        // Cinematic capture: the equipped operator alone on flat grey under
+        // neutral light (bench gun, set and fog hidden), or back to the Armory.
+        setCinematicCaptureMode(on = true) {
+            if (on && !captureMode) {
+                captureMode = {
+                    fog: scene.fog,
+                    clear: renderer.getClearColor(new THREE.Color()).getHex(),
+                    clearAlpha: renderer.getClearAlpha(),
+                    colors: [fillLight, rimLight].map((light) => light.color.getHex())
+                };
+                scene.fog = null;
+                envGroup.visible = false;
+                weaponBenchGroup.visible = false;
+                benchSpot.visible = false;
+                fillLight.color.setHex(0xffffff);
+                rimLight.color.setHex(0xffffff);
+                renderer.setClearColor(0x808080, 1);
+                captureBackLight.visible = true;
+                if (currentOverlay?.root) currentOverlay.root.position.y = 0;
+                captureMode.body = measureOperator();
+            } else if (!on && captureMode) {
+                captureBackLight.visible = false;
+                scene.fog = captureMode.fog;
+                envGroup.visible = true;
+                weaponBenchGroup.visible = true;
+                benchSpot.visible = true;
+                fillLight.color.setHex(captureMode.colors[0]);
+                rimLight.color.setHex(captureMode.colors[1]);
+                renderer.setClearColor(captureMode.clear, captureMode.clearAlpha);
+                captureMode = null;
+                this.setCaptureCamera('armory');
+            }
+        },
+        // Versioned, deterministic cameras: 'turntable' frames the full body
+        // square-on, 'rear-over-shoulder' sits behind and above the weapon-side
+        // shoulder, 'armory' is the selection framing.
+        setCaptureCamera(mode = 'armory') {
+            const o = operatorGroup.position;
+            const body = captureMode?.body ?? measureOperator();
+            const halfFov = THREE.MathUtils.degToRad(camera.fov / 2);
+            if (mode === 'turntable') {
+                // The full body with a 10% margin, square-on at mid height.
+                const distance = (body.height * 1.1) / (2 * Math.tan(halfFov));
+                camera.position.set(body.center.x, body.center.y, o.z + distance);
+                camera.lookAt(body.center.x, body.center.y, o.z);
+            } else if (mode === 'rear-over-shoulder') {
+                // Helmet, shoulders, back and the weapon side, from behind and above.
+                const top = body.top ?? body.center.y + body.height / 2;
+                const distance = (body.height * 0.62) / (2 * Math.tan(halfFov));
+                camera.position.set(body.center.x + body.height * 0.14, top + body.height * 0.08, o.z - distance);
+                camera.lookAt(body.center.x + body.height * 0.03, top - body.height * 0.3, o.z);
+            } else if (mode === 'departure') {
+                // The Armory with its sidebar gone: the operator left of centre,
+                // room on the right to walk out through.
+                camera.position.set(o.x + 0.95, 1.38, o.z + 4.0);
+                camera.lookAt(o.x + 0.95, 1.0, o.z);
+            } else {
+                camera.position.copy(ARMORY_CAMERA.position);
+                camera.lookAt(ARMORY_CAMERA.target);
+            }
+            camera.updateProjectionMatrix();
+        },
+        // The opening's first shot: hide the bench gun, then the operator
+        // turns to screen right and walks out of frame on the real walk cycle.
+        // Resolves once they are out of shot; resetDeparture() brings them back.
+        setBenchVisible(visible = true) {
+            weaponBenchGroup.visible = visible;
+            benchSpot.visible = visible;
+            frameGroup.visible = visible;
+        },
+        beginDeparture({ speed = 1.35, exitX = 3.4 } = {}) {
+            if (departure) return departure.promise;
+            this.setBenchVisible(false);
+            let resolve;
+            const promise = new Promise((r) => { resolve = r; });
+            departure = {
+                speed, exitX: OPERATOR_HOME.x + exitX, resolve, promise,
+                start: performance.now(), fromYaw: currentOverlay?.root?.rotation.y ?? 0.35
+            };
+            return promise;
+        },
+        resetDeparture() {
+            departure = null;
+            operatorGroup.position.copy(OPERATOR_HOME);
+            this.setBenchVisible(true);
+            if (currentOverlay?.root) {
+                currentOverlay.root.visible = true;
+                currentOverlay.root.rotation.y = 0.35;
+            }
+        },
+        // The frame on screen, as a PNG data URL (the departure's first frame).
+        captureFrame() {
+            renderer.render(scene, camera);
+            return renderer.domElement.toDataURL('image/png');
         },
         // Tooling: the class of the operator on screen, and the one asked for.
         getOperatorClass() {
