@@ -57,6 +57,7 @@ CodeQL cannot run locally (no CodeQL CLI); the cloud CodeQL analysis passed on e
 | **S53-03** Previous class left on screen | Armory reloads with the requested class; probe covers all six switches. |
 | **S53-05** New players wipe on O₂ | Bubble-exit and 50% O₂ warnings. |
 | **S53-06 – S53-11** (DEF-01 – DEF-06) PC UI | Settings spill, menu music isolation, Mothership uplink sizing, square operator preview, readable back button, global 11/12 px text floor. |
+| **#106** Mobile Lighthouse 38 → 80+ | Cloud mobile Lighthouse passed its performance ≥ 0.80 and LCP ≤ 4 s assertions at `aaa78f3d`. |
 | Steam review build 25965936 | Early overlay hook, wallet fallback, Shift+Tab, packaged overlay runtime audit (`c0102b48`, `7e5fdf9b`). |
 | CI `steam-build` failure | `10fc8b95` (above). |
 | 2026-10-26 playtest, resume and sleep | Gameplay audio held until deployment completes; full field weapon restored on resume; resume at the base spawn; sleep film plays above the doors with the bed wake behind them; no automatic Foundry after sleep (`6dc702a6`). |
