@@ -3,7 +3,7 @@
 **Target:** `mothership` ← **Source:** `dev/sprint-53`
 **Baseline:** `v2.4.17-beta` (`d3d8d391`, released 2026-10-15)
 **Version:** `2.4.17-beta` → **`2.4.18-beta`** (one patch, `55a4e20a`)
-**Scope:** 171 commits since the release
+**Scope:** 172 commits since the release
 
 Release notes: [`docs/releases/v2.4.18-beta.md`](v2.4.18-beta.md) · Canonical QA: [Sprint 53 master verification plan](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md)
 
@@ -181,7 +181,7 @@ Test the packaged build from this PR's head, and record the SHA shown in the bui
 - Publisher Item Store, MicroTxn and refund checks remain external gates.
 
 <details>
-<summary>First 130 commits since v2.4.17-beta (the PR now contains 171)</summary>
+<summary>First 130 commits since v2.4.17-beta (the PR now contains 172)</summary>
 
 | # | Commit | Date | Subject |
 | ---: | :--- | :--- | :--- |
