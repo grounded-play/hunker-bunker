@@ -177,18 +177,20 @@ architecture and UI language; where they disagree on a cutscene or a prop, this
 block wins.
 
 ```
-Hunker Bunker production style: photoreal biomechanical corporate hardware. Brushed
-chrome and gunmetal machinery with white enamel and bone-ivory panels, ribs and
-vertebrae fused into the mechanisms, glossy black latex and lacquer, wet maroon and
-flesh-pink tissue swelling through every seam and port. Overtly sexual
-biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic
-hatches and sphincter valves, breast-like pressure domes, ribbed tubes that pulse,
-glistening fluids and mucous strands. Functional industrial objects with the
-biology growing through them and taking them over. Near-black deep-space corporate
-interiors, soft studio key light, small teal screens, amber lamps, acid-green
-fluids; sharp physically based detail, wet specular highlights. No stone, no
-runes, no readable text.
+Hunker Bunker graphic-novel horror: a hand-inked, painted illustration in the style of
+the game's cutscene art (heavy black ink linework, charcoal and gouache shading, hard
+chiaroscuro, grindhouse print grain) of biomechanical corporate hardware: chrome and
+gunmetal machinery, white enamel and bone-ivory panels, ribs and vertebrae fused into
+the mechanisms, glossy black latex, wet maroon tissue swelling through every seam.
+Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps,
+vulvic hatches and sphincter valves, breast-like pressure domes, pulsing ribbed tubes,
+glistening fluids and mucous strands. Near-black deep-space corporate interiors lit by
+amber lamps, small teal screens and acid-green fluids.
 ```
+
+> Owner, 2026-10-27 (later): the photoreal pass read "soap opera". The materials stay
+> the props'; the rendering is the game's inked cutscene art (style reference
+> `art/source/style-refs/game_cutscene_style.png`, six of the shipped cutscene posters).
 
 **Graphic:** gore is shown, not implied: torn flesh, viscera, blood and ichor spray,
 bodies of monsters ruptured by the machinery. **Sexual:** nudity and explicit sex
@@ -200,8 +202,8 @@ in the negative. Nobody asleep, unconscious, restrained or coerced is the subjec
 a sexual act. Gore is done to monsters and hardware, never to a sexual partner, and
 is never sexualised. The player operator keeps their identity sheet's look.
 
-**Avoid (negative prompts):** readable text, logos, watermarks, cartoon, anime,
-flat illustration, stone masonry, Nordic carving, runes, stained glass, extra limbs,
+**Avoid (negative prompts):** photograph, photoreal, 3D render, glossy TV drama look,
+soap opera lighting, plastic skin, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs,
 deformed anatomy, duplicated subject, identity drift, child, minor, teenager,
 youthful face.
 

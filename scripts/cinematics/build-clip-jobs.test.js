@@ -50,7 +50,7 @@ describe('motion clip jobs from the cinematics audit', () => {
             expect(job.loras[job.firstFrame.model].length, job.id).toBeGreaterThan(0);
             expect(job.durationSec, job.id).toBeGreaterThanOrEqual(5);
         }
-        expect(built.style.prefix).toMatch(/photoreal biomechanical corporate hardware/);
+        expect(built.style.prefix).toMatch(/graphic-novel horror/);
         expect(built.style.prefix).toMatch(/grindhouse/);
         expect(built.style.suffix).toMatch(/consenting adult/);
         expect(built.style.negative).toMatch(/child, minor/);
@@ -69,15 +69,17 @@ describe('motion clip jobs from the cinematics audit', () => {
                 expect(job?.kind, `${shot}-${cls}`).toBe('opening');
                 expect(job.firstFrame.prompt).toMatch(/^Reference images: image 1 is /);
                 // The props set the look of the launch; flight and crash lead with the ship.
-                if (shot === 'launch') expect(job.firstFrame.references[0]).toBe('art/source/style-refs/biomech_props_style.png');
+                if (shot === 'launch') expect(job.firstFrame.references[0]).toBe('art/source/style-refs/game_cutscene_style.png');
                 else expect(job.firstFrame.prompt).toMatch(/^Reference images: image 1 is the ship/);
                 expect(job.lastFrame && job.action, job.id).toBeTruthy();
-                expect(job.loras, job.id).toBeUndefined();
+                expect(job.camera, job.id).toBeTruthy();
             }
         }
         // The opening speaks the bible's production style (§5b), matched to the world props.
         expect(bible).toContain('## 5b. Production style: biomech corporate hardware, the explicit cut');
-        expect(byId['opening-crash-tank'].style.prefix).toContain('photoreal biomechanical corporate hardware');
+        expect(byId['opening-crash-tank'].style.prefix).toContain('graphic-novel horror');
+        expect(byId['opening-crash-tank'].style.negative).toMatch(/soap opera/);
+        expect(byId['opening-crash-tank'].firstFrame.model).toBe('zimage');
         expect(byId['opening-crash-tank'].style.negative).toMatch(/child, minor/);
         expect(byId['opening-launch-scout'].targets.webm).toBe('/cutscenes/scout-class-intro.webm');
         expect(byId['opening-flight-tank'].targets.webm).toBe('/cutscenes/tank-intro.webm');

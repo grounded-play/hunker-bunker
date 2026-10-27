@@ -60,6 +60,8 @@ FPS = 24
 MODELS = {
     'ltxv': {'size': (1024, 576), 'frames_step': 8, 'max_seconds': 8.0},
     'wan': {'size': (1280, 704), 'frames_step': 4, 'max_seconds': 5.0},  # trained on 121 frames
+    # Wan 2.2 5B "Wan Damme" rapid fp8 checkpoint (Civitai 1995164): 4 steps, CFG 1, ~5x faster.
+    'wanrapid': {'size': (1280, 704), 'frames_step': 4, 'max_seconds': 5.0},
 }
 
 
@@ -162,6 +164,22 @@ def zimage_still(prompt, seed, width=1280, height=720, prefix='hunker_cine/still
     }
 
 
+def wan22_rapid_i2v(image_name, prompt, negative, seed, frames, width, height, steps, prefix):
+    """The rapid all-in-one Wan 2.2 5B checkpoint: model, CLIP and VAE in one file."""
+    return {
+        '1': {'class_type': 'CheckpointLoaderSimple', 'inputs': {'ckpt_name': 'wan22_5b_rapid_4step_fp8_turbo.safetensors'}},
+        '4': {'class_type': 'CLIPTextEncode', 'inputs': {'text': prompt, 'clip': ['1', 1]}},
+        '5': {'class_type': 'CLIPTextEncode', 'inputs': {'text': negative, 'clip': ['1', 1]}},
+        '6': {'class_type': 'LoadImage', 'inputs': {'image': image_name}},
+        '7': {'class_type': 'Wan22ImageToVideoLatent', 'inputs': {'vae': ['1', 2], 'width': width, 'height': height, 'length': frames, 'batch_size': 1, 'start_image': ['6', 0]}},
+        '8': {'class_type': 'ModelSamplingSD3', 'inputs': {'model': ['1', 0], 'shift': 8.0}},
+        '9': {'class_type': 'KSampler', 'inputs': {'model': ['8', 0], 'seed': seed, 'steps': steps, 'cfg': 1.0, 'sampler_name': 'euler', 'scheduler': 'simple',
+                                                   'positive': ['4', 0], 'negative': ['5', 0], 'latent_image': ['7', 0], 'denoise': 1.0}},
+        '10': {'class_type': 'VAEDecodeTiled', 'inputs': {'samples': ['9', 0], 'vae': ['1', 2], 'tile_size': 512, 'overlap': 64, 'temporal_size': 64, 'temporal_overlap': 8}},
+        '11': {'class_type': 'SaveImage', 'inputs': {'images': ['10', 0], 'filename_prefix': prefix}},
+    }
+
+
 def ltxv_i2v(image_name, prompt, negative, seed, frames, width, height, steps, prefix):
     return {
         '1': {'class_type': 'CheckpointLoaderSimple', 'inputs': {'ckpt_name': 'ltxv-2b-0.9.8-distilled-fp8.safetensors'}},
@@ -202,8 +220,8 @@ def with_loras(workflow, loras):
     """Chain LoRAs (name, strength) after the UNETLoader in node '1' and rewire its users."""
     if not loras:
         return workflow
-    if workflow['1']['class_type'] != 'UNETLoader':
-        raise SystemExit('LoRAs need a UNETLoader workflow (flux, zimage, wan)')
+    if workflow['1']['class_type'] not in ('UNETLoader', 'CheckpointLoaderSimple'):
+        raise SystemExit('LoRAs need a UNETLoader or checkpoint workflow (flux, zimage, wan, wanrapid)')
     users = [inputs for inputs in (node['inputs'] for node in workflow.values()) if inputs]
     previous = ['1', 0]
     for index, (name, strength) in enumerate(loras):
@@ -272,16 +290,27 @@ def first_frame_for(job, size):
 def motion_prompt(style, job):
     style = job.get('style') or style
     trigger = f"{job['trigger']}, " if job.get('trigger') else ''
-    ending = f" The shot ends on {job['lastFrame']}" if job.get('lastFrame') else ''
+    ending = f" The shot ends on {job['lastFrame']}." if job.get('lastFrame') else ''
     identity = f" {job['identityLock']}" if job.get('identityLock') else ''
-    camera = f" CAMERA MOVE: {job['camera']}. " if job.get('camera') else ''
-    return (f"{trigger}{style['prefix']} {camera}{job['action'].rstrip('. ')}.{ending}{identity} "
-            f"{style['continuityLock']} {style['motionSuffix']} {style['suffix']}")
+    camera = f"CAMERA MOVE: {job['camera']}. " if job.get('camera') else ''
+    action = f"ACTION: {job['action'].rstrip('. ')}."
+    motion = f" {style.get('motionSuffix', '')}"
+    continuity = f" {style.get('continuityLock', '')}"
+    prefix = f" {style.get('prefix', '')}"
+    suffix = f" {style.get('suffix', '')}"
+    full = f"{trigger}{camera}{action}{ending}{continuity}{identity}{motion}{prefix}{suffix}".strip()
+    words = full.split()
+    if len(words) > 280:
+        return ' '.join(words[:280])
+    return full
 
 
 def job_loras(job, model, override=None):
     """--lora wins; otherwise the job's add-ons for this model (cut-prompts.json `loras`)."""
-    return parse_loras(override) or [tuple(entry) for entry in job.get('loras', {}).get(model, [])]
+    loras = job.get('loras', {})
+    # The rapid checkpoint is Wan 2.2 5B underneath: it takes the Wan add-ons.
+    entries = loras.get(model) or (loras.get('wan', []) if model == 'wanrapid' else [])
+    return parse_loras(override) or [tuple(entry) for entry in entries]
 
 
 def frame_prompt(style, job, endpoint):
@@ -431,8 +460,8 @@ def cmd_clip(args):
         prompt = motion_prompt(style, job)
         take = next_take(folder, f'take_{args.model}')
         prefix = f'hunker_cine/{job_id}_{args.model}_t{take}'
-        builder = ltxv_i2v if args.model == 'ltxv' else wan22_i2v
-        steps = args.steps or (8 if args.model == 'ltxv' else 20)
+        builder = {'ltxv': ltxv_i2v, 'wan': wan22_i2v, 'wanrapid': wan22_rapid_i2v}[args.model]
+        steps = args.steps or {'ltxv': 8, 'wan': 20, 'wanrapid': 4}[args.model]
         started = time.time()
         loras = job_loras(job, args.model, getattr(args, 'lora', None))
         if getattr(args, 'prompt_extra', None):

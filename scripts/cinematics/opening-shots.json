@@ -1,15 +1,15 @@
 {
-  "source": "docs/planning/opening-clips-reshoot-2026-10-27.md. Style is docs/design/art-style-bible.md §5b, the production style matched to the recent world props; story beat from the opening text: the ship takes a hypersonic strike on descent and crashes into Sector 9's frozen bunker.",
+  "source": "docs/planning/opening-clips-reshoot-2026-10-27.md. Style is docs/design/art-style-bible.md §5b (biomech hardware materials, graphic-novel rendering, explicit and graphic); story beat from the opening text: the ship takes a hypersonic strike on descent and crashes into Sector 9.",
   "style": {
-    "prefix": "Hunker Bunker production style: photoreal biomechanical corporate hardware. Brushed chrome and gunmetal machinery with white enamel and bone-ivory panels, ribs and vertebrae fused into the mechanisms, glossy black latex and lacquer, wet maroon and flesh-pink tissue swelling through every seam and port. Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic hatches and sphincter valves, breast-like pressure domes, ribbed tubes that pulse, glistening fluids and mucous strands. Functional industrial objects with the biology growing through them and taking them over. Near-black deep-space corporate interiors, soft studio key light, small teal screens, amber lamps, acid-green fluids; sharp physically based detail, wet specular highlights.",
+    "prefix": "Hunker Bunker graphic-novel horror: a hand-inked, painted illustration in the style of the game's cutscene art (heavy black ink linework, charcoal and gouache shading, hard chiaroscuro, grindhouse print grain) of biomechanical corporate hardware: chrome and gunmetal machinery, white enamel and bone-ivory panels, ribs and vertebrae fused into the mechanisms, glossy black latex, wet maroon tissue swelling through every seam. Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic hatches and sphincter valves, breast-like pressure domes, pulsing ribbed tubes, glistening fluids and mucous strands. Near-black deep-space corporate interiors lit by amber lamps, small teal screens and acid-green fluids.",
     "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
     "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
     "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
     "motionSuffix": "Single continuous shot, one camera move, natural weight and inertia; hold the final composition for twelve frames. No cuts, no new subjects, no text.",
-    "negative": "readable text, logos, watermarks, cartoon, anime, flat illustration, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform"
+    "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform"
   },
   "refs": {
-    "style": "art/source/style-refs/biomech_props_style.png",
+    "style": "art/source/style-refs/game_cutscene_style.png",
     "mothership": "public/sky/body_mothership_derelict.png",
     "planet": "public/sky/body_planet_dead_ocean.png",
     "deepSpace": "public/sky/cinematic_deep_space_panorama.jpg",
@@ -58,19 +58,24 @@
         "ship"
       ],
       "firstFrame": {
-        "scout": "The Mothership's launch nave, a cathedral hangar of stepped granite piers and blackened-iron strap bindings under a vault of ribbed bone, amber lanterns along the deck, a deep round-arched launch portal with a heavy keystone at the far end. {operator} sprints across the deck toward {ship} resting on its launch cradle at the mouth of a ribbed launch tube.",
-        "tank": "The Mothership's heavy bay, a cathedral hangar of stepped granite massing and iron-banded columns, steam venting from carved grates, amber lanterns. {operator} strides with heavy steps toward the lowered rear ramp of {ship}, its thruster cans glowing faintly.",
-        "engineer": "The Mothership's service chapel, an engineering bay framed by round granite arches and iron gantries like a side altar, teal screens in carved niches, amber lanterns. {operator} kneels at the flank of {ship}, unclamping a ribbed fuel line from its hull."
+        "scout": "The Mothership's launch bay, a living biomechanical hangar of chrome ribs and wet maroon tissue, its walls studded with phallic pistons and vulvic docking hatches; in glistening tissue alcoves along the walls nude adult crew in their thirties writhe together, lit by amber lamps. {operator} sprints across the deck toward {ship} on its cradle at the mouth of a ribbed, pulsing launch tube.",
+        "tank": "The Mothership's heavy bay, a living biomechanical hangar of chrome girders and swollen maroon tissue venting steam from sphincter grates; nude adult crew in their thirties couple in the glistening alcoves of the walls. {operator} strides with heavy steps toward the lowered rear ramp of {ship}, its thruster cans glowing.",
+        "engineer": "The Mothership's service bay, chrome gantries fused with bone vertebrae and pulsing tubes, breast-like pressure domes on the walls leaking fluid; nude adult crew in their thirties tangled together in a tissue alcove behind. {operator} kneels at the flank of {ship}, unclamping a ribbed, dripping fuel line from its hull."
       },
       "lastFrame": {
-        "scout": "the interceptor blasting out through the arched launch portal on twin green-white engine plumes, the cradle empty and smoking, lantern light shaken across the granite.",
-        "tank": "the drop-hauler lifting off the deck on its banks of amber thrusters, ramp sealed, steam whirling across the bay as the vault's iron iris opens above it.",
-        "engineer": "the shuttle gliding out of the bay along its rail through the arched gate, the fuel line coiled on the deck, teal canopy lit from inside with the operator at the controls."
+        "scout": "the interceptor blasting out through a dilating sphincter launch portal on twin green-white plumes, fluids spraying from the tube's ribs, the cradle empty and smoking.",
+        "tank": "the drop-hauler lifting off on its amber thruster banks through billowing steam as the vault's vulvic iris dilates above it, fluid streaming from the parting tissue.",
+        "engineer": "the shuttle gliding out along its rail through a quivering membrane gate, the dripping fuel line coiled on the deck, the operator lit teal at the controls."
       },
       "action": {
         "scout": "The Scout sprints, vaults onto the wing and drops into the cockpit; the canopy seals; the catapult fires and the interceptor shoots down the ribbed launch tube and out through the arched portal. Camera tracks low alongside, then holds as the ship streaks away.",
         "tank": "The Tank strides up the ramp with heavy steps; the ramp hauls shut; thruster cans flare amber one bank at a time and the drop-hauler lifts off the deck through billowing steam toward the opening iris. Camera cranes up with the lift.",
         "engineer": "The Engineer pulls the fuel line free and coils it, taps a teal diagnostic panel, climbs into the canopy; the shuttle hums, rises off its clamps and glides out along the rail through the arched gate. Camera pans with the shuttle."
+      },
+      "camera": {
+        "scout": "Fast forward tracking shot rising into high-angle crane as the ship blasts out of the launch tube",
+        "tank": "Low-angle slow pedestal push-in, tilting up as the drop-hauler elevates into the air",
+        "engineer": "Smooth lateral tracking shot following the survey shuttle gliding along the rail"
       }
     },
     "flight": {
@@ -82,9 +87,9 @@
         "mothership"
       ],
       "firstFrame": {
-        "scout": "Deep space beside the vast derelict Mothership, a cathedral-hulled vessel of stepped iron plating and ribbed bone buttresses lit by a few amber ports. {ship} streaks away from its launch portal toward a field of tumbling hull debris.",
-        "tank": "Deep space beside the vast derelict Mothership, a cathedral-hulled vessel of stepped iron plating and ribbed bone buttresses. {ship} pulls away from the hull on its amber thruster banks toward a drifting belt of ice shards.",
-        "engineer": "Deep space beside the vast derelict Mothership, a cathedral-hulled vessel of stepped iron plating and ribbed bone buttresses. {ship} drifts clear of the hull, its sensor dishes unfolding, teal scan lines sweeping ahead into the dark."
+        "scout": "Deep space beside the vast derelict Mothership, a biomechanical organism of chrome plating, bone buttresses and swollen maroon tissue lined with phallic antenna spires and glowing sphincter ports. {ship} streaks away from it toward a field of tumbling hull debris and frozen corpses.",
+        "tank": "Deep space beside the vast derelict Mothership, a biomechanical organism of chrome plating, bone buttresses and swollen maroon tissue. {ship} pulls away on its amber thruster banks toward a drifting belt of ice shards studded with frozen hive bodies.",
+        "engineer": "Deep space beside the vast derelict Mothership, a biomechanical organism of chrome plating, bone buttresses and swollen maroon tissue, its pores leaking glowing fluid. {ship} drifts clear, sensor dishes unfolding, teal scan lines sweeping ahead into the dark."
       },
       "lastFrame": {
         "scout": "the interceptor small and fast against the frozen planet that now fills the frame, cold light on its curve, debris trailing behind.",
@@ -95,7 +100,13 @@
         "scout": "The interceptor barrel-rolls through the tumbling debris at speed, slipping between spinning hull plates; the camera chases it out of the field as the frozen planet swings into view.",
         "tank": "The drop-hauler ploughs straight through the ice belt, shards bursting against its armour; the camera holds behind it as the frozen planet rises ahead.",
         "engineer": "The shuttle threads a careful path while teal scan beams sweep the dark and lock onto the planet; the camera drifts alongside as the frozen planet grows to fill the frame."
-      }
+      },
+      "camera": {
+        "scout": "Dynamic orbital pan and chase tracking the interceptor barrel-rolling across the planet horizon",
+        "tank": "Slow forward push through ice debris holding behind the drop-hauler toward the rising planet",
+        "engineer": "High-angle orbital arc sweep drifting alongside the shuttle as the scan grid paints the planet"
+      },
+      "stillModel": "zimage"
     },
     "crash": {
       "label": "The crash",
@@ -106,20 +117,44 @@
         "wreck"
       ],
       "firstFrame": {
-        "scout": "High above the frozen sector, {ship} diving through the upper atmosphere wreathed in re-entry fire, the ice-bound surface and its buried granite bunker spires far below in cold light.",
-        "tank": "High above the frozen sector, {ship} descending heavily through the upper atmosphere, its armour glowing with re-entry heat, the ice-bound surface and buried granite bunker spires far below.",
-        "engineer": "High above the frozen sector, {ship} gliding down through the upper atmosphere, teal canopy lit, re-entry glow along its hull, the ice-bound surface and buried granite bunker spires far below."
+        "scout": "High above the frozen sector, {ship} diving through the upper atmosphere wreathed in re-entry fire, the ice-bound surface far below veined with biomechanical tissue and glowing vents.",
+        "tank": "High above the frozen sector, {ship} descending heavily through the upper atmosphere, its armour glowing with re-entry heat, the ice-bound surface far below veined with biomechanical tissue.",
+        "engineer": "High above the frozen sector, {ship} gliding down through the upper atmosphere, teal canopy lit, re-entry glow along its hull, the ice-bound surface far below veined with biomechanical tissue."
       },
       "lastFrame": {
-        "scout": "the wrecked interceptor, one wing torn away, nose buried in shattered granite inside a dark cathedral crypt beneath the ice, smoke rising into the vault, ice and rubble raining through the hole it punched, one amber emergency lamp.",
-        "tank": "the wrecked drop-hauler lying belly-down at the end of a long gouged trench inside a dark cathedral crypt beneath the ice, armour buckled, thruster cans smoking, granite arches cracked around it, one amber emergency lamp.",
-        "engineer": "the wrecked shuttle on its side inside a dark cathedral crypt beneath the ice, hull panels scattered, dishes snapped, sparks and flickering teal screens through the cracked canopy, granite arches above, one amber emergency lamp."
+        "scout": "the wrecked interceptor, one wing torn away, nose buried in an ice cavern overgrown with biomechanical tissue and phallic stalactites, hive creatures crushed under the wreck in sprays of green ichor and torn flesh, smoke and one amber emergency lamp.",
+        "tank": "the wrecked drop-hauler belly-down at the end of a long gouged trench in an ice cavern overgrown with biomechanical tissue, a hive brood smashed into gore beneath it, green ichor and viscera across the ice, thruster cans smoking.",
+        "engineer": "the wrecked shuttle on its side in an ice cavern overgrown with biomechanical tissue, panels scattered, a hive creature impaled on a snapped dish spraying ichor, sparks and flickering teal screens through the cracked canopy."
       },
       "action": {
-        "scout": "A hypersonic streak lances up from the surface and clips the interceptor; a wing shears away and it cartwheels down trailing fire, punches through the ice sheet into the crypt below and skids to a stop in a burst of rubble.",
-        "tank": "A hypersonic strike slams into the drop-hauler's flank; thruster banks fail one by one and it drops like a stone, smashes through the ice belly-first and ploughs a trench across the crypt floor.",
-        "engineer": "A hypersonic strike flashes past and the shockwave tears panels off the shuttle; its systems flicker teal and red as it spirals down, breaks through the ice and rolls across the crypt floor, sparks spraying."
-      }
+        "scout": "A hypersonic streak lances up from the surface and clips the interceptor; a wing shears away and it cartwheels down trailing fire, punches through the ice into the cavern and skids through a hive brood, crushing them in bursts of green ichor.",
+        "tank": "A hypersonic strike slams into the drop-hauler's flank; thruster banks fail one by one and it drops like a stone, smashes through the ice belly-first and ploughs a gory trench through the hive brood on the cavern floor.",
+        "engineer": "A hypersonic strike flashes past and the shockwave tears panels off the shuttle; its systems flicker teal and red as it spirals down, breaks through the ice and rolls across the cavern, impaling a hive creature on its snapped dish."
+      },
+      "camera": {
+        "scout": "Violent plunging dive and camera shake following the flaming interceptor breaking through the ice",
+        "tank": "Heavy shuddering crane shot following the drop-hauler smashing through the ice and skidding across the cavern floor",
+        "engineer": "Spiraling downward dive and shake following the shuttle tumbling through the breach and rolling across the cavern floor"
+      },
+      "stillModel": "zimage"
     }
+  },
+  "loras": {
+    "zimage": [
+      [
+        "zit_giger_v1.safetensors",
+        0.6
+      ],
+      [
+        "zit_horror_noir_graphic_novel.safetensors",
+        0.75
+      ]
+    ],
+    "flux": [
+      [
+        "klein4b_nsfw_fix.safetensors",
+        0.6
+      ]
+    ]
   }
 }

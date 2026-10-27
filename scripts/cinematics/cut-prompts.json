@@ -1,13 +1,13 @@
 {
   "source": "Owner direction 2026-10-27: every cutscene is an explicit, violent grindhouse cut (Troma-style schlock) in the art bible's Giger biomechanical eroticism. Sex is always between consenting adults; the gore is always aimed at the monsters, never at a partner and never sexual. docs/design/art-style-bible.md 'Cutscenes: the grindhouse cut'.",
   "style": {
-    "prefix": "Hunker Bunker production style: photoreal biomechanical corporate hardware. Brushed chrome and gunmetal machinery with white enamel and bone-ivory panels, ribs and vertebrae fused into the mechanisms, glossy black latex and lacquer, wet maroon and flesh-pink tissue swelling through every seam and port. Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic hatches and sphincter valves, breast-like pressure domes, ribbed tubes that pulse, glistening fluids and mucous strands. Functional industrial objects with the biology growing through them and taking them over. Near-black deep-space corporate interiors, soft studio key light, small teal screens, amber lamps, acid-green fluids; sharp physically based detail, wet specular highlights. Explicit adults-only grindhouse cut:",
-    "suffix": "graphic gore aimed at the monsters, explicit consensual sex between adults, wet specular highlights, every person depicted is a consenting adult over twenty-five; no readable text, logos or watermarks.",
+    "prefix": "Hunker Bunker graphic-novel horror: a hand-inked, painted illustration in the style of the game's cutscene art (heavy black ink linework, charcoal and gouache shading, hard chiaroscuro, grindhouse print grain) of biomechanical corporate hardware: chrome and gunmetal machinery, white enamel and bone-ivory panels, ribs and vertebrae fused into the mechanisms, glossy black latex, wet maroon tissue swelling through every seam. Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic hatches and sphincter valves, breast-like pressure domes, pulsing ribbed tubes, glistening fluids and mucous strands. Near-black deep-space corporate interiors lit by amber lamps, small teal screens and acid-green fluids. Explicit adults-only grindhouse cut:",
+    "suffix": "graphic gore aimed at the monsters, explicit consensual sex between adults, every person depicted is a consenting adult over twenty-five; no readable text, logos or watermarks.",
     "characterLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
     "continuityLock": "CONTINUITY LOCK: keep subject count, screen direction, set geometry, prop placement, palette and key-light direction from the first frame; only the described actions change state.",
     "motionSuffix": "Single continuous shot, one camera move, natural weight, bodies moving with real rhythm; hold the final composition for twelve frames. No cuts, no new subjects, no camera teleport, no text.",
-    "negative": "readable text, logos, watermarks, cartoon, anime, flat illustration, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform",
-    "plateLock": "PLATE LOCK: reference image 1 is the background plate from the game: keep its environment, architecture, props, lighting, palette and composition and lighting as the backdrop of the shot, re-rendered in the photoreal biomechanical production style."
+    "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform",
+    "plateLock": "PLATE LOCK: reference image 1 is the background plate from the game: keep its composition, geography and lighting as the backdrop of the shot, re-drawn in the inked graphic-novel production style."
   },
   "loras": {
     "flux": [
@@ -19,11 +19,15 @@
     "zimage": [
       [
         "zit_giger_v1.safetensors",
+        0.6
+      ],
+      [
+        "zit_horror_noir_graphic_novel.safetensors",
         0.7
       ],
       [
         "zit_betternudes_v3.safetensors",
-        0.7
+        0.6
       ]
     ],
     "wan": [
@@ -57,7 +61,8 @@
       "firstFrame": "Low wide shot of a survivors' camp in a vast bunker hall around an oil-drum fire, {operator} straddling a nude adult male survivor in his thirties on a bedroll, both naked in the firelight, a severed mutant arm still twitching on the sandbags behind them, sparks rising into monumental biomechanical arches of ivory vertebrae and black latex sinew.",
       "lastFrame": "the same camp at embers: the operator and the survivor asleep naked and entwined under one blanket, the sentry at the barricade holding a smoking shotgun over a headless mutant sprawled across the sandbags in a pool of green blood, fog creeping in.",
       "action": "The operator rides the survivor in cowgirl position by the fire, their bodies rocking in rhythm, sweat shining. At the barricade a mutant lunges over the sandbags and the sentry blasts its head clean off in a geyser of green blood that spatters the laundry lines. The lovers finish, collapse together and pull the blanket over themselves as the fire sinks to embers.",
-      "plate": "public/interstitials/int_val_spore_communion_key_v1.webp"
+      "plate": "public/interstitials/int_val_spore_communion_key_v1.webp",
+      "camera": "Slow drifting low pan across the fire to the lovers and the standing sentry"
     },
     "cryo": {
       "durationSec": 7,
@@ -65,7 +70,8 @@
       "firstFrame": "An upright emergency cryo pod in a frozen chamber, lid open and furred with frost, its lining of moist tufted plum-pink cushions folded like labial petals, {operator} lying back inside it with a nude adult partner in their thirties on top of them, bodies pressed together, breath fogging, cyan light, a frost-ghoul clawing at the glass from outside, icicles on bone-braced conduits.",
       "lastFrame": "the cryo pod sealed shut, frost ferns covering the glass so the two entwined lovers are a dark silhouette sleeping inside, the shattered frozen ghoul in red-pink ice chunks scattered across the black ice floor.",
       "action": "Missionary sex inside the cryo pod, the partner thrusting slowly as frost blooms around them. Outside the frost-ghoul slams the glass and the pod's cold-jet fires, freezing it solid; it topples and shatters into bloody ice chunks. The lid swings shut with a hiss and frost seals the lovers in, falling asleep in each other's arms.",
-      "plate": "public/cutscenes/scout-class-intro-poster.jpg"
+      "plate": "public/cutscenes/scout-class-intro-poster.jpg",
+      "camera": "Slow vertical pedestal descent along the frosted pod"
     },
     "hive": {
       "durationSec": 8,
@@ -94,7 +100,8 @@
       "trigger": "c0wg1rl",
       "firstFrame": "The diagnostic bay from the reference image: Overseer Kaelen, a weathered adult man in his sixties, lying naked in the ribbed bone diagnostic cradle with cables jacked into the port in his neck, a nude adult woman operator in a sealed helmet straddling his hips, cyan monitor light on their skin, a parasite crawler squeezing out of the wall vent behind them.",
       "lastFrame": "the same bay: the two lovers slumped spent and naked in the cradle, cyan light dimming, the crawler crushed between the snapped-shut cradle ribs, its green blood dripping down the bone.",
-      "action": "The operator rides Kaelen in cowgirl position, the cradle's ribs ticking in rhythm and cyan light racing down the cables with every thrust. The crawler lunges and the ribs snap shut on it, crushing it in a burst of green blood that splatters the monitors. The lovers climax and slump together."
+      "action": "The operator rides Kaelen in cowgirl position, the cradle's ribs ticking in rhythm and cyan light racing down the cables with every thrust. The crawler lunges and the ribs snap shut on it, crushing it in a burst of green blood that splatters the monitors. The lovers climax and slump together.",
+      "camera": "Slow sensual push-in tilting down toward the lovers in the cradle"
     },
     "kaelen_frequency_overclock": {
       "trigger": "d0gg1e",
@@ -112,7 +119,8 @@
       "trigger": "c0wg1rl",
       "firstFrame": "The geothermal pipe hearth from the reference image: Sister Martha, a strong adult woman in her sixties with grey braided hair, naked and straddling a nude adult man operator in a sealed helmet on the warm pipe saddle, a steaming ladle of balm in her hand, a frozen mutant dragging itself up the pipes toward them.",
       "lastFrame": "the same hearth: Martha and the operator wrapped naked together in her quilted coat on the pipe, the mutant's flesh boiled off its skull in a steaming puddle below, steam rising.",
-      "action": "Martha rides the operator in cowgirl position on the warm pipe, balm glistening on their skin. The frozen mutant grabs her ankle and she empties the boiling ladle over its head; its face sloughs off in a gush of steam and it drops away. She keeps riding him until they both finish, laughing."
+      "action": "Martha rides the operator in cowgirl position on the warm pipe, balm glistening on their skin. The frozen mutant grabs her ankle and she empties the boiling ladle over its head; its face sloughs off in a gush of steam and it drops away. She keeps riding him until they both finish, laughing.",
+      "camera": "Gentle intimate push-in settling on the shared embrace by the steaming pipe"
     },
     "val_spore_communion": {
       "trigger": "bl0wj0b",
