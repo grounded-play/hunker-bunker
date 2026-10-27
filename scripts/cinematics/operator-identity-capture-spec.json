@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "purpose": "Capture the exact equipped runtime operator for cinematic continuity without enumerating the cosmetic catalog.",
+  "appearanceSignature": [
+    "classId",
+    "chassisSkinId",
+    "chassisBody",
+    "operatorPolishId",
+    "operatorPolishColor",
+    "weaponArchetypeId",
+    "weaponSkinId",
+    "weaponSheenId",
+    "weaponSheenColor",
+    "charmId",
+    "decalId",
+    "mod1Id",
+    "mod2Id",
+    "operatorAssetRevision",
+    "captureRigVersion"
+  ],
+  "capture": {
+    "resolution": [
+      1536,
+      1536
+    ],
+    "background": "neutral middle-grey plus alpha master",
+    "pose": "ARMED_IDLE",
+    "camera": "70mm-equivalent orthographic-looking perspective, constant height and distance for the eight turntable views",
+    "lighting": "fixed neutral key, fill and rim; no class-coloured light on the material reference pass",
+    "settleFrames": 2
+  },
+  "views": [
+    { "id": "yaw_000_front", "operatorYawDeg": 0, "framing": "full-body" },
+    { "id": "yaw_045", "operatorYawDeg": 45, "framing": "full-body" },
+    { "id": "yaw_090_side", "operatorYawDeg": 90, "framing": "full-body" },
+    { "id": "yaw_135", "operatorYawDeg": 135, "framing": "full-body" },
+    { "id": "yaw_180_back", "operatorYawDeg": 180, "framing": "full-body" },
+    { "id": "yaw_225", "operatorYawDeg": 225, "framing": "full-body" },
+    { "id": "yaw_270_side", "operatorYawDeg": 270, "framing": "full-body" },
+    { "id": "yaw_315", "operatorYawDeg": 315, "framing": "full-body" },
+    { "id": "rear_over_shoulder", "operatorYawDeg": 180, "framing": "helmet, shoulders, backpack, held weapon and charm socket; camera directly behind and slightly above the weapon-side shoulder" }
+  ],
+  "outputs": {
+    "individual": "art/source/cinematics/operator-identities/{appearanceHash}/{viewId}.png",
+    "contactSheet": "art/source/cinematics/operator-identities/{appearanceHash}/identity_sheet_3x3.png",
+    "metadata": "art/source/cinematics/operator-identities/{appearanceHash}/identity.json",
+    "openingFirstFrame": "art/source/cinematics/operator-identities/{appearanceHash}/armory_departure_first.png",
+    "openingLastFrame": "art/source/cinematics/operator-identities/{appearanceHash}/armory_departure_empty.png"
+  },
+  "referenceOrder": [
+    "scene or environment plate",
+    "identity_sheet_3x3.png",
+    "physical prop plate when a prop is the action subject"
+  ],
+  "rule": "The contact sheet is identity truth, not style inspiration. Preserve chassis silhouette, body proportions, helmet or head, polish, weapon geometry and sheen, patch, charm and mounted modules. The art bible controls rendering style and environment only."
+}
+
