@@ -15,6 +15,8 @@
  */
 import { createKioskFrame } from './kioskFrame.js';
 import { t } from './i18n.js';
+import { BEZEL_SEATS, KIOSK_CONTROLS } from './data/kioskControls.js';
+import { TerminalBezelController } from './terminalBezelInteractivity.js';
 
 const SLOT_MACHINE = 'slot_minimart_overlay';
 // The Slot-O-Mart's pull lever, in % of its frame (the painting has no hole
@@ -29,6 +31,37 @@ function screenWrapper(doc, className) {
 
 function moveInto(target, element) {
     if (element && element.parentNode !== target) target.appendChild(element);
+}
+
+const BEZEL_LAYER = '.bezel-interactive-layer';
+
+/**
+ * Seat the bezel interactivity layer (src/terminalBezelInteractivity.js) on
+ * the machine: each control moves onto its painted counterpart
+ * (src/data/kioskControls.js), a control the machine lacks is hidden. The
+ * controller keeps its listeners because elements are moved, not rebuilt.
+ * Returns restore(), which puts every control back in the layer.
+ */
+function seatBezel(frame, content, overlayName) {
+    const layer = content.querySelector(BEZEL_LAYER);
+    const controls = KIOSK_CONTROLS[overlayName];
+    if (!layer || !controls) return () => {};
+    const moved = [];
+    for (const [selector, control] of BEZEL_SEATS) {
+        const element = layer.querySelector(selector);
+        if (!element) continue;
+        moved.push({ element, parent: element.parentNode, next: element.nextSibling, hidden: element.hidden });
+        if (controls[control]) moveInto(frame.slot(control), element);
+        else element.hidden = true;
+    }
+    layer.classList.add('bezel-interactive-layer--seated');
+    return () => {
+        for (const { element, parent, next, hidden } of moved.reverse()) {
+            parent.insertBefore(element, next?.parentNode === parent ? next : null);
+            element.hidden = hidden;
+        }
+        layer.classList.remove('bezel-interactive-layer--seated');
+    };
 }
 
 /**
@@ -50,7 +83,7 @@ export function mountFabricationKiosk({ doc = globalThis.document, onRoll = null
 
     const screen = screenWrapper(doc, 'kiosk-screen--fab');
     for (const child of original) {
-        if (child === nav || child === exit) continue;
+        if (child === nav || child === exit || child.matches?.(BEZEL_LAYER)) continue;
         screen.appendChild(child);
     }
     if (exit) {
@@ -74,7 +107,7 @@ export function mountFabricationKiosk({ doc = globalThis.document, onRoll = null
 
     const frame = createKioskFrame(content, {
         overlay: 'fab_automart_overlay',
-        hotspots: { [SLOT_MACHINE]: { lever: SLOT_LEVER } },
+        hotspots: { [SLOT_MACHINE]: { lever: SLOT_LEVER }, fab_automart_overlay: KIOSK_CONTROLS.fab_automart_overlay },
         doc
     });
 
@@ -114,10 +147,22 @@ export function mountFabricationKiosk({ doc = globalThis.document, onRoll = null
     }) : null;
     spinWatch?.observe(reveal, { attributes: true, attributeFilter: ['data-state'] });
 
+    // The bay may build its bezel layer before or after the machine mounts.
+    let unseat = () => {};
+    const seatControls = () => {
+        if (frame.getOverlay() !== 'fab_automart_overlay' || content.querySelector(`${BEZEL_LAYER}.bezel-interactive-layer--seated`)) return;
+        unseat = seatBezel(frame, content, 'fab_automart_overlay');
+    };
+    seatControls();
+    const layerWatch = Observer ? new Observer(seatControls) : null;
+    layerWatch?.observe(content, { childList: true });
+
     let disposed = false;
     function dispose() {
         if (disposed) return;
         disposed = true;
+        layerWatch?.disconnect();
+        unseat();
         aisleWatch?.disconnect();
         spinWatch?.disconnect();
         closeWatch?.disconnect();
@@ -147,8 +192,15 @@ export function mountTerminalKiosk({ doc = globalThis.document } = {}) {
     const tabs = ['base', 'skills', 'objectives'].map((tab) => doc.getElementById(`terminal-tab-${tab}`));
     const screen = screenWrapper(doc, 'kiosk-screen--terminal');
     for (const child of [...content.children]) screen.appendChild(child);
-    const frame = createKioskFrame(content, { overlay: 'console_kiosk_overlay', doc });
+    const frame = createKioskFrame(content, {
+        overlay: 'console_kiosk_overlay',
+        hotspots: { console_kiosk_overlay: KIOSK_CONTROLS.console_kiosk_overlay },
+        doc
+    });
     moveInto(frame.slot('screen'), screen);
+    // The console's bolts, LEDs, port panel and maintenance hatch are live too.
+    const bezel = new TerminalBezelController({ container: content, doc });
+    const unseat = seatBezel(frame, content, 'console_kiosk_overlay');
     // Each visit starts at the top of the department.
     const modal = doc.getElementById('console-terminal-modal');
     const Observer = globalThis.MutationObserver;
@@ -158,7 +210,7 @@ export function mountTerminalKiosk({ doc = globalThis.document } = {}) {
     openWatch?.observe(modal, { attributes: true, attributeFilter: ['class'] });
     // Department windows when the console has them; otherwise the tabs stay on screen.
     if (frame.has('row3')) tabs.forEach((tab, index) => moveInto(frame.slot(`row${index + 1}`), tab));
-    return { frame, dispose: () => { openWatch?.disconnect(); frame.dispose(); } };
+    return { frame, bezel, dispose: () => { openWatch?.disconnect(); unseat(); frame.dispose(); } };
 }
 
 /** The Black-Ice 21 cabinet: `press(key, code)` feeds its key handler. */
