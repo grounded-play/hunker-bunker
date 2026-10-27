@@ -87,9 +87,9 @@
         "mothership"
       ],
       "firstFrame": {
-        "scout": "Deep space beside the vast derelict Mothership, a biomechanical organism of chrome plating, bone buttresses and swollen maroon tissue lined with phallic antenna spires and glowing sphincter ports. {ship} streaks away from it toward a field of tumbling hull debris and frozen corpses.",
-        "tank": "Deep space beside the vast derelict Mothership, a biomechanical organism of chrome plating, bone buttresses and swollen maroon tissue. {ship} pulls away on its amber thruster banks toward a drifting belt of ice shards studded with frozen hive bodies.",
-        "engineer": "Deep space beside the vast derelict Mothership, a biomechanical organism of chrome plating, bone buttresses and swollen maroon tissue, its pores leaking glowing fluid. {ship} drifts clear, sensor dishes unfolding, teal scan lines sweeping ahead into the dark."
+        "scout": "Black starfield of deep space; in the background the colossal derelict Mothership, a ship-sized hulk miles long built of chrome plating, bone buttresses and swollen maroon tissue lined with phallic antenna spires and glowing sphincter ports. {ship} streaks away from it toward a field of tumbling hull debris and frozen corpses.",
+        "tank": "Black starfield of deep space; in the background the colossal derelict Mothership, a ship-sized hulk miles long built of chrome plating, bone buttresses and swollen maroon tissue. {ship} pulls away on its amber thruster banks toward a drifting belt of ice shards studded with frozen hive bodies.",
+        "engineer": "Black starfield of deep space; in the background the colossal derelict Mothership, a ship-sized hulk miles long built of chrome plating, bone buttresses and swollen maroon tissue, its pores leaking glowing fluid. {ship} drifts clear, sensor dishes unfolding, teal scan lines sweeping ahead into the dark."
       },
       "lastFrame": {
         "scout": "the interceptor small and fast against the frozen planet that now fills the frame, cold light on its curve, debris trailing behind.",
@@ -106,7 +106,22 @@
         "tank": "Slow forward push through ice debris holding behind the drop-hauler toward the rising planet",
         "engineer": "High-angle orbital arc sweep drifting alongside the shuttle as the scan grid paints the planet"
       },
-      "stillModel": "zimage"
+      "stillModel": "flux",
+      "framing": "Wide cinematic establishing shot floating in open space: no ground, no terrain, no horizon, no people, no figures and no faces; the ship is the only subject and stays fully in frame, dwarfed by the black void and the colossal Mothership behind it; every organic form belongs to hulls and spires, never a body.",
+      "loras": {
+        "zimage": [
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.75
+          ]
+        ],
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.6
+          ]
+        ]
+      }
     },
     "crash": {
       "label": "The crash",
@@ -136,7 +151,22 @@
         "tank": "Heavy shuddering crane shot following the drop-hauler smashing through the ice and skidding across the cavern floor",
         "engineer": "Spiraling downward dive and shake following the shuttle tumbling through the breach and rolling across the cavern floor"
       },
-      "stillModel": "zimage"
+      "stillModel": "flux",
+      "framing": "Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body.",
+      "loras": {
+        "zimage": [
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.75
+          ]
+        ],
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.6
+          ]
+        ]
+      }
     }
   },
   "loras": {

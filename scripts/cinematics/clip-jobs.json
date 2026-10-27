@@ -1713,20 +1713,16 @@
       },
       "soundDesign": "opening-flight",
       "firstFrame": {
-        "prompt": "Reference images: image 1 is the ship; image 2 is the Mothership. Deep space beside the vast derelict Mothership, a biomechanical organism of chrome plating, bone buttresses and swollen maroon tissue lined with phallic antenna spires and glowing sphincter ports. the Scout's ship (a sleek dark-iron delta interceptor with swept wings, a narrow canopy and twin engines, its seams lit with thin green running lights) streaks away from it toward a field of tumbling hull debris and frozen corpses.",
+        "prompt": "Reference images: image 1 is the ship; image 2 is the Mothership. Wide cinematic establishing shot floating in open space: no ground, no terrain, no horizon, no people, no figures and no faces; the ship is the only subject and stays fully in frame, dwarfed by the black void and the colossal Mothership behind it; every organic form belongs to hulls and spires, never a body. Black starfield of deep space; in the background the colossal derelict Mothership, a ship-sized hulk miles long built of chrome plating, bone buttresses and swollen maroon tissue lined with phallic antenna spires and glowing sphincter ports. the Scout's ship (a sleek dark-iron delta interceptor with swept wings, a narrow canopy and twin engines, its seams lit with thin green running lights) streaks away from it toward a field of tumbling hull debris and frozen corpses.",
         "references": [
           "public/cutscenes/scout-class-intro.webm@7.6",
           "public/sky/body_mothership_derelict.png"
         ],
-        "model": "zimage"
+        "model": "flux"
       },
       "camera": "Dynamic orbital pan and chase tracking the interceptor barrel-rolling across the planet horizon",
       "loras": {
         "zimage": [
-          [
-            "zit_giger_v1.safetensors",
-            0.6
-          ],
           [
             "zit_horror_noir_graphic_novel.safetensors",
             0.75
@@ -1740,7 +1736,7 @@
         ]
       },
       "action": "The interceptor barrel-rolls through the tumbling debris at speed, slipping between spinning hull plates; the camera chases it out of the field as the frozen planet swings into view.",
-      "lastFrame": "the interceptor small and fast against the frozen planet that now fills the frame, cold light on its curve, debris trailing behind.",
+      "lastFrame": "Wide cinematic establishing shot floating in open space: no ground, no terrain, no horizon, no people, no figures and no faces; the ship is the only subject and stays fully in frame, dwarfed by the black void and the colossal Mothership behind it; every organic form belongs to hulls and spires, never a body. the interceptor small and fast against the frozen planet that now fills the frame, cold light on its curve, debris trailing behind.",
       "durationSec": 5,
       "audio": null,
       "targets": {
@@ -1763,20 +1759,16 @@
       },
       "soundDesign": "opening-flight",
       "firstFrame": {
-        "prompt": "Reference images: image 1 is the ship; image 2 is the Mothership. Deep space beside the vast derelict Mothership, a biomechanical organism of chrome plating, bone buttresses and swollen maroon tissue. the Tank's ship (a massive armoured drop-hauler of stacked iron plating, a heavy rear ramp and banks of round amber-glowing thruster cans) pulls away on its amber thruster banks toward a drifting belt of ice shards studded with frozen hive bodies.",
+        "prompt": "Reference images: image 1 is the ship; image 2 is the Mothership. Wide cinematic establishing shot floating in open space: no ground, no terrain, no horizon, no people, no figures and no faces; the ship is the only subject and stays fully in frame, dwarfed by the black void and the colossal Mothership behind it; every organic form belongs to hulls and spires, never a body. Black starfield of deep space; in the background the colossal derelict Mothership, a ship-sized hulk miles long built of chrome plating, bone buttresses and swollen maroon tissue. the Tank's ship (a massive armoured drop-hauler of stacked iron plating, a heavy rear ramp and banks of round amber-glowing thruster cans) pulls away on its amber thruster banks toward a drifting belt of ice shards studded with frozen hive bodies.",
         "references": [
           "public/cutscenes/tank-class-intro.webm@5.5",
           "public/sky/body_mothership_derelict.png"
         ],
-        "model": "zimage"
+        "model": "flux"
       },
       "camera": "Slow forward push through ice debris holding behind the drop-hauler toward the rising planet",
       "loras": {
         "zimage": [
-          [
-            "zit_giger_v1.safetensors",
-            0.6
-          ],
           [
             "zit_horror_noir_graphic_novel.safetensors",
             0.75
@@ -1790,7 +1782,7 @@
         ]
       },
       "action": "The drop-hauler ploughs straight through the ice belt, shards bursting against its armour; the camera holds behind it as the frozen planet rises ahead.",
-      "lastFrame": "the drop-hauler, plating scarred and glinting with frost, lumbering toward the frozen planet that fills the frame ahead.",
+      "lastFrame": "Wide cinematic establishing shot floating in open space: no ground, no terrain, no horizon, no people, no figures and no faces; the ship is the only subject and stays fully in frame, dwarfed by the black void and the colossal Mothership behind it; every organic form belongs to hulls and spires, never a body. the drop-hauler, plating scarred and glinting with frost, lumbering toward the frozen planet that fills the frame ahead.",
       "durationSec": 5,
       "audio": null,
       "targets": {
@@ -1813,20 +1805,16 @@
       },
       "soundDesign": "opening-flight",
       "firstFrame": {
-        "prompt": "Reference images: image 1 is the ship; image 2 is the Mothership. Deep space beside the vast derelict Mothership, a biomechanical organism of chrome plating, bone buttresses and swollen maroon tissue, its pores leaking glowing fluid. the Engineer's ship (a long low survey shuttle with a teal-glass canopy bubble, sensor dishes and antennae, cyan diagnostic lines along its iron hull) drifts clear, sensor dishes unfolding, teal scan lines sweeping ahead into the dark.",
+        "prompt": "Reference images: image 1 is the ship; image 2 is the Mothership. Wide cinematic establishing shot floating in open space: no ground, no terrain, no horizon, no people, no figures and no faces; the ship is the only subject and stays fully in frame, dwarfed by the black void and the colossal Mothership behind it; every organic form belongs to hulls and spires, never a body. Black starfield of deep space; in the background the colossal derelict Mothership, a ship-sized hulk miles long built of chrome plating, bone buttresses and swollen maroon tissue, its pores leaking glowing fluid. the Engineer's ship (a long low survey shuttle with a teal-glass canopy bubble, sensor dishes and antennae, cyan diagnostic lines along its iron hull) drifts clear, sensor dishes unfolding, teal scan lines sweeping ahead into the dark.",
         "references": [
           "public/cutscenes/engineer-class-intro.webm@6.6",
           "public/sky/body_mothership_derelict.png"
         ],
-        "model": "zimage"
+        "model": "flux"
       },
       "camera": "High-angle orbital arc sweep drifting alongside the shuttle as the scan grid paints the planet",
       "loras": {
         "zimage": [
-          [
-            "zit_giger_v1.safetensors",
-            0.6
-          ],
           [
             "zit_horror_noir_graphic_novel.safetensors",
             0.75
@@ -1840,7 +1828,7 @@
         ]
       },
       "action": "The shuttle threads a careful path while teal scan beams sweep the dark and lock onto the planet; the camera drifts alongside as the frozen planet grows to fill the frame.",
-      "lastFrame": "the shuttle a small teal spark before the frozen planet that fills the frame, a scan grid traced across the planet's surface.",
+      "lastFrame": "Wide cinematic establishing shot floating in open space: no ground, no terrain, no horizon, no people, no figures and no faces; the ship is the only subject and stays fully in frame, dwarfed by the black void and the colossal Mothership behind it; every organic form belongs to hulls and spires, never a body. the shuttle a small teal spark before the frozen planet that fills the frame, a scan grid traced across the planet's surface.",
       "durationSec": 5,
       "audio": null,
       "targets": {
@@ -1863,20 +1851,16 @@
       },
       "soundDesign": "opening-crash",
       "firstFrame": {
-        "prompt": "Reference images: image 1 is the ship; image 2 is the ship after the crash. High above the frozen sector, the Scout's ship (a sleek dark-iron delta interceptor with swept wings, a narrow canopy and twin engines, its seams lit with thin green running lights) diving through the upper atmosphere wreathed in re-entry fire, the ice-bound surface far below veined with biomechanical tissue and glowing vents.",
+        "prompt": "Reference images: image 1 is the ship; image 2 is the ship after the crash. Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. High above the frozen sector, the Scout's ship (a sleek dark-iron delta interceptor with swept wings, a narrow canopy and twin engines, its seams lit with thin green running lights) diving through the upper atmosphere wreathed in re-entry fire, the ice-bound surface far below veined with biomechanical tissue and glowing vents.",
         "references": [
           "public/cutscenes/scout-class-intro.webm@7.6",
           "public/scout_ship.png"
         ],
-        "model": "zimage"
+        "model": "flux"
       },
       "camera": "Violent plunging dive and camera shake following the flaming interceptor breaking through the ice",
       "loras": {
         "zimage": [
-          [
-            "zit_giger_v1.safetensors",
-            0.6
-          ],
           [
             "zit_horror_noir_graphic_novel.safetensors",
             0.75
@@ -1890,7 +1874,7 @@
         ]
       },
       "action": "A hypersonic streak lances up from the surface and clips the interceptor; a wing shears away and it cartwheels down trailing fire, punches through the ice into the cavern and skids through a hive brood, crushing them in bursts of green ichor.",
-      "lastFrame": "the wrecked interceptor, one wing torn away, nose buried in an ice cavern overgrown with biomechanical tissue and phallic stalactites, hive creatures crushed under the wreck in sprays of green ichor and torn flesh, smoke and one amber emergency lamp.",
+      "lastFrame": "Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. the wrecked interceptor, one wing torn away, nose buried in an ice cavern overgrown with biomechanical tissue and phallic stalactites, hive creatures crushed under the wreck in sprays of green ichor and torn flesh, smoke and one amber emergency lamp.",
       "durationSec": 6,
       "audio": null,
       "targets": {
@@ -1913,20 +1897,16 @@
       },
       "soundDesign": "opening-crash",
       "firstFrame": {
-        "prompt": "Reference images: image 1 is the ship; image 2 is the ship after the crash. High above the frozen sector, the Tank's ship (a massive armoured drop-hauler of stacked iron plating, a heavy rear ramp and banks of round amber-glowing thruster cans) descending heavily through the upper atmosphere, its armour glowing with re-entry heat, the ice-bound surface far below veined with biomechanical tissue.",
+        "prompt": "Reference images: image 1 is the ship; image 2 is the ship after the crash. Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. High above the frozen sector, the Tank's ship (a massive armoured drop-hauler of stacked iron plating, a heavy rear ramp and banks of round amber-glowing thruster cans) descending heavily through the upper atmosphere, its armour glowing with re-entry heat, the ice-bound surface far below veined with biomechanical tissue.",
         "references": [
           "public/cutscenes/tank-class-intro.webm@5.5",
           "public/tank_ship.png"
         ],
-        "model": "zimage"
+        "model": "flux"
       },
       "camera": "Heavy shuddering crane shot following the drop-hauler smashing through the ice and skidding across the cavern floor",
       "loras": {
         "zimage": [
-          [
-            "zit_giger_v1.safetensors",
-            0.6
-          ],
           [
             "zit_horror_noir_graphic_novel.safetensors",
             0.75
@@ -1940,7 +1920,7 @@
         ]
       },
       "action": "A hypersonic strike slams into the drop-hauler's flank; thruster banks fail one by one and it drops like a stone, smashes through the ice belly-first and ploughs a gory trench through the hive brood on the cavern floor.",
-      "lastFrame": "the wrecked drop-hauler belly-down at the end of a long gouged trench in an ice cavern overgrown with biomechanical tissue, a hive brood smashed into gore beneath it, green ichor and viscera across the ice, thruster cans smoking.",
+      "lastFrame": "Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. the wrecked drop-hauler belly-down at the end of a long gouged trench in an ice cavern overgrown with biomechanical tissue, a hive brood smashed into gore beneath it, green ichor and viscera across the ice, thruster cans smoking.",
       "durationSec": 6,
       "audio": null,
       "targets": {
@@ -1963,20 +1943,16 @@
       },
       "soundDesign": "opening-crash",
       "firstFrame": {
-        "prompt": "Reference images: image 1 is the ship; image 2 is the ship after the crash. High above the frozen sector, the Engineer's ship (a long low survey shuttle with a teal-glass canopy bubble, sensor dishes and antennae, cyan diagnostic lines along its iron hull) gliding down through the upper atmosphere, teal canopy lit, re-entry glow along its hull, the ice-bound surface far below veined with biomechanical tissue.",
+        "prompt": "Reference images: image 1 is the ship; image 2 is the ship after the crash. Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. High above the frozen sector, the Engineer's ship (a long low survey shuttle with a teal-glass canopy bubble, sensor dishes and antennae, cyan diagnostic lines along its iron hull) gliding down through the upper atmosphere, teal canopy lit, re-entry glow along its hull, the ice-bound surface far below veined with biomechanical tissue.",
         "references": [
           "public/cutscenes/engineer-class-intro.webm@6.6",
           "public/engineer_ship.png"
         ],
-        "model": "zimage"
+        "model": "flux"
       },
       "camera": "Spiraling downward dive and shake following the shuttle tumbling through the breach and rolling across the cavern floor",
       "loras": {
         "zimage": [
-          [
-            "zit_giger_v1.safetensors",
-            0.6
-          ],
           [
             "zit_horror_noir_graphic_novel.safetensors",
             0.75
@@ -1990,7 +1966,7 @@
         ]
       },
       "action": "A hypersonic strike flashes past and the shockwave tears panels off the shuttle; its systems flicker teal and red as it spirals down, breaks through the ice and rolls across the cavern, impaling a hive creature on its snapped dish.",
-      "lastFrame": "the wrecked shuttle on its side in an ice cavern overgrown with biomechanical tissue, panels scattered, a hive creature impaled on a snapped dish spraying ichor, sparks and flickering teal screens through the cracked canopy.",
+      "lastFrame": "Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. the wrecked shuttle on its side in an ice cavern overgrown with biomechanical tissue, panels scattered, a hive creature impaled on a snapped dish spraying ichor, sparks and flickering teal screens through the cracked canopy.",
       "durationSec": 6,
       "audio": null,
       "targets": {

@@ -162,18 +162,20 @@ export function openingJobs(opening) {
                 .replace('{operator}', `the ${spec.name} (${spec.look})`)
                 .replace('{ship}', `the ${spec.name}'s ship (${spec.shipLook})`);
             const base = shot.target.replace('{class}', cls);
+            const framing = shot.framing ? `${shot.framing} ` : '';
             jobs.push({
                 id: `opening-${shotId}-${cls}`,
                 kind: 'opening',
                 title: `${spec.name}: ${shot.label}`,
                 style: opening.style,
                 soundDesign: `opening-${shotId}`,
-                firstFrame: { prompt: `Reference images: ${legend}. ${fill(shot.firstFrame[cls])}`, references: paths, model: shot.stillModel ?? 'flux' },
+                firstFrame: { prompt: `Reference images: ${legend}. ${framing}${fill(shot.firstFrame[cls])}`, references: paths, model: shot.stillModel ?? 'flux' },
                 camera: shot.camera?.[cls],
-                loras: opening.loras,
+                // Shots without people damp the figure-heavy Giger add-on.
+                loras: shot.loras ?? opening.loras,
                 identityLock: shot.refs.includes('identity') ? opening.style.characterLock : undefined,
                 action: fill(shot.action[cls]),
-                lastFrame: fill(shot.lastFrame[cls]),
+                lastFrame: `${framing}${fill(shot.lastFrame[cls])}`,
                 durationSec: shot.durationSec,
                 audio: null,
                 targets: { webm: `/cutscenes/${base}.webm`, mp4: `/cutscenes/${base}.mp4`, poster: `/cutscenes/${base}-poster.jpg` }
