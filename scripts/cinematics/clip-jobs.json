@@ -21,7 +21,7 @@
         "model": "flux"
       },
       "action": "The operator rides Kaelen in cowgirl position, the cradle's ribs ticking in rhythm and cyan light racing down the cables with every thrust. The crawler lunges and the ribs snap shut on it, crushing it in a burst of green blood that splatters the monitors. The lovers climax and slump together.",
-      "lastFrame": "the same bay: the two lovers slumped spent and naked in the cradle, cyan light dimming, the crawler crushed between the snapped-shut cradle ribs, its green blood dripping down the bone.",
+      "lastFrame": "Aftermath of the encounter: Overseer Kaelen and the woman operator are slumped spent and exhausted in the bone diagnostic cradle, breathing heavily under dimming cyan monitor light. The crushed alien crawler is clamped dead in the snapped-shut cradle ribs, dark green fluid dripping down into the floor grate.",
       "trigger": "c0wg1rl",
       "loras": {
         "flux": [
@@ -150,7 +150,7 @@
         "model": "flux"
       },
       "action": "Martha rides the operator in cowgirl position on the warm pipe, balm glistening on their skin. The frozen mutant grabs her ankle and she empties the boiling ladle over its head; its face sloughs off in a gush of steam and it drops away. She keeps riding him until they both finish, laughing.",
-      "lastFrame": "the same hearth: Martha and the operator wrapped naked together in her quilted coat on the pipe, the mutant's flesh boiled off its skull in a steaming puddle below, steam rising.",
+      "lastFrame": "The steam tea ritual complete: the two operators huddle close together against the massive geothermal pipe, wrapped in an insulated thermal coat against the freezing cavern air, steam rising from two poured metal cups resting on the warm pipe.",
       "trigger": "c0wg1rl",
       "loras": {
         "flux": [
@@ -934,7 +934,7 @@
       },
       "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
       "action": "The operator rides the survivor in cowgirl position by the fire, their bodies rocking in rhythm, sweat shining. At the barricade a mutant lunges over the sandbags and the sentry blasts its head clean off in a geyser of green blood that spatters the laundry lines. The lovers finish, collapse together and pull the blanket over themselves as the fire sinks to embers.",
-      "lastFrame": "the same camp at embers: the operator and the survivor asleep naked and entwined under one blanket, the sentry at the barricade holding a smoking shotgun over a headless mutant sprawled across the sandbags in a pool of green blood, fog creeping in.",
+      "lastFrame": "Camp in deep night: the Scout and squad mate are fast asleep wrapped under the foil survival blanket by the dying embers of the brazier. In the background doorway, the Tank operator stands motionless on sentry watch in full heavy armour with rifle raised, peering out into the cold drifting cave fog.",
       "trigger": "c0wg1rl",
       "loras": {
         "flux": [
@@ -1435,7 +1435,7 @@
       },
       "identityLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
       "action": "The Scout sprints, vaults onto the wing and drops into the cockpit; the canopy seals; the catapult fires and the interceptor shoots down the ribbed launch tube and out through the arched portal. Camera tracks low alongside, then holds as the ship streaks away.",
-      "lastFrame": "the interceptor blasting out through the arched launch portal on twin green-white engine plumes, the cradle empty and smoking, lantern light shaken across the granite.",
+      "lastFrame": "Extreme wide cinematic shot: the Scout's dark-iron delta interceptor blasts out through the arched launch portal on roaring green-white engine plumes. The launch cradle in the foreground is empty, smoking and glowing with heat. The Scout is sealed inside the ship cockpit. Empty hangar deck with steam swirling.",
       "durationSec": 8,
       "audio": null,
       "targets": {
@@ -1468,7 +1468,7 @@
       },
       "identityLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
       "action": "The Tank strides up the ramp with heavy steps; the ramp hauls shut; thruster cans flare amber one bank at a time and the drop-hauler lifts off the deck through billowing steam toward the opening iris. Camera cranes up with the lift.",
-      "lastFrame": "the drop-hauler lifting off the deck on its banks of amber thrusters, ramp sealed, steam whirling across the bay as the vault's iron iris opens above it.",
+      "lastFrame": "Low-angle cinematic crane shot: the massive armoured drop-hauler lifts off the deck into the air, its rear ramp sealed completely shut, banks of amber thruster bells firing down with intense fire and billowing steam. The launch bay deck is empty below.",
       "durationSec": 8,
       "audio": null,
       "targets": {
@@ -1501,7 +1501,7 @@
       },
       "identityLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
       "action": "The Engineer pulls the fuel line free and coils it, taps a teal diagnostic panel, climbs into the canopy; the shuttle hums, rises off its clamps and glides out along the rail through the arched gate. Camera pans with the shuttle.",
-      "lastFrame": "the shuttle gliding out of the bay along its rail through the arched gate, the fuel line coiled on the deck, teal canopy lit from inside with the operator at the controls.",
+      "lastFrame": "Dynamic wide tracking shot: the needle-nosed survey shuttle glides out of the bay along its elevated rail through the round arched portal, thrusters glowing cyan. The operator is inside the lit teal cockpit bubble at the controls. The fuel line lies disconnected on the empty deck.",
       "durationSec": 8,
       "audio": null,
       "targets": {
@@ -1532,7 +1532,7 @@
         "model": "flux"
       },
       "action": "The interceptor barrel-rolls through the tumbling debris at speed, slipping between spinning hull plates; the camera chases it out of the field as the frozen planet swings into view.",
-      "lastFrame": "the interceptor small and fast against the frozen planet that now fills the frame, cold light on its curve, debris trailing behind.",
+      "lastFrame": "Epic wide cinematic shot: the frozen ice planet fills the background of the frame in cold pale blue light. The sleek Scout interceptor is small and fast in the lower third, streaking across the planet's curve, leaving tumbling hull debris behind in deep space.",
       "durationSec": 5,
       "audio": null,
       "targets": {
@@ -1656,7 +1656,7 @@
         "model": "flux"
       },
       "action": "A hypersonic strike slams into the drop-hauler's flank; thruster banks fail one by one and it drops like a stone, smashes through the ice belly-first and ploughs a trench across the crypt floor.",
-      "lastFrame": "the wrecked drop-hauler lying belly-down at the end of a long gouged trench inside a dark cathedral crypt beneath the ice, armour buckled, thruster cans smoking, granite arches cracked around it, one amber emergency lamp.",
+      "lastFrame": "Dramatic interior crypt shot: the massive drop-hauler lies heavily wrecked on its belly at the end of a deep gouged trench in the frozen subterranean cathedral. Buckled iron plating, shattered granite pillars, smoking thruster cans, ice chunks raining from the breach in the ceiling.",
       "durationSec": 6,
       "audio": null,
       "targets": {

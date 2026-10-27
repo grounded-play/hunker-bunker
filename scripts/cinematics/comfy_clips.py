@@ -274,7 +274,8 @@ def motion_prompt(style, job):
     trigger = f"{job['trigger']}, " if job.get('trigger') else ''
     ending = f" The shot ends on {job['lastFrame']}" if job.get('lastFrame') else ''
     identity = f" {job['identityLock']}" if job.get('identityLock') else ''
-    return (f"{trigger}{style['prefix']} {job['action'].rstrip('. ')}.{ending}{identity} "
+    camera = f" CAMERA MOVE: {job['camera']}. " if job.get('camera') else ''
+    return (f"{trigger}{style['prefix']} {camera}{job['action'].rstrip('. ')}.{ending}{identity} "
             f"{style['continuityLock']} {style['motionSuffix']} {style['suffix']}")
 
 
@@ -288,7 +289,10 @@ def frame_prompt(style, job, endpoint):
     style = job.get('style') or style
     scene = job['firstFrame']['prompt'] if endpoint == 'first' else job.get('lastFrame', '')
     identity = f" {job['identityLock']}" if job.get('identityLock') else ''
-    continuity = f" {style['continuityLock']}" if endpoint == 'last' else ''
+    if endpoint == 'last':
+        continuity = " ACTION PAYOFF: the action has completed and the scene has transitioned to its final outcome. Capture the dramatic endpoint with distinct dynamic framing."
+    else:
+        continuity = ''
     plate = f"{style['plateLock']} " if endpoint == 'first' and job['firstFrame'].get('plate') and style.get('plateLock') else ''
     return f"{plate}{style['prefix']} {scene} {style['suffix']}{identity}{continuity}".strip()
 
@@ -386,10 +390,10 @@ def cmd_last(args):
         raise SystemExit(f"{job['id']} has no last-frame brief")
     folder = job_dir(job['id'])
     prompt = frame_prompt(style, job, 'last')
-    # The approved first frame leads; class models ride along, but not key art
-    # the first frame was already redrawn from (it pulls the old cast back in).
+    # Use asset and identity references from the job, decoupling from the
+    # first frame so FLUX can freely compose the destination/exit camera angle.
     carried = job['firstFrame'].get('references', [])
-    reference_paths = [first_frame_for(job, (1280, 720)), *[reference_png(path) for path in carried]]
+    reference_paths = [reference_png(path) for path in carried] if carried else [first_frame_for(job, (1280, 720))]
     references = [upload_image(path) for path in reference_paths] if args.model == 'flux' else []
     loras = job_loras(job, args.model, getattr(args, 'lora', None))
     for _ in range(args.takes):
