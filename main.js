@@ -124,6 +124,7 @@ import { getLocale, setLocale, t, t as i18nT, getAvailableLocales, applyStaticTr
 import { mountDeferredMarkup, onDeferredMarkupMounted, setDeferredMarkupDecorator, watchDeferredMarkup } from './src/deferredMarkup.js';
 import { isSleepCutsceneShipped, sleepCutsceneBase } from './src/sleepCutscene.js';
 import { loadoutMicroclipBases } from './src/cinematics/loadoutMicroclips.js';
+import { mountFabricationKiosk, mountTerminalKiosk } from './src/kioskTerminals.js';
 import { formatLocationName } from './src/locationNames.js';
 import { planDeckVisibility } from './src/hudDeck.js';
 import { createDeveloperCommentary } from './src/developerCommentary.js';
@@ -13759,6 +13760,11 @@ function renderFabricationModal() { fabricationBay.render(); }
 function startFabTicker() { fabricationBay.startTicker(); }
 function stopFabTicker() { fabricationBay.stopTicker(); }
 function openFabricationModal() { fabricationBay.open(); }
+// The Fab Bay machine in the base opens as the machine: the Auto-Mart kiosk.
+function openFabricationKiosk() {
+    fabricationBay.open({ kiosk: true });
+    mountFabricationKiosk({ doc: document });
+}
 function finishFabricationSession() { fabricationBay.finishSession(); }
 function closeFabricationModal() { fabricationBay.close(); }
 
@@ -13801,6 +13807,7 @@ const foundryHub = createFoundryHub({
     onClose: () => {
         cancelCacheReveal('foundry-closed');
         finishFabricationSession();
+        window.game?.clearCinematicCameraFocus?.();
     },
     log: (event, detail) => debugLog.info('FOUNDRY', `hub-${event}`, detail)
 });
@@ -13827,6 +13834,8 @@ function refreshFabAccess() {
 
 document.getElementById('fabrication-btn')?.addEventListener('click', openFabricationModal);
 document.getElementById('close-fabrication-modal')?.addEventListener('click', closeFabricationModal);
+// The main terminal is the Meridian MK IV-B console (src/kioskTerminals.js).
+mountTerminalKiosk({ doc: document });
 setupClickOutside('fabrication-modal', closeFabricationModal);
 window.addEventListener('o2-generator-upgraded', refreshFabAccess);
 window.addEventListener('bank-updated', () => {
@@ -14146,7 +14155,7 @@ setupClickOutside('codex-modal', closeCodexModal);
 setupClickOutside('codex-detail-modal', closeCodexDetailModal);
 
 // In-world Foundry (Beat 4): reaching the powered structure opens the Bay.
-window.addEventListener('open-fabrication-bay', openFabricationModal);
+window.addEventListener('open-fabrication-bay', openFabricationKiosk);
 let pendingCampRestConfirmation = null;
 function closeDayRestWarning() {
     pendingCampRestConfirmation = null;

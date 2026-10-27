@@ -1311,25 +1311,54 @@
       </div>
     </div>
 
-    <div id="fabrication-modal" class="modal hidden" aria-hidden="true">
-      <div class="modal-content fab-modal-content">
+    <div id="fabrication-modal" class="modal hidden" aria-hidden="true" data-active-aisle="all">
+      <div class="modal-content fab-modal-content fab-minimart-terminal">
         <div class="terminal-scanline"></div>
-        <div class="fab-header">
-          <button class="close-modal" id="close-fabrication-modal">×</button>
-          <div data-i18n="ui.fabrication.fabrication_bay" class="fab-title">◇ FABRICATION BAY</div>
-          <div data-i18n="ui.fabrication.print_gear_from_salvage" class="fab-subtitle">PRINT GEAR FROM SALVAGE</div>
+        <div class="fab-header fab-minimart-header">
+          <button class="close-modal" id="close-fabrication-modal" data-i18n-aria-label="ui.fab.close_automart" aria-label="Close Auto-Mart">×</button>
+          <div data-i18n="ui.fabrication.fabrication_bay" class="fab-title">MERIDIAN AUTO-MART & FABRICATION</div>
+          <div data-i18n="ui.fabrication.print_gear_from_salvage" class="fab-subtitle">BASE REBUILD · WEAPON COMMISSARY · SPECULATIVE LOTTO-PRINT</div>
           <div data-i18n="ui.fabrication.schematics_fabricated_0_8" id="fab-summary" class="fab-summary">SCHEMATICS FABRICATED: 0 / 8</div>
         </div>
-        <div class="fab-bank-row" id="fab-bank-row">
+        <div class="fab-bank-row fab-atm-bank-row" id="fab-bank-row">
+          <div class="fab-bank-slot-label" data-i18n="ui.fab.ledger_balance">SALVAGE LEDGER / COIN-OP BALANCE:</div>
           <span class="fab-bank-chip"><span class="fab-bank-icon">⬢</span><span data-i18n="ui.fabrication.tech">TECH</span> <b id="fab-bank-tech">0</b></span>
           <span class="fab-bank-chip"><span class="fab-bank-icon">◎</span><span data-i18n="ui.fabrication.coin">COIN</span> <b id="fab-bank-coin">0</b></span>
           <span class="fab-bank-chip"><span class="fab-bank-icon">✚</span><span data-i18n="ui.fabrication.med">MED</span> <b id="fab-bank-med">0</b></span>
           <span class="fab-bank-chip"><span class="fab-bank-icon">◈</span><span data-i18n="ui.fabrication.shells">SHELLS</span> <b id="fab-bank-shells">0</b></span>
         </div>
+        <!-- ATM / Vending Machine Aisle Selector Navigation -->
+        <div class="fab-aisle-nav" id="fab-aisle-nav" role="tablist" data-i18n-aria-label="ui.fab.aisles_aria" aria-label="Auto-Mart Department Aisles">
+          <button type="button" class="fab-aisle-btn active" id="fab-aisle-btn-hardware" data-aisle="hardware" role="tab" aria-selected="true">
+            <span class="fab-aisle-key">[1]</span>
+            <span class="fab-aisle-icon">🏗️</span>
+            <span class="fab-aisle-label" data-i18n="ui.fab.aisle_hardware">BASE BUILD & FIXTURES</span>
+          </button>
+          <button type="button" class="fab-aisle-btn" id="fab-aisle-btn-weapons" data-aisle="weapons" role="tab" aria-selected="false">
+            <span class="fab-aisle-key">[2]</span>
+            <span class="fab-aisle-icon">🔫</span>
+            <span class="fab-aisle-label" data-i18n="ui.fab.aisle_weapons">WEAPONS & MUNITIONS</span>
+          </button>
+          <button type="button" class="fab-aisle-btn" id="fab-aisle-btn-lotto" data-aisle="lotto" role="tab" aria-selected="false">
+            <span class="fab-aisle-key">[3]</span>
+            <span class="fab-aisle-icon">🎰</span>
+            <span class="fab-aisle-label" data-i18n="ui.fab.aisle_lotto">LOTTO-PRINT GAMBA</span>
+          </button>
+          <button type="button" class="fab-aisle-btn" id="fab-aisle-btn-all" data-aisle="all" role="tab" aria-selected="false">
+            <span class="fab-aisle-key">[4]</span>
+            <span class="fab-aisle-icon">🛒</span>
+            <span class="fab-aisle-label" data-i18n="ui.fab.aisle_all">ALL AISLES</span>
+          </button>
+        </div>
         <!-- Gamba roll panel: spend a flat cost for a rarity-weighted reveal -->
-        <div id="fab-roll-panel" class="fab-roll-panel hidden">
+        <div id="fab-roll-panel" class="fab-roll-panel hidden" data-aisle="lotto">
+          <div class="fab-slot-machine-marquee">
+            <span class="fab-slot-light"></span><span class="fab-slot-light"></span>
+            <span class="fab-slot-title" data-i18n="ui.fab.slot_marquee">HORIZON SPECULATIVE LOTTO-PRINT // PULL LEVER</span>
+            <span class="fab-slot-light"></span><span class="fab-slot-light"></span>
+          </div>
           <div id="fab-reveal" class="fab-reveal" data-state="idle">
-            <div data-i18n="ui.fab_roll.insert_salvage_to_fabricate" class="fab-reveal__idle" id="fab-reveal-idle">INSERT SALVAGE TO FABRICATE</div>
+            <div data-i18n="ui.fab_roll.insert_salvage_to_fabricate" class="fab-reveal__idle" id="fab-reveal-idle">INSERT SALVAGE TO SPIN REEL</div>
             <div class="fab-reveal__strip-wrap" id="fab-reveal-strip-wrap" aria-hidden="true">
               <div class="fab-reveal__marker"></div>
               <div class="fab-reveal__strip" id="fab-reveal-strip"></div>
@@ -1963,7 +1992,7 @@
 
     <!-- Holographic Retro Terminal Console Modal -->
     <div id="console-terminal-modal" class="modal hidden">
-      <div class="modal-content console-terminal-content">
+      <div class="modal-content console-terminal-content terminal-corporate-kiosk" data-active-department="base">
         <button class="close-modal" id="close-console-terminal">×</button>
         <div class="terminal-scanline"></div>
         <div class="terminal-flicker"></div>
@@ -1981,12 +2010,12 @@
         <div class="terminal-body">
           <!-- Terminal Tabs Header -->
           <div class="terminal-tabs">
-            <button data-i18n="ui.console_terminal.base_system" id="terminal-tab-base" class="terminal-tab-btn active">◇ BASE SYSTEM</button>
-            <button id="terminal-tab-skills" class="terminal-tab-btn">
-              <span data-i18n="ui.console_terminal.class_skills">◇ CLASS SKILLS</span>
+            <button id="terminal-tab-base" class="terminal-tab-btn active" data-department="base"><span class="terminal-tab-key">[1]</span><span data-i18n="ui.console_terminal.base_system">◇ BASE SYSTEM</span></button>
+            <button id="terminal-tab-skills" class="terminal-tab-btn" data-department="skills">
+              <span class="terminal-tab-key">[2]</span><span data-i18n="ui.console_terminal.class_skills">◇ CLASS SKILLS</span>
               <span class="terminal-tab-btn__status" id="terminal-tab-skills-status">0/6 · ◈ 0</span>
             </button>
-            <button data-i18n="ui.console_terminal.objective_night_log" id="terminal-tab-objectives" class="terminal-tab-btn">◇ OBJECTIVE / NIGHT LOG</button>
+            <button id="terminal-tab-objectives" class="terminal-tab-btn" data-department="objectives"><span class="terminal-tab-key">[3]</span><span data-i18n="ui.console_terminal.objective_night_log">◇ OBJECTIVE / NIGHT LOG</span></button>
           </div>
 
           <!-- Base Systems Tab Content -->

@@ -4,6 +4,627 @@
   inherits: false;
   initial-value: rgba(255, 159, 28, 0.18);
 }
+
+/* ── Diegetic corporate kiosks: Fabrication Auto-Mart + main terminal ──────
+   These overlays preserve the existing systems while presenting them as the
+   glass, keypad and receipt tray of physical machines in the base. */
+.fab-modal-content.fab-minimart-terminal,
+.console-terminal-content.terminal-corporate-kiosk {
+  --kiosk-amber: #ffb52d;
+  --kiosk-cream: #fff3c4;
+  isolation: isolate;
+  border-radius: 18px 18px 8px 8px !important;
+  border: 5px solid #182129 !important;
+  outline: 2px solid rgba(255, 181, 45, 0.55);
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px) 0 0 / 12px 12px,
+    linear-gradient(180deg, #101a20 0%, #071116 100%) !important;
+  box-shadow:
+    0 0 0 3px #05080a,
+    0 16px 0 #05080a,
+    0 30px 80px rgba(0, 0, 0, .88),
+    inset 0 0 0 2px rgba(255,255,255,.045) !important;
+}
+
+/* Unlike pause/settings, these are physical consoles the operator is looking
+   into. The outside edges are transparent so the live 3D game background is
+   blurred and visible around the chassis, while the screen aperture frames the UI. */
+#fabrication-modal,
+#console-terminal-modal {
+  background: radial-gradient(circle at 50% 50%, rgba(2, 7, 9, .24), rgba(0, 0, 0, .58) 78%);
+  backdrop-filter: blur(12px) brightness(.7) saturate(.85);
+  -webkit-backdrop-filter: blur(12px) brightness(.7) saturate(.85);
+}
+
+.fab-minimart-terminal {
+  position: relative;
+  max-width: min(94vw, 1340px) !important;
+  width: min(94vw, 1340px) !important;
+  height: min(92vh, 880px) !important;
+}
+
+.fab-minimart-terminal::after {
+  content: "";
+  position: absolute;
+  inset: -8px -10px;
+  background: url('/ui/overlays/fab_automart_overlay.webp') no-repeat center / 100% 100%;
+  pointer-events: none;
+  z-index: 105;
+  filter: drop-shadow(0 20px 50px rgba(0, 0, 0, .85));
+}
+
+.terminal-corporate-kiosk {
+  position: relative;
+  max-width: min(94vw, 1340px) !important;
+  width: min(94vw, 1340px) !important;
+  height: min(92vh, 880px) !important;
+}
+
+.terminal-corporate-kiosk::after {
+  content: "";
+  position: absolute;
+  inset: -8px -10px;
+  background: url('/ui/overlays/console_kiosk_overlay.webp') no-repeat center / 100% 100%;
+  pointer-events: none;
+  z-index: 105;
+  filter: drop-shadow(0 20px 50px rgba(0, 0, 0, .85));
+}
+
+.fab-minimart-terminal::before,
+.terminal-corporate-kiosk::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(255, 181, 45, .17);
+  border-radius: 11px;
+  pointer-events: none;
+  z-index: 101;
+}
+
+/* ── CRT Screen Glass, Scanline Raster & Phosphor Bloom ─────────────────── */
+.kiosk-screen,
+.fab-modal-content .terminal-scanline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 104;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, transparent 45%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.18) 0 1px, transparent 1px 3px);
+  border-radius: 12px;
+  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.65);
+}
+
+.crt-overclock-mode {
+  --fab-glow-rgb: 255, 181, 45 !important;
+  text-shadow: 0 0 8px #ffb52d, 0 0 20px rgba(255, 181, 45, 0.8) !important;
+}
+
+.crt-green-mode {
+  --fab-glow-rgb: 44, 255, 115 !important;
+  color: #a8ffca !important;
+  text-shadow: 0 0 8px #2cff73, 0 0 20px rgba(44, 255, 115, 0.8) !important;
+  filter: hue-rotate(65deg) saturate(1.4);
+}
+
+/* ── 3D Tactile Buttons: Physical Key Travel & Mechanical Depression ────── */
+.fab-aisle-btn,
+.fab-roll-btn,
+.fab-card .fab-btn,
+.bezel-keypad-btn,
+.dip-toggle {
+  position: relative;
+  transition: transform 0.07s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.07s cubic-bezier(0.2, 0, 0, 1) !important;
+  box-shadow:
+    0 4px 0 #090e12,
+    0 7px 14px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
+
+.fab-aisle-btn:hover,
+.fab-roll-btn:hover,
+.bezel-keypad-btn:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 5px 0 #090e12,
+    0 9px 18px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+.fab-aisle-btn:active,
+.fab-roll-btn:active,
+.fab-card .fab-btn:active,
+.bezel-keypad-btn:active,
+.dip-toggle:active {
+  transform: translateY(3px) !important;
+  box-shadow:
+    0 1px 0 #090e12,
+    0 2px 6px rgba(0, 0, 0, 0.9),
+    inset 0 2px 4px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* ── Bezel Hotspot Controls & Corner Hex Screws ─────────────────────────── */
+.bezel-interactive-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 106;
+}
+
+.bezel-hex-screw {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  pointer-events: auto;
+  cursor: grab;
+  background:
+    radial-gradient(circle at 35% 35%, #525f68, #182026 65%),
+    repeating-conic-gradient(from 0deg, #2b353d 0 60deg, #1c2328 60deg 120deg);
+  border: 2px solid #5a6772;
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 3px #11171c,
+    inset 0 1px 2px rgba(255, 255, 255, 0.4);
+  transition: transform 0.18s cubic-bezier(0.3, 1.5, 0.6, 1), box-shadow 0.18s ease;
+}
+
+.bezel-hex-screw::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: #0d1216;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.95);
+}
+
+.bezel-hex-screw:hover {
+  filter: brightness(1.25);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.6), 0 3px 6px rgba(0, 0, 0, 0.85);
+}
+
+.screw-tl { top: -4px; left: -4px; }
+.screw-tr { top: -4px; right: -4px; }
+.screw-bl { bottom: -4px; left: -4px; }
+.screw-br { bottom: -4px; right: -4px; }
+
+.screw-loose {
+  border-color: #2cff73 !important;
+  box-shadow: 0 0 12px #2cff73, 0 6px 12px rgba(0, 0, 0, 0.9) !important;
+}
+
+/* Bezel Deck Row (Numpad, Aux Readout, Coin Return, Gauge) */
+.bezel-hotspots-bar {
+  position: absolute;
+  bottom: -46px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 14px;
+  background: linear-gradient(180deg, #182128 0%, #0c1216 100%);
+  border: 2px solid #2f3e4a;
+  border-radius: 6px 6px 12px 12px;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.92);
+  pointer-events: auto;
+}
+
+.bezel-aux-display {
+  flex: 1 1 auto;
+  max-width: 320px;
+  padding: 5px 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 800;
+  color: #2cff73;
+  background: #03080b;
+  border: 1px inset rgba(44, 255, 115, 0.45);
+  box-shadow: inset 0 0 8px rgba(44, 255, 115, 0.25);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.08em;
+}
+
+.text-flash { animation: aux-flash 0.3s ease-out; }
+@keyframes aux-flash { 0% { background: rgba(44, 255, 115, 0.35); } }
+
+.bezel-keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 28px);
+  gap: 3px;
+}
+
+.bezel-keypad-btn {
+  height: 24px;
+  padding: 0;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 900;
+  color: #c9e4ff;
+  background: #141c22;
+  border: 1px solid #32434f;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.btn-clr { color: #ff5757; }
+.btn-ent { color: #2cff73; }
+
+/* Mechanical Coin Return */
+.bezel-coin-assembly {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bezel-coin-lever {
+  height: 28px;
+  padding: 3px 9px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  font-weight: 900;
+  color: #ffb52d;
+  background: #10161a;
+  border: 2px solid #5a4012;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.08s ease;
+}
+
+.lever-depressed { transform: translateY(4px) scale(0.96); }
+
+/* Analog Vacuum Gauge */
+.bezel-gauge-dial {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f3f3f0 55%, #a6a69c 100%);
+  border: 2px solid #3a4752;
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.6), 0 2px 5px rgba(0,0,0,0.8);
+  cursor: pointer;
+}
+
+.bezel-gauge-needle {
+  position: absolute;
+  top: 6px;
+  left: 15px;
+  width: 2px;
+  height: 12px;
+  background: #ff2a2a;
+  transform-origin: bottom center;
+  transform: rotate(38deg);
+  transition: transform 0.15s cubic-bezier(0.2, 1.8, 0.4, 1);
+}
+
+.needle-wobble { animation: gauge-wobble 0.35s ease-in-out; }
+@keyframes gauge-wobble {
+  0% { transform: rotate(38deg); }
+  25% { transform: rotate(75deg); }
+  50% { transform: rotate(20deg); }
+  75% { transform: rotate(50deg); }
+  100% { transform: rotate(38deg); }
+}
+
+/* ── Secret Maintenance Hatch ───────────────────────────────────────────── */
+.bezel-maintenance-hatch {
+  position: absolute;
+  bottom: -190px;
+  left: 8px;
+  right: 8px;
+  background: #090e12;
+  border: 3px solid #ffb52d;
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95);
+  pointer-events: auto;
+  z-index: 108;
+}
+
+.hatch-open-anim { animation: hatch-drop 0.4s cubic-bezier(0.18, 1.25, 0.4, 1); }
+@keyframes hatch-drop {
+  0% { transform: translateY(-40px) scaleY(0.4); opacity: 0; }
+  100% { transform: translateY(0) scaleY(1); opacity: 1; }
+}
+
+.maintenance-hatch-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px dashed rgba(255, 181, 45, 0.4);
+  font: 900 10px 'Space Mono', monospace;
+  color: #ffb52d;
+}
+
+.hatch-badge {
+  padding: 2px 6px;
+  background: #2cff73;
+  color: #03080b;
+  border-radius: 3px;
+  font-weight: 900;
+}
+
+.maintenance-hatch-content {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.dip-switch-bank {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  align-items: center;
+  font: 800 9px 'Space Mono', monospace;
+  color: #8da4b5;
+}
+
+.dip-toggle {
+  padding: 2px 8px;
+  font: 900 9px monospace;
+  background: #141b21;
+  color: #5d7180;
+  border: 1px solid #31424e;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.dip-active {
+  background: #ffb52d !important;
+  color: #070d11 !important;
+  box-shadow: 0 0 8px #ffb52d;
+}
+
+.maintenance-secrets {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.maintenance-fuse-btn {
+  padding: 6px 10px;
+  background: #121d26;
+  border: 1px solid #00e5ff;
+  border-radius: 4px;
+  color: #00e5ff;
+  font: 800 10px 'Space Mono', monospace;
+  cursor: pointer;
+  text-align: left;
+}
+
+.fuse-claimed {
+  opacity: 0.5;
+  border-color: #4b6270;
+  color: #6a8292;
+  cursor: default;
+}
+
+.maintenance-cassette {
+  padding: 4px 8px;
+  background: #1a160d;
+  border: 1px solid #7d5918;
+  border-radius: 4px;
+  color: #e5b058;
+  font: 800 9px 'Space Mono', monospace;
+  cursor: pointer;
+}
+
+.fab-minimart-bezel-top,
+.terminal-kiosk-bezel-top {
+  position: relative;
+  z-index: 102;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -8px -8px 10px;
+  padding: 7px 12px;
+  color: #1d1706;
+  background: repeating-linear-gradient(135deg, #f7b52c 0 12px, #ffc94c 12px 24px);
+  border: 2px solid #fff0a5;
+  border-radius: 9px 9px 2px 2px;
+  box-shadow: 0 4px 0 #7d4e0a, inset 0 0 18px rgba(255,255,255,.34);
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(8px, calc(var(--vu) * 1.04), 12px);
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.fab-minimart-live-status,
+.terminal-kiosk-online { white-space: nowrap; }
+.fab-status-dot,
+.terminal-kiosk-online i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: #2cff73;
+  box-shadow: 0 0 8px #2cff73;
+  animation: kiosk-live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes kiosk-live-pulse { 50% { opacity: .42; } }
+
+.fab-minimart-header {
+  margin: 0 0 8px;
+  padding: 9px 60px 8px 18px;
+  text-align: left;
+  background: linear-gradient(90deg, rgba(0,229,255,.13), rgba(255,181,45,.07));
+  border: 1px solid rgba(0,229,255,.28);
+  border-left: 5px solid var(--kiosk-amber);
+}
+.fab-minimart-header .fab-title { font-size: clamp(18px, calc(var(--vu) * 2.55), 30px); }
+.fab-atm-bank-row {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 8px;
+  padding: 6px 9px;
+  background: #03080b;
+  border: 1px inset rgba(255,181,45,.4);
+}
+.fab-bank-slot-label {
+  margin-right: auto;
+  color: #e8bd58;
+  font: 800 clamp(8px, calc(var(--vu) * 1.02), 11px) 'Space Mono', monospace;
+  letter-spacing: .08em;
+}
+
+.fab-aisle-nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  flex: 0 0 auto;
+  margin-bottom: 9px;
+}
+.fab-aisle-btn {
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  color: #a9bdc5;
+  background: linear-gradient(180deg, #26323a, #10171c);
+  border: 1px solid #465660;
+  border-bottom: 4px solid #070a0c;
+  border-radius: 5px;
+  font: 800 clamp(8px, calc(var(--vu) * 1.04), 12px) 'Space Mono', monospace;
+  text-align: left;
+  cursor: pointer;
+}
+.fab-aisle-btn:hover,
+.fab-aisle-btn:focus-visible { color: #fff; border-color: #72edff; outline: none; }
+.fab-aisle-btn.active {
+  color: #211500;
+  background: linear-gradient(180deg, #ffe272, #e59b18);
+  border-color: #fff0a5;
+  box-shadow: 0 0 14px rgba(255,181,45,.35);
+}
+.fab-aisle-key,
+.terminal-tab-key { font-weight: 900; opacity: .8; }
+.fab-aisle-icon { font-size: 18px; filter: saturate(.75); }
+.fab-slot-machine-marquee {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin: -4px -4px 7px;
+  padding: 6px 8px;
+  color: #271600;
+  background: linear-gradient(180deg, #ffd761, #dc8c13);
+  border: 2px solid #ffeaa0;
+  font: 900 clamp(8px, calc(var(--vu) * 1.1), 12px) 'Space Mono', monospace;
+  letter-spacing: .08em;
+}
+.fab-slot-light {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff6c9;
+  box-shadow: 0 0 7px #fff;
+}
+.fab-aisle-instructions {
+  grid-column: 1 / -1;
+  min-height: 66px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  padding: 12px 16px;
+  color: #a9c9d2;
+  background: rgba(3,8,11,.72);
+  border: 1px dashed rgba(255,181,45,.45);
+  font: 700 clamp(9px, calc(var(--vu) * 1.05), 12px) 'Space Mono', monospace;
+  text-align: center;
+}
+.fab-aisle-instructions strong { color: #ffd05a; letter-spacing: .1em; }
+.fab-minimart-footer-tray,
+.terminal-kiosk-footer {
+  position: relative;
+  z-index: 102;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 0 0 auto;
+  margin-top: 8px;
+  padding: 6px 10px;
+  color: #9ba9ac;
+  background: #05090b;
+  border-top: 2px solid #3f4b50;
+  box-shadow: inset 0 5px 12px rgba(0,0,0,.8);
+  font: 700 clamp(7px, calc(var(--vu) * .9), 10px) 'Space Mono', monospace;
+  letter-spacing: .04em;
+}
+.fab-tray-keys-hint,
+.terminal-kiosk-footer span:last-child { color: #f2bd43; white-space: nowrap; }
+
+.terminal-corporate-kiosk { padding: 14px 16px 10px !important; }
+.terminal-corporate-kiosk .terminal-kiosk-bezel-top { margin: 0 42px 9px 0; }
+.terminal-corporate-kiosk .terminal-header {
+  margin-bottom: 8px;
+  padding: 7px 12px;
+  background: linear-gradient(90deg, rgba(var(--terminal-glow-rgb),.12), rgba(255,181,45,.05));
+  border: 1px solid rgba(var(--terminal-glow-rgb),.28);
+  border-left: 5px solid var(--kiosk-amber);
+}
+.terminal-corporate-kiosk .terminal-title { font-size: clamp(18px, calc(var(--vu) * 2.6), 30px); }
+.terminal-corporate-kiosk .terminal-body {
+  padding: 9px 10px 9px;
+  background: radial-gradient(circle at 50% -20%, rgba(var(--terminal-glow-rgb),.1), transparent 48%), #03090b;
+  border: 2px inset #334148;
+  border-radius: 7px;
+  box-shadow: inset 0 0 22px rgba(0,0,0,.86);
+}
+.terminal-corporate-kiosk .terminal-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  padding: 2px 2px 8px;
+  background: #03090b;
+}
+.terminal-corporate-kiosk .terminal-tab-btn {
+  min-width: 0;
+  min-height: 43px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: linear-gradient(180deg, #27343a, #11191d);
+  border: 1px solid #4b5a61;
+  border-bottom: 4px solid #080b0d;
+  border-radius: 5px;
+}
+.terminal-corporate-kiosk .terminal-tab-btn.active {
+  color: #1e1604;
+  background: linear-gradient(180deg, #ffe47a, #e69c1e);
+  border-color: #fff1a9;
+  text-shadow: none;
+}
+.terminal-corporate-kiosk .terminal-tab-btn.active .terminal-tab-btn__status { color: #35240a; }
+.terminal-corporate-kiosk .terminal-kiosk-footer { margin-top: 7px; }
+
+@media (max-width: 820px), (max-height: 760px) {
+  .fab-minimart-live-status,
+  .terminal-kiosk-online,
+  .fab-tray-tag,
+  .terminal-kiosk-footer span:first-child { display: none; }
+  .fab-aisle-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fab-aisle-btn { min-height: 38px; }
+  .fab-aisle-label { white-space: normal; }
+  .fab-minimart-header .fab-subtitle { display: none; }
+  .fab-minimart-footer-tray,
+  .terminal-kiosk-footer { justify-content: flex-end; }
+}
 @property --preview-glow-bg {
   syntax: '<color>';
   inherits: false;
@@ -5264,10 +5885,13 @@ input:checked+.slider:before {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse at center, rgba(4, 8, 6, 0.82), rgba(0, 0, 0, 0.94) 75%);
+  background: radial-gradient(ellipse at center, rgba(4, 8, 6, 0.45), rgba(0, 0, 0, 0.65) 75%);
+  backdrop-filter: blur(12px) brightness(.72) saturate(.85);
+  -webkit-backdrop-filter: blur(12px) brightness(.72) saturate(.85);
 }
 .arcade-cabinet-overlay.hidden { display: none; }
 .arcade-cabinet-frame {
+  position: relative;
   display: grid;
   gap: 14px;
   justify-items: center;
@@ -5276,6 +5900,15 @@ input:checked+.slider:before {
   background: linear-gradient(180deg, #1d1f1a, #0b0c0a 70%);
   border: 2px solid #3a3d33;
   box-shadow: 0 0 0 6px #070806, 0 30px 80px rgba(0, 0, 0, 0.85), inset 0 2px 0 rgba(255, 255, 255, 0.06);
+}
+.arcade-cabinet-frame::after {
+  content: "";
+  position: absolute;
+  inset: -14px -18px;
+  background: url('/ui/overlays/arcade_cabinet_overlay.webp') no-repeat center / 100% 100%;
+  pointer-events: none;
+  z-index: 105;
+  filter: drop-shadow(0 20px 50px rgba(0, 0, 0, 0.9));
 }
 .arcade-cabinet-screen {
   position: relative;
@@ -25647,4 +26280,398 @@ html.phase-gameplay #tactical-telemeter-box {
 }
 .net-spec-row--build-mismatch .net-lobby-build-warning {
   color: #fca5a5;
+}
+
+/* ── Kiosk frames (src/kioskFrame.js, src/kioskTerminals.js) ───────────────
+   The terminal UI sits in the holes of a keyed machine painting. The machine
+   is zoomed to its working area; around it the live game shows, blurred and
+   dimmed, so the player is standing at the machine, not in a menu. Text in
+   each hole is sized from the hole (container query units), so it stays
+   legible at any viewport. */
+.modal:has(> .kiosk-framed),
+.arcade-cabinet-overlay:has(.kiosk-framed) {
+  background: rgba(2, 5, 8, 0.38) !important;
+  backdrop-filter: blur(7px) brightness(0.62) saturate(0.85);
+  -webkit-backdrop-filter: blur(7px) brightness(0.62) saturate(0.85);
+}
+
+.modal-content.kiosk-framed,
+.arcade-cabinet-frame.kiosk-framed {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  transform: none !important;
+}
+
+.kiosk-plate {
+  position: absolute;
+  pointer-events: none;
+}
+
+.kiosk-plate__art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 28px 60px rgba(0, 0, 0, 0.75));
+}
+
+.kiosk-slot {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  overflow: hidden;
+  container-type: size;
+  pointer-events: auto;
+}
+
+/* Screens: a CRT phosphor field, the UI scrolls inside it. */
+.kiosk-slot--screen {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(40, 255, 190, 0.07) 0%, transparent 70%),
+    #02100c;
+  box-shadow: inset 0 0 6cqh rgba(0, 0, 0, 0.9);
+}
+
+.kiosk-slot--screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply;
+}
+
+.kiosk-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 3.5cqh 3.5cqw;
+  font-size: clamp(11px, 3.4cqh, 18px);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(71, 197, 169, 0.6) transparent;
+}
+
+.kiosk-screen > * {
+  max-width: 100%;
+}
+
+/* What the machine's painted bezel already says, the UI need not repeat. */
+.kiosk-screen .fab-minimart-bezel-top,
+.kiosk-screen .fab-minimart-footer-tray,
+.kiosk-screen .terminal-kiosk-bezel-top,
+.kiosk-screen .terminal-kiosk-footer,
+.kiosk-screen .terminal-scanline {
+  display: none !important;
+}
+
+.kiosk-screen--fab .fab-recipe-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15em), 1fr));
+  gap: 0.8em;
+}
+
+.kiosk-screen--terminal .terminal-body {
+  max-height: none;
+  overflow: visible;
+}
+
+.kiosk-screen--arcade {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.kiosk-screen--arcade .arcade-cabinet-screen {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.kiosk-screen--arcade canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.kiosk-screen--arcade .arcade-cabinet-controls-hint {
+  display: none;
+}
+
+/* Aisle buttons, row windows and the exit: lit glass keys in their holes. */
+.kiosk-slot--aisle > button,
+.kiosk-slot--row > button,
+.kiosk-slot--aisle > .kiosk-exit,
+.kiosk-slot--row > .kiosk-exit {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35em;
+  width: 100%;
+  height: 100%;
+  padding: 0 6cqw;
+  cursor: pointer;
+  text-align: center;
+  font-family: var(--font-mono, 'Share Tech Mono', monospace);
+  font-size: clamp(8px, 30cqh, 15px);
+  line-height: 1.05;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(151, 247, 176, 0.72);
+  background: linear-gradient(180deg, #0a2a22 0%, #041611 100%);
+  text-shadow: 0 0 6px rgba(71, 197, 169, 0.55);
+  transition: background 0.15s, color 0.15s;
+}
+
+.kiosk-slot--aisle > button .fab-aisle-key,
+.kiosk-slot--aisle > button .fab-aisle-icon,
+.kiosk-slot--row > button .fab-aisle-key,
+.kiosk-slot--row > button .fab-aisle-icon,
+.kiosk-slot--row > button .terminal-tab-key,
+.kiosk-slot--row > button .terminal-tab-btn__status {
+  display: none;
+}
+
+.kiosk-slot--aisle > button:hover,
+.kiosk-slot--aisle > button:focus-visible,
+.kiosk-slot--row > button:hover,
+.kiosk-slot--row > button:focus-visible,
+.kiosk-slot--aisle > button.active,
+.kiosk-slot--row > button.active {
+  color: #04120d;
+  background: linear-gradient(180deg, #97f7b0 0%, #47c5a9 100%);
+  text-shadow: none;
+}
+
+.kiosk-slot--aisle > .kiosk-exit,
+.kiosk-slot--row > .kiosk-exit {
+  color: rgba(255, 190, 120, 0.85);
+  background: linear-gradient(180deg, #2a160a 0%, #150a04 100%);
+}
+
+.kiosk-slot--aisle > .kiosk-exit:hover,
+.kiosk-slot--aisle > .kiosk-exit:focus-visible,
+.kiosk-slot--row > .kiosk-exit:hover,
+.kiosk-slot--row > .kiosk-exit:focus-visible {
+  color: #1a0a02;
+  background: linear-gradient(180deg, #ffb52d 0%, #f2780c 100%);
+}
+
+/* Black-Ice 21's round buttons. */
+.kiosk-slot--row > .kiosk-arcade-btn {
+  border-radius: 50%;
+  padding: 0;
+  font-size: clamp(6px, 20cqh, 11px);
+  color: #fff3c4;
+  background: radial-gradient(circle at 40% 35%, #ff5f7e 0%, #a3123a 70%, #4d0418 100%);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+}
+
+.kiosk-slot--row > .kiosk-arcade-btn:active {
+  transform: translateY(1px);
+  filter: brightness(1.25);
+}
+
+/* The Slot-O-Mart: the roll in the readout, spinning reels, the lever. */
+.kiosk-reel {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: linear-gradient(180deg, #e8e2cc 0%, #fff 50%, #e8e2cc 100%);
+  box-shadow: inset 0 1.5cqh 2cqh rgba(0, 0, 0, 0.5), inset 0 -1.5cqh 2cqh rgba(0, 0, 0, 0.5);
+}
+
+.kiosk-reel__strip {
+  font-size: 30cqh;
+  line-height: 36cqh;
+  text-align: center;
+  color: #4d0418;
+  transform: translateY(-36cqh);
+}
+
+.kiosk-reels-spinning .kiosk-reel__strip {
+  animation: kiosk-reel-spin 0.32s linear infinite;
+  animation-delay: var(--reel-delay, 0s);
+}
+
+@keyframes kiosk-reel-spin {
+  from { transform: translateY(-180cqh); }
+  to { transform: translateY(0); }
+}
+
+.kiosk-slot--lever > .kiosk-lever {
+  all: unset;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.kiosk-slot--lever > .kiosk-lever:focus-visible {
+  outline: 2px solid #ffb52d;
+  outline-offset: 2px;
+}
+
+.kiosk-screen .fab-roll-panel,
+.kiosk-slot--screen > .fab-roll-panel {
+  margin: 0;
+}
+
+.kiosk-slot--screen > .fab-roll-panel {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 3cqh 3cqw;
+  font-size: clamp(9px, 5cqh, 15px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-reels-spinning .kiosk-reel__strip {
+    animation: none;
+  }
+}
+
+/* The measured kiosk frame replaces the stretched full-modal ::after frames:
+   one machine painting per terminal, aligned to its screen. */
+.kiosk-framed::before,
+.kiosk-framed::after {
+  content: none !important;
+  background: none !important;
+}
+
+.kiosk-screen--arcade {
+  flex-direction: column;
+}
+
+.kiosk-screen--arcade .arcade-cabinet-screen {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The cabinet's buttons sit under the table, never over its message line. */
+.kiosk-screen .kiosk-arcade-bar {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  gap: 3cqw;
+  padding: 1.5cqh 0 2.5cqh;
+}
+
+/* The terminal: header and departments stay put, the department scrolls. */
+.kiosk-screen--terminal {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.kiosk-screen--terminal > .terminal-header {
+  flex: 0 0 auto;
+  margin: 0 0 0.6em;
+  padding: 0;
+}
+
+.kiosk-screen--terminal > .terminal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.kiosk-screen--terminal .terminal-tabs {
+  flex: 0 0 auto;
+}
+
+.kiosk-screen--terminal .terminal-tab-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* The Auto-Mart's aisles on its screen: four big, lit keys and EXIT. */
+.kiosk-screen--fab > .fab-aisle-nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 0.5em;
+  margin: 0 0 0.7em;
+}
+
+.kiosk-screen--fab .fab-aisle-btn {
+  grid-template-columns: auto 1fr;
+  min-height: 2.8em;
+  padding: 0.35em 0.6em;
+  font-size: 1.02em;
+  line-height: 1.1;
+}
+
+.kiosk-screen--fab .fab-aisle-btn .fab-aisle-icon {
+  display: none;
+}
+
+.kiosk-screen--fab .fab-aisle-btn .fab-aisle-label {
+  font-size: 1em;
+  white-space: normal;
+}
+
+.kiosk-screen--fab > .fab-aisle-nav > .kiosk-exit,
+.kiosk-screen > .fab-aisle-nav + .kiosk-exit {
+  float: none;
+}
+
+.kiosk-arcade-bar > .kiosk-arcade-btn {
+  width: 13cqh;
+  height: 13cqh;
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  font: 700 clamp(9px, 2.7cqh, 13px) var(--font-mono, 'Share Tech Mono', monospace);
+  color: #fff3c4;
+  background: radial-gradient(circle at 40% 35%, #ff5f7e 0%, #a3123a 70%, #4d0418 100%);
+  box-shadow: 0 0.6cqh 0 #2a0210, 0 0 2cqh rgba(255, 60, 120, 0.45);
+}
+
+.kiosk-arcade-bar > .kiosk-arcade-btn:active {
+  transform: translateY(0.4cqh);
+  box-shadow: 0 0.2cqh 0 #2a0210;
+}
+
+.kiosk-exit {
+  position: static !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.6em;
+  padding: 0.35em 0.9em !important;
+  border: 1px solid rgba(255, 181, 45, 0.7) !important;
+  border-radius: 4px;
+  font: 700 0.86em var(--font-mono, 'Share Tech Mono', monospace) !important;
+  letter-spacing: 0.1em;
+  color: #ffb52d !important;
+  background: rgba(40, 20, 4, 0.85) !important;
+  cursor: pointer;
+}
+
+.kiosk-exit:hover,
+.kiosk-exit:focus-visible {
+  color: #1a0a02 !important;
+  background: #ffb52d !important;
 }

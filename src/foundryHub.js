@@ -26,7 +26,7 @@ const TAB_LABEL_KEYS = Object.freeze({
 export const HUB_TAB_PANELS = Object.freeze({
     stash: Object.freeze(['vault-inventory-layout']),
     loadout: Object.freeze([]),
-    fabricate: Object.freeze(['fab-summary', 'fab-roll-panel', 'fab-recipe-grid']),
+    fabricate: Object.freeze(['fab-summary', 'fab-aisle-nav', 'fab-roll-panel', 'fab-recipe-grid']),
     tradeup: Object.freeze(['vault-smelter-layout']),
     store: Object.freeze(['vault-store-layout'])
 });

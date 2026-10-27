@@ -151,6 +151,15 @@ describe('two-zone crash site build', () => {
         }
     });
 
+    it('places the fabrication socket on reachable crash-site floor beside the base', () => {
+        const grid = blank('.');
+        stampCrashSiteOrigin(grid);
+        const socket = CRASH_SITE_BUILD.constructionSockets.find(({ id }) => id === 'base-fabrication');
+        expect(socket).toMatchObject({ kind: 'fabrication' });
+        expect(Math.hypot(socket.x - CRASH_SITE_BUILD.center.x, socket.z - CRASH_SITE_BUILD.center.z)).toBeLessThan(7);
+        expect(grid[Math.round(socket.z)][Math.round(socket.x)]).toBe('.');
+    });
+
     it('authors five readable Sector 0 rooms without blocking the centre route', () => {
         const grid = blank('.');
         stampCrashSiteOrigin(grid);

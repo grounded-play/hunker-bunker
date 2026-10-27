@@ -44,7 +44,8 @@ class FakeElement {
 
 const IDS = ['fab-recipe-grid', 'fab-roll-panel', 'fab-roll-btn', 'fab-odds', 'fab-summary', 'fabrication-modal',
     'fab-bank-tech', 'fab-bank-coin', 'fab-bank-med', 'fab-bank-shells', 'fab-reveal', 'fab-reveal-strip',
-    'fab-reveal-card', 'fab-reveal-strip-wrap'];
+    'fab-reveal-card', 'fab-reveal-strip-wrap', 'fab-aisle-btn-hardware', 'fab-aisle-btn-weapons',
+    'fab-aisle-btn-lotto', 'fab-aisle-btn-all'];
 
 function setup({ activated = true, canRoll = true, hub = false, arcadeUnlocked = false, repairToolUnlocked = false } = {}) {
     vi.useFakeTimers();
@@ -148,15 +149,25 @@ describe('fabrication bay', () => {
         button.click();
         expect(bankManager.activateFoundry).toHaveBeenCalled();
         expect(deps.onFoundryActivated).toHaveBeenCalled();
-        expect(els.get('fab-roll-panel').classList.contains('hidden')).toBe(false);
+        expect(els.get('fab-roll-panel').classList.contains('hidden')).toBe(true);
+        expect(bay.getActiveAisle()).toBe('hardware');
     });
 
-    it('lists one card per recipe with the odds shown before spending once online', () => {
+    it('uses real department aisles instead of showing every build surface at once', () => {
         const { bay, els } = setup();
         bay.render();
+        expect(bay.getActiveAisle()).toBe('hardware');
+        expect(els.get('fab-recipe-grid').children.some((c) => c.className.includes('fab-card'))).toBe(false);
+        expect(els.get('fab-roll-panel').classList.contains('hidden')).toBe(true);
+
+        bay.selectAisle('weapons');
         expect(els.get('fab-recipe-grid').children.filter((c) => c.className.includes('fab-card'))).toHaveLength(FAB_RECIPES.length);
         expect(els.get('fab-odds').innerHTML).toContain('ui.fab.odds');
         expect(els.get('fab-bank-tech').textContent).toBe(50);
+
+        bay.selectAisle('lotto');
+        expect(els.get('fab-roll-panel').classList.contains('hidden')).toBe(false);
+        expect(els.get('fabrication-modal').dataset.activeAisle).toBe('lotto');
     });
 
     it('exposes the permanent BLACK-ICE cabinet build and installs it through the game', () => {
@@ -227,6 +238,14 @@ describe('fabrication bay', () => {
         vi.advanceTimersByTime(3300);
         expect(bay.isRolling()).toBe(false);
         expect(els.get('fab-reveal').dataset.state).toBe('revealed');
+    });
+
+    it('wires the numbered kiosk buttons to the matching department', () => {
+        const { bay, els } = setup();
+        bay.attach();
+        els.get('fab-aisle-btn-weapons').click();
+        expect(bay.getActiveAisle()).toBe('weapons');
+        expect(els.get('fab-aisle-btn-weapons').attributes['aria-selected']).toBe('true');
     });
 
     // S49-38: the bay owns its listeners and timers and releases them.

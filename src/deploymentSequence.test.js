@@ -66,7 +66,7 @@ describe('fresh deployment transaction', () => {
         const sleepEnd = main.indexOf('\nfunction updateCampaignCycleIndicator', sleepStart);
         const sleepFlow = main.slice(sleepStart, sleepEnd);
 
-        const closedWork = sleepFlow.indexOf('await playSleepCutscene(detail.sleepStyle)');
+        const closedWork = sleepFlow.indexOf('await playSleepCutscene(detail.sleepStyle');
         const wake = sleepFlow.indexOf('window.game?.finishCampRest?.()');
         const opened = sleepFlow.indexOf('() => openMorningAfterRest(detail)');
         // Video, then bed wake, both behind closed doors; morning HUD on open.

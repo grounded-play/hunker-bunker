@@ -1656,7 +1656,17 @@
       "welder_desc": "Rebuild boss-breached walls and restore damaged camp modules in the field.",
       "welder_installed": "FIELD WELDER BUILT",
       "welder_build": "BUILD FIELD WELDER",
-      "welder_ready": "FIELD BULKHEAD WELDER READY"
+      "welder_ready": "FIELD BULKHEAD WELDER READY",
+      "close_automart": "Close Auto-Mart",
+      "ledger_balance": "SALVAGE LEDGER / COIN-OP BALANCE:",
+      "aisles_aria": "Auto-Mart Department Aisles",
+      "aisle_hardware": "BASE BUILD & FIXTURES",
+      "aisle_weapons": "WEAPONS & MUNITIONS",
+      "aisle_lotto": "LOTTO-PRINT GAMBA",
+      "aisle_all": "ALL AISLES",
+      "slot_marquee": "HORIZON SPECULATIVE LOTTO-PRINT // PULL LEVER",
+      "lotto_window_title": "SPECULATIVE PRINT WINDOW ACTIVE",
+      "lotto_window_hint": "Review the disclosed odds, insert salvage, then pull the fabrication lever above."
     },
     "camp": {
       "sleep_warning": "Sleeping at {camp} advances to day {day}. These unresolved signals will close.",
@@ -2326,6 +2336,14 @@
       "area_bio": "in the bio sector",
       "area_unknown": "in the field",
       "notice": "Display: {setting} lowered to {to} to keep the game smooth. See Settings › Graphics."
+    },
+    "kiosk": {
+      "exit": "EXIT",
+      "deal": "DEAL",
+      "hit": "HIT",
+      "stand": "STAND",
+      "double": "DOUBLE",
+      "pull_lever": "Pull the lever to roll"
     }
   },
   "narrative": {

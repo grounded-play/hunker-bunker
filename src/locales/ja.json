@@ -1656,7 +1656,17 @@
       "welder_desc": "ボスに破壊された壁を再建し、損傷した拠点モジュールを現地で修復します。",
       "welder_installed": "フィールド溶接機作成済み",
       "welder_build": "フィールド溶接機を作成",
-      "welder_ready": "フィールド隔壁溶接機 準備完了"
+      "welder_ready": "フィールド隔壁溶接機 準備完了",
+      "close_automart": "オートマートを閉じる",
+      "ledger_balance": "サルベージ台帳 / コイン残高:",
+      "aisles_aria": "オートマートの売り場",
+      "aisle_hardware": "基地建設・設備",
+      "aisle_weapons": "武器・弾薬",
+      "aisle_lotto": "ロトプリント",
+      "aisle_all": "全売り場",
+      "slot_marquee": "ホライズン投機ロトプリント // レバーを引け",
+      "lotto_window_title": "投機プリント窓口 稼働中",
+      "lotto_window_hint": "公開された確率を確認し、サルベージを投入して、上の製造レバーを引いてください。"
     },
     "camp": {
       "sleep_warning": "{camp} で眠ると {day} 日目へ進む。未解決の信号は閉ざされる。",
@@ -2326,6 +2336,14 @@
       "area_bio": "バイオ区画",
       "area_unknown": "フィールド",
       "notice": "表示：動作をなめらかに保つため{setting}を{to}に下げました。設定 › グラフィックを参照。"
+    },
+    "kiosk": {
+      "exit": "終了",
+      "deal": "配る",
+      "hit": "ヒット",
+      "stand": "スタンド",
+      "double": "ダブル",
+      "pull_lever": "レバーを引いて回す"
     }
   },
   "narrative": {

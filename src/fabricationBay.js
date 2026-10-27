@@ -15,6 +15,7 @@ import {
     FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES,
     applyFabricatedRecipeOutput, describeRecipe, getFabricationOdds
 } from './fabricator.js';
+import { TerminalBezelController } from './terminalBezelInteractivity.js';
 
 const RESOURCES = [['tech', 'TECH'], ['coin', 'COIN'], ['med', 'MED']];
 const TICK_MS = 500;
@@ -108,10 +109,65 @@ export function createFabricationBay({
     let rolling = false;
     let revealTimer = null;
     let campRestOpen = false;
+    let activeAisle = 'hardware';
+    let bezelController = null;
     const attached = [];
     const byId = (id) => doc.getElementById(id);
+
+    function ensureBezelController() {
+        if (bezelController) return bezelController;
+        const modal = byId('fabrication-modal');
+        const content = modal?.querySelector?.('.fab-modal-content');
+        if (content && typeof doc?.createElement === 'function') {
+            bezelController = new TerminalBezelController({
+                container: content,
+                audio: globalThis.window?.AudioManager,
+                bank: bankManager,
+                doc
+            });
+        }
+        return bezelController;
+    }
     const costText = (cost, bank = bankManager.getState(), options) => fabCostText(cost, bank, options);
     const missingText = (cost, bank = bankManager.getState()) => fabMissingResourceText(cost, bank);
+
+    function syncAisleNavigation() {
+        const modal = byId('fabrication-modal');
+        if (modal) modal.dataset.activeAisle = activeAisle;
+        for (const aisle of ['hardware', 'weapons', 'lotto', 'all']) {
+            const button = byId(`fab-aisle-btn-${aisle}`);
+            if (!button) continue;
+            const active = aisle === activeAisle;
+            button.classList.toggle('active', active);
+            button.setAttribute('aria-selected', String(active));
+            button.setAttribute('tabindex', active ? '0' : '-1');
+        }
+        const grid = byId('fab-recipe-grid');
+        if (grid?.children) {
+            for (const child of grid.children) {
+                const itemAisle = child.dataset?.aisle;
+                if (!itemAisle) continue;
+                const visible = activeAisle === 'all' || itemAisle === activeAisle;
+                child.classList.toggle('fab-item--hidden', !visible);
+            }
+        }
+        const rollPanel = byId('fab-roll-panel');
+        if (rollPanel && bankManager.isFoundryActivated()) {
+            const showRoll = activeAisle === 'all' || activeAisle === 'lotto';
+            rollPanel.classList.toggle('fab-roll-panel--aisle-hidden', !showRoll);
+        }
+    }
+
+    function selectAisle(aisle, { focusButton = false } = {}) {
+        if (!['hardware', 'weapons', 'lotto', 'all'].includes(aisle)) return false;
+        activeAisle = aisle;
+        render();
+        const button = byId(`fab-aisle-btn-${aisle}`);
+        if (focusButton && button) focus(button);
+        playSound('terminal_beep', { volume: 0.45 });
+        log('aisle-selected', { aisle });
+        return true;
+    }
 
     // What a recipe prints, as the shared item catalog shows it. A fabricated
     // weapon is a firing profile fitted to the active class's gun, so it wears
@@ -178,10 +234,11 @@ export function createFabricationBay({
         const canActivate = bankManager.canActivateFoundry();
         const missing = missingText(FOUNDRY_ACTIVATION_COST, bank);
         const panel = doc.createElement('div');
-        panel.className = 'fab-activation-panel';
+        panel.className = 'fab-activation-panel fab-activation-panel--foundry';
+        panel.dataset.aisle = 'hardware';
         panel.innerHTML = `
         <div class="fab-activation-panel__kicker">${t('ui.fab.foundry_required')}</div>
-        <div class="fab-activation-panel__title">${t('ui.fab.activate_bay')}</div>
+        <div class="fab-activation-panel__title">⚡ ${t('ui.fab.activate_bay')}</div>
         <div class="fab-activation-panel__desc">${t('ui.fab.bring_online')}</div>
         <div class="fab-activation-panel__cost">${costText(FOUNDRY_ACTIVATION_COST, bank, { showHaveNeed: !canActivate })}</div>
         <div class="fab-activation-panel__hint">${canActivate ? 'READY TO ACTIVATE' : missing}</div>
@@ -213,9 +270,10 @@ export function createFabricationBay({
         const affordable = bankManager.canAfford(BASE_ARCADE_BUILD_COST);
         const panel = doc.createElement('div');
         panel.className = 'fab-activation-panel fab-activation-panel--arcade';
+        panel.dataset.aisle = 'hardware';
         panel.innerHTML = `
         <div class="fab-activation-panel__kicker">${t('ui.arcade.blackjack_module')}</div>
-        <div class="fab-activation-panel__title">${t('ui.arcade.blackjack_title')}</div>
+        <div class="fab-activation-panel__title">🎰 ${t('ui.arcade.blackjack_title')}</div>
         <div class="fab-activation-panel__desc">${t('ui.arcade.blackjack_module_desc')}</div>
         <div class="fab-activation-panel__cost">${costText(BASE_ARCADE_BUILD_COST, bank, { showHaveNeed: !affordable })}</div>`;
         const button = doc.createElement('button');
@@ -244,9 +302,10 @@ export function createFabricationBay({
         const affordable = bankManager.canAfford(WALL_REPAIR_TOOL_BUILD_COST);
         const panel = doc.createElement('div');
         panel.className = 'fab-activation-panel fab-activation-panel--repair-tool';
+        panel.dataset.aisle = 'hardware';
         panel.innerHTML = `
         <div class="fab-activation-panel__kicker">${t('ui.fab.welder_kicker')}</div>
-        <div class="fab-activation-panel__title">${t('ui.fab.welder_title')}</div>
+        <div class="fab-activation-panel__title">🔥 ${t('ui.fab.welder_title')}</div>
         <div class="fab-activation-panel__desc">${t('ui.fab.welder_desc')}</div>
         <div class="fab-activation-panel__cost">${costText(WALL_REPAIR_TOOL_BUILD_COST, bank, { showHaveNeed: !affordable })}</div>`;
         const button = doc.createElement('button');
@@ -276,6 +335,7 @@ export function createFabricationBay({
         const rarity = (recipe.rarity ?? 'COMMON').toLowerCase();
         const card = doc.createElement('div');
         card.className = ['fab-card', `fab-card--${rarity}`, fabricated ? 'fab-card--done' : 'fab-card--locked'].join(' ');
+        card.dataset.aisle = 'weapons';
 
         const art = doc.createElement('div');
         art.className = 'fab-card__art';
@@ -382,21 +442,29 @@ export function createFabricationBay({
         setTxt('fab-bank-coin', bank.coin ?? 0);
         setTxt('fab-bank-med', bank.med ?? 0);
         setTxt('fab-bank-shells', bank.shells ?? 0);
+        syncAisleNavigation();
 
         const rollPanel = byId('fab-roll-panel');
         grid.innerHTML = '';
-        if (!bankManager.isFoundryActivated()) renderFieldPrint(grid, bank);
+        if (!bankManager.isFoundryActivated()) {
+            activeAisle = 'hardware';
+            syncAisleNavigation();
+            renderFieldPrint(grid, bank);
+        }
         if (renderFoundryActivationPanel(grid, bank)) {
             rollPanel?.classList.add('hidden');
             setTxt('fab-summary', `FOUNDRY ACTIVATION: ${costText(FOUNDRY_ACTIVATION_COST, bank, { showHaveNeed: !bankManager.canActivateFoundry() })}`);
+            syncAisleNavigation();
             return;
         }
 
-        renderBaseArcadePanel(grid, bank);
-        renderWallRepairToolPanel(grid, bank);
+        if (activeAisle === 'hardware' || activeAisle === 'all') {
+            renderBaseArcadePanel(grid, bank);
+            renderWallRepairToolPanel(grid, bank);
+        }
 
         // Bay is online: show the roll panel and sync the roll button.
-        rollPanel?.classList.remove('hidden');
+        rollPanel?.classList.toggle('hidden', activeAisle !== 'lotto' && activeAisle !== 'all');
         const rollBtn = byId('fab-roll-btn');
         if (rollBtn && !rolling) {
             const canRoll = fabricator.canRoll(bankManager);
@@ -417,7 +485,20 @@ export function createFabricationBay({
                 + getFabricationOdds().map(({ rarity, chance }) => `<span class="fab-odds__tier fab-odds__tier--${rarity.toLowerCase()}">${t(`rarity.${rarity.toLowerCase()}`)} ${Math.round(chance * 100)}%</span>`).join('');
         }
 
-        for (const recipe of FAB_RECIPES) renderRecipeCard(grid, recipe, bank);
+        if (activeAisle === 'weapons' || activeAisle === 'all') {
+            for (let i = 0; i < FAB_RECIPES.length; i++) {
+                renderRecipeCard(grid, FAB_RECIPES[i], bank, i);
+            }
+        }
+
+        if (!grid.children.length && activeAisle === 'lotto') {
+            const instructions = doc.createElement('div');
+            instructions.className = 'fab-aisle-instructions';
+            instructions.innerHTML = `<strong>${t('ui.fab.lotto_window_title')}</strong><span>${t('ui.fab.lotto_window_hint')}</span>`;
+            grid.appendChild(instructions);
+        }
+
+        syncAisleNavigation();
 
         const objective = fabricator.getObjectiveState();
         const targetName = objective.targetRecipe ? itemView(objective.targetRecipe).name : 'ALL TARGETS COMPLETE';
@@ -514,13 +595,16 @@ export function createFabricationBay({
         }, REVEAL_MS);
     }
 
-    function open() {
-        if (isHubEnabled()) {
+    // `kiosk`: opened from the machine in the world, which is always the
+    // machine itself (src/kioskTerminals.js), never the menu hub.
+    function open({ kiosk = false } = {}) {
+        if (isHubEnabled() && !kiosk) {
             openHub('fabricate');
             return;
         }
         fabricator.tickPrints();
         render();
+        ensureBezelController();
         const modal = byId('fabrication-modal');
         if (modal) { modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); }
         requestFrame(() => focus(getPreferredFocus(modal)));
@@ -530,6 +614,7 @@ export function createFabricationBay({
     // Leaving the Fab Bay, or the Foundry hub that shows it, ends a camp rest.
     function finishSession() {
         stopTicker();
+        getGame()?.clearCinematicCameraFocus?.();
         if (campRestOpen) {
             campRestOpen = false;
             getGame()?.finishCampRest?.();
@@ -555,6 +640,17 @@ export function createFabricationBay({
     // The roll button and the fabrication telemetry events.
     function attach() {
         listen(byId('fab-roll-btn'), 'click', roll);
+        for (const aisle of ['hardware', 'weapons', 'lotto', 'all']) {
+            listen(byId(`fab-aisle-btn-${aisle}`), 'click', () => selectAisle(aisle));
+        }
+        listen(eventTarget, 'keydown', (event) => {
+            const modal = byId('fabrication-modal');
+            if (!modal || modal.classList.contains('hidden') || event.altKey || event.ctrlKey || event.metaKey) return;
+            const aisle = { '1': 'hardware', '2': 'weapons', '3': 'lotto', '4': 'all' }[event.key];
+            if (!aisle) return;
+            event.preventDefault?.();
+            selectAisle(aisle, { focusButton: true });
+        });
         listen(eventTarget, 'fabrication-started', (event) => logRecipe('print-started', event.detail?.recipe));
         listen(eventTarget, 'fabrication-complete', (event) => logRecipe('print-complete', event.detail?.recipe));
         listen(eventTarget, 'fabrication-rolled', (event) => logRecipe('roll-revealed', event.detail?.recipe, {
@@ -574,6 +670,8 @@ export function createFabricationBay({
 
     return {
         render, open, close, finishSession, beginCampRest, roll,
+        selectAisle, getActiveAisle: () => activeAisle,
+        getBezelController: () => bezelController,
         isRolling: () => rolling, startTicker, stopTicker, attach, dispose
     };
 }

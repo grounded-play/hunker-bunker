@@ -982,8 +982,8 @@ const RADAR_STANDARD_TRACK_SECONDS = 5.0;
 const RADAR_DANGER_TRACK_SECONDS = 8.0;
 const RADAR_DANGER_COLOR = 0xff3344;
 const RADAR_HOLE_SCAN_PADDING = 2.25;
-const FOUNDRY_DISCOVERY_MIN_DISTANCE = 38;
-const FOUNDRY_DISCOVERY_MAX_DISTANCE = 58;
+const FOUNDRY_DISCOVERY_MIN_DISTANCE = 5;
+const FOUNDRY_DISCOVERY_MAX_DISTANCE = 10;
 // The showroom floor has to cover the menu panel at any aspect ratio. The
 // panel is a wide strip (~2.2:1), and the showcase patrol walks the operative
 // well away from the spawn tile, so the plane is sized for the patrol box
@@ -10055,7 +10055,7 @@ export class ThreeGame {
         if (this.foundry?.isRevealed && this.foundry.isWithinInteractRange(px, pz)) {
             candidates.push({
                 id: 'foundry',
-                label: 'FAB BAY',
+                label: 'FABRICATION AUTO-MART',
                 distance: this.foundry.distanceTo(px, pz),
                 secondary: Boolean(carriedObject),
                 priorityRank: carriedObject ? 2 : 1,
@@ -11192,6 +11192,10 @@ export class ThreeGame {
                     });
                 }
             }
+        }
+        const fabSocket = CRASH_SITE_BUILD.constructionSockets.find(({ id }) => id === 'base-fabrication');
+        if (fabSocket && this.foundry && !this.foundry.isRevealed) {
+            this.revealFoundry({ instant: true, source: 'base-socket-reconcile', announce: false });
         }
         const modules = (this.carryState?.installed ?? []).filter(({ definitionId }) => FIRST_NIGHT_VISIBLE_MODULES.has(definitionId));
         const wanted = new Set(modules.map(({ instanceId }) => instanceId));
@@ -16345,6 +16349,14 @@ export class ThreeGame {
             this.handleAct2ConsoleInteract();
             return true;
         }
+        const consolePosition = this.activeInteractiveConsole.consoleSprite?.position;
+        if (Number.isFinite(consolePosition?.x) && Number.isFinite(consolePosition?.z)) {
+            this.focusCinematicCamera?.({
+                x: consolePosition.x,
+                y: consolePosition.y ?? 0,
+                z: consolePosition.z
+            }, { immediate: true });
+        }
         this.openConsoleModal(this.activeInteractiveConsole);
         return true;
     }
@@ -18984,6 +18996,11 @@ export class ThreeGame {
                     tab.setAttribute('aria-selected', String(active));
                     panel.classList.toggle('hidden', !active);
                 });
+                if (content) {
+                    content.dataset.activeDepartment = selected === tabBase
+                        ? 'base'
+                        : selected === tabSkills ? 'skills' : 'objectives';
+                }
                 window.AudioManager?.play('ui_click', { volume: 0.5 });
             };
             // Default to Base System Tab
@@ -18998,6 +19015,17 @@ export class ThreeGame {
             tabSkills.onclick = () => {
                 selectTab(tabSkills);
                 this.renderSkillsTree(ship);
+            };
+
+            modal.onkeydown = (event) => {
+                if (event.altKey || event.ctrlKey || event.metaKey) return;
+                if (event.key === '1') selectTab(tabBase);
+                else if (event.key === '2') {
+                    selectTab(tabSkills);
+                    this.renderSkillsTree(ship);
+                } else if (event.key === '3') selectTab(tabObjectives);
+                else return;
+                event.preventDefault();
             };
 
         }
@@ -19017,6 +19045,7 @@ export class ThreeGame {
             window.AudioManager?.play('ui_click', { volume: 0.5 });
             modal.classList.add('hidden');
         }
+        this.clearCinematicCameraFocus?.();
     }
 
     getSkillGateText(node = {}) {
@@ -20103,6 +20132,10 @@ export class ThreeGame {
     }
 
     chooseFoundryDiscoveryPosition() {
+        const fabSocket = CRASH_SITE_BUILD.constructionSockets.find(({ id }) => id === 'base-fabrication');
+        if (fabSocket && (this.isSnailTileWalkable?.(Math.round(fabSocket.x), Math.round(fabSocket.z)) ?? true)) {
+            return { x: fabSocket.x, z: fabSocket.z };
+        }
         const anchor = this.getBiomeAnchorPosition();
         // Mix in per-run entropy: the anchor hash alone is constant for a given
         // hero, which made the foundry spawn in the same spot every single run.
@@ -20190,6 +20223,8 @@ export class ThreeGame {
             window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'dishBuilt' } }));
             return true;
         }
+        const foundryPosition = this.foundry.getPosition?.();
+        if (foundryPosition) this.focusCinematicCamera?.(foundryPosition, { immediate: true });
         window.dispatchEvent(new CustomEvent('open-fabrication-bay', {
             detail: {
                 source: 'surface-foundry',

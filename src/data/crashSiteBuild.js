@@ -121,6 +121,7 @@ export const CRASH_SITE_BUILD = Object.freeze({
         Object.freeze({ id: 'first-bed', kind: 'bed', x: 14.5, z: 11.5, yaw: Math.PI / 2 }),
         Object.freeze({ id: 'west-seal', kind: 'wall', x: 1.5, z: 13, yaw: Math.PI / 2 }),
         Object.freeze({ id: 'east-seal', kind: 'wall', x: 28.5, z: 13, yaw: -Math.PI / 2 }),
-        Object.freeze({ id: 'base-arcade', kind: 'arcade', x: 12.5, z: 26.5, yaw: 0 })
+        Object.freeze({ id: 'base-arcade', kind: 'arcade', x: 12.5, z: 26.5, yaw: 0 }),
+        Object.freeze({ id: 'base-fabrication', kind: 'fabrication', x: 14.5, z: 7.5, yaw: Math.PI })
     ])
 });

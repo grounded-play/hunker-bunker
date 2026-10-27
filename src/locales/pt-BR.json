@@ -1656,7 +1656,17 @@
       "welder_desc": "Reconstrua paredes rompidas por chefes e restaure módulos danificados do acampamento em campo.",
       "welder_installed": "SOLDADOR DE CAMPO CONSTRUÍDO",
       "welder_build": "CONSTRUIR SOLDADOR DE CAMPO",
-      "welder_ready": "SOLDADOR DE MAMPARA DE CAMPO PRONTO"
+      "welder_ready": "SOLDADOR DE MAMPARA DE CAMPO PRONTO",
+      "close_automart": "Fechar Auto-Mart",
+      "ledger_balance": "REGISTRO DE SUCATA / SALDO DE MOEDAS:",
+      "aisles_aria": "Corredores do Auto-Mart",
+      "aisle_hardware": "CONSTRUÇÃO E ACESSÓRIOS",
+      "aisle_weapons": "ARMAS E MUNIÇÃO",
+      "aisle_lotto": "LOTO-IMPRESSÃO",
+      "aisle_all": "TODOS OS CORREDORES",
+      "slot_marquee": "LOTO-IMPRESSÃO ESPECULATIVA HORIZON // PUXE A ALAVANCA",
+      "lotto_window_title": "JANELA DE IMPRESSÃO ESPECULATIVA ATIVA",
+      "lotto_window_hint": "Confira as chances divulgadas, insira sucata e puxe a alavanca de fabricação acima."
     },
     "camp": {
       "sleep_warning": "Dormir em {camp} avança para o dia {day}. Estes sinais pendentes serão fechados.",
@@ -2326,6 +2336,14 @@
       "area_bio": "no setor bio",
       "area_unknown": "no terreno",
       "notice": "Tela: {setting} reduzido para {to} para manter o jogo fluido. Veja Configurações › Gráficos."
+    },
+    "kiosk": {
+      "exit": "SAIR",
+      "deal": "DISTRIBUIR",
+      "hit": "PEDIR",
+      "stand": "PARAR",
+      "double": "DOBRAR",
+      "pull_lever": "Puxe a alavanca para girar"
     }
   },
   "narrative": {

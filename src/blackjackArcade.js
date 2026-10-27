@@ -6,6 +6,8 @@
  * real bank coin wagering, and an authentic CRT arcade presentation.
  */
 
+import { mountArcadeKiosk } from './kioskTerminals.js';
+
 export const SUITS = Object.freeze(['spades', 'hearts', 'clubs', 'diamonds']);
 export const SUIT_GLYPHS = Object.freeze({
     spades: '♠',
@@ -511,6 +513,10 @@ export class BlackjackArcadeController {
                 </div>
             `;
             document.body.appendChild(overlay);
+            // The cabinet as a cabinet: its round buttons press the same keys.
+            mountArcadeKiosk(overlay, {
+                press: (key, code) => this._onKeyDown({ key, code, preventDefault() {}, stopPropagation() {} })
+            });
         }
         this.overlayEl = overlay;
         this.canvasEl = overlay.querySelector('#blackjack-cabinet-canvas');

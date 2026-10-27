@@ -1656,7 +1656,17 @@
       "welder_desc": "Reconstruye muros rotos por jefes y repara módulos dañados del campamento en el campo.",
       "welder_installed": "SOLDADOR DE CAMPO CONSTRUIDO",
       "welder_build": "CONSTRUIR SOLDADOR DE CAMPO",
-      "welder_ready": "SOLDADOR DE MAMPARAS DE CAMPO LISTO"
+      "welder_ready": "SOLDADOR DE MAMPARAS DE CAMPO LISTO",
+      "close_automart": "Cerrar Auto-Mart",
+      "ledger_balance": "LIBRO DE CHATARRA / SALDO DE MONEDAS:",
+      "aisles_aria": "Pasillos del Auto-Mart",
+      "aisle_hardware": "CONSTRUCCIÓN Y ACCESORIOS",
+      "aisle_weapons": "ARMAS Y MUNICIONES",
+      "aisle_lotto": "LOTO-IMPRESIÓN",
+      "aisle_all": "TODOS LOS PASILLOS",
+      "slot_marquee": "LOTO-IMPRESIÓN ESPECULATIVA HORIZON // TIRA DE LA PALANCA",
+      "lotto_window_title": "VENTANA DE IMPRESIÓN ESPECULATIVA ACTIVA",
+      "lotto_window_hint": "Revisa las probabilidades, introduce chatarra y luego tira de la palanca de fabricación de arriba."
     },
     "camp": {
       "sleep_warning": "Dormir en {camp} avanza al día {day}. Estas señales sin resolver se cerrarán.",
@@ -2326,6 +2336,14 @@
       "area_bio": "en el sector bio",
       "area_unknown": "en el terreno",
       "notice": "Pantalla: {setting} bajó a {to} para mantener el juego fluido. Ver Ajustes › Gráficos."
+    },
+    "kiosk": {
+      "exit": "SALIR",
+      "deal": "REPARTIR",
+      "hit": "PEDIR",
+      "stand": "PLANTARSE",
+      "double": "DOBLAR",
+      "pull_lever": "Tira de la palanca para girar"
     }
   },
   "narrative": {

@@ -1656,7 +1656,17 @@
       "welder_desc": "在战场上重建被首领破坏的墙壁并修复受损的营地组件。",
       "welder_installed": "战地焊接机已建造",
       "welder_build": "建造战地焊接机",
-      "welder_ready": "战地舱壁焊接机就绪"
+      "welder_ready": "战地舱壁焊接机就绪",
+      "close_automart": "关闭自动商店",
+      "ledger_balance": "回收账本 / 硬币余额:",
+      "aisles_aria": "自动商店货架",
+      "aisle_hardware": "基地建造与设施",
+      "aisle_weapons": "武器与弹药",
+      "aisle_lotto": "彩票打印",
+      "aisle_all": "全部货架",
+      "slot_marquee": "地平线投机彩票打印 // 拉动拉杆",
+      "lotto_window_title": "投机打印窗口已开启",
+      "lotto_window_hint": "查看公开的概率，投入回收物资，然后拉动上方的制造拉杆。"
     },
     "camp": {
       "sleep_warning": "在 {camp} 休息将推进到第 {day} 天。以下未解决的信号将关闭。",
@@ -2326,6 +2336,14 @@
       "area_bio": "生物区",
       "area_unknown": "野外",
       "notice": "显示：为保持流畅，{setting}已降至{to}。见 设置 › 图形。"
+    },
+    "kiosk": {
+      "exit": "退出",
+      "deal": "发牌",
+      "hit": "要牌",
+      "stand": "停牌",
+      "double": "加倍",
+      "pull_lever": "拉动拉杆开始转动"
     }
   },
   "narrative": {

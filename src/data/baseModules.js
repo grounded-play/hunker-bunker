@@ -201,6 +201,16 @@ export const BASE_MODULE_CATALOG = Object.freeze({
         massClass: 'heavy',
         buildTags: ['furniture', 'arcade', 'minigame', 'blackjack']
     }),
+    fabrication_station: Object.freeze({
+        id: 'fabrication_station',
+        label: 'MERIDIAN AUTO-MART FABRICATION TERMINAL',
+        category: BASE_MODULE_CATEGORIES.FURNITURE,
+        modelType: 'base_power_junction_box',
+        footprint: { w: 1.2, d: 0.8, h: 1.8 },
+        socketTypes: ['interior_floor_snap', 'fabrication'],
+        massClass: 'heavy',
+        buildTags: ['furniture', 'fabrication', 'utility', 'workbench']
+    }),
 
     // Run-scoped objective cargo. These use the same two-hand reducer as base
     // modules but are delivered to characters/ship staging instead of sockets.

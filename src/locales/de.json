@@ -1656,7 +1656,17 @@
       "welder_desc": "Baue vom Boss durchbrochene Wände wieder auf und repariere beschädigte Lagermodule im Feld.",
       "welder_installed": "FELDSCHWEISSGERÄT GEBAUT",
       "welder_build": "FELDSCHWEISSGERÄT BAUEN",
-      "welder_ready": "FELD-SCHOTTSCHWEISSGERÄT BEREIT"
+      "welder_ready": "FELD-SCHOTTSCHWEISSGERÄT BEREIT",
+      "close_automart": "Auto-Mart schließen",
+      "ledger_balance": "BERGUNGSKONTO / MÜNZGUTHABEN:",
+      "aisles_aria": "Auto-Mart-Abteilungen",
+      "aisle_hardware": "BASISBAU & AUSSTATTUNG",
+      "aisle_weapons": "WAFFEN & MUNITION",
+      "aisle_lotto": "LOTTO-DRUCK",
+      "aisle_all": "ALLE GÄNGE",
+      "slot_marquee": "HORIZON SPEKULATIVER LOTTO-DRUCK // HEBEL ZIEHEN",
+      "lotto_window_title": "SPEKULATIVES DRUCKFENSTER AKTIV",
+      "lotto_window_hint": "Prüfe die offengelegten Chancen, wirf Bergungsgut ein und zieh dann oben den Fertigungshebel."
     },
     "camp": {
       "sleep_warning": "Schlaf in {camp} bringt dich zu Tag {day}. Diese offenen Signale werden geschlossen.",
@@ -2326,6 +2336,14 @@
       "area_bio": "im Bio-Sektor",
       "area_unknown": "im Gelände",
       "notice": "Anzeige: {setting} auf {to} gesenkt, damit das Spiel flüssig bleibt. Siehe Einstellungen › Grafik."
+    },
+    "kiosk": {
+      "exit": "BEENDEN",
+      "deal": "AUSTEILEN",
+      "hit": "KARTE",
+      "stand": "HALTEN",
+      "double": "VERDOPPELN",
+      "pull_lever": "Hebel ziehen, um zu drehen"
     }
   },
   "narrative": {
