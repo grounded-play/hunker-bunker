@@ -565,6 +565,7 @@ def free_comfy_vram():
         if not queue.get('queue_running') and not queue.get('queue_pending'):
             comfy_json('/free', {'unload_models': True, 'free_memory': True})
     except OSError:
+        # ComfyUI server is offline or unreachable; ignore since freeing VRAM is best-effort.
         pass
 
 
