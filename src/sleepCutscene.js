@@ -7,12 +7,13 @@ import { SHIPPED_MOTION_CLIPS } from './cinematics/shippedMotionClips.js';
 
 export const SLEEP_CUTSCENE_STYLES = Object.freeze(['bunker', 'camp', 'cryo', 'hive', 'squad']);
 
-// Videos added to public/cutscenes/ as sleep-<style>.webm (+ .mp4, -poster.jpg);
-// the pipeline-rendered styles come from SHIPPED_MOTION_CLIPS. Until a style's
+// Videos added to public/cutscenes/ as sleep-<style>.webm (+ .mp4, -poster.jpg),
+// or sleep-<style>-<class> when the film shows the player's own class model;
+// the pipeline-rendered ones come from SHIPPED_MOTION_CLIPS. Until a style's
 // video ships, main.js plays a short night interstitial.
 export const SHIPPED_SLEEP_CUTSCENES = Object.freeze(new Set([
     'sleep-bunker',
-    ...SLEEP_CUTSCENE_STYLES.map((style) => `sleep-${style}`).filter((id) => SHIPPED_MOTION_CLIPS.has(id))
+    ...[...SHIPPED_MOTION_CLIPS].filter((id) => id.startsWith('sleep-'))
 ]));
 
 /** Which sleep a rest gets, by where and how the operator sleeps. */
@@ -24,10 +25,13 @@ export function pickSleepCutsceneStyle({ campId = null, coopPlayers = 0, hiveBon
     return 'bunker';
 }
 
-export function sleepCutsceneBase(style) {
-    return `sleep-${SLEEP_CUTSCENE_STYLES.includes(style) ? style : 'bunker'}`;
+/** The film for a style: the player's class cut when it has shipped, else the shared one. */
+export function sleepCutsceneBase(style, playerClass = null) {
+    const base = `sleep-${SLEEP_CUTSCENE_STYLES.includes(style) ? style : 'bunker'}`;
+    const classCut = playerClass ? `${base}-${String(playerClass).toLowerCase()}` : null;
+    return classCut && SHIPPED_SLEEP_CUTSCENES.has(classCut) ? classCut : base;
 }
 
-export function isSleepCutsceneShipped(style) {
-    return SHIPPED_SLEEP_CUTSCENES.has(sleepCutsceneBase(style));
+export function isSleepCutsceneShipped(style, playerClass = null) {
+    return SHIPPED_SLEEP_CUTSCENES.has(sleepCutsceneBase(style, playerClass));
 }

@@ -5,7 +5,11 @@ Jobs come from scripts/cinematics/clip-jobs.json (build-clip-jobs.mjs).
 Everything runs on this machine against the ComfyUI server at
 http://127.0.0.1:8188 with locally installed models:
 
-  still   FLUX.2 klein 4B (distilled) first frame for a job without key art
+  still   first-frame candidates: FLUX.2 klein 4B guided by
+          the player class reference image, or Z-Image Turbo (--model zimage,
+          text only)
+  last    last-frame candidates guided by the approved first frame and the
+          same player reference; the chosen endpoint is last_frame.png
   clip    image-to-video take: LTX-Video 2B 0.9.8 distilled (default, fits
           8 GB) or Wan 2.2 TI2V 5B (--model wan, slower, offloads)
   sound   layered sound design for a job (AudioGen; scripts/cinematics/
@@ -83,8 +87,9 @@ def upload_image(path):
     return result['name']
 
 
-def run_workflow(workflow, label):
-    queued = comfy_json('/prompt', {'prompt': workflow, 'client_id': f'hb-cinematics-{uuid.uuid4().hex[:8]}'})
+def run_workflow(workflow, label, front=False):
+    """Queue a workflow and wait for its images; `front` jumps a running batch's queue."""
+    queued = comfy_json('/prompt', {'prompt': workflow, 'client_id': f'hb-cinematics-{uuid.uuid4().hex[:8]}', 'front': front})
     prompt_id = queued['prompt_id']
     started = time.time()
     print(f'[comfy] {label}: queued {prompt_id}', flush=True)
@@ -108,8 +113,9 @@ def run_workflow(workflow, label):
 
 # ── Workflows (API format, from ComfyUI's bundled templates) ────────────
 
-def flux2_klein_still(prompt, seed, width=1280, height=720, prefix='hunker_cine/still'):
-    return {
+def flux2_klein_still(prompt, seed, width=1280, height=720, prefix='hunker_cine/still', references=()):
+    """Text-to-image, or reference-guided when `references` (uploaded image names) are given."""
+    workflow = {
         '1': {'class_type': 'UNETLoader', 'inputs': {'unet_name': 'flux-2-klein-4b.safetensors', 'weight_dtype': 'default'}},
         '2': {'class_type': 'CLIPLoader', 'inputs': {'clip_name': 'qwen_3_4b.safetensors', 'type': 'flux2', 'device': 'default'}},
         '3': {'class_type': 'VAELoader', 'inputs': {'vae_name': 'flux2-vae.safetensors'}},
@@ -123,6 +129,33 @@ def flux2_klein_still(prompt, seed, width=1280, height=720, prefix='hunker_cine/
         '11': {'class_type': 'SamplerCustomAdvanced', 'inputs': {'noise': ['9', 0], 'guider': ['6', 0], 'sampler': ['8', 0], 'sigmas': ['7', 0], 'latent_image': ['10', 0]}},
         '12': {'class_type': 'VAEDecode', 'inputs': {'samples': ['11', 0], 'vae': ['3', 0]}},
         '13': {'class_type': 'SaveImage', 'inputs': {'images': ['12', 0], 'filename_prefix': prefix}},
+    }
+    positive = ['4', 0]
+    for index, name in enumerate(references):
+        node = f'r{index}'
+        workflow[f'{node}_load'] = {'class_type': 'LoadImage', 'inputs': {'image': name}}
+        workflow[f'{node}_scale'] = {'class_type': 'ImageScaleToTotalPixels', 'inputs': {'image': [f'{node}_load', 0], 'upscale_method': 'lanczos', 'megapixels': 1.0, 'resolution_steps': 16}}
+        workflow[f'{node}_latent'] = {'class_type': 'VAEEncode', 'inputs': {'pixels': [f'{node}_scale', 0], 'vae': ['3', 0]}}
+        workflow[f'{node}_ref'] = {'class_type': 'ReferenceLatent', 'inputs': {'conditioning': positive, 'latent': [f'{node}_latent', 0]}}
+        positive = [f'{node}_ref', 0]
+    workflow['6']['inputs']['positive'] = positive
+    return workflow
+
+
+def zimage_still(prompt, seed, width=1280, height=720, prefix='hunker_cine/still'):
+    """Z-Image Turbo (Apache-2.0): fast text-only alternate, without references."""
+    return {
+        '1': {'class_type': 'UNETLoader', 'inputs': {'unet_name': 'z_image_turbo_int8_convrot.safetensors', 'weight_dtype': 'default'}},
+        '2': {'class_type': 'CLIPLoader', 'inputs': {'clip_name': 'qwen_3_4b.safetensors', 'type': 'lumina2', 'device': 'default'}},
+        '3': {'class_type': 'VAELoader', 'inputs': {'vae_name': 'z_image_ae.safetensors'}},
+        '4': {'class_type': 'CLIPTextEncode', 'inputs': {'text': prompt, 'clip': ['2', 0]}},
+        '5': {'class_type': 'ConditioningZeroOut', 'inputs': {'conditioning': ['4', 0]}},
+        '6': {'class_type': 'ModelSamplingAuraFlow', 'inputs': {'model': ['1', 0], 'shift': 3.0}},
+        '7': {'class_type': 'EmptySD3LatentImage', 'inputs': {'width': width, 'height': height, 'batch_size': 1}},
+        '8': {'class_type': 'KSampler', 'inputs': {'model': ['6', 0], 'seed': seed, 'steps': 8, 'cfg': 1.0, 'sampler_name': 'res_multistep', 'scheduler': 'simple',
+                                                   'positive': ['4', 0], 'negative': ['5', 0], 'latent_image': ['7', 0], 'denoise': 1.0}},
+        '9': {'class_type': 'VAEDecode', 'inputs': {'samples': ['8', 0], 'vae': ['3', 0]}},
+        '10': {'class_type': 'SaveImage', 'inputs': {'images': ['9', 0], 'filename_prefix': prefix}},
     }
 
 
@@ -162,6 +195,33 @@ def wan22_i2v(image_name, prompt, negative, seed, frames, width, height, steps, 
     }
 
 
+def with_loras(workflow, loras):
+    """Chain LoRAs (name, strength) after the UNETLoader in node '1' and rewire its users."""
+    if not loras:
+        return workflow
+    if workflow['1']['class_type'] != 'UNETLoader':
+        raise SystemExit('LoRAs need a UNETLoader workflow (flux, zimage, wan)')
+    users = [inputs for inputs in (node['inputs'] for node in workflow.values()) if inputs]
+    previous = ['1', 0]
+    for index, (name, strength) in enumerate(loras):
+        workflow[f'lora{index}'] = {'class_type': 'LoraLoaderModelOnly', 'inputs': {'model': previous, 'lora_name': name, 'strength_model': strength}}
+        previous = [f'lora{index}', 0]
+    for inputs in users:
+        for key, value in inputs.items():
+            if value == ['1', 0]:
+                inputs[key] = previous
+    return workflow
+
+
+def parse_loras(values):
+    """`--lora file.safetensors:0.8` (strength defaults to 1.0)."""
+    loras = []
+    for value in values or []:
+        name, _, strength = value.partition(':')
+        loras.append((name if name.endswith('.safetensors') else f'{name}.safetensors', float(strength or 1.0)))
+    return loras
+
+
 # ── Jobs and files ──────────────────────────────────────────────────────
 
 def load_jobs():
@@ -184,16 +244,21 @@ def frame_count(duration, step):
     return int(math.ceil((duration * FPS - 1) / step)) * step + 1
 
 
-def first_frame_for(job, size):
-    """The job's first frame as a PNG cropped/scaled to the model's size."""
+def first_frame_source(job):
+    """Return the approved first-frame source before model-specific resizing."""
     folder = job_dir(job['id'])
     if job['firstFrame'].get('image'):
-        source = PUBLIC / job['firstFrame']['image'].lstrip('/')
-    else:
-        chosen = folder / 'first_frame.png'
-        if not chosen.exists():
-            raise SystemExit(f"{job['id']}: no first frame yet; run `still {job['id']}` and copy the take you want to {chosen}")
-        source = chosen
+        return PUBLIC / job['firstFrame']['image'].lstrip('/')
+    chosen = folder / 'first_frame.png'
+    if not chosen.exists():
+        raise SystemExit(f"{job['id']}: no first frame yet; run `still {job['id']}` and copy the take you want to {chosen}")
+    return chosen
+
+
+def first_frame_for(job, size):
+    """The approved first frame cropped/scaled to the model's input size."""
+    folder = job_dir(job['id'])
+    source = first_frame_source(job)
     out = folder / f'first_frame_{size[0]}x{size[1]}.png'
     width, height = size
     run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(source),
@@ -203,7 +268,17 @@ def first_frame_for(job, size):
 
 def motion_prompt(style, job):
     ending = f" The shot ends on {job['lastFrame']}" if job.get('lastFrame') else ''
-    return f"{job['action'].rstrip('. ')}.{ending} {style['motionSuffix']}"
+    identity = f" {job['identityLock']}" if job.get('identityLock') else ''
+    return (f"{style['prefix']} {job['action'].rstrip('. ')}.{ending}{identity} "
+            f"{style['continuityLock']} {style['motionSuffix']} {style['suffix']}")
+
+
+def frame_prompt(style, job, endpoint):
+    """Compose scene content with the versioned house and identity locks."""
+    scene = job['firstFrame']['prompt'] if endpoint == 'first' else job.get('lastFrame', '')
+    identity = f" {job['identityLock']}" if job.get('identityLock') else ''
+    continuity = f" {style['continuityLock']}" if endpoint == 'last' else ''
+    return f"{style['prefix']} {scene} {style['suffix']}{identity}{continuity}".strip()
 
 
 def next_take(folder, prefix):
@@ -213,22 +288,69 @@ def next_take(folder, prefix):
 
 # ── Commands ────────────────────────────────────────────────────────────
 
+def reference_png(path):
+    """A character reference flattened onto neutral grey (the masters are keyed RGBA)."""
+    source = ROOT / path
+    out = MASTERS / '_references' / f'{source.stem}.png'
+    if not out.exists() or out.stat().st_mtime < source.stat().st_mtime:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'color=c=0x808080:s=16x16', '-i', str(source),
+             '-filter_complex', '[0][1]scale2ref[bg][fg];[bg][fg]overlay=format=auto,format=rgb24', '-frames:v', '1', str(out)])
+    return out
+
+
 def cmd_still(args):
     style, jobs = load_jobs()
     job = jobs[args.job]
     if not job['firstFrame'].get('prompt'):
         raise SystemExit(f"{job['id']} already has key art: {job['firstFrame']['image']}")
     folder = job_dir(job['id'])
-    prompt = f"{style['prefix']} {job['firstFrame']['prompt']} {style['suffix']}"
+    prompt = frame_prompt(style, job, 'first')
+    references = [upload_image(reference_png(path)) for path in job['firstFrame'].get('references', [])] if args.model == 'flux' else []
+    loras = parse_loras(args.lora)
+    if args.prompt_extra:
+        prompt = f'{prompt} {args.prompt_extra}'
     for _ in range(args.takes):
         seed = args.seed if args.seed is not None else random.randrange(2**31)
-        frames = run_workflow(flux2_klein_still(prompt, seed, prefix=f"hunker_cine/{job['id']}_still"), f"{job['id']} still")
+        prefix = f"hunker_cine/{job['id']}_still"
+        workflow = flux2_klein_still(prompt, seed, prefix=prefix, references=references) if args.model == 'flux' else zimage_still(prompt, seed, prefix=prefix)
+        workflow = with_loras(workflow, loras)
+        frames = run_workflow(workflow, f"{job['id']} still ({args.model})", front=True)
         index = len(list(folder.glob('still_*.png'))) + 1
         out = folder / f'still_{index}.png'
         shutil.copy(frames[0], out)
-        out.with_suffix('.json').write_text(json.dumps({'job': job['id'], 'model': 'flux-2-klein-4b', 'seed': seed, 'prompt': prompt}, indent=2) + '\n')
+        out.with_suffix('.json').write_text(json.dumps({'job': job['id'], 'model': 'flux-2-klein-4b' if args.model == 'flux' else 'z-image-turbo',
+                                                        'seed': seed, 'prompt': prompt, 'references': job['firstFrame'].get('references', []) if references else [],
+                                                        'loras': loras}, indent=2) + '\n')
         print(f'[still] {out.relative_to(ROOT)}')
     print(f"[still] pick one: cp {folder.relative_to(ROOT)}/still_<n>.png {folder.relative_to(ROOT)}/first_frame.png")
+
+
+def cmd_last(args):
+    """Generate a designed endpoint while carrying first-frame composition and identity."""
+    style, jobs = load_jobs()
+    job = jobs[args.job]
+    if not job.get('lastFrame'):
+        raise SystemExit(f"{job['id']} has no last-frame brief")
+    folder = job_dir(job['id'])
+    prompt = frame_prompt(style, job, 'last')
+    reference_paths = [first_frame_for(job, (1280, 720)), *[reference_png(path) for path in job['firstFrame'].get('references', [])]]
+    references = [upload_image(path) for path in reference_paths] if args.model == 'flux' else []
+    for _ in range(args.takes):
+        seed = args.seed if args.seed is not None else random.randrange(2**31)
+        prefix = f"hunker_cine/{job['id']}_last"
+        workflow = flux2_klein_still(prompt, seed, prefix=prefix, references=references) if args.model == 'flux' else zimage_still(prompt, seed, prefix=prefix)
+        workflow = with_loras(workflow, loras)
+        frames = run_workflow(workflow, f"{job['id']} last ({args.model})", front=True)
+        index = len(list(folder.glob('last_*.png'))) + 1
+        out = folder / f'last_{index}.png'
+        shutil.copy(frames[0], out)
+        out.with_suffix('.json').write_text(json.dumps({
+            'job': job['id'], 'endpoint': 'last', 'model': 'flux-2-klein-4b' if args.model == 'flux' else 'z-image-turbo',
+            'seed': seed, 'prompt': prompt, 'references': [str(path.relative_to(ROOT)) for path in reference_paths]
+        }, indent=2) + '\n')
+        print(f'[last] {out.relative_to(ROOT)}')
+    print(f"[last] pick one: cp {folder.relative_to(ROOT)}/last_<n>.png {folder.relative_to(ROOT)}/last_frame.png")
 
 
 def cmd_clip(args):
@@ -252,7 +374,10 @@ def cmd_clip(args):
         builder = ltxv_i2v if args.model == 'ltxv' else wan22_i2v
         steps = args.steps or (8 if args.model == 'ltxv' else 20)
         started = time.time()
-        pngs = sorted(run_workflow(builder(image, prompt, style['negative'], seed, frames, width, height, steps, prefix), f'{job_id} {args.model} take {take}'))
+        loras = parse_loras(getattr(args, 'lora', None)) or [tuple(entry) for entry in job.get('loras', {}).get(args.model, [])]
+        if getattr(args, 'prompt_extra', None):
+            prompt = f'{prompt} {args.prompt_extra}'
+        pngs = sorted(run_workflow(with_loras(builder(image, prompt, style['negative'], seed, frames, width, height, steps, prefix), loras), f'{job_id} {args.model} take {take}'))
         out = folder / f'take_{args.model}_{take}.mp4'
         listing = folder / f'.frames_{take}.txt'
         listing.write_text(''.join(f"file '{p}'\nduration {1 / FPS:.6f}\n" for p in pngs))
@@ -263,7 +388,7 @@ def cmd_clip(args):
         run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(out), '-vf', f'select=not(mod(n\\,{max(1, len(pngs) // 6)})),scale=480:-1,tile=6x1', '-frames:v', '1', str(sheet)])
         out.with_suffix('.json').write_text(json.dumps({
             'job': job_id, 'model': args.model, 'take': take, 'seed': seed, 'steps': steps, 'frames': len(pngs),
-            'size': [width, height], 'prompt': prompt, 'negative': style['negative'], 'renderSeconds': round(time.time() - started)
+            'size': [width, height], 'prompt': prompt, 'negative': style['negative'], 'loras': loras, 'renderSeconds': round(time.time() - started)
         }, indent=2) + '\n')
         for png in pngs:
             png.unlink(missing_ok=True)
@@ -314,7 +439,18 @@ def cmd_encode(args):
         bed_gain = float(mix.get('bedGainDb', -5))
     graph = audio_graph(duration, music_gain, bool(bed_take), bed_gain)
     sources = ['-i', str(take), '-i', str(music)] + (['-i', str(bed_take / 'bed.wav')] if bed_take else [])
-    video = 'scale=1280:720:flags=lanczos,fps=24,format=yuv420p'
+    endpoint = job_dir(job['id']) / 'last_frame.png'
+    endpoint_locked = endpoint.exists() and not getattr(args, 'no_end_lock', False)
+    endpoint_index = 3 if bed_take else 2
+    if endpoint_locked:
+        sources += ['-loop', '1', '-t', f'{duration:.3f}', '-i', str(endpoint)]
+        blend = min(0.5, duration / 4)
+        video_graph = (f'[0:v]scale=1280:720:flags=lanczos,fps=24,format=yuv420p,settb=AVTB[motion];'
+                       f'[{endpoint_index}:v]scale=1280:720:force_original_aspect_ratio=increase:flags=lanczos,'
+                       f'crop=1280:720,fps=24,format=yuv420p,settb=AVTB[end];'
+                       f'[motion][end]xfade=transition=fade:duration={blend:.3f}:offset={duration - blend:.3f}[vout]')
+    else:
+        video_graph = '[0:v]scale=1280:720:flags=lanczos,fps=24,format=yuv420p[vout]'
     preview = job_dir(job['id']) / 'preview'
     label = f"{args.take}{'_' + bed_take.name if bed_take else ''}"
     for kind, target in job['targets'].items():
@@ -325,9 +461,10 @@ def cmd_encode(args):
             continue
         codec = (['-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '33', '-row-mt', '1', '-c:a', 'libopus', '-b:a', '128k'] if kind == 'webm'
                  else ['-c:v', 'libx264', '-crf', '20', '-preset', 'slow', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart'])
-        run(['ffmpeg', '-y', '-loglevel', 'error', *sources, '-filter_complex', f'[0:v]{video}[vout];{graph}',
+        run(['ffmpeg', '-y', '-loglevel', 'error', *sources, '-filter_complex', f'{video_graph};{graph}',
              '-map', '[vout]', '-map', '[aout]', '-t', f'{duration:.3f}', *codec, str(out)])
-        print(f'[encode] {out.relative_to(ROOT)} ({out.stat().st_size // 1024} KB, {"music + " + bed_take.name if bed_take else "music only"})')
+        endpoint_note = ', approved last frame' if endpoint_locked else ''
+        print(f'[encode] {out.relative_to(ROOT)} ({out.stat().st_size // 1024} KB, {"music + " + bed_take.name if bed_take else "music only"}{endpoint_note})')
     if not args.preview:
         mark_shipped(job['id'])
         print(f"[encode] {job['id']} is live ({SHIPPED.relative_to(ROOT)})")
@@ -395,21 +532,30 @@ def cmd_status(args):
         folder = MASTERS / job['id']
         takes = sorted(p.stem for p in folder.glob('take_*.mp4')) if folder.exists() else []
         first = 'key art' if job['firstFrame'].get('image') else ('chosen' if (folder / 'first_frame.png').exists() else 'needs still')
+        last = 'chosen' if (folder / 'last_frame.png').exists() else 'needs still'
         encoded = all((PUBLIC / t.lstrip('/')).exists() for t in job['targets'].values())
         sound = sound_take(job['id'])
-        print(f"{job['id']:<28} {job['kind']:<10} first frame: {first:<11} takes: {', '.join(takes) or '-':<30} sound: {sound.name if sound else '-':<8} encoded: {'yes' if encoded else 'no'}")
+        print(f"{job['id']:<28} {job['kind']:<10} first: {first:<11} last: {last:<11} takes: {', '.join(takes) or '-':<30} sound: {sound.name if sound else '-':<8} encoded: {'yes' if encoded else 'no'}")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest='command', required=True)
     s = sub.add_parser('still'); s.add_argument('job'); s.add_argument('--takes', type=int, default=3); s.add_argument('--seed', type=int)
+    s.add_argument('--model', choices=['flux', 'zimage'], default='flux', help='flux: FLUX.2 klein with the class reference; zimage: Z-Image Turbo, text only')
+    s.add_argument('--lora', action='append', help='models/loras file[:strength], repeatable')
+    s.add_argument('--prompt-extra', help='words appended to the frame prompt (e.g. a LoRA trigger)')
+    last = sub.add_parser('last'); last.add_argument('job'); last.add_argument('--takes', type=int, default=3); last.add_argument('--seed', type=int)
+    last.add_argument('--model', choices=['flux', 'zimage'], default='flux', help='flux preserves first-frame and character references; zimage is text only')
     c = sub.add_parser('clip'); c.add_argument('job', help="a job id, or 'all'"); c.add_argument('--model', choices=sorted(MODELS), default='ltxv')
     c.add_argument('--seed', type=int); c.add_argument('--steps', type=int); c.add_argument('--max-seconds', type=float)
+    c.add_argument('--lora', action='append', help="models/loras file[:strength], repeatable (default: the job's loras)")
+    c.add_argument('--prompt-extra', help='words appended to the motion prompt (e.g. a LoRA trigger)')
     e = sub.add_parser('encode'); e.add_argument('job'); e.add_argument('take', help='take file stem, e.g. take_ltxv_2')
     e.add_argument('--preview', action='store_true', help='write next to the take for review, not into public/')
     e.add_argument('--sound', help='sound take to lay under the music, e.g. take_2 (default: newest)')
     e.add_argument('--no-sound', action='store_true', help='music only')
+    e.add_argument('--no-end-lock', action='store_true', help='do not blend to an approved last_frame.png endpoint')
     so = sub.add_parser('sound'); so.add_argument('job', help="a job id, or 'all'"); so.add_argument('--seed', type=int)
     m = sub.add_parser('make'); m.add_argument('job'); m.add_argument('--model', choices=sorted(MODELS), default='ltxv')
     m.add_argument('--seed', type=int); m.add_argument('--max-seconds', type=float)
@@ -418,7 +564,7 @@ def main():
     b.add_argument('--redo', action='store_true', help='render a new take even if the job has one or is live')
     sub.add_parser('status')
     args = parser.parse_args()
-    {'still': cmd_still, 'clip': cmd_clip, 'encode': cmd_encode, 'sound': cmd_sound, 'make': cmd_make, 'batch': cmd_batch, 'status': cmd_status}[args.command](args)
+    {'still': cmd_still, 'last': cmd_last, 'clip': cmd_clip, 'encode': cmd_encode, 'sound': cmd_sound, 'make': cmd_make, 'batch': cmd_batch, 'status': cmd_status}[args.command](args)
 
 
 if __name__ == '__main__':

@@ -12,7 +12,10 @@ describe('motion clip jobs from the cinematics audit', () => {
         const stillSides = Object.values(SIDE_STORY_INTERSTITIALS).filter((spec) => spec.status === 'still').map((spec) => spec.id);
         for (const id of stillSides) expect(byId[id]?.kind, id).toBe('side-story');
         for (const id of ['33', '34', '35', '36', '37', '38']) expect(byId[`card_${id}`]?.kind).toBe('song-card');
-        for (const id of ['sleep-camp', 'sleep-cryo', 'sleep-hive', 'sleep-squad']) expect(byId[id]?.kind).toBe('sleep');
+        for (const shot of ['camp', 'cryo', 'hive']) {
+            for (const cls of ['scout', 'tank', 'engineer']) expect(byId[`sleep-${shot}-${cls}`]?.kind).toBe('sleep');
+        }
+        expect(byId['sleep-squad']?.kind).toBe('sleep');
     });
 
     it('starts from the key art the game shows and lands where the runtime looks', () => {
@@ -21,19 +24,35 @@ describe('motion clip jobs from the cinematics audit', () => {
         expect(card.targets.webm).toBe('/interstitials/motion/int_33_the_cave_was_breathing_motion_v1.webm');
         expect(card.audio).toBe(getSongInterstitial('33').audio);
         expect(byId.kaelen_diagnostic_cradle.firstFrame.image).toBe(SIDE_STORY_INTERSTITIALS.kaelen_diagnostic_cradle.image);
-        expect(byId['sleep-cryo'].targets).toEqual({
-            webm: '/cutscenes/sleep-cryo.webm', mp4: '/cutscenes/sleep-cryo.mp4', poster: '/cutscenes/sleep-cryo-poster.jpg'
+        expect(byId['sleep-cryo-tank'].targets).toEqual({
+            webm: '/cutscenes/sleep-cryo-tank.webm', mp4: '/cutscenes/sleep-cryo-tank.mp4', poster: '/cutscenes/sleep-cryo-tank-poster.jpg'
         });
-        expect(byId['sleep-cryo'].firstFrame.prompt).toMatch(/cryo pod/);
+        expect(byId['sleep-cryo-tank'].firstFrame.prompt).toMatch(/cryo pod.*the Tank from the reference image/);
     });
 
-    it('keeps every prompt free of named artists and carries a usable action', () => {
+    it('puts the player\'s own class model in every sleep frame', () => {
+        for (const job of built.jobs.filter((entry) => entry.kind === 'sleep')) {
+            expect(job.firstFrame.prompt, job.id).not.toMatch(/\{\w+\}/);
+            expect(job.firstFrame.references.length, job.id).toBeGreaterThan(0);
+            for (const reference of job.firstFrame.references) expect(reference, job.id).toMatch(/front-idle-master\.png$/);
+        }
+        expect(byId['sleep-hive-scout'].firstFrame.references).toEqual(['art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png']);
+        expect(byId['sleep-squad'].firstFrame.references).toHaveLength(3);
+    });
+
+    it('carries the art bible look and a usable action', () => {
         for (const job of built.jobs) {
             expect(job.action, job.id).toBeTruthy();
-            expect(JSON.stringify(job), job.id).not.toMatch(/Giger/i);
             expect(job.durationSec, job.id).toBeGreaterThanOrEqual(5);
         }
-        expect(built.style.prefix).not.toMatch(/Giger/i);
+        expect(built.style.prefix).toMatch(/Nordic cathedral biomechanical horror/);
+        expect(built.style.prefix).not.toMatch(/Giger|Event Horizon/i);
+        expect(built.style.characterLock).toMatch(/helmet silhouette/);
+        expect(built.style.continuityLock).toMatch(/subject count/);
+        expect(JSON.stringify(built.style)).not.toMatch(/Giger|Event Horizon/i);
+        for (const job of built.jobs.filter((entry) => entry.kind === 'sleep')) {
+            expect(job.identityLock, job.id).toBe(built.style.characterLock);
+        }
     });
 
     it('parses the audit entry and table formats', () => {
@@ -46,7 +65,7 @@ describe('motion clip jobs from the cinematics audit', () => {
     it('gives every clip a sound design whose layers fit inside the clip', () => {
         const design = JSON.parse(fs.readFileSync(path.join(path.dirname(AUDIT_DOC), '../../scripts/cinematics/sound-layers.json'), 'utf8'));
         for (const job of built.jobs) {
-            const spec = design.jobs[job.id];
+            const spec = design.jobs[job.soundDesign ?? job.id];
             expect(spec, job.id).toBeTruthy();
             expect(spec.layers.length, job.id).toBeGreaterThanOrEqual(3);
             const ids = new Set();
@@ -58,7 +77,7 @@ describe('motion clip jobs from the cinematics audit', () => {
                 expect(layer.gainDb, `${job.id}.${layer.id}`).toBeLessThanOrEqual(0);
             }
         }
-        expect(Object.keys(design.jobs).sort()).toEqual(built.jobs.map((job) => job.id).sort());
+        expect(Object.keys(design.jobs).sort()).toEqual([...new Set(built.jobs.map((job) => job.soundDesign ?? job.id))].sort());
     });
 });
 

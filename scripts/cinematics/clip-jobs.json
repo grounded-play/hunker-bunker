@@ -1,10 +1,12 @@
 {
   "source": "docs/planning/camp-interaction-and-cinematics-audit-2026-10-16.md",
   "style": {
-    "prefix": "Hunker Bunker key art, 16:9 cinematic still, deep-space corporate industrial horror with restrained biomechanical ribbing and bone-ivory machinery:",
-    "suffix": "Soot-black iron, bone ivory, bruised maroon tissue only at seams, amber practical light, sparse teal diagnostics; mature and suggestive, never explicit; adults only; no readable text, logos or watermarks.",
-    "motionSuffix": "Single continuous shot, cinematic camera, consistent characters and lighting, subtle film grain, no cuts, no text.",
-    "negative": "low quality, worst quality, deformed, distorted, disfigured, motion smear, motion artifacts, fused fingers, bad anatomy, extra limbs, flicker, jitter, morphing face, text, watermark, logo, subtitles, cartoon"
+    "prefix": "Hunker Bunker cinematic, 16:9, mature Nordic cathedral biomechanical horror: monumental stepped granite, disciplined blackened-iron bindings, carved bone arches and restrained Jugendstil interlace invaded from seams by an internal living system;",
+    "suffix": "near-black exposure, one motivated amber practical, sparse teal diagnostics, cold floor fog, wet reflections, bruised maroon only inside ruptures, tactile film grain, severe graphic composition; intimate unease through scale, rhythm and surface tension rather than literal anatomy; all depicted humans are adults; no readable text, logos or watermarks.",
+    "characterLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
+    "continuityLock": "CONTINUITY LOCK: preserve subject count, screen direction, set geometry, costume damage, prop placement, palette and key-light direction from the approved first frame; only described actions may change state.",
+    "motionSuffix": "Single continuous shot with one camera move and one primary action. Natural weight and restrained secondary motion. Hold the resolved final composition for twelve frames. No cuts, no new subjects, no camera teleport, no text.",
+    "negative": "low quality, deformed anatomy, extra limbs, fused fingers, duplicated subject, identity drift, different armour, open helmet, bare face, costume colour shift, prop spawning, disappearing objects, melting geometry, rubber motion, motion smear, flicker, jitter, morphing face, exposure pumping, camera jump, text, watermark, logo, subtitles, cartoon, literal genital anatomy, explicit sexual activity"
   },
   "jobs": [
     {
@@ -329,66 +331,220 @@
       }
     },
     {
-      "id": "sleep-camp",
+      "id": "sleep-camp-scout",
       "kind": "sleep",
-      "title": "sleep-camp",
+      "title": "sleep-camp-scout",
+      "soundDesign": "sleep-camp",
       "firstFrame": {
-        "prompt": "a survivor bunkhouse at night, workers asleep in quilted rolls beside warm radiator pipes, a lantern burning low, the operator sitting against a locker in armour."
+        "prompt": "Low wide shot of a survivors' camp in a vast dark bunker hall, an oil-drum fire in the centre throwing flickering orange light over a ring of bedrolls, supply crates and sandbag walls, the Scout from the reference image, a slim operator in glossy bone-white armour plates over a black bodysuit, a sealed rounded white helmet with a black visor, an orange light on one knee and a cyan light on the other, sitting on a bedroll, helmet sealed, warming gloved hands at the fire, two adult survivors in patched coats and hoods silhouetted across the flames with their faces in shadow, laundry strung between pipes, monumental bone arches bound in black iron, with a sparse living cable system visible only where the bindings have split, vanishing into black overhead, sparks rising.",
+        "references": [
+          "art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png"
+        ]
       },
-      "action": "a slow glide past the lantern; a resident lays a blanket over the operator; the lantern dims to nothing",
-      "lastFrame": "the bunkhouse dark, the lantern out, a blanket over the sleeping operator's shoulders, frost on the shutter.",
-      "durationSec": 7,
+      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
+      "action": "Slow quarter-orbit around the fire, ending high and wide over the camp. The operator lies back on the bedroll. A survivor feeds a broken chair leg into the flames, sending up a short burst of sparks, then lies down. The firelight gradually dims to an ember glow; shadows lengthen. Fog creeps along the floor. Fade to black.",
+      "lastFrame": "the same camp asleep, the fire burned down to a bed of glowing embers, the operator a dark shape curled on the bedroll, the survivors asleep under blankets, a single sentry silhouetted at the sandbag barricade, fog creeping in under the barricade.",
+      "durationSec": 8,
       "audio": "/cutscenes/sleep-bunker.webm",
       "targets": {
-        "webm": "/cutscenes/sleep-camp.webm",
-        "mp4": "/cutscenes/sleep-camp.mp4",
-        "poster": "/cutscenes/sleep-camp-poster.jpg"
+        "webm": "/cutscenes/sleep-camp-scout.webm",
+        "mp4": "/cutscenes/sleep-camp-scout.mp4",
+        "poster": "/cutscenes/sleep-camp-scout-poster.jpg"
       }
     },
     {
-      "id": "sleep-cryo",
+      "id": "sleep-camp-tank",
       "kind": "sleep",
-      "title": "sleep-cryo",
+      "title": "sleep-camp-tank",
+      "soundDesign": "sleep-camp",
       "firstFrame": {
-        "prompt": "an open cryo pod rimed with frost, nitrogen vapour spilling over the edge, the operator lying back on the gel cushion."
+        "prompt": "Low wide shot of a survivors' camp in a vast dark bunker hall, an oil-drum fire in the centre throwing flickering orange light over a ring of bedrolls, supply crates and sandbag walls, the Tank from the reference image, a huge hulking operator in heavy weathered olive-brown power armour with massive rounded pauldrons, a sealed helmet with a narrow amber visor slit, small amber and cyan status lights, sitting on a bedroll, helmet sealed, warming gloved hands at the fire, two adult survivors in patched coats and hoods silhouetted across the flames with their faces in shadow, laundry strung between pipes, monumental bone arches bound in black iron, with a sparse living cable system visible only where the bindings have split, vanishing into black overhead, sparks rising.",
+        "references": [
+          "art/source/art-remaster/sprite-v4/tank/identity/Tank.front-idle-master.png"
+        ]
       },
-      "action": "the canopy swings down and seals with a hiss; frost spreads across the glass; the heartbeat light slows",
-      "lastFrame": "the sealed pod alone in a frosted vault, one green heartbeat light blinking.",
-      "durationSec": 7,
+      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
+      "action": "Slow quarter-orbit around the fire, ending high and wide over the camp. The operator lies back on the bedroll. A survivor feeds a broken chair leg into the flames, sending up a short burst of sparks, then lies down. The firelight gradually dims to an ember glow; shadows lengthen. Fog creeps along the floor. Fade to black.",
+      "lastFrame": "the same camp asleep, the fire burned down to a bed of glowing embers, the operator a dark shape curled on the bedroll, the survivors asleep under blankets, a single sentry silhouetted at the sandbag barricade, fog creeping in under the barricade.",
+      "durationSec": 8,
       "audio": "/cutscenes/sleep-bunker.webm",
       "targets": {
-        "webm": "/cutscenes/sleep-cryo.webm",
-        "mp4": "/cutscenes/sleep-cryo.mp4",
-        "poster": "/cutscenes/sleep-cryo-poster.jpg"
+        "webm": "/cutscenes/sleep-camp-tank.webm",
+        "mp4": "/cutscenes/sleep-camp-tank.mp4",
+        "poster": "/cutscenes/sleep-camp-tank-poster.jpg"
       }
     },
     {
-      "id": "sleep-hive",
+      "id": "sleep-camp-engineer",
       "kind": "sleep",
-      "title": "sleep-hive",
+      "title": "sleep-camp-engineer",
+      "soundDesign": "sleep-camp",
       "firstFrame": {
-        "prompt": "the operator curled in a warm hive alcove of pale ribbed tissue, faint amber pulse in the walls, helmet beside them."
+        "prompt": "Low wide shot of a survivors' camp in a vast dark bunker hall, an oil-drum fire in the centre throwing flickering orange light over a ring of bedrolls, supply crates and sandbag walls, the Engineer from the reference image, a lean operator in tan and gunmetal utility armour with chunky forearm tool braces, a sealed tan helmet with a glowing cyan visor, an orange light on one knee and a cyan light on the other, sitting on a bedroll, helmet sealed, warming gloved hands at the fire, two adult survivors in patched coats and hoods silhouetted across the flames with their faces in shadow, laundry strung between pipes, monumental bone arches bound in black iron, with a sparse living cable system visible only where the bindings have split, vanishing into black overhead, sparks rising.",
+        "references": [
+          "art/source/art-remaster/sprite-v4/engineer/identity/Engineer.front-idle-master.png"
+        ]
       },
-      "action": "the alcove's ribs fold gently inward; the pulse slows to match breathing; the light dims",
-      "lastFrame": "the alcove closed softly around the sleeping operator like cupped hands, the amber pulse slow and even.",
+      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
+      "action": "Slow quarter-orbit around the fire, ending high and wide over the camp. The operator lies back on the bedroll. A survivor feeds a broken chair leg into the flames, sending up a short burst of sparks, then lies down. The firelight gradually dims to an ember glow; shadows lengthen. Fog creeps along the floor. Fade to black.",
+      "lastFrame": "the same camp asleep, the fire burned down to a bed of glowing embers, the operator a dark shape curled on the bedroll, the survivors asleep under blankets, a single sentry silhouetted at the sandbag barricade, fog creeping in under the barricade.",
+      "durationSec": 8,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-camp-engineer.webm",
+        "mp4": "/cutscenes/sleep-camp-engineer.mp4",
+        "poster": "/cutscenes/sleep-camp-engineer-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-cryo-scout",
+      "kind": "sleep",
+      "title": "sleep-cryo-scout",
+      "soundDesign": "sleep-cryo",
+      "firstFrame": {
+        "prompt": "An emergency thermal cryo pod standing upright in a frozen chamber, its ribbed glass lid half open and furred with frost, the Scout from the reference image, a slim operator in glossy bone-white armour plates over a black bodysuit, a sealed rounded white helmet with a black visor, an orange light on one knee and a cyan light on the other, stepping into a fitted pressure cradle lined with segmented bruised-maroon shock cushions, helmet sealed, cyan instrument light washing over the frost from a strip inside the pod, icicles hanging from bone-braced coolant conduits overhead, white fog pouring slowly out of the pod's base across a floor of black ice.",
+        "references": [
+          "art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png"
+        ]
+      },
+      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
+      "action": "Slow, steady push toward the pod. The operator settles back into the cradle and the lid swings closed with a soft hiss of vapour. Frost blooms across the glass from the edges inward in branching ferns until the silhouette inside is barely visible. A cyan light pulses three times, each slower than the last, then dims. Fog stops moving. Fade to black.",
+      "lastFrame": "the cryo pod sealed shut, its glass lid covered in dense fern-like frost so the operator is only a dark silhouette behind it, the cyan light inside dimmed to a faint standby glow, the frozen chamber silent and almost black.",
       "durationSec": 7,
       "audio": "/cutscenes/sleep-bunker.webm",
       "targets": {
-        "webm": "/cutscenes/sleep-hive.webm",
-        "mp4": "/cutscenes/sleep-hive.mp4",
-        "poster": "/cutscenes/sleep-hive-poster.jpg"
+        "webm": "/cutscenes/sleep-cryo-scout.webm",
+        "mp4": "/cutscenes/sleep-cryo-scout.mp4",
+        "poster": "/cutscenes/sleep-cryo-scout-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-cryo-tank",
+      "kind": "sleep",
+      "title": "sleep-cryo-tank",
+      "soundDesign": "sleep-cryo",
+      "firstFrame": {
+        "prompt": "An emergency thermal cryo pod standing upright in a frozen chamber, its ribbed glass lid half open and furred with frost, the Tank from the reference image, a huge hulking operator in heavy weathered olive-brown power armour with massive rounded pauldrons, a sealed helmet with a narrow amber visor slit, small amber and cyan status lights, stepping into a fitted pressure cradle lined with segmented bruised-maroon shock cushions, helmet sealed, cyan instrument light washing over the frost from a strip inside the pod, icicles hanging from bone-braced coolant conduits overhead, white fog pouring slowly out of the pod's base across a floor of black ice.",
+        "references": [
+          "art/source/art-remaster/sprite-v4/tank/identity/Tank.front-idle-master.png"
+        ]
+      },
+      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
+      "action": "Slow, steady push toward the pod. The operator settles back into the cradle and the lid swings closed with a soft hiss of vapour. Frost blooms across the glass from the edges inward in branching ferns until the silhouette inside is barely visible. A cyan light pulses three times, each slower than the last, then dims. Fog stops moving. Fade to black.",
+      "lastFrame": "the cryo pod sealed shut, its glass lid covered in dense fern-like frost so the operator is only a dark silhouette behind it, the cyan light inside dimmed to a faint standby glow, the frozen chamber silent and almost black.",
+      "durationSec": 7,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-cryo-tank.webm",
+        "mp4": "/cutscenes/sleep-cryo-tank.mp4",
+        "poster": "/cutscenes/sleep-cryo-tank-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-cryo-engineer",
+      "kind": "sleep",
+      "title": "sleep-cryo-engineer",
+      "soundDesign": "sleep-cryo",
+      "firstFrame": {
+        "prompt": "An emergency thermal cryo pod standing upright in a frozen chamber, its ribbed glass lid half open and furred with frost, the Engineer from the reference image, a lean operator in tan and gunmetal utility armour with chunky forearm tool braces, a sealed tan helmet with a glowing cyan visor, an orange light on one knee and a cyan light on the other, stepping into a fitted pressure cradle lined with segmented bruised-maroon shock cushions, helmet sealed, cyan instrument light washing over the frost from a strip inside the pod, icicles hanging from bone-braced coolant conduits overhead, white fog pouring slowly out of the pod's base across a floor of black ice.",
+        "references": [
+          "art/source/art-remaster/sprite-v4/engineer/identity/Engineer.front-idle-master.png"
+        ]
+      },
+      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
+      "action": "Slow, steady push toward the pod. The operator settles back into the cradle and the lid swings closed with a soft hiss of vapour. Frost blooms across the glass from the edges inward in branching ferns until the silhouette inside is barely visible. A cyan light pulses three times, each slower than the last, then dims. Fog stops moving. Fade to black.",
+      "lastFrame": "the cryo pod sealed shut, its glass lid covered in dense fern-like frost so the operator is only a dark silhouette behind it, the cyan light inside dimmed to a faint standby glow, the frozen chamber silent and almost black.",
+      "durationSec": 7,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-cryo-engineer.webm",
+        "mp4": "/cutscenes/sleep-cryo-engineer.mp4",
+        "poster": "/cutscenes/sleep-cryo-engineer-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-hive-scout",
+      "kind": "sleep",
+      "title": "sleep-hive-scout",
+      "soundDesign": "sleep-hive",
+      "firstFrame": {
+        "prompt": "Deep inside a biomechanical hive chamber, the Scout from the reference image, a slim operator in glossy bone-white armour plates over a black bodysuit, a sealed rounded white helmet with a black visor, an orange light on one knee and a cyan light on the other, lying back into a protective cradle of black resin vanes and curved ivory struts with a rain-wet sheen, helmet sealed, the cradle half open like an articulated hand, a few hair-thin sensory filaments lifting toward the armour seams, emerald bioluminescent capillaries pulsing slowly behind the ribbed walls, warm mist hanging in the air, everything beyond the cradle dissolving into dark.",
+        "references": [
+          "art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png"
+        ]
+      },
+      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
+      "action": "The ribs of the cradle close slowly over the operator like fingers folding, and a translucent membrane seals between them. Tendrils settle gently across the armour. The membrane rises and falls in a slow breathing rhythm; the visor inside picks up the emerald glow. The camera pulls back and up to reveal rows of breathing cocoons. Fade to black. No sudden movements, no gore.",
+      "lastFrame": "the hive chamber wall lined with rows of closed translucent cocoons, each glowing softly emerald from within and breathing in unison, one holding the faint shape of the armoured operator, wet mist, monumental ivory ribs arching overhead into black.",
+      "durationSec": 8,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-hive-scout.webm",
+        "mp4": "/cutscenes/sleep-hive-scout.mp4",
+        "poster": "/cutscenes/sleep-hive-scout-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-hive-tank",
+      "kind": "sleep",
+      "title": "sleep-hive-tank",
+      "soundDesign": "sleep-hive",
+      "firstFrame": {
+        "prompt": "Deep inside a biomechanical hive chamber, the Tank from the reference image, a huge hulking operator in heavy weathered olive-brown power armour with massive rounded pauldrons, a sealed helmet with a narrow amber visor slit, small amber and cyan status lights, lying back into a protective cradle of black resin vanes and curved ivory struts with a rain-wet sheen, helmet sealed, the cradle half open like an articulated hand, a few hair-thin sensory filaments lifting toward the armour seams, emerald bioluminescent capillaries pulsing slowly behind the ribbed walls, warm mist hanging in the air, everything beyond the cradle dissolving into dark.",
+        "references": [
+          "art/source/art-remaster/sprite-v4/tank/identity/Tank.front-idle-master.png"
+        ]
+      },
+      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
+      "action": "The ribs of the cradle close slowly over the operator like fingers folding, and a translucent membrane seals between them. Tendrils settle gently across the armour. The membrane rises and falls in a slow breathing rhythm; the visor inside picks up the emerald glow. The camera pulls back and up to reveal rows of breathing cocoons. Fade to black. No sudden movements, no gore.",
+      "lastFrame": "the hive chamber wall lined with rows of closed translucent cocoons, each glowing softly emerald from within and breathing in unison, one holding the faint shape of the armoured operator, wet mist, monumental ivory ribs arching overhead into black.",
+      "durationSec": 8,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-hive-tank.webm",
+        "mp4": "/cutscenes/sleep-hive-tank.mp4",
+        "poster": "/cutscenes/sleep-hive-tank-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-hive-engineer",
+      "kind": "sleep",
+      "title": "sleep-hive-engineer",
+      "soundDesign": "sleep-hive",
+      "firstFrame": {
+        "prompt": "Deep inside a biomechanical hive chamber, the Engineer from the reference image, a lean operator in tan and gunmetal utility armour with chunky forearm tool braces, a sealed tan helmet with a glowing cyan visor, an orange light on one knee and a cyan light on the other, lying back into a protective cradle of black resin vanes and curved ivory struts with a rain-wet sheen, helmet sealed, the cradle half open like an articulated hand, a few hair-thin sensory filaments lifting toward the armour seams, emerald bioluminescent capillaries pulsing slowly behind the ribbed walls, warm mist hanging in the air, everything beyond the cradle dissolving into dark.",
+        "references": [
+          "art/source/art-remaster/sprite-v4/engineer/identity/Engineer.front-idle-master.png"
+        ]
+      },
+      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
+      "action": "The ribs of the cradle close slowly over the operator like fingers folding, and a translucent membrane seals between them. Tendrils settle gently across the armour. The membrane rises and falls in a slow breathing rhythm; the visor inside picks up the emerald glow. The camera pulls back and up to reveal rows of breathing cocoons. Fade to black. No sudden movements, no gore.",
+      "lastFrame": "the hive chamber wall lined with rows of closed translucent cocoons, each glowing softly emerald from within and breathing in unison, one holding the faint shape of the armoured operator, wet mist, monumental ivory ribs arching overhead into black.",
+      "durationSec": 8,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-hive-engineer.webm",
+        "mp4": "/cutscenes/sleep-hive-engineer.mp4",
+        "poster": "/cutscenes/sleep-hive-engineer-poster.jpg"
       }
     },
     {
       "id": "sleep-squad",
       "kind": "sleep",
       "title": "sleep-squad",
+      "soundDesign": "sleep-squad",
       "firstFrame": {
-        "prompt": "two or three operators asleep back to back in a sealed berth, one still awake on watch with a rifle across their knees."
+        "prompt": "Three armoured operators inside the crash-site bunker at night: the Engineer from reference image 1, a lean operator in tan and gunmetal utility armour with chunky forearm tool braces, a sealed tan helmet with a glowing cyan visor, an orange light on one knee and a cyan light on the other, lying asleep on a steel cot under a foil blanket, the Scout from reference image 2, a slim operator in glossy bone-white armour plates over a black bodysuit, a sealed rounded white helmet with a black visor, an orange light on one knee and a cyan light on the other, asleep on a second cot, and the Tank from reference image 3, a huge hulking operator in heavy weathered olive-brown power armour with massive rounded pauldrons, a sealed helmet with a narrow amber visor slit, small amber and cyan status lights, sitting on an ammo crate by the open bunker door with a rifle across their knees keeping watch, all helmets sealed, a single caged amber lamp hanging between them, cold fog drifting in through the doorway from the black outside, the crashed ship's hull looming behind, its ribs fused with sinuous biomechanical sinew like a ribcage.",
+        "references": [
+          "art/source/art-remaster/sprite-v4/engineer/identity/Engineer.front-idle-master.png",
+          "art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png",
+          "art/source/art-remaster/sprite-v4/tank/identity/Tank.front-idle-master.png"
+        ]
       },
-      "action": "a slow pan across the sleepers; the watch-stander checks the regulator, sets the rifle down and leans back",
-      "lastFrame": "the watch-stander's head finally lowered, all asleep, the berth's O2 regulator glowing steady.",
-      "durationSec": 7,
+      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
+      "action": "Slow lateral dolly from the sleeping operators across to the watcher at the door. Out in the dark beyond the doorway a distant cold glow drifts left to right and disappears; the watcher's visor tracks it. A long still moment. The watcher's head slowly nods forward in sleep. The lamp gutters low. Faint grey dawn light rises at the doorway. Fade to black.",
+      "lastFrame": "the same bunker in deep dusk: the sleepers still under their blankets, the watcher's helmet tipped forward in sleep against the door frame with the rifle across their knees, the amber lamp guttered to a faint ember glow, the first thin grey-blue light of dawn touching the fog in the doorway.",
+      "durationSec": 8,
       "audio": "/cutscenes/sleep-bunker.webm",
       "targets": {
         "webm": "/cutscenes/sleep-squad.webm",

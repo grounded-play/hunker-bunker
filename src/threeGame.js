@@ -24166,6 +24166,7 @@ export class ThreeGame {
                 threat: night?.threat ?? null,
                 safeSpace: 'camp-bed',
                 sleepStyle: this.getSleepCutsceneStyle?.(camp) ?? 'bunker',
+                playerClass: this.playerType ?? null,
                 crashSiteName: this.getCrashSiteLocationName?.() ?? null,
                 objective: this.getCurrentDayObjective?.() ?? null
             }

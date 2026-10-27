@@ -14168,11 +14168,11 @@ function playSleepInterstitial() {
         window.setTimeout(finish, SLEEP_INTERSTITIAL_MS);
     });
 }
-async function playSleepCutscene(style) {
+async function playSleepCutscene(style, playerClass = null) {
     document.body.classList.add('sleep-cutscene-active');
     try {
-        if (isSleepCutsceneShipped(style)) {
-            await playCutsceneVideo(sleepCutsceneBase(style), { tone: 'event' });
+        if (isSleepCutsceneShipped(style, playerClass)) {
+            await playCutsceneVideo(sleepCutsceneBase(style, playerClass), { tone: 'event' });
             return;
         }
         await playSleepInterstitial();
@@ -14190,7 +14190,7 @@ window.addEventListener('day-rest-open', (event) => {
             async () => {
                 // Film plays over the closed panels, then the operator is
                 // moved to the bed's wake spot while the doors still hide it.
-                await playSleepCutscene(detail.sleepStyle);
+                await playSleepCutscene(detail.sleepStyle, detail.playerClass);
                 window.game?.finishCampRest?.();
             },
             () => openMorningAfterRest(detail),

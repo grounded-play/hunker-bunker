@@ -108,8 +108,10 @@ def main():
 
     jobs = {job['id']: job for job in json.loads(JOBS.read_text())['jobs']}
     design = json.loads(LAYERS.read_text())
-    ids = [job_id for job_id in jobs if job_id in design['jobs']] if args.jobs == ['all'] else args.jobs
-    missing = [job_id for job_id in ids if job_id not in design['jobs']]
+    # Class cuts of one shot share its design (job.soundDesign).
+    spec_id = {job_id: job.get('soundDesign', job_id) for job_id, job in jobs.items()}
+    ids = [job_id for job_id in jobs if spec_id[job_id] in design['jobs']] if args.jobs == ['all'] else args.jobs
+    missing = [job_id for job_id in ids if spec_id.get(job_id) not in design['jobs']]
     if missing:
         raise SystemExit(f'no sound design for: {", ".join(missing)} (scripts/cinematics/sound-layers.json)')
 
@@ -119,7 +121,7 @@ def main():
     print(f'[sound] AudioGen medium on {device}', flush=True)
     model = AudioGen.get_pretrained('facebook/audiogen-medium', device=device)
     for job_id in ids:
-        render(jobs[job_id], design['jobs'][job_id], design['defaults'], model, args.seed)
+        render(jobs[job_id], design['jobs'][spec_id[job_id]], design['defaults'], model, args.seed)
 
 
 if __name__ == '__main__':
