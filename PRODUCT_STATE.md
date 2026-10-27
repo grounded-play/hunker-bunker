@@ -1,6 +1,6 @@
 # Hunker Bunker — Product State
 
-Updated: 2026-10-26
+Updated: 2026-10-27
 
 Active branch: `dev/sprint-53`
 
@@ -71,6 +71,9 @@ The current milestone is complete only when all of the following are true:
 
 The executable player-facing shape is defined in
 [`docs/design/game-outline-and-proof-run.md`](docs/design/game-outline-and-proof-run.md).
+The research-backed execution sequence for improving that shape is defined in
+the
+[`Definitive First Expedition improvement program`](docs/planning/definitive-first-expedition-improvement-program-2026-10-27.md).
 The active hardware, multiplayer, performance, visual, Cloud, and publisher
 gates live in
 [`docs/planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md`](docs/planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md).
