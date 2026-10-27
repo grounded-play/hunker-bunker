@@ -158,7 +158,7 @@ describe('ammo lockers, solid props, and Smash', () => {
         expect(game.damageWall).toHaveBeenCalledWith(wall, 1, { source: 'player' });
     });
 
-    it('places scan-triggered return chevrons in world space instead of following the player', () => {
+    it('keeps scan-triggered chevrons static, pointed away from the scan origin', () => {
         const arrows = Array.from({ length: 5 }, () => ({
             position: new THREE.Vector3(),
             rotation: { y: 0 },
@@ -169,7 +169,8 @@ describe('ammo lockers, solid props, and Smash', () => {
             player: { position: new THREE.Vector3(20, 0, 9) },
             crashSiteGuidance: {
                 group: { visible: false }, arrows, material: { opacity: 0 },
-                waypoints: [], passedWaypointIndexes: new Set(), revealedAt: 0, visibleForMs: 12000
+                waypoints: [], passedWaypointIndexes: new Set(), revealedAt: 0,
+                visibleForMs: 12000, solidForMs: 1200, baseOpacity: 0.82, active: false
             },
             findSnailPath: () => Array.from({ length: 12 }, (_, index) => ({ x: 20 - index, z: 9 })),
             getTerrainHeightAt: () => 0
@@ -185,17 +186,21 @@ describe('ammo lockers, solid props, and Smash', () => {
         expect(arrows[0].position.x).toBeLessThan(20);
         expect(arrows[0].position.y).toBeCloseTo(0.055);
         const placedX = arrows[0].position.x;
+        const placedYaw = arrows[0].rotation.y;
+        expect(placedYaw).toBeCloseTo(-Math.PI / 2);
 
         game.player.position.set(placedX, 0, 9);
         ThreeGame.prototype.updateCrashSiteGuidance.call(game, 200);
         expect(arrows[0].position.x).toBe(placedX);
-        expect(arrows[0].visible).toBe(false);
+        expect(arrows[0].rotation.y).toBe(placedYaw);
+        expect(arrows[0].visible).toBe(true);
         game.player.position.set(17, 0, 9);
         ThreeGame.prototype.updateCrashSiteGuidance.call(game, 300);
-        expect(arrows[0].visible).toBe(false);
+        expect(arrows[0].position.x).toBe(placedX);
+        expect(arrows[0].rotation.y).toBe(placedYaw);
     });
 
-    it('guides player towards active objective with chevrons', () => {
+    it('does not show objective chevrons until the player scans', () => {
         const arrows = Array.from({ length: 5 }, () => ({
             position: new THREE.Vector3(0, 0, 0),
             rotation: { y: 0 },
@@ -207,7 +212,7 @@ describe('ammo lockers, solid props, and Smash', () => {
             crashSiteGuidance: {
                 group: { visible: false }, arrows, material: { opacity: 0 },
                 waypoints: [], passedWaypointIndexes: new Set(), revealedAt: 0, visibleForMs: 12000,
-                isObjectiveMode: false, isManualScan: false
+                solidForMs: 1200, baseOpacity: 0.82, active: false
             },
             getActiveObjectiveTargetPosition: () => ({ x: 10, z: 25 }),
             findSnailPath: () => Array.from({ length: 16 }, (_, i) => ({ x: 10, z: 10 + i })),
@@ -215,10 +220,8 @@ describe('ammo lockers, solid props, and Smash', () => {
         };
 
         ThreeGame.prototype.updateCrashSiteGuidance.call(game, 100);
-        expect(game.crashSiteGuidance.group.visible).toBe(true);
-        expect(game.crashSiteGuidance.isObjectiveMode).toBe(true);
-        expect(arrows[0].visible).toBe(true);
-        expect(arrows[0].position.z).toBeGreaterThan(10);
+        expect(game.crashSiteGuidance.group.visible).toBe(false);
+        expect(game.crashSiteGuidance.waypoints).toEqual([]);
     });
 
     it('starts a scanned objective trail in front of the facing player', () => {
@@ -245,7 +248,7 @@ describe('ammo lockers, solid props, and Smash', () => {
             isInPocket: false,
             crashSiteGuidance: {
                 group: { visible: false }, arrows, waypoints: [],
-                passedWaypointIndexes: new Set(), isObjectiveMode: false, isManualScan: false
+                passedWaypointIndexes: new Set(), active: false
             },
             getActiveObjectiveTargetPosition: () => ({ x: 10, z: 25 }),
             findPlayerPath: manhattanPath,
@@ -253,9 +256,30 @@ describe('ammo lockers, solid props, and Smash', () => {
         };
 
         expect(ThreeGame.prototype.revealCrashSiteGuidanceFromScan.call(game, 500)).toBe(true);
-        expect(game.crashSiteGuidance.isObjectiveMode).toBe(true);
+        expect(game.crashSiteGuidance.active).toBe(true);
         expect(game.crashSiteGuidance.waypoints[0]).toEqual({ x: 11, z: 10 });
         expect(game.crashSiteGuidance.waypoints[0].x).toBeGreaterThan(game.player.position.x);
+        expect(arrows[0].rotation.y).toBeCloseTo(Math.PI / 2);
+    });
+
+    it('holds scan guidance steady, then fades it away', () => {
+        const game = {
+            performanceProfile: 'gameplay', isInPocket: false, isPlayerDead: false,
+            player: { position: new THREE.Vector3() },
+            crashSiteGuidance: {
+                group: { visible: false }, arrows: [{ visible: true }], material: { opacity: 0 },
+                waypoints: [{ x: 1, z: 0 }], revealedAt: 100, visibleForMs: 4100,
+                solidForMs: 1100, baseOpacity: 0.82, active: true
+            }
+        };
+
+        ThreeGame.prototype.updateCrashSiteGuidance.call(game, 1200);
+        expect(game.crashSiteGuidance.material.opacity).toBeCloseTo(0.82);
+        ThreeGame.prototype.updateCrashSiteGuidance.call(game, 2700);
+        expect(game.crashSiteGuidance.material.opacity).toBeCloseTo(0.41);
+        ThreeGame.prototype.updateCrashSiteGuidance.call(game, 4200);
+        expect(game.crashSiteGuidance.group.visible).toBe(false);
+        expect(game.crashSiteGuidance.active).toBe(false);
     });
 
     it('prioritizes the active O2 rebuild objective over optional registry targets', () => {

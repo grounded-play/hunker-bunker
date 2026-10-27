@@ -92,7 +92,7 @@ def upload_image(path):
     return result['name']
 
 
-def run_workflow(workflow, label, front=False):
+def run_workflow(workflow, label, front=False, retries=0):
     """Queue a workflow and wait for its images; `front` jumps a running batch's queue."""
     queued = comfy_json('/prompt', {'prompt': workflow, 'client_id': f'hb-cinematics-{uuid.uuid4().hex[:8]}', 'front': front})
     prompt_id = queued['prompt_id']
@@ -106,8 +106,14 @@ def run_workflow(workflow, label, front=False):
             continue
         status = entry.get('status', {})
         if status.get('status_str') == 'error':
-            messages = [m for m in status.get('messages', []) if m[0] == 'execution_error']
-            raise RuntimeError(f'{label} failed: {json.dumps(messages)[:1200]}')
+            messages = status.get('messages', [])
+            is_interrupted = any(m[0] == 'execution_interrupted' for m in messages)
+            if is_interrupted and retries < 3:
+                print(f'[comfy] {label}: execution interrupted, auto-retrying ({retries + 1}/3)...', flush=True)
+                time.sleep(2)
+                return run_workflow(workflow, label, front=front, retries=retries + 1)
+            exec_errors = [m for m in messages if m[0] == 'execution_error']
+            raise RuntimeError(f'{label} failed: {json.dumps(exec_errors or messages)[:1200]}')
         if status.get('completed'):
             print(f'[comfy] {label}: done in {time.time() - started:.0f}s', flush=True)
             images = []

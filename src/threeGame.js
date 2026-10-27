@@ -6386,10 +6386,12 @@ export class ThreeGame {
             arrow.name = `crash-site-chevron-${index}`;
             const left = new THREE.Mesh(geometry, material);
             const right = new THREE.Mesh(geometry, material);
-            left.position.set(-0.2, 0, -0.22);
-            right.position.set(0.2, 0, -0.22);
-            left.rotation.y = -0.48;
-            right.rotation.y = 0.48;
+            // Model the point of the chevron along local +Z so rotation.y can
+            // use the same forward convention as the rest of the world.
+            left.position.set(-0.2, 0, 0.22);
+            right.position.set(0.2, 0, 0.22);
+            left.rotation.y = 0.48;
+            right.rotation.y = -0.48;
             arrow.add(left, right);
             group.add(arrow);
             arrows.push(arrow);
@@ -6405,11 +6407,10 @@ export class ThreeGame {
             passedWaypointIndexes: new Set(),
             revealedAt: 0,
             visibleForMs: 12000,
-            isObjectiveMode: false,
-            isManualScan: false,
-            lastObjectiveCalcTime: 0,
-            lastObjectiveCalcPos: null,
-            lastObjectiveTarget: null
+            solidForMs: 1200,
+            baseOpacity: 0.82,
+            scanOrigin: null,
+            active: false
         };
     }
 
@@ -6549,12 +6550,6 @@ export class ThreeGame {
         const goalX = Math.round(target.x);
         const goalZ = Math.round(target.z);
 
-        guidance.lastObjectiveCalcTime = now;
-        guidance.lastObjectiveCalcPos = { x: px, z: pz };
-        guidance.lastObjectiveTarget = { x: target.x, z: target.z };
-        guidance.isObjectiveMode = true;
-        guidance.isManualScan = false;
-
         const pathFinder = (typeof this.findPlayerPath === 'function' && !Object.prototype.hasOwnProperty.call(this, 'findSnailPath'))
             ? this.findPlayerPath
             : (this.findSnailPath ?? this.findPlayerPath);
@@ -6572,11 +6567,10 @@ export class ThreeGame {
         const pathEnd = path.at(-1);
         if (!pathEnd || Math.hypot(pathEnd.x - goalX, pathEnd.z - goalZ) > 2.5) path = [];
         let waypoints = [];
-        let sampleIndexes = [];
 
         if (path.length >= 2) {
             const localTrailIndexes = [1, 3, 5, 8, 12, 17, 23, 30];
-            sampleIndexes = localTrailIndexes
+            const sampleIndexes = localTrailIndexes
                 .map((index) => Math.min(index, path.length - 1))
                 .filter((index, position, indexes) => index > 0 && index !== indexes[position - 1])
                 .slice(0, guidance.arrows.length);
@@ -6587,18 +6581,20 @@ export class ThreeGame {
         guidance.passedWaypointIndexes ??= new Set();
         guidance.passedWaypointIndexes.clear();
         guidance.revealedAt = now;
+        guidance.scanOrigin = { x: px, z: pz };
+        guidance.active = waypoints.length > 0;
+        if (guidance.material) guidance.material.opacity = guidance.baseOpacity ?? 0.82;
 
         guidance.waypoints.forEach((waypoint, index) => {
-            const next = sampleIndexes.length > 0 && path[Math.min(path.length - 1, sampleIndexes[index] + 1)]
-                ? path[Math.min(path.length - 1, sampleIndexes[index] + 1)]
-                : (guidance.waypoints[index + 1] ?? target);
             const arrow = guidance.arrows[index];
             arrow.position.set(
                 waypoint.x,
                 (this.getTerrainHeightAt?.(waypoint.x, waypoint.z) ?? 0.015) + 0.055,
                 waypoint.z
             );
-            arrow.rotation.y = Math.atan2(next.x - waypoint.x, next.z - waypoint.z);
+            // Every marker points away from the player position captured by
+            // the scan. It never turns to follow either the player or path.
+            arrow.rotation.y = Math.atan2(waypoint.x - px, waypoint.z - pz);
             arrow.visible = true;
         });
 
@@ -6613,61 +6609,23 @@ export class ThreeGame {
     updateCrashSiteGuidance(now = performance.now()) {
         const guidance = this.crashSiteGuidance;
         if (!guidance || !this.player) return;
-        const px = this.player.position.x;
-        const pz = this.player.position.z;
-
-        // If manual scan guidance was revealed, let it run for its duration
-        const isManualScanActive = guidance.isManualScan && (now - guidance.revealedAt <= guidance.visibleForMs);
-
-        if (!isManualScanActive && typeof this.getActiveObjectiveTargetPosition === 'function') {
-            const objectiveTarget = this.getActiveObjectiveTargetPosition();
-            if (objectiveTarget) {
-                const targetDist = Math.hypot(objectiveTarget.x - px, objectiveTarget.z - pz);
-                // Only show guidance if not right on top of the objective
-                if (targetDist > 1.8) {
-                    const timeSinceCalc = now - (guidance.lastObjectiveCalcTime || 0);
-                    const distFromLastCalc = guidance.lastObjectiveCalcPos
-                        ? Math.hypot(px - guidance.lastObjectiveCalcPos.x, pz - guidance.lastObjectiveCalcPos.z)
-                        : Infinity;
-                    const targetChanged = guidance.lastObjectiveTarget
-                        ? (guidance.lastObjectiveTarget.x !== objectiveTarget.x || guidance.lastObjectiveTarget.z !== objectiveTarget.z)
-                        : true;
-
-                    if (timeSinceCalc > 1200 || distFromLastCalc > 2.5 || targetChanged || guidance.waypoints.length === 0) {
-                        (this.refreshObjectiveGuidanceWaypoints || ThreeGame.prototype.refreshObjectiveGuidanceWaypoints).call(this, objectiveTarget, now);
-                    }
-                } else if (!guidance.isManualScan) {
-                    guidance.waypoints = [];
-                    guidance.passedWaypointIndexes?.clear?.();
-                }
-            } else if (!guidance.isManualScan) {
-                guidance.waypoints = [];
-                guidance.passedWaypointIndexes?.clear?.();
-            }
-        }
-
+        const age = Math.max(0, now - guidance.revealedAt);
         const shouldShow = this.performanceProfile === 'gameplay'
             && !this.isInPocket
             && !this.isPlayerDead
+            && guidance.active
             && guidance.waypoints.length > 0
-            && (guidance.isObjectiveMode || now - guidance.revealedAt <= guidance.visibleForMs);
+            && age < guidance.visibleForMs;
         guidance.group.visible = shouldShow;
-        if (!shouldShow) return;
-
-        guidance.material.opacity = 0.72 + Math.sin(now * 0.005) * 0.16;
-        for (let index = 0; index < guidance.arrows.length; index++) {
-            const arrow = guidance.arrows[index];
-            const waypoint = guidance.waypoints[index];
-            if (waypoint && Math.hypot(waypoint.x - px, waypoint.z - pz) < 0.65) {
-                guidance.passedWaypointIndexes.add(index);
-            }
-            if (!waypoint || guidance.passedWaypointIndexes.has(index)) {
-                arrow.visible = false;
-                continue;
-            }
-            arrow.visible = true;
+        if (!shouldShow) {
+            if (age >= guidance.visibleForMs) guidance.active = false;
+            return;
         }
-        if (!guidance.arrows.some((arrow) => arrow.visible)) guidance.group.visible = false;
+
+        const solidForMs = Math.min(guidance.solidForMs ?? 1200, guidance.visibleForMs);
+        const fadeDuration = Math.max(1, guidance.visibleForMs - solidForMs);
+        const fadeProgress = Math.min(1, Math.max(0, (age - solidForMs) / fadeDuration));
+        guidance.material.opacity = (guidance.baseOpacity ?? 0.82) * (1 - fadeProgress);
     }
 
     revealCrashSiteGuidanceFromScan(now = performance.now()) {
@@ -6682,12 +6640,12 @@ export class ThreeGame {
         if (distToTarget <= 1.5) {
             guidance.waypoints = [];
             guidance.passedWaypointIndexes?.clear?.();
+            guidance.active = false;
             guidance.group.visible = false;
             return false;
         }
         const visible = (this.refreshObjectiveGuidanceWaypoints || ThreeGame.prototype.refreshObjectiveGuidanceWaypoints)
             .call(this, target, now, { preferFacing: true });
-        guidance.isManualScan = false;
         if (typeof window !== 'undefined' && typeof window.hbLog === 'function') {
             window.hbLog('NAVIGATION', visible ? 'info' : 'warn', 'objective-guidance-revealed', {
                 from: { x: this.player.position.x, z: this.player.position.z },
