@@ -36,6 +36,11 @@ python3 scripts/cinematics/comfy_clips.py status      # what each job has
 python3 scripts/cinematics/comfy_clips.py still sleep-cryo --takes 3
 cp art/source/cinematics/sleep-cryo/still_2.png art/source/cinematics/sleep-cryo/first_frame.png
 
+# Everything not live yet, unattended: sound beds first (one AudioGen load), then
+# Wan takes back to back (~24 min each), each encoded into public/ and shipped
+python3 scripts/cinematics/comfy_clips.py batch
+python3 scripts/cinematics/comfy_clips.py batch card_34 --redo   # a new take for one clip
+
 # One full clip to review: a video take, a sound bed, the finished preview encode
 python3 scripts/cinematics/comfy_clips.py make card_33
 
@@ -69,10 +74,12 @@ Each take's prompt is the audit's action prompt, then "The shot ends on" its las
 
 ## Make a clip live
 
-`encode` writes the files; the game plays them only once the registry says so. Review the take first (characters on model, no text, no explicit content, the first frame matching the key art the player just saw).
+`encode` (without `--preview`) writes the files into `public/` and adds the job id to `src/cinematics/shippedMotionClips.js`. That list is the switch the registries read:
 
-- **Song cards 33–38:** `src/songInterstitials.js` gives motion to `number <= 32`; list the approved card ids instead.
-- **Side stories:** set the entry's `status: 'final'` and add `motion` / `motionWebm` pointing at the encoded WebM.
-- **Sleep:** add `sleep-<style>` to `SHIPPED_SLEEP_CUTSCENES` in `src/sleepCutscene.js`.
+- **Song cards 33–38:** `src/songInterstitials.js` gives a card motion when `card_<id>` is listed (cards 1–32 always have it).
+- **Side stories:** a listed entry becomes `status: 'final'` with `motion` / `motionWebm` at `/interstitials/motion/int_<id>_motion_v1.webm`.
+- **Sleep:** a listed `sleep-<style>` joins `SHIPPED_SLEEP_CUTSCENES` in `src/sleepCutscene.js`.
+
+To pull a clip, delete its line from the list (the files can stay). `scripts/cinematics/build-clip-jobs.test.js` fails if a listed clip's files are missing or a registry doesn't play it. Watch shipped clips in game before release: characters on model, no text, no explicit content, the first frame matching the key art the player just saw.
 
 Run the retail-asset audit (`npm run audit:retail-assets`) after encoding: new WebM/MP4 files are unpacked from app.asar, but the reports must be regenerated.

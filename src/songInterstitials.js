@@ -1,5 +1,6 @@
 import { assetUrl } from './assetUrl.js';
 import { t } from './i18n.js';
+import { SHIPPED_MOTION_CLIPS } from './cinematics/shippedMotionClips.js';
 
 const TITLES = [
     'Someone Is Still Alive', 'Kaelen\'s Sleeping Machine', 'The Math Is Beautiful Now',
@@ -25,7 +26,7 @@ export const SONG_INTERSTITIALS = Object.freeze(Object.fromEntries(TITLES.map((t
     const number = index + 1;
     const id = String(number).padStart(2, '0');
     const slug = slugify(title);
-    const hasMotion = number <= 32;
+    const hasMotion = number <= 32 || SHIPPED_MOTION_CLIPS.has(`card_${id}`);
     return [id, Object.freeze({
         id,
         title,
@@ -43,8 +44,18 @@ export const SONG_INTERSTITIALS = Object.freeze(Object.fromEntries(TITLES.map((t
     })];
 })));
 
+// A side story plays its motion clip once the pipeline ships it.
+const withShippedMotion = (spec) => (SHIPPED_MOTION_CLIPS.has(spec.id)
+    ? Object.freeze({
+        ...spec,
+        status: 'final',
+        motion: `/interstitials/motion/int_${spec.id}_motion_v1.webm`,
+        motionWebm: `/interstitials/motion/int_${spec.id}_motion_v1.webm`
+    })
+    : Object.freeze(spec));
+
 export const SIDE_STORY_INTERSTITIALS = Object.freeze({
-    val_hearth_warmth: Object.freeze({
+    val_hearth_warmth: withShippedMotion({
         id: 'val_hearth_warmth',
         title: 'Warmth of the Suture',
         character: 'Sister Martha',
@@ -55,7 +66,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         musicKey: 'music_interstitial_04',
         alt: 'Sister Martha warming the survivor hands at the geothermal hearth'
     }),
-    val_spore_communion: Object.freeze({
+    val_spore_communion: withShippedMotion({
         id: 'val_spore_communion',
         title: 'Botanical Spore Oil',
         character: 'Sister Martha',
@@ -66,7 +77,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         musicKey: 'music_interstitial_20',
         alt: 'Sister Martha applying glowing botanical spore salve'
     }),
-    val_eternal_hearth: Object.freeze({
+    val_eternal_hearth: withShippedMotion({
         id: 'val_eternal_hearth',
         title: 'The Eternal Hearth',
         character: 'Sister Martha',
@@ -77,7 +88,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         musicKey: 'music_interstitial_04',
         alt: 'Devotional embrace at the Eternal Geothermal Hearth'
     }),
-    briggs_scorched_rig: Object.freeze({
+    briggs_scorched_rig: withShippedMotion({
         id: 'briggs_scorched_rig',
         title: 'The Scorched Rig',
         character: 'Commander Briggs',
@@ -88,7 +99,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         musicKey: 'music_interstitial_06',
         alt: 'Commander Briggs resting at the smoking barricade'
     }),
-    briggs_scar_tissue: Object.freeze({
+    briggs_scar_tissue: withShippedMotion({
         id: 'briggs_scar_tissue',
         title: 'Scar Tissue',
         character: 'Commander Briggs',
@@ -99,7 +110,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         musicKey: 'music_interstitial_21',
         alt: 'Commander Briggs showing battle scars in the armory'
     }),
-    briggs_vanguard_fire: Object.freeze({
+    briggs_vanguard_fire: withShippedMotion({
         id: 'briggs_vanguard_fire',
         title: 'Vanguard Unyielding',
         character: 'Commander Briggs',
@@ -110,7 +121,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         musicKey: 'music_interstitial_29',
         alt: 'Commander Briggs overlooking the subterranean canyon flares'
     }),
-    kaelen_diagnostic_cradle: Object.freeze({
+    kaelen_diagnostic_cradle: withShippedMotion({
         id: 'kaelen_diagnostic_cradle',
         title: 'Diagnostic Cradle',
         character: 'Overseer Kaelen',
@@ -121,7 +132,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         musicKey: 'music_interstitial_02',
         alt: 'Overseer Kaelen at the cyan neural diagnostic cradle'
     }),
-    kaelen_frequency_overclock: Object.freeze({
+    kaelen_frequency_overclock: withShippedMotion({
         id: 'kaelen_frequency_overclock',
         title: 'Frequency Overclock',
         character: 'Overseer Kaelen',
@@ -132,7 +143,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         musicKey: 'music_interstitial_19',
         alt: 'Overseer Kaelen and player connecting bio-link terminal'
     }),
-    kaelen_supercharged_matrix: Object.freeze({
+    kaelen_supercharged_matrix: withShippedMotion({
         id: 'kaelen_supercharged_matrix',
         title: 'Supercharged Matrix',
         character: 'Overseer Kaelen',
@@ -143,7 +154,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         musicKey: 'music_interstitial_30',
         alt: 'Overseer Kaelen and player embraced inside the reactor matrix'
     }),
-    aria_whispers_abyss: Object.freeze({
+    aria_whispers_abyss: withShippedMotion({
         id: 'aria_whispers_abyss',
         title: 'Whispers in the Abyss',
         character: 'Specimen 0047-B Aria',
@@ -154,7 +165,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         musicKey: 'music_interstitial_11',
         alt: 'Aria floating suspended in purple bio-spore mist'
     }),
-    aria_silk_trance: Object.freeze({
+    aria_silk_trance: withShippedMotion({
         id: 'aria_silk_trance',
         title: 'The Silk Trance',
         character: 'Specimen 0047-B Aria',
@@ -165,7 +176,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         musicKey: 'music_interstitial_12',
         alt: 'Aria cradling the player helmet visor with chitin tendrils'
     }),
-    aria_queens_mark: Object.freeze({
+    aria_queens_mark: withShippedMotion({
         id: 'aria_queens_mark',
         title: "The Queen's Mark",
         character: 'Specimen 0047-B Aria',
@@ -176,7 +187,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         musicKey: 'music_interstitial_31',
         alt: "Symbiotic union in the heart of the Brood Queen chamber"
     }),
-    nahl_mind_link: Object.freeze({
+    nahl_mind_link: withShippedMotion({
         id: 'nahl_mind_link',
         title: 'Synaptic Inoculation',
         character: 'Dr. Nahl (Bio-Resonant)',
@@ -187,7 +198,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         musicKey: 'music_interstitial_08',
         alt: 'Dr. Nahl establishing voluntary neural handshake'
     }),
-    nahl_co_evolution: Object.freeze({
+    nahl_co_evolution: withShippedMotion({
         id: 'nahl_co_evolution',
         title: 'Cellular Empathy',
         character: 'Dr. Nahl (Bio-Resonant)',
@@ -198,7 +209,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         musicKey: 'music_interstitial_08',
         alt: 'Dr. Nahl and player examining tissue samples in warm communion'
     }),
-    nahl_transcendence: Object.freeze({
+    nahl_transcendence: withShippedMotion({
         id: 'nahl_transcendence',
         title: 'Neural Sovereignty',
         character: 'Dr. Nahl (Bio-Resonant)',

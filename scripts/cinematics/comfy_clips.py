@@ -14,11 +14,14 @@ http://127.0.0.1:8188 with locally installed models:
           WebM + H.264/AAC MP4 + poster): the job's music with the newest
           sound bed under it; --preview writes them beside the take instead
   make    clip + sound + preview encode: one full clip to review
+  batch   every job not live yet: sound beds, then takes back to back, each
+          encoded into public/ and shipped as it lands
   status  what each job has: first frame, takes, encoded files
 
 Takes and first frames are masters: they stay in art/source/cinematics/<job>/
-(git-ignored). Only `encode` writes to public/. A clip is not live until its
-registry entry says so (docs/cinematics-comfyui-pipeline.md).
+(git-ignored). Only `encode` writes to public/, and it adds the job to
+src/cinematics/shippedMotionClips.js, which makes the game play the clip
+(docs/cinematics-comfyui-pipeline.md).
 
 Standard library only; needs ffmpeg/ffprobe on PATH.
 """
@@ -28,6 +31,7 @@ import json
 import math
 import os
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -41,14 +45,15 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 JOBS = ROOT / 'scripts/cinematics/clip-jobs.json'
 MASTERS = ROOT / 'art/source/cinematics'
 PUBLIC = ROOT / 'public'
+SHIPPED = ROOT / 'src/cinematics/shippedMotionClips.js'
 COMFY = os.environ.get('HB_COMFY_URL', 'http://127.0.0.1:8188')
 COMFY_ROOT = Path(os.environ.get('HB_COMFY_ROOT', str(Path.home() / 'Desktop/icecave/xpsr/ComfyUI')))
 AUDIOCRAFT_PY = os.environ.get('HB_AUDIOCRAFT_PY', str(Path.home() / 'tools/audiocraft/.venv/bin/python'))
 FPS = 24
 
 MODELS = {
-    'ltxv': {'size': (1024, 576), 'frames_step': 8},
-    'wan': {'size': (1280, 704), 'frames_step': 4},
+    'ltxv': {'size': (1024, 576), 'frames_step': 8, 'max_seconds': 8.0},
+    'wan': {'size': (1280, 704), 'frames_step': 4, 'max_seconds': 5.0},  # trained on 121 frames
 }
 
 
@@ -240,7 +245,7 @@ def cmd_clip(args):
         except SystemExit as missing:
             print(f'[clip] skip: {missing}')
             continue
-        frames = frame_count(min(job['durationSec'], args.max_seconds), model['frames_step'])
+        frames = frame_count(min(job['durationSec'], args.max_seconds or model['max_seconds']), model['frames_step'])
         seed = args.seed if args.seed is not None else random.randrange(2**31)
         prompt = motion_prompt(style, job)
         take = next_take(folder, f'take_{args.model}')
@@ -325,7 +330,18 @@ def cmd_encode(args):
              '-map', '[vout]', '-map', '[aout]', '-t', f'{duration:.3f}', *codec, str(out)])
         print(f'[encode] {out.relative_to(ROOT)} ({out.stat().st_size // 1024} KB, {"music + " + bed_take.name if bed_take else "music only"})')
     if not args.preview:
-        print('[encode] the clip is not live until its registry entry lists it (docs/cinematics-comfyui-pipeline.md)')
+        mark_shipped(job['id'])
+        print(f"[encode] {job['id']} is live ({SHIPPED.relative_to(ROOT)})")
+
+
+def shipped_ids():
+    return set(re.findall(r"^    '([^']+)',$", SHIPPED.read_text(), re.M))
+
+
+def mark_shipped(job_id):
+    """List the job in shippedMotionClips.js so its registry entry plays the clip."""
+    body = ''.join(f"    '{job_id}',\n" for job_id in sorted(shipped_ids() | {job_id}))
+    SHIPPED.write_text(re.sub(r'new Set\(\[\n.*?\]\)\);', lambda _: f'new Set([\n{body}]));', SHIPPED.read_text(), flags=re.S))
 
 
 def free_comfy_vram():
@@ -355,6 +371,25 @@ def cmd_make(args):
     cmd_encode(argparse.Namespace(job=args.job, take=newest.stem, preview=True, sound=None, no_sound=False))
 
 
+def cmd_batch(args):
+    """Sound beds first (one AudioGen load), then takes back to back, each shipped as it lands."""
+    _, jobs = load_jobs()
+    targets = [job_id for job_id in (args.jobs or list(jobs)) if args.redo or job_id not in shipped_ids()]
+    unscored = [job_id for job_id in targets if not sound_take(job_id)]
+    if unscored:
+        free_comfy_vram()
+        subprocess.run([AUDIOCRAFT_PY, str(ROOT / 'scripts/cinematics/sound_layers.py'), 'render', *unscored], check=True)
+    for job_id in targets:
+        folder = job_dir(job_id)
+        takes = sorted(folder.glob(f'take_{args.model}_*.mp4'), key=lambda p: int(p.stem.split('_')[-1]))
+        if not takes or args.redo:
+            cmd_clip(argparse.Namespace(job=job_id, model=args.model, seed=None, steps=None, max_seconds=args.max_seconds))
+            takes = sorted(folder.glob(f'take_{args.model}_*.mp4'), key=lambda p: int(p.stem.split('_')[-1]))
+        if not takes:
+            continue
+        cmd_encode(argparse.Namespace(job=job_id, take=takes[-1].stem, preview=False, sound=None, no_sound=False))
+
+
 def cmd_status(args):
     _, jobs = load_jobs()
     for job in jobs.values():
@@ -371,17 +406,20 @@ def main():
     sub = parser.add_subparsers(dest='command', required=True)
     s = sub.add_parser('still'); s.add_argument('job'); s.add_argument('--takes', type=int, default=3); s.add_argument('--seed', type=int)
     c = sub.add_parser('clip'); c.add_argument('job', help="a job id, or 'all'"); c.add_argument('--model', choices=sorted(MODELS), default='ltxv')
-    c.add_argument('--seed', type=int); c.add_argument('--steps', type=int); c.add_argument('--max-seconds', type=float, default=8.0)
+    c.add_argument('--seed', type=int); c.add_argument('--steps', type=int); c.add_argument('--max-seconds', type=float)
     e = sub.add_parser('encode'); e.add_argument('job'); e.add_argument('take', help='take file stem, e.g. take_ltxv_2')
     e.add_argument('--preview', action='store_true', help='write next to the take for review, not into public/')
     e.add_argument('--sound', help='sound take to lay under the music, e.g. take_2 (default: newest)')
     e.add_argument('--no-sound', action='store_true', help='music only')
     so = sub.add_parser('sound'); so.add_argument('job', help="a job id, or 'all'"); so.add_argument('--seed', type=int)
     m = sub.add_parser('make'); m.add_argument('job'); m.add_argument('--model', choices=sorted(MODELS), default='ltxv')
-    m.add_argument('--seed', type=int); m.add_argument('--max-seconds', type=float, default=8.0)
+    m.add_argument('--seed', type=int); m.add_argument('--max-seconds', type=float)
+    b = sub.add_parser('batch'); b.add_argument('jobs', nargs='*', help='job ids (default: every job not live yet)')
+    b.add_argument('--model', choices=sorted(MODELS), default='wan'); b.add_argument('--max-seconds', type=float)
+    b.add_argument('--redo', action='store_true', help='render a new take even if the job has one or is live')
     sub.add_parser('status')
     args = parser.parse_args()
-    {'still': cmd_still, 'clip': cmd_clip, 'encode': cmd_encode, 'sound': cmd_sound, 'make': cmd_make, 'status': cmd_status}[args.command](args)
+    {'still': cmd_still, 'clip': cmd_clip, 'encode': cmd_encode, 'sound': cmd_sound, 'make': cmd_make, 'batch': cmd_batch, 'status': cmd_status}[args.command](args)
 
 
 if __name__ == '__main__':

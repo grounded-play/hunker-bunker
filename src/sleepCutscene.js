@@ -3,11 +3,17 @@
 // `day-rest-open` fires; main.js plays one of these over that change, then
 // shows the morning card. Prompts: docs/planning/sprint-53-world-variety-night-and-sleep-2026-10-07.md §C.
 
+import { SHIPPED_MOTION_CLIPS } from './cinematics/shippedMotionClips.js';
+
 export const SLEEP_CUTSCENE_STYLES = Object.freeze(['bunker', 'camp', 'cryo', 'hive', 'squad']);
 
-// Videos added to public/cutscenes/ as sleep-<style>.webm (+ .mp4, -poster.jpg).
-// Until a style's video ships, main.js plays a short night interstitial.
-export const SHIPPED_SLEEP_CUTSCENES = Object.freeze(new Set(['sleep-bunker']));
+// Videos added to public/cutscenes/ as sleep-<style>.webm (+ .mp4, -poster.jpg);
+// the pipeline-rendered styles come from SHIPPED_MOTION_CLIPS. Until a style's
+// video ships, main.js plays a short night interstitial.
+export const SHIPPED_SLEEP_CUTSCENES = Object.freeze(new Set([
+    'sleep-bunker',
+    ...SLEEP_CUTSCENE_STYLES.map((style) => `sleep-${style}`).filter((id) => SHIPPED_MOTION_CLIPS.has(id))
+]));
 
 /** Which sleep a rest gets, by where and how the operator sleeps. */
 export function pickSleepCutsceneStyle({ campId = null, coopPlayers = 0, hiveBonded = false, infected = false, biome = 'active' } = {}) {

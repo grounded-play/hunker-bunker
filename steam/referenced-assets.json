@@ -34416,6 +34416,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_33_the_cave_was_breathing_key_v1.mp4",
+      "bytes": 2463460,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_33_the_cave_was_breathing_key_v1.webp",
       "bytes": 179594,
       "classification": "runtime-required"
@@ -34703,6 +34708,11 @@
     {
       "path": "interstitials/motion/int_32_black_box_stain_motion_v1.webm",
       "bytes": 5728278,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_33_the_cave_was_breathing_motion_v1.webm",
+      "bytes": 1133680,
       "classification": "runtime-required"
     },
     {

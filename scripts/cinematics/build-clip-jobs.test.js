@@ -61,3 +61,25 @@ describe('motion clip jobs from the cinematics audit', () => {
         expect(Object.keys(design.jobs).sort()).toEqual(built.jobs.map((job) => job.id).sort());
     });
 });
+
+describe('shipped motion clips', () => {
+    it('only lists encoded clips, and the registries play each one', async () => {
+        const { SHIPPED_MOTION_CLIPS } = await import('../../src/cinematics/shippedMotionClips.js');
+        const { SHIPPED_SLEEP_CUTSCENES } = await import('../../src/sleepCutscene.js');
+        for (const id of SHIPPED_MOTION_CLIPS) {
+            const job = byId[id];
+            expect(job, id).toBeTruthy();
+            for (const target of Object.values(job.targets)) {
+                expect(fs.existsSync(path.join(process.cwd(), 'public', target)), `${id} -> ${target}`).toBe(true);
+            }
+            if (job.kind === 'side-story') {
+                expect(SIDE_STORY_INTERSTITIALS[id].status, id).toBe('final');
+                expect(SIDE_STORY_INTERSTITIALS[id].motionWebm, id).toBe(job.targets.webm);
+            } else if (job.kind === 'song-card') {
+                expect(getSongInterstitial(id.replace('card_', '')).motionWebm, id).toBe(job.targets.webm);
+            } else {
+                expect(SHIPPED_SLEEP_CUTSCENES.has(id), id).toBe(true);
+            }
+        }
+    });
+});

@@ -22,7 +22,7 @@ describe('which sleep cutscene plays', () => {
     });
 
     it('lists only videos that are really in public/cutscenes', () => {
-        expect([...SHIPPED_SLEEP_CUTSCENES]).toEqual(['sleep-bunker']);
+        expect(SHIPPED_SLEEP_CUTSCENES.has('sleep-bunker')).toBe(true);
         for (const base of SHIPPED_SLEEP_CUTSCENES) {
             const webm = new URL(`../public/cutscenes/${base}.webm`, import.meta.url);
             const mp4 = new URL(`../public/cutscenes/${base}.mp4`, import.meta.url);

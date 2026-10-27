@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Layered sound design for the motion clips (AudioGen, local).
 
-    ~/tools/audiocraft/.venv/bin/python scripts/cinematics/sound_layers.py render <job|all> [--seed N]
+    ~/tools/audiocraft/.venv/bin/python scripts/cinematics/sound_layers.py render <job...|all> [--seed N]
 
 Each job's layers live in scripts/cinematics/sound-layers.json: an AudioGen
 prompt per layer, a start time, fades and a gain. One render:
@@ -103,13 +103,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest='command', required=True)
     r = sub.add_parser('render')
-    r.add_argument('job', help="a job id, or 'all'")
+    r.add_argument('jobs', nargs='+', help="job ids, or 'all'")
     r.add_argument('--seed', type=int)
     args = parser.parse_args()
 
     jobs = {job['id']: job for job in json.loads(JOBS.read_text())['jobs']}
     design = json.loads(LAYERS.read_text())
-    ids = [job_id for job_id in jobs if job_id in design['jobs']] if args.job == 'all' else [args.job]
+    ids = [job_id for job_id in jobs if job_id in design['jobs']] if args.jobs == ['all'] else args.jobs
     missing = [job_id for job_id in ids if job_id not in design['jobs']]
     if missing:
         raise SystemExit(f'no sound design for: {", ".join(missing)} (scripts/cinematics/sound-layers.json)')
