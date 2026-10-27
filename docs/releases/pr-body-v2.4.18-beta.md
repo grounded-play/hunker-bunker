@@ -3,7 +3,7 @@
 **Target:** `mothership` ← **Source:** `dev/sprint-53`
 **Baseline:** `v2.4.17-beta` (`d3d8d391`, released 2026-10-15)
 **Version:** `2.4.17-beta` → **`2.4.18-beta`** (one patch, `55a4e20a`)
-**Scope:** 130 commits since the release
+**Scope:** 171 commits since the release
 
 Release notes: [`docs/releases/v2.4.18-beta.md`](v2.4.18-beta.md) · Canonical QA: [Sprint 53 master verification plan](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md)
 
@@ -18,10 +18,10 @@ Sprint 53 turns the opening hour into a deliberate first expedition and makes wh
 - **Performance:** the 30–40 s shader freezes are gone; mobile Lighthouse clears its gate.
 - **Voice:** 276 lines of speech that were only ever text are now voiced; camp conversations finally speak.
 - **Steam:** review build 25965936 remediation (overlay hook, wallet fallback, Shift+Tab).
-- **CI:** `steam-build`, red on every push since 10-19, passes again; mobile Lighthouse is borderline (below).
+- **CI:** desktop and mobile Lighthouse pass in the cloud. The latest run found narrow presubmit failures for stale generated asset reports and unused imports; both now pass locally and await the cloud rerun.
 
 > [!WARNING]
-> **Co-op is not release-ready.** The 2026-10-26 two-account playthrough (build `cf925ae9`) shows host/guest mission divergence, intermittent enemy contact damage, the recruited companion snapping instead of walking, camp quests missing from the map, and scroll-dependent multiplayer-select and game-over screens. See [the QA review](../planning/qa-2026-10-26-coop-playthrough-pr-review.md). Merge for the solo/first-expedition work only with that understood, or hold until the P0 items there are fixed.
+> **Co-op is not release-ready.** The 2026-10-27 same-build PvE/PvP session (`7c19a7f8`) proves join/ready/deploy, synchronized PvE boss/world state, proportional PvP damage and matching PvP results. It does **not** close #85/#77 or #51: the PvE guest log and extraction route are missing, PvP rematch/return-to-lobby were not tested, players can deploy unarmed, and Deck performance failed at 9.4 fps with a 36.5 s deploy stall. See the [10-27 QA review](../planning/qa-2026-10-27-pve-pvp-playthrough.md) and the earlier [10-26 co-op review](../planning/qa-2026-10-26-coop-playthrough-pr-review.md).
 
 ## CI status
 
@@ -29,15 +29,15 @@ Every workflow that runs on this PR was reproduced locally from a clean checkout
 
 | Workflow / step | Local result |
 | :--- | :--- |
-| `pr-checks` / `presubmit`: `npm ci`, `lint`, `audit:dependencies` | ✅ |
+| `pr-checks` / `presubmit`: `npm ci`, `lint`, `audit:dependencies` | ⚠️ latest cloud run found three unused Python imports; fixed after `aaa78f3d` |
 | `pr-checks` / `presubmit`: `coverage` | ✅ 6,584 tests across 768 files; 98.6% statements |
-| `steam-build`: `presubmit` (generated-asset audits) | ✅ (was ❌ in the cloud since 10-19) |
+| `steam-build`: `presubmit` (generated-asset audits) | ⚠️ latest cloud run found two stale generated retail-asset reports; refreshed after `aaa78f3d` |
 | `steam-build`: `npm test`, `build`, `steam:config`, `electron-builder --dir`, Linux launch payload | ✅ |
 | `steam-build`: `audit:retail-assets:package` | ✅ app.asar 995,310,105 bytes (was 1,075 MB) |
 | `steam-build`: `steam:audit-depot` | ✅ |
 | `lighthouse` desktop | ✅ |
-| `lighthouse` mobile | ⚠️ **borderline.** Performance passes (86–93); LCP passes on half the runs (3.2 s) and misses by 0.0–0.2 s on the rest (4.0–4.2 s, limit 4.0 s, pessimistic of two runs). Bisected to `6d023c96` (vault gear spinner: 5.9 s); `59b03438` recovers most of it. The cloud run decides; if it fails, the next step is the loader spinner's filters. |
-| `codeql` | ✅ in the cloud on every push (no local CLI) |
+| `lighthouse` mobile | ✅ cloud job passed at `aaa78f3d`; this satisfies #106's 80+ gate |
+| `codeql` | ✅ cloud CodeQL and Code Quality jobs passed at `aaa78f3d` |
 
 `npm audit` (not run by CI) reports two production advisories (body-parser high, ip-address moderate) and dev-only ones (undici, zod); follow-up.
 
@@ -69,6 +69,16 @@ CodeQL cannot run locally (no CodeQL CLI); the cloud CodeQL analysis passed on e
 
 P0: host-authoritative mission/boss progression; enemy contact damage with hit intent/acknowledgement; companion recruit pop and snapping relocation. P1: one camp-quest objective id with a minimap target; multiplayer-select and game-over screens that fit 1280×800 and 1280×720 without scrolling; Deck frame pacing (15 fps). P2: raw ids in the overnight report, telemetry gaps. Details: [QA review](../planning/qa-2026-10-26-coop-playthrough-pr-review.md).
 
+### Updated by the 2026-10-27 PvE/PvP playthrough
+
+Three server logs from the same packaged build (`2.4.18-beta`, `7c19a7f8`) provide useful partial acceptance:
+
+- **PvE:** two accounts joined, readied and deployed; remote wall destruction, guest death/redeploy, two boss kills and synchronized mission abort reached the host. #85/#77 stay open because the guest log, extraction, companion, camp quest, suspend/resume and Game Over layout evidence are missing.
+- **PvP:** two accounts completed one round; four standard hits removed one heart each, the cadence guard rejected an over-fast hit, and both clients recorded the same winner/results. #51 stays open because rematch/return-to-lobby were not exercised and the session exposed an unarmed deploy.
+- **Performance/Deck:** #52 and #53 stay open. Deck PvP averaged 106 ms/frame (9.4 fps, p95 201 ms), and PvE deployment contained a 36.5 s main-thread stall.
+
+Full evidence and the next two-machine route: [10-27 QA review](../planning/qa-2026-10-27-pve-pvp-playthrough.md).
+
 ### Superseded Dependabot PRs (close after merge)
 
 | PR | Covered by |
@@ -80,16 +90,15 @@ P0: host-authoritative mission/boss progression; enemy contact damage with hit i
 
 ### Advanced, not closed (hardware or operations evidence still owed)
 
-Refs #106, #85, #77, #51, #52, #53, #45
+Refs #85, #77, #51, #52, #53, #45
 
 | Ticket | Code state | Closes when |
 | :--- | :--- | :--- |
-| #106 Mobile Lighthouse 38 → 80+ | Score passes (86–93); LCP borderline after the gear-spinner regression | the cloud `lighthouse` mobile job passes |
-| #85 Two-account PvE | Prop, item and enemy replication; readable join failures | paired packaged PvE logs and video |
+| #85 Two-account PvE | 10-27 proves join/deploy, remote wall state, death/redeploy, bosses and synchronized end | paired packaged extraction plus both logs and required route evidence |
 | #77 Playthrough umbrella | Dependent engineering complete | #85 accepted |
-| #51 PvP certification | Authority, spawn protection, damage, vitals, results covered | paired packaged PvP logs |
-| #52 Performance | Shader churn fixed (S53-01), scene weight reduced (S53-02) | fixed-route Deck and RTX frame-time reports |
-| #53 Deck acceptance | Input provenance (S53-04), touch dropdowns, settings telemetry | physical controller-only Deck route |
+| #51 PvP certification | 10-27 proves proportional damage, cadence guard, attribution and matching results | armed deploy plus rematch/return-to-lobby acceptance |
+| #52 Performance | 10-27 fails: Deck 9.4 fps; 36.5 s PvE deploy stall | fixed-route Deck and RTX frame-time reports meeting the stated bars |
+| #53 Deck acceptance | 10-27 proves a controller PvP slice only | full physical controller-only route including suspend/resume |
 | #45 Ship gate | Candidate and runbook | all P0 QA and publisher gates |
 
 ## What to QA
@@ -163,16 +172,16 @@ Test the packaged build from this PR's head, and record the SHA shown in the bui
 
 ## Known gaps
 
-- No packaged, physical-Deck, two-account, Steam Cloud or production-commerce acceptance is claimed (§8 above).
+- The 10-27 packaged two-account and physical-Deck session is partial evidence only; it does not complete the §8 acceptance routes.
 - The eight new voices are provisional; code lines are voiced in English only.
-- Co-op blockers from the 2026-10-26 playthrough (above).
+- Co-op blockers from the 10-26 review remain; the 10-27 session additionally exposes unarmed deploy, 9.4 fps Deck performance and a 36.5 s deploy stall.
 - Foundry discovery, Queen encounter and snail-boss videos still play without doors (song cards use them now).
 - The daily-run launch path still enters the gameplay phase before loading completes.
 - Vey and Rhun covenant trees, final motion for still-backed side stories, and S-17 (visible recalibration install) are follow-up content.
 - Publisher Item Store, MicroTxn and refund checks remain external gates.
 
 <details>
-<summary>All 130 commits since v2.4.17-beta</summary>
+<summary>First 130 commits since v2.4.17-beta (the PR now contains 171)</summary>
 
 | # | Commit | Date | Subject |
 | ---: | :--- | :--- | :--- |

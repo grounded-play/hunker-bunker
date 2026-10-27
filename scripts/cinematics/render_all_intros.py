@@ -2,7 +2,6 @@
 """Batch render and encode opening cinematic intros (flight and crash sequences)."""
 
 import argparse
-import shutil
 import sys
 import time
 from pathlib import Path

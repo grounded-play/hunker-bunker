@@ -1757,7 +1757,14 @@
     "ui/dock/tank-map.webp",
     "ui/dock/tank-status-glass.webp",
     "ui/dock/tank-status.webp",
-    "ui/hud/unified-console-frame.svg"
+    "ui/hud/unified-console-frame.svg",
+    "ui/overlays/arcade_cabinet_overlay.webp",
+    "ui/overlays/armory_workbench_overlay.webp",
+    "ui/overlays/console_kiosk_overlay.webp",
+    "ui/overlays/crt_terminal_overlay.webp",
+    "ui/overlays/fab_automart_overlay.webp",
+    "ui/overlays/slot_minimart_overlay.webp",
+    "ui/overlays/vending_atm_overlay.webp"
   ],
   "assets": [
     {
@@ -36968,6 +36975,41 @@
     {
       "path": "ui/hud/unified-console-frame.svg",
       "bytes": 2746,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ui/overlays/arcade_cabinet_overlay.webp",
+      "bytes": 140542,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ui/overlays/armory_workbench_overlay.webp",
+      "bytes": 44418,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ui/overlays/console_kiosk_overlay.webp",
+      "bytes": 84354,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ui/overlays/crt_terminal_overlay.webp",
+      "bytes": 173050,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ui/overlays/fab_automart_overlay.webp",
+      "bytes": 141018,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ui/overlays/slot_minimart_overlay.webp",
+      "bytes": 136378,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ui/overlays/vending_atm_overlay.webp",
+      "bytes": 203366,
       "classification": "runtime-required"
     }
   ]

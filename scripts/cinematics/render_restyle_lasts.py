@@ -1,9 +1,8 @@
 import argparse
-import os
 import shutil
 import sys
 from pathlib import Path
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import comfy_clips as c
