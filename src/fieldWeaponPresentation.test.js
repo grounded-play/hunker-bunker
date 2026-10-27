@@ -4,6 +4,8 @@ import * as THREE from 'three';
 vi.mock('./player3dOverlay.js', () => ({
     createClassWeapon: vi.fn(async () => {
         const root = new THREE.Group();
+        // The real gameplay factory returns its model rotated into a hand pose.
+        root.rotation.set(Math.PI, 0, -Math.PI / 2);
         root.add(new THREE.Mesh(
             new THREE.BoxGeometry(2, 0.4, 0.3),
             new THREE.MeshStandardMaterial()
@@ -46,6 +48,7 @@ describe('field weapon world presentation', () => {
         const root = await createFieldWeaponDropVisual('cryo_lance');
         expect(root.userData.weapon).toBeTruthy();
         expect(root.userData.halo).toBeTruthy();
+        expect(root.userData.weapon.rotation.toArray().slice(0, 3)).toEqual([0, 0, 0]);
         expect(new THREE.Box3().setFromObject(root.userData.weapon).min.y).toBeCloseTo(0);
         expect(updateFieldWeaponDropVisual(root, 1)).toBe(true);
         const remove = vi.spyOn(root, 'removeFromParent');
