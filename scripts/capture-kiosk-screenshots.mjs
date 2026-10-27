@@ -7,7 +7,7 @@
 //   node scripts/capture-kiosk-screenshots.mjs [baseUrl]
 //
 // Writes docs/screenshots/<deck|pc>_<armory|fabrication_automart|
-// console_kiosk|blackice_arcade>.png and kiosks_deck_vs_pc.png. Run against a
+// console_kiosk|blackice_arcade>.jpg and kiosks_deck_vs_pc.jpg. Run against a
 // dev server (npm run dev); Chrome is used for WebGL.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -39,7 +39,7 @@ async function capture(name, width, height) {
     const shot = async (id) => {
         await page.waitForFunction(() => !document.getElementById('transition-overlay')?.classList.contains('visible'), null, { timeout: 20000 }).catch(() => {});
         await page.waitForTimeout(600);
-        await page.screenshot({ path: path.join(OUT, `${name}_${id}.png`) });
+        await page.screenshot({ path: path.join(OUT, `${name}_${id}.jpg`), type: 'jpeg', quality: 88 });
     };
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
     await clickWhenVisible(page, '#title-newrun-btn', 120000);
@@ -50,8 +50,7 @@ async function capture(name, width, height) {
         await page.waitForTimeout(4000);
     }
     await page.waitForTimeout(6000);
-    await shot('armory_workbench');
-    fs.copyFileSync(path.join(OUT, `${name}_armory_workbench.png`), path.join(OUT, `${name}_armory.png`));
+    await shot('armory');
     await page.click('#armory-btn-embark', { force: true });
     await clickWhenVisible(page, '#net-deploy-btn', 60000);
     // Skip the opening into gameplay.
@@ -108,8 +107,8 @@ fs.mkdirSync(OUT, { recursive: true });
 for (const [name, width, height] of TARGETS) await capture(name, width, height);
 
 // Deck beside PC, one row per machine.
-const inputs = SHOTS.flatMap((id) => TARGETS.flatMap(([name]) => ['-i', path.join(OUT, `${name}_${id}.png`)]));
+const inputs = SHOTS.flatMap((id) => TARGETS.flatMap(([name]) => ['-i', path.join(OUT, `${name}_${id}.jpg`)]));
 const scale = SHOTS.flatMap((_, row) => TARGETS.map((__, col) => `[${row * 2 + col}]scale=1280:-2,pad=1280:800:(ow-iw)/2:(oh-ih)/2:color=0x05080a[v${row * 2 + col}]`));
 const stack = `${scale.join(';')};${SHOTS.map((_, row) => `[v${row * 2}][v${row * 2 + 1}]hstack[r${row}]`).join(';')};${SHOTS.map((_, row) => `[r${row}]`).join('')}vstack=inputs=${SHOTS.length},scale=1920:-2`;
-execFileSync('ffmpeg', ['-y', '-loglevel', 'error', ...inputs, '-filter_complex', stack, path.join(OUT, 'kiosks_deck_vs_pc.png')]);
-console.log('[kiosk-shots] docs/screenshots/kiosks_deck_vs_pc.png');
+execFileSync('ffmpeg', ['-y', '-loglevel', 'error', ...inputs, '-filter_complex', stack, '-q:v', '3', path.join(OUT, 'kiosks_deck_vs_pc.jpg')]);
+console.log('[kiosk-shots] docs/screenshots/kiosks_deck_vs_pc.jpg');

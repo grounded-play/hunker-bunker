@@ -45,6 +45,16 @@
 
 The cryo-route and combat frames were recaptured from the local validation working tree after the floor, prop-repetition, and wall-fixture finish fixes. Both use the deterministic trailer harness. They document the working visual state; packaged hardware acceptance is tracked separately in the [Sprint 53 master plan](docs/planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md).
 
+### 🏧 Terminals You Walk Up To
+
+Every terminal is a physical machine in the bunker: the Fabrication Auto-Mart, the Meridian service terminal and the Black-Ice 21 cabinet, with the live game blurred around them. Their keypads, bolts and coin returns work (try `0451`, or unscrew the four corner bolts). Captured in a real run on Steam Deck and PC:
+
+| Fabrication Auto-Mart | Meridian Service Terminal | Black-Ice 21 |
+| :---: | :---: | :---: |
+| <img src="./docs/screenshots/pc_fabrication_automart.jpg" alt="The Fabrication Auto-Mart kiosk in game: the bay's aisles and recipes inside a vending-machine screen, keypad and coin input below" width="380"> | <img src="./docs/screenshots/pc_console_kiosk.jpg" alt="The Meridian service terminal kiosk in game: base systems, class skills and the night log on its CRT" width="380"> | <img src="./docs/screenshots/pc_blackice_arcade.jpg" alt="The Black-Ice 21 arcade cabinet in game with DEAL, HIT, STAND and DOUBLE buttons" width="380"> |
+
+Deck beside PC for every machine: [`docs/screenshots/`](docs/screenshots/README.md).
+
 ### 🌌 Deep Crust Lore & Interstitials
 
 | Warmth Beneath the Ice | Gigawatt Goliath (Apex Threat) | The Cave Was Breathing |
