@@ -366,6 +366,7 @@ export async function createArmoryScene(canvas) {
                     child.receiveShadow = true;
                 }
             });
+            overlay.root.visible = true;
             operatorGroup.add(overlay.root);
             overlay.setOperatorPolish?.(currentPolishColor);
             applyDecalSprite(currentDecalId);
@@ -712,9 +713,11 @@ export async function createArmoryScene(canvas) {
             }
             operatorGroup.position.x = OPERATOR_HOME.x + departure.speed * Math.max(0, elapsed - 0.15);
             if (operatorGroup.position.x >= departure.exitX) {
+                // Out of frame is enough: the model is never hidden, because the
+                // operator models are cached and a hidden root came back
+                // invisible in the next Armory (QA 2026-10-27).
                 const done = departure;
                 departure = null;
-                if (currentOverlay?.root) currentOverlay.root.visible = false;
                 done.resolve();
             }
         }

@@ -9813,6 +9813,13 @@ function ensureArmoryInitialized() {
 // walks out to screen right before the doors close. Any key or click skips;
 // reduced motion and hb_armory_departure=0 skip it entirely.
 const ARMORY_DEPARTURE_MAX_MS = 4200;
+function resetArmoryDeparture() {
+    document.getElementById('armory-hud-overlay')?.classList.remove('armory-departing');
+    document.documentElement.classList.remove('presentation-cursor-hidden');
+    armorySceneInstance?.resetDeparture?.();
+    armorySceneInstance?.setCaptureCamera?.('armory');
+}
+
 async function playArmoryDeparture() {
     const scene = armorySceneInstance;
     let optedOut;
@@ -9855,6 +9862,7 @@ async function closeArmoryScreen({ embark }) {
             armorySceneInstance?.dispose?.();
             armorySceneInstance = null;
             window.armoryScene = null;
+            document.getElementById('armory-hud-overlay')?.classList.remove('armory-departing');
             armoryUiInstance = null;
             armoryInitPromise = null;
             if (embark) {
@@ -9888,6 +9896,10 @@ async function openArmoryGate(embarkAction, { skipDoor = false } = {}) {
 
     const mountArmory = async () => {
         await ensureArmoryInitialized();
+        // Every visit starts clean of the last EMBARK walk-off: HUD shown,
+        // operator back on the pad, the Armory camera (QA 2026-10-27: after
+        // Game Over the HUD stayed invisible and unclickable).
+        resetArmoryDeparture();
         splash?.classList.add('hidden');
         menu?.classList.add('hidden');
         document.getElementById('armory-screen')?.classList.remove('hidden');
