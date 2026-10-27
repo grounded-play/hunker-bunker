@@ -15,6 +15,7 @@ import { cutsceneCutoffTime } from './src/cutsceneTiming.js';
 import { AudioManager } from './src/audio.js';
 import { assetUrl } from './src/assetUrl.js';
 import { debugLog } from './src/debugConsole.js';
+import { installWebglContextWatch, isCanvasContextLost, replaceLostCanvas } from './src/webglContextWatch.js';
 import { captureMenuVisibilitySnapshot, describeOverlayTransition } from './src/menuVisibility.js';
 import { selectReticleState, resolveReticlePlacement, parseWeaponBlockReason, targetFromCursorClasses, isWeaponDry, diffReticleTelemetry } from './src/reticleState.js';
 import { presentationTelemetry, PRESENTATION_EVENTS } from './src/presentationTelemetry.js';
@@ -144,6 +145,9 @@ import { installAccessibilitySettings } from './src/accessibilitySettings.js';
 import { recordCollectedPickup, recordDebugResourceGrant, resetRunResourceTelemetry } from './src/runTelemetry.js';
 import { loaderBuildLabel, versionLabel } from './src/buildLabels.js';
 import { ensureQaShipRebuildModules } from './src/shipRebuild.js';
+
+// Every WebGL context, logged when the GPU drops it (src/webglContextWatch.js).
+installWebglContextWatch((state, canvas) => debugLog.warn('GPU', `webgl-context-${state}`, { canvas }));
 
 // Installable PWA on the deployed web build only (never Electron or the dev server).
 registerWebServiceWorker();
@@ -7964,8 +7968,8 @@ function returnToMainMenuFromRun({ doorKey = 'base' } = {}) {
             const gameContainer = document.getElementById('game-container');
             const mapBox = document.querySelector('.map-box');
             if (gameContainer && mapBox) {
-                const commandBlock = mapBox.querySelector('.menu-header-actions');
-                mapBox.insertBefore(gameContainer, commandBlock ?? mapBox.querySelector('.module-scanline'));
+                // Back to the top of the box, above the run telemetry, where boot puts it.
+                mapBox.insertBefore(gameContainer, mapBox.firstChild);
                 gameContainer.classList.remove('fullscreen-mode');
                 // A death return leaves the world avatar flagged dead (and pit
                 // deaths may leave its scale at zero). Restore the menu-map
@@ -9696,17 +9700,32 @@ async function runMissionIntroSequence({ deploymentHold = null, forceSectorZero 
 
 let scoutHeroPreview = null;
 let scoutHeroPreviewPromise = null;
+let heroPreviewRebuilds = 0;
 
 function ensureScoutHeroPreview() {
-    const canvas = document.getElementById('char-preview-3d');
+    let canvas = document.getElementById('char-preview-3d');
     if (!canvas) return Promise.resolve(null);
+    // A context the GPU dropped mid-run leaves the preview white; rebuild it
+    // on a fresh canvas.
+    if (scoutHeroPreview && isCanvasContextLost(canvas)) {
+        scoutHeroPreview.dispose();
+        scoutHeroPreview = null;
+        scoutHeroPreviewPromise = null;
+    }
     if (!scoutHeroPreviewPromise) {
+        canvas = replaceLostCanvas(canvas);
         // 3D previews load with their screen, not at boot (issue #106).
         scoutHeroPreviewPromise = import('./src/scoutHeroPreview.js').then(({ createScoutHeroPreview }) => createScoutHeroPreview(canvas))
             .then((preview) => {
                 scoutHeroPreview = preview;
                 preview.setOperatorPolish(getSelectedPolish?.()?.color ?? 0xffffff);
                 preview.setVisible(false);
+                // Not restored within a second: rebuild on a fresh canvas.
+                canvas.addEventListener('webglcontextlost', () => window.setTimeout(() => {
+                    if (!isCanvasContextLost(canvas) || heroPreviewRebuilds >= 3) return;
+                    heroPreviewRebuilds += 1;
+                    if (activePreviewType) void syncHeroPreview(activePreviewType);
+                }, 1000), { once: true });
                 return preview;
             })
             .catch((error) => {
@@ -9772,7 +9791,7 @@ let pendingArmoryEmbarkAction = null;
 function ensureArmoryInitialized() {
     if (!armoryInitPromise) {
         armoryInitPromise = (async () => {
-            const canvas = document.getElementById('armory-canvas');
+            const canvas = replaceLostCanvas(document.getElementById('armory-canvas'));
             const hudContainer = document.getElementById('armory-hud-overlay');
             const { createArmoryScene } = await import('./src/armoryScene.js');
             armorySceneInstance = await createArmoryScene(canvas);
@@ -16547,6 +16566,7 @@ async function syncHeroPreview(type, { loadPreview = true } = {}) {
 
     // The 3D preview loads with its screen, not at boot (issue #106): the
     // boot-time sync only labels the class until the hero menu opens.
+    if (scoutHeroPreview && isCanvasContextLost(document.getElementById('char-preview-3d'))) await ensureScoutHeroPreview();
     const preview = scoutHeroPreview ?? (loadPreview ? await ensureScoutHeroPreview() : null);
     if (requestGeneration !== heroPreviewRequestGeneration) return;
     if (preview) {
