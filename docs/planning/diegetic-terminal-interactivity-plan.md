@@ -113,3 +113,30 @@ Transform the 2D terminal bezel overlays from passive frames into **fully reacti
 - Ensure all clicks on decorative bezel hotspots do not block or interfere with core game actions (`#fab-roll-btn`, `#fab-activate-btn`, recipe grid buttons).
 - Verify all unit and E2E tests pass (`src/fabricationBay.test.js`, `src/crashSiteBuild.test.js`, `src/blackjackPerks.test.js`).
 - Ensure all interactive elements remain accessible via keyboard shortcuts (`1-4`, Arrow keys, `ESC`).
+
+---
+
+## 5. Built on `feature/diegetic-kiosks` (2026-10-27)
+
+| Commit | What |
+| :--- | :--- |
+| `9df5e396` | Every terminal as a physical machine: the Fab Bay placed closer, walkable and installed in a base socket; Auto-Mart, Meridian console and Black-Ice 21 frames; department aisles; i18n keys in seven locales. |
+| `e39784c3` | This plan's first pass: `src/terminalBezelInteractivity.js` (keypad and PIN codes, coin return, gauge, LEDs, hex screws, maintenance hatch with DIP switches, fuse and tape), CRT glass and 3D key travel. |
+| `77ac1e5b` | The bezel controls sit on the painted machine. |
+
+### How the pieces fit
+
+- **Overlays.** Masters live in `art/source/ui/kiosk-overlays/` (chroma-green `.jpg` or already-keyed `.png`); `python3 scripts/ui/key-kiosk-overlays.py` keys them to `public/ui/overlays/*.webp` and measures every hole (screens, aisle buttons, reels) into `src/data/kioskOverlays.json`. Re-run it whenever an overlay is repainted.
+- **Frames.** `src/kioskFrame.js` seats a modal's real UI in its machine: the screen hole holds the terminal, the machine is fitted whole to the modal with the live game blurred around it, and text is sized from the hole, so it lines up and stays legible at any resolution.
+- **Kiosks.** `src/kioskTerminals.js` mounts the world Fab Bay (opens as the Auto-Mart; the menu Fab Bay stays the Foundry hub; the Lotto aisle switches to the Slot-O-Mart when that art has reels), the main terminal (Meridian console) and the Black-Ice 21 cabinet (DEAL / HIT / STAND / DOUBLE under the table).
+- **Painted controls.** `src/data/kioskControls.js` holds each machine's painted controls in frame percentages (bolts, keypad, LCD, LED row, coin input, card reader, dispenser, hatch area; console bolts, LEDs, port panel, speakers, switches). `seatBezel` moves the controller's elements onto them, hides any a machine lacks, and restores the layer when the bay closes. Seated controls are glass over the painting (hover glow, press flash); the slots are click-through, so the closed hatch never eats keypad clicks.
+
+### Rules for adding to it
+
+- New bezel controls go in the controller's layer, then get a seat in `BEZEL_SEATS` and a rectangle per machine in `KIOSK_CONTROLS`. Never position a control against the modal's edges: the modal is the whole viewport.
+- A repainted overlay needs its holes re-measured (the script) and its painted controls re-measured (the data file, on a 10% grid).
+- The Armory workbench overlay is keyed but not mounted: the Armory HUD is viewport-sized (a 470 px minimum sidebar) and hosts the departure shot, so it needs a container-unit layout pass first.
+
+### Verified (browser, 1280 × 800)
+
+Real clicks on the painted Auto-Mart keypad: 0451 + ENT pays out 25 coin and shows the message on the painted LCD. Twelve bolt turns (three per corner) drop the hatch over the lower panel. The console's bolts, LEDs and port-panel readout are seated. The Fab Bay markup is restored exactly when it closes (the Foundry hub still borrows its panels).
