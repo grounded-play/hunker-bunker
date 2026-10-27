@@ -1,0 +1,115 @@
+{
+  "source": "docs/planning/opening-clips-reshoot-2026-10-27.md. Style and avoid list are docs/design/art-style-bible.md §5 verbatim (owner's bible); story beat from the opening text: the ship takes a hypersonic strike on descent and crashes into Sector 9's frozen bunker.",
+  "style": {
+    "prefix": "\"Nordic Cathedral Biomech\" style for the game \"Hunker Bunker\": the hard-line beauty of Nordic Jugendstil / National Romantic architecture — monumental stepped granite massing, deep round arches with heavy keystones, blackened-iron strap bindings and ring clasps, carved bone and stone relief, abstract serpentine interlace carving, frost-etched leaded glass, restrained taut curves — transposed into the sacred bunkers of a dead megacorporation's space-god cult and DECAYED: spalled granite, rust-bled iron, verdigris bronze, lichen and soot, failing lanterns. From WITHIN that design, H.R. Giger-like biology takes form: ribs, vertebrae, tendons, tubes and wet membranes grow out of joints, bindings and cracks, and deeper in adopt the design — vertebrae following the arches, carved interlace becoming living tendrils. Sensual organic curvature carried by form only (no nudity). Beautiful, dark, decorative decay; the juxtaposition of hard-line craft and organic form is the subject. 2D illustration: heavy black contours, woodcut/etching hatching on stone and iron, looser organic hatching with wet highlights on the biology, soft cel shading with painted texture. Mostly darkness; amber lantern light, pale cold light on stone, teal only for screens, bioluminescent green only on the biology. No text unless specified.",
+    "suffix": "16:9 cinematic frame.",
+    "characterLock": "IDENTITY LOCK: preserve the operator from their reference exactly: helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; the helmet stays sealed; one operator only.",
+    "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
+    "motionSuffix": "Single continuous shot, one camera move, natural weight and inertia; hold the final composition for twelve frames. No cuts, no new subjects, no text.",
+    "negative": "readable text, logos with real brands, watermarks, photorealism, 3D render look, lens flare, depth of field, nudity, genitals, sexual acts, gore beyond blood splatter, clean sterile sci-fi, flat vector minimalism, French Art Nouveau excess, Mucha florals, whiplash everywhere, Viking clichés, horned helmets, longships, literal runes, real scripts, gold-leaf opulence, extra hues outside the palette, deformed anatomy, duplicated operator, identity drift, morphing ship, flicker"
+  },
+  "refs": {
+    "style": "public/title_key_art_v2.png",
+    "mothership": "public/sky/body_mothership_derelict.png",
+    "planet": "public/sky/body_planet_dead_ocean.png",
+    "deepSpace": "public/sky/cinematic_deep_space_panorama.jpg",
+    "reentry": "public/sky/fx_reentry_debris.png",
+    "crypt": "public/sky/cinematic_cathedral_crypt_panorama.jpg",
+    "crashFloor": "public/crash_site_broken_floor_v1.png",
+    "cockpit": "public/ending_scorchedsky_cockpit.png"
+  },
+  "classes": {
+    "scout": {
+      "name": "Scout",
+      "operator": "art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png",
+      "look": "a slim operator in glossy bone-white armour plates over a black bodysuit, a sealed rounded white helmet with a black visor, an orange light on one knee and a cyan light on the other",
+      "ship": "public/cutscenes/scout-class-intro.webm@7.6",
+      "wreck": "public/scout_ship.png",
+      "shipLook": "a sleek dark-iron delta interceptor with swept wings, a narrow canopy and twin engines, its seams lit with thin green running lights",
+      "accent": "green"
+    },
+    "tank": {
+      "name": "Tank",
+      "operator": "art/source/art-remaster/sprite-v4/tank/identity/Tank.front-idle-master.png",
+      "look": "a huge hulking operator in heavy weathered olive-brown power armour with massive rounded pauldrons, a sealed helmet with a narrow amber visor slit, small amber and cyan status lights",
+      "ship": "public/cutscenes/tank-class-intro.webm@5.5",
+      "wreck": "public/tank_ship.png",
+      "shipLook": "a massive armoured drop-hauler of stacked iron plating, a heavy rear ramp and banks of round amber-glowing thruster cans",
+      "accent": "amber"
+    },
+    "engineer": {
+      "name": "Engineer",
+      "operator": "art/source/art-remaster/sprite-v4/engineer/identity/Engineer.front-idle-master.png",
+      "look": "a lean operator in tan and gunmetal utility armour with chunky forearm tool braces, a sealed tan helmet with a glowing cyan visor, an orange light on one knee and a cyan light on the other",
+      "ship": "public/cutscenes/engineer-class-intro.webm@6.6",
+      "wreck": "public/engineer_ship.png",
+      "shipLook": "a long low survey shuttle with a teal-glass canopy bubble, sensor dishes and antennae, cyan diagnostic lines along its iron hull",
+      "accent": "teal"
+    }
+  },
+  "shots": {
+    "launch": {
+      "label": "Run to the ship and take off",
+      "durationSec": 8,
+      "target": "{class}-class-intro",
+      "refs": ["style", "operator", "ship"],
+      "firstFrame": {
+        "scout": "The Mothership's launch nave, a cathedral hangar of stepped granite piers and blackened-iron strap bindings under a vault of ribbed bone, amber lanterns along the deck, a deep round-arched launch portal with a heavy keystone at the far end. {operator} sprints across the deck toward {ship} resting on its launch cradle at the mouth of a ribbed launch tube.",
+        "tank": "The Mothership's heavy bay, a cathedral hangar of stepped granite massing and iron-banded columns, steam venting from carved grates, amber lanterns. {operator} strides with heavy steps toward the lowered rear ramp of {ship}, its thruster cans glowing faintly.",
+        "engineer": "The Mothership's service chapel, an engineering bay framed by round granite arches and iron gantries like a side altar, teal screens in carved niches, amber lanterns. {operator} kneels at the flank of {ship}, unclamping a ribbed fuel line from its hull."
+      },
+      "lastFrame": {
+        "scout": "the interceptor blasting out through the arched launch portal on twin green-white engine plumes, the cradle empty and smoking, lantern light shaken across the granite.",
+        "tank": "the drop-hauler lifting off the deck on its banks of amber thrusters, ramp sealed, steam whirling across the bay as the vault's iron iris opens above it.",
+        "engineer": "the shuttle gliding out of the bay along its rail through the arched gate, the fuel line coiled on the deck, teal canopy lit from inside with the operator at the controls."
+      },
+      "action": {
+        "scout": "The Scout sprints, vaults onto the wing and drops into the cockpit; the canopy seals; the catapult fires and the interceptor shoots down the ribbed launch tube and out through the arched portal. Camera tracks low alongside, then holds as the ship streaks away.",
+        "tank": "The Tank strides up the ramp with heavy steps; the ramp hauls shut; thruster cans flare amber one bank at a time and the drop-hauler lifts off the deck through billowing steam toward the opening iris. Camera cranes up with the lift.",
+        "engineer": "The Engineer pulls the fuel line free and coils it, taps a teal diagnostic panel, climbs into the canopy; the shuttle hums, rises off its clamps and glides out along the rail through the arched gate. Camera pans with the shuttle."
+      }
+    },
+    "flight": {
+      "label": "Fly through space",
+      "durationSec": 5,
+      "target": "{class}-intro",
+      "refs": ["style", "ship", "mothership"],
+      "firstFrame": {
+        "scout": "Deep space beside the vast derelict Mothership, a cathedral-hulled vessel of stepped iron plating and ribbed bone buttresses lit by a few amber ports. {ship} streaks away from its launch portal toward a field of tumbling hull debris.",
+        "tank": "Deep space beside the vast derelict Mothership, a cathedral-hulled vessel of stepped iron plating and ribbed bone buttresses. {ship} pulls away from the hull on its amber thruster banks toward a drifting belt of ice shards.",
+        "engineer": "Deep space beside the vast derelict Mothership, a cathedral-hulled vessel of stepped iron plating and ribbed bone buttresses. {ship} drifts clear of the hull, its sensor dishes unfolding, teal scan lines sweeping ahead into the dark."
+      },
+      "lastFrame": {
+        "scout": "the interceptor small and fast against the frozen planet that now fills the frame, cold light on its curve, debris trailing behind.",
+        "tank": "the drop-hauler, plating scarred and glinting with frost, lumbering toward the frozen planet that fills the frame ahead.",
+        "engineer": "the shuttle a small teal spark before the frozen planet that fills the frame, a scan grid traced across the planet's surface."
+      },
+      "action": {
+        "scout": "The interceptor barrel-rolls through the tumbling debris at speed, slipping between spinning hull plates; the camera chases it out of the field as the frozen planet swings into view.",
+        "tank": "The drop-hauler ploughs straight through the ice belt, shards bursting against its armour; the camera holds behind it as the frozen planet rises ahead.",
+        "engineer": "The shuttle threads a careful path while teal scan beams sweep the dark and lock onto the planet; the camera drifts alongside as the frozen planet grows to fill the frame."
+      }
+    },
+    "crash": {
+      "label": "The crash",
+      "durationSec": 6,
+      "target": "{class}-crash",
+      "refs": ["style", "ship", "wreck"],
+      "firstFrame": {
+        "scout": "High above the frozen sector, {ship} diving through the upper atmosphere wreathed in re-entry fire, the ice-bound surface and its buried granite bunker spires far below in cold light.",
+        "tank": "High above the frozen sector, {ship} descending heavily through the upper atmosphere, its armour glowing with re-entry heat, the ice-bound surface and buried granite bunker spires far below.",
+        "engineer": "High above the frozen sector, {ship} gliding down through the upper atmosphere, teal canopy lit, re-entry glow along its hull, the ice-bound surface and buried granite bunker spires far below."
+      },
+      "lastFrame": {
+        "scout": "the wrecked interceptor, one wing torn away, nose buried in shattered granite inside a dark cathedral crypt beneath the ice, smoke rising into the vault, ice and rubble raining through the hole it punched, one amber emergency lamp.",
+        "tank": "the wrecked drop-hauler lying belly-down at the end of a long gouged trench inside a dark cathedral crypt beneath the ice, armour buckled, thruster cans smoking, granite arches cracked around it, one amber emergency lamp.",
+        "engineer": "the wrecked shuttle on its side inside a dark cathedral crypt beneath the ice, hull panels scattered, dishes snapped, sparks and flickering teal screens through the cracked canopy, granite arches above, one amber emergency lamp."
+      },
+      "action": {
+        "scout": "A hypersonic streak lances up from the surface and clips the interceptor; a wing shears away and it cartwheels down trailing fire, punches through the ice sheet into the crypt below and skids to a stop in a burst of rubble.",
+        "tank": "A hypersonic strike slams into the drop-hauler's flank; thruster banks fail one by one and it drops like a stone, smashes through the ice belly-first and ploughs a trench across the crypt floor.",
+        "engineer": "A hypersonic strike flashes past and the shockwave tears panels off the shuttle; its systems flicker teal and red as it spirals down, breaks through the ice and rolls across the crypt floor, sparks spraying."
+      }
+    }
+  }
+}

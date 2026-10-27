@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Render the game's missing motion clips on the local ComfyUI.
 
-Jobs come from scripts/cinematics/clip-jobs.json (build-clip-jobs.mjs).
+Jobs come from scripts/cinematics/clip-jobs.json (build-clip-jobs.mjs), or
+another manifest selected with HB_CINEMATIC_JOBS.
 Everything runs on this machine against the ComfyUI server at
 http://127.0.0.1:8188 with locally installed models:
 
+  prop    painted prop-plate candidates grounded by a physical render
   still   first-frame candidates: FLUX.2 klein 4B guided by
           the player class reference image, or Z-Image Turbo (--model zimage,
           text only)
@@ -45,10 +47,11 @@ import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-JOBS = ROOT / 'scripts/cinematics/clip-jobs.json'
+JOBS = Path(os.environ.get('HB_CINEMATIC_JOBS', str(ROOT / 'scripts/cinematics/clip-jobs.json')))
 MASTERS = ROOT / 'art/source/cinematics'
 PUBLIC = ROOT / 'public'
 SHIPPED = ROOT / 'src/cinematics/shippedMotionClips.js'
+LOADOUT_SHIPPED = ROOT / 'src/cinematics/shippedLoadoutClips.js'
 COMFY = os.environ.get('HB_COMFY_URL', 'http://127.0.0.1:8188')
 COMFY_ROOT = Path(os.environ.get('HB_COMFY_ROOT', str(Path.home() / 'Desktop/icecave/xpsr/ComfyUI')))
 AUDIOCRAFT_PY = os.environ.get('HB_AUDIOCRAFT_PY', str(Path.home() / 'tools/audiocraft/.venv/bin/python'))
@@ -267,6 +270,7 @@ def first_frame_for(job, size):
 
 
 def motion_prompt(style, job):
+    style = job.get('style') or style
     trigger = f"{job['trigger']}, " if job.get('trigger') else ''
     ending = f" The shot ends on {job['lastFrame']}" if job.get('lastFrame') else ''
     identity = f" {job['identityLock']}" if job.get('identityLock') else ''
@@ -281,10 +285,12 @@ def job_loras(job, model, override=None):
 
 def frame_prompt(style, job, endpoint):
     """Compose scene content with the versioned house and identity locks."""
+    style = job.get('style') or style
     scene = job['firstFrame']['prompt'] if endpoint == 'first' else job.get('lastFrame', '')
     identity = f" {job['identityLock']}" if job.get('identityLock') else ''
     continuity = f" {style['continuityLock']}" if endpoint == 'last' else ''
-    return f"{style['prefix']} {scene} {style['suffix']}{identity}{continuity}".strip()
+    plate = f"{style['plateLock']} " if endpoint == 'first' and job['firstFrame'].get('plate') and style.get('plateLock') else ''
+    return f"{plate}{style['prefix']} {scene} {style['suffix']}{identity}{continuity}".strip()
 
 
 def next_take(folder, prefix):
@@ -295,14 +301,49 @@ def next_take(folder, prefix):
 # ── Commands ────────────────────────────────────────────────────────────
 
 def reference_png(path):
-    """A character reference flattened onto neutral grey (the masters are keyed RGBA)."""
+    """A reference image flattened onto neutral grey (the masters are keyed RGBA);
+    `video.webm@7.6` takes the frame at 7.6 s."""
+    path, _, at = str(path).partition('@')
     source = ROOT / path
-    out = MASTERS / '_references' / f'{source.stem}.png'
+    out = MASTERS / '_references' / (f'{source.stem}_{at.replace(".", "_")}s.png' if at else f'{source.stem}.png')
+    if at:
+        if not out.exists() or out.stat().st_mtime < source.stat().st_mtime:
+            out.parent.mkdir(parents=True, exist_ok=True)
+            run(['ffmpeg', '-y', '-loglevel', 'error', '-ss', at, '-i', str(source), '-frames:v', '1', str(out)])
+        return out
     if not out.exists() or out.stat().st_mtime < source.stat().st_mtime:
         out.parent.mkdir(parents=True, exist_ok=True)
         run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'color=c=0x808080:s=16x16', '-i', str(source),
              '-filter_complex', '[0][1]scale2ref[bg][fg];[bg][fg]overlay=format=auto,format=rgb24', '-frames:v', '1', str(out)])
     return out
+
+
+def cmd_prop(args):
+    """Paint a catalog-true prop plate before composing the cinematic frame."""
+    style, jobs = load_jobs()
+    job = jobs[args.job]
+    prop = job.get('propPass')
+    if not prop:
+        raise SystemExit(f"{job['id']} has no propPass")
+    folder = job_dir(job['id'])
+    source = reference_png(prop['source'])
+    reference = upload_image(source)
+    prompt = f"{style.get('plateLock', '')} {style['prefix']} {prop['prompt']} {style['suffix']}".strip()
+    loras = job_loras(job, 'flux', args.lora)
+    for _ in range(args.takes):
+        seed = args.seed if args.seed is not None else random.randrange(2**31)
+        prefix = f"hunker_cine/{job['id']}_prop"
+        workflow = with_loras(flux2_klein_still(prompt, seed, prefix=prefix, references=[reference]), loras)
+        frames = run_workflow(workflow, f"{job['id']} prop plate (flux)", front=True)
+        index = len(list(folder.glob('prop_*.png'))) + 1
+        out = folder / f'prop_{index}.png'
+        shutil.copy(frames[0], out)
+        out.with_suffix('.json').write_text(json.dumps({
+            'job': job['id'], 'stage': 'prop', 'model': 'flux-2-klein-4b',
+            'seed': seed, 'prompt': prompt, 'physicalSource': prop['source'], 'loras': loras
+        }, indent=2) + '\n')
+        print(f'[prop] {out.relative_to(ROOT)}')
+    print(f"[prop] pick one: cp {folder.relative_to(ROOT)}/prop_<n>.png {folder.relative_to(ROOT)}/prop_plate.png")
 
 
 def cmd_still(args):
@@ -315,7 +356,9 @@ def cmd_still(args):
     prompt = frame_prompt(style, job, 'first')
     if args.model == 'zimage':
         prompt = prompt.replace(' from the reference image', '')
-    references = [upload_image(reference_png(path)) for path in job['firstFrame'].get('references', [])] if args.model == 'flux' else []
+    painted_plate = folder / 'prop_plate.png'
+    plate = [painted_plate if painted_plate.exists() else job['firstFrame']['plate']] if job['firstFrame'].get('plate') else []
+    references = [upload_image(reference_png(path)) for path in plate + job['firstFrame'].get('references', [])] if args.model == 'flux' else []
     loras = job_loras(job, args.model, args.lora)
     if args.prompt_extra:
         prompt = f'{prompt} {args.prompt_extra}'
@@ -345,7 +388,7 @@ def cmd_last(args):
     prompt = frame_prompt(style, job, 'last')
     # The approved first frame leads; class models ride along, but not key art
     # the first frame was already redrawn from (it pulls the old cast back in).
-    carried = job['firstFrame'].get('references', []) if job['firstFrame'].get('model', 'flux') == 'flux' else []
+    carried = job['firstFrame'].get('references', [])
     reference_paths = [first_frame_for(job, (1280, 720)), *[reference_png(path) for path in carried]]
     references = [upload_image(path) for path in reference_paths] if args.model == 'flux' else []
     loras = job_loras(job, args.model, getattr(args, 'lora', None))
@@ -390,7 +433,8 @@ def cmd_clip(args):
         loras = job_loras(job, args.model, getattr(args, 'lora', None))
         if getattr(args, 'prompt_extra', None):
             prompt = f'{prompt} {args.prompt_extra}'
-        pngs = sorted(run_workflow(with_loras(builder(image, prompt, style['negative'], seed, frames, width, height, steps, prefix), loras), f'{job_id} {args.model} take {take}'))
+        negative = (job.get('style') or style)['negative']
+        pngs = sorted(run_workflow(with_loras(builder(image, prompt, negative, seed, frames, width, height, steps, prefix), loras), f'{job_id} {args.model} take {take}'))
         out = folder / f'take_{args.model}_{take}.mp4'
         listing = folder / f'.frames_{take}.txt'
         listing.write_text(''.join(f"file '{p}'\nduration {1 / FPS:.6f}\n" for p in pngs))
@@ -401,7 +445,7 @@ def cmd_clip(args):
         run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(out), '-vf', f'select=not(mod(n\\,{max(1, len(pngs) // 6)})),scale=480:-1,tile=6x1', '-frames:v', '1', str(sheet)])
         out.with_suffix('.json').write_text(json.dumps({
             'job': job_id, 'model': args.model, 'take': take, 'seed': seed, 'steps': steps, 'frames': len(pngs),
-            'size': [width, height], 'prompt': prompt, 'negative': style['negative'], 'loras': loras, 'renderSeconds': round(time.time() - started)
+            'size': [width, height], 'prompt': prompt, 'negative': negative, 'loras': loras, 'renderSeconds': round(time.time() - started)
         }, indent=2) + '\n')
         for png in pngs:
             png.unlink(missing_ok=True)
@@ -443,15 +487,21 @@ def cmd_encode(args):
     if not take.exists():
         raise SystemExit(f'no take {take.relative_to(ROOT)}')
     duration = min(float(job['durationSec']), probe_duration(take))
-    music = PUBLIC / job['audio'].lstrip('/')
+    # No track (the opening: the game's music plays over it): silence stands in
+    # for the music so the bed and the graph keep their inputs.
+    music = ['-i', str(PUBLIC / job['audio'].lstrip('/'))] if job.get('audio') else ['-f', 'lavfi', '-t', f'{duration:.3f}', '-i', 'anullsrc=r=48000:cl=stereo']
     bed_take = None if args.no_sound else sound_take(job['id'], args.sound)
     music_gain, bed_gain = 0.0, -5.0
     if bed_take:
         mix = json.loads((bed_take / 'take.json').read_text())
         music_gain = float(mix.get('musicGainDb', 0))
         bed_gain = float(mix.get('bedGainDb', -5))
+    if not job.get('audio'):
+        music_gain = -90.0
     graph = audio_graph(duration, music_gain, bool(bed_take), bed_gain)
-    sources = ['-i', str(take), '-i', str(music)] + (['-i', str(bed_take / 'bed.wav')] if bed_take else [])
+    if not job.get('audio'):
+        graph = graph.replace(',loudnorm=I=-18:TP=-2', '', 1)  # nothing to normalise in silence
+    sources = ['-i', str(take), *music] + (['-i', str(bed_take / 'bed.wav')] if bed_take else [])
     endpoint = job_dir(job['id']) / 'last_frame.png'
     endpoint_locked = endpoint.exists() and not getattr(args, 'no_end_lock', False)
     endpoint_index = 3 if bed_take else 2
@@ -478,9 +528,12 @@ def cmd_encode(args):
              '-map', '[vout]', '-map', '[aout]', '-t', f'{duration:.3f}', *codec, str(out)])
         endpoint_note = ', approved last frame' if endpoint_locked else ''
         print(f'[encode] {out.relative_to(ROOT)} ({out.stat().st_size // 1024} KB, {"music + " + bed_take.name if bed_take else "music only"}{endpoint_note})')
-    if not args.preview:
+    if not args.preview and job.get('kind') != 'loadout':
         mark_shipped(job['id'])
         print(f"[encode] {job['id']} is live ({SHIPPED.relative_to(ROOT)})")
+    elif not args.preview:
+        mark_loadout_shipped(job['id'])
+        print(f"[encode] {job['id']} is live ({LOADOUT_SHIPPED.relative_to(ROOT)})")
 
 
 def shipped_ids():
@@ -491,6 +544,18 @@ def mark_shipped(job_id):
     """List the job in shippedMotionClips.js so its registry entry plays the clip."""
     body = ''.join(f"    '{job_id}',\n" for job_id in sorted(shipped_ids() | {job_id}))
     SHIPPED.write_text(re.sub(r'new Set\(\[\n.*?\]\)\);', lambda _: f'new Set([\n{body}]));', SHIPPED.read_text(), flags=re.S))
+
+
+def mark_loadout_shipped(job_id):
+    """Register an encoded insert without touching the story-clip registry."""
+    ids = set(re.findall(r"^    '([^']+)',$", LOADOUT_SHIPPED.read_text(), re.M))
+    body = ''.join(f"    '{item_id}',\n" for item_id in sorted(ids | {job_id}))
+    LOADOUT_SHIPPED.write_text(re.sub(
+        r'new Set\(\[\n.*?\]\)\);',
+        lambda _: f'new Set([\n{body}]));',
+        LOADOUT_SHIPPED.read_text(),
+        flags=re.S
+    ))
 
 
 def free_comfy_vram():
@@ -513,23 +578,35 @@ def cmd_sound(args):
 
 def cmd_make(args):
     """One full clip: a video take, a sound bed, and the finished preview encode."""
+    _, jobs = load_jobs()
+    job = jobs[args.job]
     cmd_clip(argparse.Namespace(job=args.job, model=args.model, seed=args.seed, steps=None, max_seconds=args.max_seconds))
-    cmd_sound(argparse.Namespace(job=args.job, seed=args.seed))
+    if job.get('generateSound', True):
+        cmd_sound(argparse.Namespace(job=args.job, seed=args.seed))
     folder = job_dir(args.job)
     newest = max(folder.glob(f'take_{args.model}_*.mp4'), key=lambda p: int(p.stem.split('_')[-1]))
-    cmd_encode(argparse.Namespace(job=args.job, take=newest.stem, preview=True, sound=None, no_sound=False))
+    cmd_encode(argparse.Namespace(job=args.job, take=newest.stem, preview=True, sound=None,
+                                  no_sound=not job.get('generateSound', True), no_end_lock=False))
 
 
 def cmd_batch(args):
     """Sound beds first (one AudioGen load), then takes back to back, each shipped as it lands."""
     _, jobs = load_jobs()
-    targets = [job_id for job_id in (args.jobs or list(jobs)) if args.redo or job_id not in shipped_ids()]
-    unscored = [job_id for job_id in targets if not sound_take(job_id)]
+    # The opening replaces shipped intros, so it renders only when named.
+    default = [job_id for job_id, job in jobs.items() if job['kind'] != 'opening']
+    targets = [job_id for job_id in (args.jobs or default) if args.redo or job_id not in shipped_ids()]
+    unscored = [job_id for job_id in targets if jobs[job_id].get('generateSound', True) and not sound_take(job_id)]
     if unscored:
         free_comfy_vram()
         subprocess.run([AUDIOCRAFT_PY, str(ROOT / 'scripts/cinematics/sound_layers.py'), 'render', *unscored], check=True)
     for job_id in targets:
         folder = job_dir(job_id)
+        prop_chosen = folder / 'prop_plate.png'
+        if jobs[job_id].get('propPass') and (args.redo or not prop_chosen.exists()):
+            cmd_prop(argparse.Namespace(job=job_id, takes=1, seed=None, lora=None))
+            newest_prop = max(folder.glob('prop_*.png'), key=lambda p: int(p.stem.split('_')[-1]))
+            shutil.copy(newest_prop, prop_chosen)
+            print(f'[batch] {job_id}: {newest_prop.name} -> {prop_chosen.name}', flush=True)
         # Unattended: the newest first/last still becomes the approved frame
         # when none has been picked (review and re-pick before release).
         for endpoint, command in (('first', cmd_still), ('last', cmd_last)):
@@ -549,7 +626,8 @@ def cmd_batch(args):
             takes = sorted(folder.glob(f'take_{args.model}_*.mp4'), key=lambda p: int(p.stem.split('_')[-1]))
         if not takes:
             continue
-        cmd_encode(argparse.Namespace(job=job_id, take=takes[-1].stem, preview=False, sound=None, no_sound=False))
+        cmd_encode(argparse.Namespace(job=job_id, take=takes[-1].stem, preview=False, sound=None,
+                                      no_sound=jobs[job_id].get('kind') == 'loadout', no_end_lock=False))
 
 
 def cmd_status(args):
@@ -557,16 +635,19 @@ def cmd_status(args):
     for job in jobs.values():
         folder = MASTERS / job['id']
         takes = sorted(p.stem for p in folder.glob('take_*.mp4')) if folder.exists() else []
+        prop = 'chosen' if (folder / 'prop_plate.png').exists() else ('needs prop' if job.get('propPass') else '-')
         first = 'key art' if job['firstFrame'].get('image') else ('chosen' if (folder / 'first_frame.png').exists() else 'needs still')
         last = 'chosen' if (folder / 'last_frame.png').exists() else 'needs still'
         encoded = all((PUBLIC / t.lstrip('/')).exists() for t in job['targets'].values())
         sound = sound_take(job['id'])
-        print(f"{job['id']:<28} {job['kind']:<10} first: {first:<11} last: {last:<11} takes: {', '.join(takes) or '-':<30} sound: {sound.name if sound else '-':<8} encoded: {'yes' if encoded else 'no'}")
+        print(f"{job['id']:<44} {job['kind']:<10} prop: {prop:<10} first: {first:<11} last: {last:<11} takes: {', '.join(takes) or '-':<30} sound: {sound.name if sound else '-':<8} encoded: {'yes' if encoded else 'no'}")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest='command', required=True)
+    p = sub.add_parser('prop'); p.add_argument('job'); p.add_argument('--takes', type=int, default=3); p.add_argument('--seed', type=int)
+    p.add_argument('--lora', action='append', help='models/loras file[:strength], repeatable')
     s = sub.add_parser('still'); s.add_argument('job'); s.add_argument('--takes', type=int, default=3); s.add_argument('--seed', type=int)
     s.add_argument('--model', choices=['flux', 'zimage'], help="flux: FLUX.2 klein with the reference images; zimage: Z-Image Turbo, text only (default: the job's)")
     s.add_argument('--lora', action='append', help='models/loras file[:strength], repeatable')
@@ -591,7 +672,7 @@ def main():
     b.add_argument('--redo', action='store_true', help='render a new take even if the job has one or is live')
     sub.add_parser('status')
     args = parser.parse_args()
-    {'still': cmd_still, 'last': cmd_last, 'clip': cmd_clip, 'encode': cmd_encode, 'sound': cmd_sound, 'make': cmd_make, 'batch': cmd_batch, 'status': cmd_status}[args.command](args)
+    {'prop': cmd_prop, 'still': cmd_still, 'last': cmd_last, 'clip': cmd_clip, 'encode': cmd_encode, 'sound': cmd_sound, 'make': cmd_make, 'batch': cmd_batch, 'status': cmd_status}[args.command](args)
 
 
 if __name__ == '__main__':

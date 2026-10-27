@@ -613,6 +613,87 @@
         }
       ],
       "bedGainDb": 0
+    },
+    "opening-launch": {
+      "musicGainDb": 0,
+      "bedGainDb": 0,
+      "layers": [
+        {
+          "id": "hangar",
+          "prompt": "vast echoing metal hangar ambience with distant machinery and hissing steam vents",
+          "gainDb": -12
+        },
+        {
+          "id": "steps",
+          "prompt": "heavy armoured boots running on a steel deck",
+          "gainDb": -11,
+          "start": 0.3
+        },
+        {
+          "id": "canopy",
+          "prompt": "hydraulic cockpit canopy closing and locking with a heavy clunk",
+          "gainDb": -10,
+          "start": 3.0
+        },
+        {
+          "id": "launch",
+          "prompt": "jet engines spooling up and a spacecraft launching with a deep roaring blast",
+          "gainDb": -6,
+          "start": 4.5
+        }
+      ]
+    },
+    "opening-flight": {
+      "musicGainDb": 0,
+      "bedGainDb": 0,
+      "layers": [
+        {
+          "id": "cabin",
+          "prompt": "low rumbling spacecraft engine drone inside a cockpit",
+          "gainDb": -12
+        },
+        {
+          "id": "debris",
+          "prompt": "small metal debris and ice pinging and scraping against a ship hull",
+          "gainDb": -12,
+          "start": 0.8
+        },
+        {
+          "id": "pass",
+          "prompt": "a fast spacecraft whooshing past with a doppler roar",
+          "gainDb": -9,
+          "start": 2.0
+        }
+      ]
+    },
+    "opening-crash": {
+      "musicGainDb": 0,
+      "bedGainDb": 0,
+      "layers": [
+        {
+          "id": "reentry",
+          "prompt": "roaring wind and fire of a spacecraft re-entering the atmosphere",
+          "gainDb": -9
+        },
+        {
+          "id": "strike",
+          "prompt": "a supersonic missile streak followed by a huge metallic explosion",
+          "gainDb": -6,
+          "start": 1.2
+        },
+        {
+          "id": "alarm",
+          "prompt": "cockpit warning alarms blaring and electrical sparks",
+          "gainDb": -12,
+          "start": 1.6
+        },
+        {
+          "id": "impact",
+          "prompt": "a massive crash of metal smashing through ice and rock, debris tumbling",
+          "gainDb": -5,
+          "start": 3.6
+        }
+      ]
     }
   }
 }

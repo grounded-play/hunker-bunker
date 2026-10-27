@@ -20,14 +20,14 @@ describe('motion clip jobs from the cinematics audit', () => {
 
     it('redraws from the key art the game shows and lands where the runtime looks', () => {
         const card = byId.card_33;
-        expect(card.firstFrame.references).toEqual([`public${getSongInterstitial('33').image}`]);
+        expect(card.firstFrame.plate).toBe(`public${getSongInterstitial('33').image}`);
         expect(card.targets.webm).toBe('/interstitials/motion/int_33_the_cave_was_breathing_motion_v1.webm');
         expect(card.audio).toBe(getSongInterstitial('33').audio);
-        expect(byId.kaelen_diagnostic_cradle.firstFrame.references).toEqual([`public${SIDE_STORY_INTERSTITIALS.kaelen_diagnostic_cradle.image}`]);
+        expect(byId.kaelen_diagnostic_cradle.firstFrame.plate).toBe(`public${SIDE_STORY_INTERSTITIALS.kaelen_diagnostic_cradle.image}`);
         expect(byId['sleep-cryo-tank'].targets).toEqual({
             webm: '/cutscenes/sleep-cryo-tank.webm', mp4: '/cutscenes/sleep-cryo-tank.mp4', poster: '/cutscenes/sleep-cryo-tank-poster.jpg'
         });
-        expect(byId['sleep-cryo-tank'].firstFrame.prompt).toMatch(/cryo pod.*the Tank from the reference image/);
+        expect(byId['sleep-cryo-tank'].firstFrame.prompt).toMatch(/cryo pod.*the Tank from reference image 2/);
     });
 
     it('puts the player\'s own class model in every sleep frame', () => {
@@ -41,7 +41,7 @@ describe('motion clip jobs from the cinematics audit', () => {
     });
 
     it('makes every cut the grindhouse cut: first frame, last frame, action, trigger and adult add-ons', () => {
-        for (const job of built.jobs) {
+        for (const job of built.jobs.filter((entry) => entry.kind !== 'opening')) {
             expect(job.action, job.id).toBeTruthy();
             expect(job.lastFrame, job.id).toBeTruthy();
             expect(job.firstFrame.prompt, job.id).toBeTruthy();
@@ -59,6 +59,27 @@ describe('motion clip jobs from the cinematics audit', () => {
         for (const job of built.jobs.filter((entry) => entry.kind === 'sleep')) {
             expect(job.identityLock, job.id).toBe(built.style.characterLock);
         }
+    });
+
+    it('reshoots the opening per class from the art bible, with its references in order', () => {
+        const bible = fs.readFileSync(path.join(path.dirname(AUDIT_DOC), '../design/art-style-bible.md'), 'utf8');
+        for (const shot of ['launch', 'flight', 'crash']) {
+            for (const cls of ['scout', 'tank', 'engineer']) {
+                const job = byId[`opening-${shot}-${cls}`];
+                expect(job?.kind, `${shot}-${cls}`).toBe('opening');
+                expect(job.firstFrame.prompt).toMatch(/^Reference images: image 1 is the game key art/);
+                expect(job.firstFrame.references[0]).toBe('public/title_key_art_v2.png');
+                expect(job.lastFrame && job.action, job.id).toBeTruthy();
+                expect(job.loras, job.id).toBeUndefined();
+            }
+        }
+        // The opening speaks the owner's §5 block, word for word.
+        expect(bible).toContain('Sensual organic curvature carried\nby form only (no nudity).');
+        expect(byId['opening-crash-tank'].style.prefix).toContain('"Nordic Cathedral Biomech" style for the game "Hunker Bunker"');
+        expect(byId['opening-launch-scout'].targets.webm).toBe('/cutscenes/scout-class-intro.webm');
+        expect(byId['opening-flight-tank'].targets.webm).toBe('/cutscenes/tank-intro.webm');
+        expect(byId['opening-crash-engineer'].targets.webm).toBe('/cutscenes/engineer-crash.webm');
+        expect(byId['opening-launch-tank'].firstFrame.references).toContain('art/source/art-remaster/sprite-v4/tank/identity/Tank.front-idle-master.png');
     });
 
     it('parses the audit entry and table formats', () => {

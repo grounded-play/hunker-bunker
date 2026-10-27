@@ -25,6 +25,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 export const AUDIT_DOC = path.join(ROOT, 'docs/planning/camp-interaction-and-cinematics-audit-2026-10-16.md');
 const OUT = path.join(ROOT, 'scripts/cinematics/clip-jobs.json');
 export const CUT_PROMPTS = path.join(ROOT, 'scripts/cinematics/cut-prompts.json');
+export const OPENING_SHOTS = path.join(ROOT, 'scripts/cinematics/opening-shots.json');
 
 const SLEEP_AUDIO = '/cutscenes/sleep-bunker.webm';
 
@@ -93,7 +94,8 @@ export function sleepJobs(cut) {
         kind: 'sleep',
         title: id,
         soundDesign: `sleep-${shot}`,
-        firstFrame: { prompt, references: classes.map((cls) => cut.classes[cls].reference), model: 'flux' },
+        // Image 1 is the game plate the shot is painted into; the class models follow.
+        firstFrame: { prompt, plate: cut.sleep[shot].plate, references: classes.map((cls) => cut.classes[cls].reference), model: 'flux' },
         identityLock: cut.style.characterLock,
         action: cut.sleep[shot].action,
         lastFrame: cut.sleep[shot].lastFrame,
@@ -106,12 +108,12 @@ export function sleepJobs(cut) {
     const jobs = [];
     for (const [shot, spec] of Object.entries(cut.sleep)) {
         if (spec.classes) {
-            const prompt = spec.classes.reduce((text, cls, index) => text.replace(`{${cls}}`, `the ${cut.classes[cls].name} from reference image ${index + 1}, ${cut.classes[cls].look},`), spec.firstFrame);
+            const prompt = spec.classes.reduce((text, cls, index) => text.replace(`{${cls}}`, `the ${cut.classes[cls].name} from reference image ${index + 2}, ${cut.classes[cls].look},`), spec.firstFrame);
             jobs.push(job(`sleep-${shot}`, shot, spec.classes, prompt));
             continue;
         }
         for (const [cls, look] of Object.entries(cut.classes)) {
-            jobs.push(job(`sleep-${shot}-${cls}`, shot, [cls], spec.firstFrame.replace('{operator}', `the ${look.name} from the reference image, ${look.look},`)));
+            jobs.push(job(`sleep-${shot}-${cls}`, shot, [cls], spec.firstFrame.replace('{operator}', `the ${look.name} from reference image 2, ${look.look},`)));
         }
     }
     return jobs;
@@ -125,8 +127,8 @@ function sceneJob(cut, id, kind, spec, extra) {
         id,
         kind,
         title: spec.title,
-        // Z-Image holds the look and the explicit brief; the key art rides along for the last frame.
-        firstFrame: { prompt: scene.firstFrame, references: [`public${spec.image}`], model: 'zimage' },
+        // The key art is the plate the shot is painted into.
+        firstFrame: { prompt: scene.firstFrame, plate: `public${spec.image}`, references: [], model: 'flux' },
         action: scene.action,
         lastFrame: scene.lastFrame,
         trigger: scene.trigger,
@@ -136,7 +138,48 @@ function sceneJob(cut, id, kind, spec, extra) {
     };
 }
 
-export function buildClipJobs(doc, cut = JSON.parse(fs.readFileSync(CUT_PROMPTS, 'utf8'))) {
+/**
+ * The opening, reshot per class: launch, flight and crash. Each job carries the
+ * art bible style (its own `style`, not the grindhouse cut's) and names its
+ * reference images in order, so the prompt can say which image is which.
+ */
+export function openingJobs(opening) {
+    const ROLE = {
+        style: 'the game key art, for style and architecture',
+        operator: 'the operator',
+        ship: 'the ship',
+        wreck: 'the ship after the crash',
+        mothership: 'the Mothership'
+    };
+    const jobs = [];
+    for (const [shotId, shot] of Object.entries(opening.shots)) {
+        for (const [cls, spec] of Object.entries(opening.classes)) {
+            const paths = shot.refs.map((role) => spec[role] ?? opening.refs[role]);
+            const legend = shot.refs.map((role, index) => `image ${index + 1} is ${ROLE[role] ?? role}`).join('; ');
+            const fill = (text) => text
+                .replace('{operator}', `the ${spec.name} (${spec.look})`)
+                .replace('{ship}', `the ${spec.name}'s ship (${spec.shipLook})`);
+            const base = shot.target.replace('{class}', cls);
+            jobs.push({
+                id: `opening-${shotId}-${cls}`,
+                kind: 'opening',
+                title: `${spec.name}: ${shot.label}`,
+                style: opening.style,
+                soundDesign: `opening-${shotId}`,
+                firstFrame: { prompt: `Reference images: ${legend}. ${fill(shot.firstFrame[cls])}`, references: paths, model: 'flux' },
+                identityLock: shot.refs.includes('operator') ? opening.style.characterLock : undefined,
+                action: fill(shot.action[cls]),
+                lastFrame: fill(shot.lastFrame[cls]),
+                durationSec: shot.durationSec,
+                audio: null,
+                targets: { webm: `/cutscenes/${base}.webm`, mp4: `/cutscenes/${base}.mp4`, poster: `/cutscenes/${base}-poster.jpg` }
+            });
+        }
+    }
+    return jobs;
+}
+
+export function buildClipJobs(doc, cut = JSON.parse(fs.readFileSync(CUT_PROMPTS, 'utf8')), opening = JSON.parse(fs.readFileSync(OPENING_SHOTS, 'utf8'))) {
     const jobs = [];
     for (const entry of parseClipEntries(section(doc, '### 10.1 ', '### 10.6 '))) {
         const spec = SIDE_STORY_INTERSTITIALS[entry.id];
@@ -159,6 +202,7 @@ export function buildClipJobs(doc, cut = JSON.parse(fs.readFileSync(CUT_PROMPTS,
         }));
     }
     for (const job of sleepJobs(cut)) jobs.push(job);
+    for (const job of openingJobs(opening)) jobs.push(job);
     return { source: path.relative(ROOT, CUT_PROMPTS), style: cut.style, jobs };
 }
 
