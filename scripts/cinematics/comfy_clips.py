@@ -290,7 +290,9 @@ def first_frame_for(job, size):
 def motion_prompt(style, job):
     style = job.get('style') or style
     trigger = f"{job['trigger']}, " if job.get('trigger') else ''
-    ending = f" The shot ends on {job['lastFrame']}." if job.get('lastFrame') else ''
+    # The action has to travel the whole clip to its ending (owner 2026-10-27:
+    # clips faded or cut to a final image instead of acting their way there).
+    ending = f" Over the full five seconds the action builds continuously until the shot ends on {job['lastFrame']}." if job.get('lastFrame') else ''
     identity = f" {job['identityLock']}" if job.get('identityLock') else ''
     camera = f"CAMERA MOVE: {job['camera']}. " if job.get('camera') else ''
     action = f"ACTION: {job['action'].rstrip('. ')}."
@@ -536,7 +538,9 @@ def cmd_encode(args):
         graph = graph.replace(',loudnorm=I=-18:TP=-2', '', 1)  # nothing to normalise in silence
     sources = ['-i', str(take), *music] + (['-i', str(bed_take / 'bed.wav')] if bed_take else [])
     endpoint = job_dir(job['id']) / 'last_frame.png'
-    endpoint_locked = endpoint.exists() and not getattr(args, 'no_end_lock', False)
+    # Blending into a separately rendered last frame reads as a fade or cut to
+    # a different picture; the motion is the ending unless --end-lock asks.
+    endpoint_locked = endpoint.exists() and getattr(args, 'end_lock', False) and not getattr(args, 'no_end_lock', False)
     endpoint_index = 3 if bed_take else 2
     if endpoint_locked:
         sources += ['-loop', '1', '-t', f'{duration:.3f}', '-i', str(endpoint)]
@@ -698,7 +702,8 @@ def main():
     e.add_argument('--preview', action='store_true', help='write next to the take for review, not into public/')
     e.add_argument('--sound', help='sound take to lay under the music, e.g. take_2 (default: newest)')
     e.add_argument('--no-sound', action='store_true', help='music only')
-    e.add_argument('--no-end-lock', action='store_true', help='do not blend to an approved last_frame.png endpoint')
+    e.add_argument('--end-lock', action='store_true', help='crossfade the last half second into the approved last_frame.png')
+    e.add_argument('--no-end-lock', action='store_true', help='(default) end on the motion itself')
     so = sub.add_parser('sound'); so.add_argument('job', help="a job id, or 'all'"); so.add_argument('--seed', type=int)
     m = sub.add_parser('make'); m.add_argument('job'); m.add_argument('--model', choices=sorted(MODELS), default='ltxv')
     m.add_argument('--seed', type=int); m.add_argument('--max-seconds', type=float)

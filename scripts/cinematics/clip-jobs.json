@@ -5,8 +5,8 @@
     "suffix": "graphic gore aimed at the monsters, explicit consensual sex between adults, every person depicted is a consenting adult over twenty-five; no readable text, logos or watermarks.",
     "characterLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
     "continuityLock": "CONTINUITY LOCK: keep subject count, screen direction, set geometry, prop placement, palette and key-light direction from the first frame; only the described actions change state.",
-    "motionSuffix": "Single continuous shot, one camera move, natural weight, bodies moving with real rhythm; hold the final composition for twelve frames. No cuts, no new subjects, no camera teleport, no text.",
-    "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform",
+    "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, bodies moving with real rhythm. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+    "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion",
     "plateLock": "PLATE LOCK: reference image 1 is the background plate from the game: keep its composition, geography and lighting as the backdrop of the shot, re-drawn in the inked graphic-novel production style."
   },
   "jobs": [
@@ -1552,8 +1552,8 @@
         "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
         "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
         "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
-        "motionSuffix": "Single continuous shot, one camera move, natural weight and inertia; hold the final composition for twelve frames. No cuts, no new subjects, no text.",
-        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform"
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
       },
       "soundDesign": "opening-launch",
       "firstFrame": {
@@ -1604,8 +1604,8 @@
         "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
         "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
         "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
-        "motionSuffix": "Single continuous shot, one camera move, natural weight and inertia; hold the final composition for twelve frames. No cuts, no new subjects, no text.",
-        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform"
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
       },
       "soundDesign": "opening-launch",
       "firstFrame": {
@@ -1656,8 +1656,8 @@
         "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
         "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
         "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
-        "motionSuffix": "Single continuous shot, one camera move, natural weight and inertia; hold the final composition for twelve frames. No cuts, no new subjects, no text.",
-        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform"
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
       },
       "soundDesign": "opening-launch",
       "firstFrame": {
@@ -1708,8 +1708,8 @@
         "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
         "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
         "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
-        "motionSuffix": "Single continuous shot, one camera move, natural weight and inertia; hold the final composition for twelve frames. No cuts, no new subjects, no text.",
-        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform"
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
       },
       "soundDesign": "opening-flight",
       "firstFrame": {
@@ -1758,8 +1758,8 @@
         "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
         "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
         "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
-        "motionSuffix": "Single continuous shot, one camera move, natural weight and inertia; hold the final composition for twelve frames. No cuts, no new subjects, no text.",
-        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform"
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
       },
       "soundDesign": "opening-flight",
       "firstFrame": {
@@ -1808,8 +1808,8 @@
         "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
         "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
         "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
-        "motionSuffix": "Single continuous shot, one camera move, natural weight and inertia; hold the final composition for twelve frames. No cuts, no new subjects, no text.",
-        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform"
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
       },
       "soundDesign": "opening-flight",
       "firstFrame": {
@@ -1858,8 +1858,8 @@
         "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
         "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
         "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
-        "motionSuffix": "Single continuous shot, one camera move, natural weight and inertia; hold the final composition for twelve frames. No cuts, no new subjects, no text.",
-        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform"
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
       },
       "soundDesign": "opening-crash",
       "firstFrame": {
@@ -1908,8 +1908,8 @@
         "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
         "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
         "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
-        "motionSuffix": "Single continuous shot, one camera move, natural weight and inertia; hold the final composition for twelve frames. No cuts, no new subjects, no text.",
-        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform"
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
       },
       "soundDesign": "opening-crash",
       "firstFrame": {
@@ -1958,8 +1958,8 @@
         "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
         "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
         "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
-        "motionSuffix": "Single continuous shot, one camera move, natural weight and inertia; hold the final composition for twelve frames. No cuts, no new subjects, no text.",
-        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform"
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
       },
       "soundDesign": "opening-crash",
       "firstFrame": {
