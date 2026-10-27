@@ -478,7 +478,7 @@ import { resolveSafeSpawn } from './safeSpawn.js';
 import { WORLD_3D_FACING_YAW, WORLD_3D_SWAP_PREFETCH_DISTANCE, world3dModelTypeFor, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, resolveScatterWorld3dType, syncWorld3dReplacement } from './world3dOverlay.js';
 import { isTerrainTextureReady } from './terrainTextureReadiness.js';
 import { prepareCorpse3dModel, prewarmCommonCorpse3dTemplates, prewarmCorpse3dTemplate } from './corpse3d.js';
-import { computeTrailPosition } from './companionFollow.js';
+import { computeTrailPosition, shouldHoldFollow, updateFollowHeading } from './companionFollow.js';
 import { intersectWallMeshes } from './wallRaycastIndex.js';
 import { createFlatMaterialSweeper, useSinglePassForFlatMaterials } from './singlePassFlatMaterials.js';
 import { COMPANION_PATH_LIMITS, findCompanionPath, nextWaypoint } from './companionPath.js';
@@ -45205,10 +45205,13 @@ export class ThreeGame {
         const ASSIST_DAMAGE = 1;
         const ASSIST_COOLDOWN = 1.5;
 
-        const facingLen = Math.hypot(this.aimDirX ?? 0, this.aimDirZ ?? 0);
-        const facing = facingLen > 0.0001
-            ? { dirX: this.aimDirX, dirZ: this.aimDirZ }
-            : { dirX: 0, dirZ: 1 };
+        // Followers trail the way the player walks, not where they aim: a point
+        // behind the aim orbits the player with every mouse or stick movement,
+        // and the companion ran loops chasing it (QA 2026-10-27).
+        const follow = updateFollowHeading(this._companionFollowHeading, this.player.position, this._companionFollowLast);
+        this._companionFollowHeading = follow.heading;
+        this._companionFollowLast = { x: this.player.position.x, z: this.player.position.z };
+        const facing = follow.heading;
         const coveringCarrier = Boolean(this.carryState?.carried);
 
         for (const [companionIndex, companion] of this.companions.entries()) {
@@ -45219,7 +45222,9 @@ export class ThreeGame {
                 const trail = coveringCarrier
                     ? companionCarrierCoverPosition(this.player.position, facing, companionIndex)
                     : computeTrailPosition(this.player.position, facing, 2.0);
-                const companionMoved = this.stepCompanionAlongPath?.(companion, root, trail, delta) === true;
+                // Close to a player who has stopped: hold and idle, don't shuffle.
+                const holding = !coveringCarrier && shouldHoldFollow(root.position, this.player.position, follow.moving);
+                const companionMoved = !holding && this.stepCompanionAlongPath?.(companion, root, trail, delta) === true;
                 root.position.y = this.getTerrainHeightAt?.(root.position.x, root.position.z) ?? root.position.y ?? 0;
                 companion.instance3d.update(delta, {
                     moving: companionMoved,
