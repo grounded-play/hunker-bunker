@@ -86,4 +86,23 @@ describe('corpse 3D shader preparation', () => {
             `compile:${type}`
         ]));
     });
+
+    it('does not wait for frame-drained textures while deployment is paused', async () => {
+        const root = new THREE.Group();
+        root.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+        const game = {
+            camera: {},
+            scene: {},
+            renderer: { compileAsync: vi.fn(async () => {}) },
+            prewarmLateModel: vi.fn(async () => {})
+        };
+
+        await prewarmCorpse3dTemplate(game, 'boss_cryosnail_dead', async () => root);
+
+        expect(game.prewarmLateModel).toHaveBeenCalledWith(
+            root,
+            30000,
+            { waitForTextures: false }
+        );
+    });
 });

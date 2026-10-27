@@ -74,7 +74,7 @@ describe('corpse model prewarm', () => {
 
         const root = await game.prewarmKillEffectShaders();
 
-        expect(prewarmLateModel).toHaveBeenCalledWith(root);
+        expect(prewarmLateModel).toHaveBeenCalledWith(root, 30000, { waitForTextures: false });
         expect(root.children.some((child) => child.isSprite && child.material.map === spark.map)).toBe(true);
         expect(root.children.some((child) => child.isSprite && child.material.map === corpse.map)).toBe(true);
         expect(game.killEffectShaderWarmup).toBe(root);

@@ -8433,7 +8433,13 @@ async function prepareGameplayForDialogue({ loaderOverDoor = false, expectedSect
         announceDeploymentStage('PRESENT', 'PRESENTING FIRST RENDERED SECTOR FRAME...', 98);
         if (!wasLoadingPaused) game.setLoadingPaused?.(false);
         await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-        game.renderer?.render?.(game.scene, game.camera);
+        // Present through the exact path gameplay uses. The deployment warmup
+        // compiles EffectComposer/render-target variants; rendering straight
+        // to the canvas here asks ANGLE/D3D11 for a different program cache
+        // key and caused the 36.5 s first-frame compile in the 2026-10-27 PC
+        // capture.
+        if (typeof game.renderWithPerf === 'function') game.renderWithPerf('startup:first-frame');
+        else game.renderer?.render?.(game.scene, game.camera);
         await new Promise((resolve) => requestAnimationFrame(resolve));
         announceDeploymentStage('READY', 'DEPLOYMENT READY — TRANSFERRING CONTROL', 100);
         await new Promise((resolve) => window.setTimeout(resolve, loaderOverDoor ? 220 : 120));

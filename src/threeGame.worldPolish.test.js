@@ -74,6 +74,42 @@ describe('world polish', () => {
         expect(coords.map((entry) => entry.key)).toEqual(expect.arrayContaining(['2,-1', '2,0', '2,1']));
     });
 
+    it('keeps prefetched chunks mounted but hidden until they enter the 3x3 view', () => {
+        const prefetched = { visible: true, userData: {}, children: [] };
+        const game = {
+            isInPocket: false,
+            player: { position: { x: 30, z: 24 } },
+            chunkSize: 49,
+            visibleChunkRadius: 1,
+            chunkResidentPadding: 1,
+            pendingChunkMounts: [],
+            pendingChunkMountKeys: new Set(),
+            chunkMeshes: new Map([['2,0', prefetched]]),
+            chunkGroups: { remove: vi.fn() },
+            visitedChunks: new Set(),
+            maxChunkMountsPerFrame: 1,
+            _lastFrameDeltaForChunkMounts: 0,
+            getChunkPrefetchCoords: () => [{ key: '2,0', chunkX: 2, chunkY: 0 }],
+            updateDepthTierProgress: vi.fn(),
+            queueChunkMount: vi.fn(),
+            onNewChunkDiscovered: vi.fn(),
+            processPendingChunkMounts: vi.fn(),
+            disposeChunkGroupResources: vi.fn()
+        };
+
+        ThreeGame.prototype.syncVisibleChunks.call(game, true);
+
+        expect(game.chunkMeshes.has('2,0')).toBe(true);
+        expect(prefetched.visible).toBe(false);
+        expect(prefetched.userData.isPrefetch).toBe(true);
+
+        game.player.position.x = 50;
+        ThreeGame.prototype.syncVisibleChunks.call(game, true, { prefetch: false, processLimit: 0 });
+
+        expect(prefetched.visible).toBe(true);
+        expect(prefetched.userData.isPrefetch).toBe(false);
+    });
+
     it('mounts missing visible terrain even during sustained slow frames', () => {
         const processPendingChunkMounts = vi.fn();
         const game = {

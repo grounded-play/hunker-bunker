@@ -54,7 +54,14 @@ export function prewarmCorpse3dTemplate(game, type, loadModel = createWorld3dMod
         .then(async (root) => {
             if (!root) return null;
             prepareCorpse3dModel(root);
-            if (typeof game.prewarmLateModel === 'function') await game.prewarmLateModel(root);
+            // Deployment pauses gameplay, and gameplay is the only place the
+            // texture-upload queue drains. Waiting here therefore hit the
+            // four-second timeout once per corpse (5 × 4 s) without uploading
+            // anything. Compile now; let the bounded queue upload textures
+            // across live frames before these corpses are encountered.
+            if (typeof game.prewarmLateModel === 'function') {
+                await game.prewarmLateModel(root, 30000, { waitForTextures: false });
+            }
             else await game.renderer.compileAsync(root, game.camera, game.scene);
             return root;
         })

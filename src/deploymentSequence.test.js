@@ -95,7 +95,9 @@ describe('fresh deployment transaction', () => {
             .toBeGreaterThan(staging.indexOf('await prewarmCommonCorpse3dTemplates'));
         expect(staging).not.toContain('onProgress?.(1)');
         expect(presentation.indexOf("announceDeploymentStage('READY'"))
-            .toBeGreaterThan(presentation.indexOf('game.renderer?.render?.(game.scene, game.camera)'));
+            .toBeGreaterThan(presentation.indexOf("game.renderWithPerf('startup:first-frame')"));
+        expect(presentation.indexOf("game.renderWithPerf('startup:first-frame')"))
+            .toBeGreaterThan(presentation.indexOf("announceDeploymentStage('PRESENT'"));
     });
 
     it('flushes electron storage and reloads immediately after destructive reset', () => {

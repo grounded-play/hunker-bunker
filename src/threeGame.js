@@ -34815,7 +34815,6 @@ export class ThreeGame {
             ? this.getChunkPrefetchCoords(centerChunkX, centerChunkY)
             : [];
         const prefetchKey = prefetchEntries.map((entry) => entry.key).sort().join('|');
-        const prefetched = new Set(prefetchEntries.map((entry) => entry.key));
         const visibilityKey = `${centerChunkX},${centerChunkY}:${this.visibleChunkRadius}${prefetchKey ? `:${prefetchKey}` : ''}`;
         // This runs from the animation loop. Walking every loaded chunk to
         // rebuild registries is only necessary when the visible set changes
@@ -34893,11 +34892,14 @@ export class ThreeGame {
 
         for (const [key, group] of this.chunkMeshes.entries()) {
             if (resident.has(key)) {
-                // A prefetched edge chunk is useful only if it can fill the
-                // camera beyond the current room. Keep it rendered once its
-                // staged mount completes; resident hysteresis still controls
-                // eventual disposal well away from the operator.
-                group.visible = needed.has(key) || prefetched.has(key);
+                // Prefetch prepares CPU/GPU resources before a boundary
+                // crossing; it must not expand the render set. At a corner,
+                // drawing both prefetched rows turned the intended 3x3 view
+                // into 16 active chunks (and roughly doubled scene-submit
+                // work) even though those chunks were outside the authored
+                // visibility neighborhood. They become visible immediately
+                // when the next sync promotes them into `needed`.
+                group.visible = needed.has(key);
                 group.userData.isPrefetch = !needed.has(key);
                 continue;
             }
@@ -42902,7 +42904,10 @@ export class ThreeGame {
             const material = this.scatterMaterials?.[type]?.clone?.();
             if (material) root.add(new THREE.Sprite(material));
         }
-        await this.prewarmLateModel(root);
+        // As with corpse templates, deployment has loadingPaused=true, so the
+        // per-frame upload queue cannot drain here. Waiting only burns the
+        // four-second timeout; shader compilation is the required warmup.
+        await this.prewarmLateModel(root, 30000, { waitForTextures: false });
         // Keep the exact material instances alive. Disposing the last material
         // reference lets Three release its program and defeats the warmup.
         this.killEffectShaderWarmup = root;
