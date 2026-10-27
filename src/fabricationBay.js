@@ -486,9 +486,7 @@ export function createFabricationBay({
         }
 
         if (activeAisle === 'weapons' || activeAisle === 'all') {
-            for (let i = 0; i < FAB_RECIPES.length; i++) {
-                renderRecipeCard(grid, FAB_RECIPES[i], bank, i);
-            }
+            for (const recipe of FAB_RECIPES) renderRecipeCard(grid, recipe, bank);
         }
 
         if (!grid.children.length && activeAisle === 'lotto') {
