@@ -1,18 +1,18 @@
 # Cinematics pipeline (local ComfyUI)
 
-Status: current tooling guide | Owner: cinematics + audio | Updated: 2026-10-26 | Review: when a model or the clip list changes
+Status: current tooling guide | Owner: cinematics + audio | Updated: 2026-10-27 | Review: when a model or the clip list changes
 
-Makes the game's missing motion clips, with layered sound under their music, on this workstation with locally installed models, no paid service. The clip list and prompts come from the [cinematics audit §10](planning/camp-interaction-and-cinematics-audit-2026-10-16.md#10-movie-prompts-first-frame-last-frame-action); the result lands exactly where the runtime already looks.
+Makes the game's motion clips as **the grindhouse cut** (explicit sex between consenting adults plus schlock gore against the monsters, in Giger's biomechanical eroticism; [art bible §9–10](design/art-style-bible.md#9-mature-content-direction)), with layered sound under their music, on this workstation with locally installed models, no paid service. The clip list comes from the [cinematics audit §10](planning/camp-interaction-and-cinematics-audit-2026-10-16.md#10-movie-prompts-first-frame-last-frame-action); every first frame, last frame and action comes from `scripts/cinematics/cut-prompts.json`. The result lands exactly where the runtime already looks.
 
 ## What it makes
 
-`node scripts/cinematics/build-clip-jobs.mjs` writes `scripts/cinematics/clip-jobs.json`: 25 jobs today.
+`node scripts/cinematics/build-clip-jobs.mjs` writes `scripts/cinematics/clip-jobs.json`: 31 jobs today.
 
 | Kind | Jobs | First frame | Target |
 | :--- | :--- | :--- | :--- |
-| Side stories | 15 (Kaelen, Martha, Briggs, Nahl, Aria ×3 each) | the scene's key art (`SIDE_STORY_INTERSTITIALS[id].image`) | `/interstitials/motion/int_<id>_motion_v1.webm` |
-| Song cards 33–38 | 6 (Act 3 and endings) | the card's key art | `/interstitials/motion/int_NN_<slug>_motion_v1.webm` + `/interstitials/int_NN_<slug>_key_v1.mp4` |
-| Sleep | 10: camp, cryo and hive once per player class (Scout, Tank, Engineer), plus the squad with all three | generated (FLUX.2 klein) from `scripts/cinematics/sleep-frames.json`, with the class's front-idle model render as the reference image | `/cutscenes/sleep-<style>-<class>.webm` (squad: `sleep-squad`) + `.mp4` + `-poster.jpg` |
+| Side stories | 15 (Kaelen, Martha, Briggs, Nahl, Aria ×3 each) | redrawn on Z-Image from the cut's brief (the key art, `SIDE_STORY_INTERSTITIALS[id].image`, is the scene it rewrites) | `/interstitials/motion/int_<id>_motion_v1.webm` |
+| Song cards 33–38 | 6 (Act 3 and endings) | redrawn on Z-Image from the cut's brief | `/interstitials/motion/int_NN_<slug>_motion_v1.webm` + `/interstitials/int_NN_<slug>_key_v1.mp4` |
+| Sleep | 10: camp, cryo and hive once per player class (Scout, Tank, Engineer), plus the squad with all three | FLUX.2 klein from the cut's brief, with the class's front-idle model render as the reference image | `/cutscenes/sleep-<style>-<class>.webm` (squad: `sleep-squad`) + `.mp4` + `-poster.jpg` |
 
 Vey and Rhun have no card brief yet (audit §11.1), so they are not jobs.
 
@@ -77,44 +77,45 @@ The job builder injects three versioned prompt locks from the art bible: house
 style, character identity and shot continuity. Scene files contain only what is
 unique to that shot, avoiding dozens of subtly different copies of the style block.
 
-1. `still` makes first-frame candidates. Sleep shots use canonical class PNGs as
-   FLUX reference latents. Existing side-story/card key art is already frame one.
+1. `still` makes first-frame candidates: Z-Image Turbo with the Giger and nudity
+   LoRAs for key-art cuts (the brief rewrites the scene), FLUX.2 klein with the class
+   PNG as a reference latent and the klein anatomy LoRA for sleep films.
 2. Approve `first_frame.png`; it fixes cast, composition, geography, palette and
    key-light direction.
-3. `last` makes endpoint candidates using the approved first frame plus the same
-   class references. Approve one as `last_frame.png`.
-4. `clip` runs the action from frame one. Its prompt contains the ordered action,
-   last-frame description, identity lock, continuity lock and a twelve-frame hold.
-5. `encode` makes a short endpoint lock to `last_frame.png` when it exists. This
-   guarantees a deliberate edit point. `--no-end-lock` exports raw model motion for
-   comparison.
+3. `last` makes endpoint candidates on FLUX.2 klein from the approved first frame
+   (plus the class PNGs on sleep films; never the old key art, which pulls the old
+   cast back in). Approve one as `last_frame.png`.
+4. `clip` runs the action from frame one on Wan 2.2 with the explicit motion LoRA;
+   the prompt opens with the cut's trigger word, then the ordered action, last-frame
+   description, identity lock, continuity lock and a twelve-frame hold.
+5. `encode` blends the last half-second into `last_frame.png` when it exists.
+   `--no-end-lock` exports raw model motion for comparison.
+
+`batch` runs all of it unattended: the newest first and last stills become the
+approved frames when none has been picked, so review the shipped cuts and re-pick
+(`still`/`last`, copy, `encode`) where a frame misses the brief.
 
 The installed 8 GB-friendly LTX and Wan 2.2 TI2V checkpoints accept a start image,
-not a last image. The tool does not mislabel them as native first/last-frame models.
-If a compatible FLF checkpoint is installed later, add it under a separate model
-name and retain the endpoint blend as a fallback.
+not a last image, so the endpoint is a blend, not native first/last-frame
+generation. If a compatible FLF checkpoint is installed later, add it under a
+separate model name and keep the blend as a fallback.
 
-Sleep scene direction comes from `scripts/cinematics/sleep-frames.json`, with each
-`{operator}` replaced by the selected class look. The matching front-idle master at
-`art/source/art-remaster/sprite-v4/<class>/identity/` is passed to both endpoint
-renders. Identity locks preserve helmet, visor, armour layout, colours, lights,
-tools and body scale; continuity locks preserve subject count, screen direction,
-set geometry, prop placement, palette and light direction.
-
-Negative prompts name observable failures: class drift, open helmets, duplicated
-subjects, spawned props, melting architecture, flicker, exposure pumping, camera
-jumps, text and literal anatomy. Change scene content in the audit or
-`sleep-frames.json`, rebuild jobs, and render new endpoints and motion. Do not edit
-generated `clip-jobs.json` by hand.
+Every cut's brief lives in `scripts/cinematics/cut-prompts.json`: the style lock
+(prefix, suffix, identity and continuity locks, negative), the model add-ons per
+model (`loras`), the class looks, the sleep shots (each `{operator}` replaced by the
+class look) and one scene per key-art cut. Change the words there, rebuild the jobs,
+and render new endpoints and motion. Do not edit generated `clip-jobs.json` by hand.
 
 ## Model and content policy
 
-Use locally controlled checkpoints for reproducibility, privacy and inspectable
-licensing—not because a model is advertised as “uncensored.” Every approved still
-and take sidecar records its model, seed, composed prompt and references. Human
-review remains the content gate: all depicted humans are adults; body horror and
-sensual tension may be intense, while nudity, genital detail and explicit sexual
-activity remain outside the production brief.
+Hunker Bunker is Adults Only on Steam. The brief is explicit, with the art bible's
+hard edges: every person is a consenting adult over twenty-five (the negative prompt
+carries the age floor), no sexual act involves anyone asleep, unconscious or
+coerced, gore is aimed at the monsters and never sexual, and the operator's helmet
+stays sealed. Every still and take sidecar records its model, LoRAs, seed, composed
+prompt and references. Review each shipped cut against those edges; the in-game
+Content Guide lists the explicit cutscenes as soon as one ships, and the Steamworks
+content survey must match before release.
 
 ## Make a clip live
 

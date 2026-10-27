@@ -267,10 +267,16 @@ def first_frame_for(job, size):
 
 
 def motion_prompt(style, job):
+    trigger = f"{job['trigger']}, " if job.get('trigger') else ''
     ending = f" The shot ends on {job['lastFrame']}" if job.get('lastFrame') else ''
     identity = f" {job['identityLock']}" if job.get('identityLock') else ''
-    return (f"{style['prefix']} {job['action'].rstrip('. ')}.{ending}{identity} "
+    return (f"{trigger}{style['prefix']} {job['action'].rstrip('. ')}.{ending}{identity} "
             f"{style['continuityLock']} {style['motionSuffix']} {style['suffix']}")
+
+
+def job_loras(job, model, override=None):
+    """--lora wins; otherwise the job's add-ons for this model (cut-prompts.json `loras`)."""
+    return parse_loras(override) or [tuple(entry) for entry in job.get('loras', {}).get(model, [])]
 
 
 def frame_prompt(style, job, endpoint):
@@ -305,9 +311,12 @@ def cmd_still(args):
     if not job['firstFrame'].get('prompt'):
         raise SystemExit(f"{job['id']} already has key art: {job['firstFrame']['image']}")
     folder = job_dir(job['id'])
+    args.model = args.model or job['firstFrame'].get('model', 'flux')
     prompt = frame_prompt(style, job, 'first')
+    if args.model == 'zimage':
+        prompt = prompt.replace(' from the reference image', '')
     references = [upload_image(reference_png(path)) for path in job['firstFrame'].get('references', [])] if args.model == 'flux' else []
-    loras = parse_loras(args.lora)
+    loras = job_loras(job, args.model, args.lora)
     if args.prompt_extra:
         prompt = f'{prompt} {args.prompt_extra}'
     for _ in range(args.takes):
@@ -334,8 +343,12 @@ def cmd_last(args):
         raise SystemExit(f"{job['id']} has no last-frame brief")
     folder = job_dir(job['id'])
     prompt = frame_prompt(style, job, 'last')
-    reference_paths = [first_frame_for(job, (1280, 720)), *[reference_png(path) for path in job['firstFrame'].get('references', [])]]
+    # The approved first frame leads; class models ride along, but not key art
+    # the first frame was already redrawn from (it pulls the old cast back in).
+    carried = job['firstFrame'].get('references', []) if job['firstFrame'].get('model', 'flux') == 'flux' else []
+    reference_paths = [first_frame_for(job, (1280, 720)), *[reference_png(path) for path in carried]]
     references = [upload_image(path) for path in reference_paths] if args.model == 'flux' else []
+    loras = job_loras(job, args.model, getattr(args, 'lora', None))
     for _ in range(args.takes):
         seed = args.seed if args.seed is not None else random.randrange(2**31)
         prefix = f"hunker_cine/{job['id']}_last"
@@ -347,7 +360,7 @@ def cmd_last(args):
         shutil.copy(frames[0], out)
         out.with_suffix('.json').write_text(json.dumps({
             'job': job['id'], 'endpoint': 'last', 'model': 'flux-2-klein-4b' if args.model == 'flux' else 'z-image-turbo',
-            'seed': seed, 'prompt': prompt, 'references': [str(path.relative_to(ROOT)) for path in reference_paths]
+            'seed': seed, 'prompt': prompt, 'references': [str(path.relative_to(ROOT)) for path in reference_paths], 'loras': loras
         }, indent=2) + '\n')
         print(f'[last] {out.relative_to(ROOT)}')
     print(f"[last] pick one: cp {folder.relative_to(ROOT)}/last_<n>.png {folder.relative_to(ROOT)}/last_frame.png")
@@ -374,7 +387,7 @@ def cmd_clip(args):
         builder = ltxv_i2v if args.model == 'ltxv' else wan22_i2v
         steps = args.steps or (8 if args.model == 'ltxv' else 20)
         started = time.time()
-        loras = parse_loras(getattr(args, 'lora', None)) or [tuple(entry) for entry in job.get('loras', {}).get(args.model, [])]
+        loras = job_loras(job, args.model, getattr(args, 'lora', None))
         if getattr(args, 'prompt_extra', None):
             prompt = f'{prompt} {args.prompt_extra}'
         pngs = sorted(run_workflow(with_loras(builder(image, prompt, style['negative'], seed, frames, width, height, steps, prefix), loras), f'{job_id} {args.model} take {take}'))
@@ -517,6 +530,19 @@ def cmd_batch(args):
         subprocess.run([AUDIOCRAFT_PY, str(ROOT / 'scripts/cinematics/sound_layers.py'), 'render', *unscored], check=True)
     for job_id in targets:
         folder = job_dir(job_id)
+        # Unattended: the newest first/last still becomes the approved frame
+        # when none has been picked (review and re-pick before release).
+        for endpoint, command in (('first', cmd_still), ('last', cmd_last)):
+            chosen = folder / f'{endpoint}_frame.png'
+            if chosen.exists() and not args.redo:
+                continue
+            if endpoint == 'last' and not jobs[job_id].get('lastFrame'):
+                continue
+            command(argparse.Namespace(job=job_id, takes=1, seed=None, model=None if endpoint == 'first' else 'flux', lora=None, prompt_extra=None))
+            pattern = 'still_*.png' if endpoint == 'first' else 'last_*.png'
+            newest = max(folder.glob(pattern), key=lambda p: int(p.stem.split('_')[-1]))
+            shutil.copy(newest, chosen)
+            print(f'[batch] {job_id}: {newest.name} -> {chosen.name}', flush=True)
         takes = sorted(folder.glob(f'take_{args.model}_*.mp4'), key=lambda p: int(p.stem.split('_')[-1]))
         if not takes or args.redo:
             cmd_clip(argparse.Namespace(job=job_id, model=args.model, seed=None, steps=None, max_seconds=args.max_seconds))
@@ -542,11 +568,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest='command', required=True)
     s = sub.add_parser('still'); s.add_argument('job'); s.add_argument('--takes', type=int, default=3); s.add_argument('--seed', type=int)
-    s.add_argument('--model', choices=['flux', 'zimage'], default='flux', help='flux: FLUX.2 klein with the class reference; zimage: Z-Image Turbo, text only')
+    s.add_argument('--model', choices=['flux', 'zimage'], help="flux: FLUX.2 klein with the reference images; zimage: Z-Image Turbo, text only (default: the job's)")
     s.add_argument('--lora', action='append', help='models/loras file[:strength], repeatable')
     s.add_argument('--prompt-extra', help='words appended to the frame prompt (e.g. a LoRA trigger)')
     last = sub.add_parser('last'); last.add_argument('job'); last.add_argument('--takes', type=int, default=3); last.add_argument('--seed', type=int)
     last.add_argument('--model', choices=['flux', 'zimage'], default='flux', help='flux preserves first-frame and character references; zimage is text only')
+    last.add_argument('--lora', action='append', help="models/loras file[:strength], repeatable (default: the job's loras)")
     c = sub.add_parser('clip'); c.add_argument('job', help="a job id, or 'all'"); c.add_argument('--model', choices=sorted(MODELS), default='ltxv')
     c.add_argument('--seed', type=int); c.add_argument('--steps', type=int); c.add_argument('--max-seconds', type=float)
     c.add_argument('--lora', action='append', help="models/loras file[:strength], repeatable (default: the job's loras)")

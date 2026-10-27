@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { SHIPPED_MOTION_CLIPS } from './cinematics/shippedMotionClips.js';
 import { MatureContentAudit, MATURE_CONTENT_MANIFEST, REVIEWER_LOG_LETTERS, buildDialogueTranscript, buildDialogueReaderBlocks, endingCutsceneSources } from './matureContentAudit.js';
 import { NPC_DIALOGUE_TREES } from './npcDialogueTrees.js';
 
@@ -12,7 +13,9 @@ describe('MatureContentAudit', () => {
 
     it('lists only categories the game contains', () => {
         const ids = MATURE_CONTENT_MANIFEST.map((m) => m.id);
-        expect(ids).toEqual(['sensual_storylines_romance', 'parasite_symbiosis', 'queen_subjugation', 'self_annihilation', 'combat_violence']);
+        const base = ['sensual_storylines_romance', 'parasite_symbiosis', 'queen_subjugation', 'self_annihilation', 'combat_violence'];
+        // The grindhouse cut is listed exactly when one of its clips has shipped.
+        expect(ids).toEqual(SHIPPED_MOTION_CLIPS.size ? [...base, 'explicit_cutscenes'] : base);
         // Valve review 2026-09: these two existed only in this gallery.
         expect(ids).not.toContain('veiled_nudity');
         expect(ids).not.toContain('survival_economy_eroticism');

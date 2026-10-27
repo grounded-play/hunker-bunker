@@ -12,6 +12,7 @@ import { ACT2_ENDINGS, ACT2_ENDING_CUTSCENES, getAct2EndingLines } from './act2.
 import { NPC_DIALOGUE_TREES } from './npcDialogueTrees.js';
 import { assetUrl } from './assetUrl.js';
 import { getSideStoryInterstitial } from './songInterstitials.js';
+import { SHIPPED_MOTION_CLIPS } from './cinematics/shippedMotionClips.js';
 
 // Static copies of the two audio-log letters Valve's suicide/self-sacrifice
 // category maps to. Duplicated here (rather than imported from threeGame.js)
@@ -34,7 +35,7 @@ export const MATURE_CONTENT_MANIFEST = Object.freeze([
         rating: 'Adult / Mature (18+) Romance',
         description: 'Interactive branching dialogue trees with camp leaders and entities featuring intense physical and emotional intimacy, thermal shelter body heat, seductive touch, erotic bio-link synchronization, and sensual spore massages.',
         tags: ['Erotic Sci-Fi', 'Sensual Choices', 'Camp Romance', 'Intimate Touch', 'Adult Themes'],
-        inPlay: 'Text dialogue with still artwork; non-explicit, no nudity is depicted. In play: talk to Sister Martha at Camp Tallow (also Briggs at Camp Vesper, Kaelen at Camp Meridian, Aria at hive relays, Dr. Nahl at the bio-lab).',
+        inPlay: `${SHIPPED_MOTION_CLIPS.size ? 'Text dialogue with still artwork; the side-story cutscenes are explicit (see Explicit Sex & Graphic Gore in Cutscenes).' : 'Text dialogue with still artwork; non-explicit, no nudity is depicted.'} In play: talk to Sister Martha at Camp Tallow (also Briggs at Camp Vesper, Kaelen at Camp Meridian, Aria at hive relays, Dr. Nahl at the bio-lab).`,
         dialogueTrees: [
             { id: 'sister_val', label: '🩸 SISTER MARTHA (TALLOW FLESH COMMUNION)' },
             { id: 'commander_briggs', label: '🛡️ BRIGGS (VESPER COMBAT ADRENALINE)' },
@@ -83,7 +84,17 @@ export const MATURE_CONTENT_MANIFEST = Object.freeze([
         description: 'Close-quarters ballistic combat against biomechanical abominations, acid burns, splatter, and corpse disintegration.',
         tags: ['Blood & Splatter', 'Acid Burns', 'Dismemberment', 'Ballistic Trauma'],
         inPlay: 'In play: every fight. Gore effects can be turned off in Settings.'
-    }
+    },
+    // Listed only once a grindhouse cut has shipped, so the guide never
+    // describes content the build doesn't contain (Valve review 2026-09).
+    ...(SHIPPED_MOTION_CLIPS.size ? [{
+        id: 'explicit_cutscenes',
+        title: 'Explicit Sex & Graphic Gore in Cutscenes (The Grindhouse Cut)',
+        rating: 'Adults Only Sexual Content / Graphic Violence',
+        description: 'Full-motion cutscenes show explicit, consensual sex between adults (nudity, genitals and sex acts) alongside grindhouse gore against alien creatures: heads blown off, bodies boiled, crushed and torn apart.',
+        tags: ['Explicit Sex', 'Full Nudity', 'Consenting Adults', 'Graphic Gore', 'Grindhouse Horror'],
+        inPlay: `In play: camp side stories with Sister Martha, Briggs, Kaelen, Dr. Nahl and Aria, the ending cards and the sleep films after resting (${SHIPPED_MOTION_CLIPS.size} cutscenes in this build).`
+    }] : [])
 ]);
 
 // Ending cutscene video + poster, resolved for the packaged file:// build

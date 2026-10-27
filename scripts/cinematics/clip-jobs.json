@@ -1,12 +1,12 @@
 {
-  "source": "docs/planning/camp-interaction-and-cinematics-audit-2026-10-16.md",
+  "source": "scripts/cinematics/cut-prompts.json",
   "style": {
-    "prefix": "Hunker Bunker cinematic, 16:9, mature Nordic cathedral biomechanical horror: monumental stepped granite, disciplined blackened-iron bindings, carved bone arches and restrained Jugendstil interlace invaded from seams by an internal living system;",
-    "suffix": "near-black exposure, one motivated amber practical, sparse teal diagnostics, cold floor fog, wet reflections, bruised maroon only inside ruptures, tactile film grain, severe graphic composition; intimate unease through scale, rhythm and surface tension rather than literal anatomy; all depicted humans are adults; no readable text, logos or watermarks.",
-    "characterLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
-    "continuityLock": "CONTINUITY LOCK: preserve subject count, screen direction, set geometry, costume damage, prop placement, palette and key-light direction from the approved first frame; only described actions may change state.",
-    "motionSuffix": "Single continuous shot with one camera move and one primary action. Natural weight and restrained secondary motion. Hold the resolved final composition for twelve frames. No cuts, no new subjects, no camera teleport, no text.",
-    "negative": "low quality, deformed anatomy, extra limbs, fused fingers, duplicated subject, identity drift, different armour, open helmet, bare face, costume colour shift, prop spawning, disappearing objects, melting geometry, rubber motion, motion smear, flicker, jitter, morphing face, exposure pumping, camera jump, text, watermark, logo, subtitles, cartoon, literal genital anatomy, explicit sexual activity"
+    "prefix": "Hunker Bunker grindhouse cut, 16:9, explicit adults-only sci-fi schlock in the spirit of a Troma midnight movie fused with H.R. Giger biomechanical eroticism: glistening black latex, ivory vertebrae, ribbed sexual biomechanical architecture of phallic pistons and vulvic portals, deep-space corporate industrial horror;",
+    "suffix": "lurid practical light, amber and acid green, wet reflections, splattered gore, grindhouse 35mm film grain and print scratches, every person depicted is a consenting adult over twenty-five; no readable text, logos or watermarks.",
+    "characterLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+    "continuityLock": "CONTINUITY LOCK: keep subject count, screen direction, set geometry, prop placement, palette and key-light direction from the first frame; only the described actions change state.",
+    "motionSuffix": "Single continuous shot, one camera move, natural weight, bodies moving with real rhythm; hold the final composition for twelve frames. No cuts, no new subjects, no camera teleport, no text.",
+    "negative": "low quality, deformed anatomy, extra limbs, fused fingers, duplicated subject, identity drift, morphing face, melting geometry, rubber motion, flicker, jitter, camera jump, text, watermark, logo, subtitles, cartoon, child, minor, teenager, youthful face, school uniform"
   },
   "jobs": [
     {
@@ -14,12 +14,41 @@
       "kind": "side-story",
       "title": "Diagnostic Cradle",
       "firstFrame": {
-        "image": "/interstitials/int_kaelen_diagnostic_cradle_key_v2.webp"
+        "prompt": "The diagnostic bay from the reference image: Overseer Kaelen, a weathered adult man in his sixties, lying naked in the ribbed bone diagnostic cradle with cables jacked into the port in his neck, a nude adult woman operator in a sealed helmet straddling his hips, cyan monitor light on their skin, a parasite crawler squeezing out of the wall vent behind them.",
+        "references": [
+          "public/interstitials/int_kaelen_diagnostic_cradle_key_v2.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "Slow overhead jib that settles to eye level. Kaelen's eyelids flicker; the cradle's ribs tick through a calibration cycle with small mechanical clicks; a wave of cyan light runs along the cable from the cradle into the port behind his ear and out across the wall conduits. He exhales, sits up, and rests his hand on the ivory rib as the grid hum steadies.",
-      "lastFrame": "close shot of Kaelen sitting up in the cradle, eyes open and steady, one scorched gloved hand resting on the cradle's ivory rib while a slow wave of cyan light settles along the grid conduits behind him; the condensation on the glass has cleared.",
-      "durationSec": 7,
+      "action": "The operator rides Kaelen in cowgirl position, the cradle's ribs ticking in rhythm and cyan light racing down the cables with every thrust. The crawler lunges and the ribs snap shut on it, crushing it in a burst of green blood that splatters the monitors. The lovers climax and slump together.",
+      "lastFrame": "the same bay: the two lovers slumped spent and naked in the cradle, cyan light dimming, the crawler crushed between the snapped-shut cradle ribs, its green blood dripping down the bone.",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/Kaelen's Sleeping Machine.mp3",
+      "durationSec": 7,
       "targets": {
         "webm": "/interstitials/motion/int_kaelen_diagnostic_cradle_motion_v1.webm"
       }
@@ -29,12 +58,41 @@
       "kind": "side-story",
       "title": "Frequency Overclock",
       "firstFrame": {
-        "image": "/interstitials/int_kaelen_frequency_overclock_key_v2.webp"
+        "prompt": "The switch gallery from the reference image: Overseer Kaelen, a weathered adult man in his sixties, naked from the waist down behind a nude adult woman operator in a sealed helmet bent over the switchboard, his hands on her hips, corona discharge crawling over the bus bars, an alien spitter clinging to the bars above them.",
+        "references": [
+          "public/interstitials/int_kaelen_frequency_overclock_key_v2.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "Steady dolly-in. Kaelen seats the probe; a bright cyan arc jumps the bus bars and runs the length of the gallery, switch by switch, each pilot lamp snapping on in sequence. Corona discharge crawls over his gloves; he leans into it for a second, then pulls back and lowers the probe as the hum settles to a deep, even tone.",
-      "lastFrame": "the same gallery blazing with steady cyan light, every pilot lamp lit; Kaelen stands back from the contact with the probe lowered, breathing hard, faint corona still crawling on his scorched gloves, a thin smile of relief.",
-      "durationSec": 7,
+      "action": "Kaelen takes the operator from behind in doggy position against the switchboard, each thrust snapping another pilot lamp on down the gallery. The spitter touches the live bus bar and the arc fries it, blowing it apart in smoking gobbets. The lovers finish as the last lamp snaps on.",
+      "lastFrame": "the same gallery: the operator slumped over the switchboard, Kaelen leaning on her back, both naked and sweat-slick, the electrocuted spitter blown into smoking chunks across the bus bars, every pilot lamp lit.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/Meridian Remembers You.mp3",
+      "durationSec": 7,
       "targets": {
         "webm": "/interstitials/motion/int_kaelen_frequency_overclock_motion_v1.webm"
       }
@@ -44,12 +102,41 @@
       "kind": "side-story",
       "title": "Supercharged Matrix",
       "firstFrame": {
-        "image": "/interstitials/int_kaelen_supercharged_matrix_key_v1.webp"
+        "prompt": "The glass-floored matrix chamber from the reference image: two naked adult lovers in their thirties lying on the glowing glass floor beside the great lever, the man on top of the woman, rings of gold-teal light under them, hive drones clawing up the conduits below the glass.",
+        "references": [
+          "public/interstitials/int_kaelen_supercharged_matrix_key_v1.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "Slow push-in from behind the two figures. Together they draw the lever down; the actuator locks with a heavy clunk; rings of gold-teal light pulse outward through the glass floor and race up the conduits into the tunnels. Camera arcs to a side two-shot as Kaelen turns his head toward the operator and smiles.",
-      "lastFrame": "the reactor well fully lit, concentric rings of gold-teal light pulsing out along the conduits into distant tunnels; Kaelen turns toward the operator with a rare open smile, the lever locked down between them.",
-      "durationSec": 8,
+      "action": "Missionary sex on the glass floor, the man thrusting slowly while she pulls the lever down with one hand; the actuator locks and rings of light race out under them, frying the drones in the conduits so they burst against the glass in sprays of ichor. The lovers climax in the pulsing gold light.",
+      "lastFrame": "the same chamber: the lovers entwined and still on the glass, the floor smeared with fried drone remains and ichor from below, the matrix humming gold.",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/Kaelen Is the Grid.mp3",
+      "durationSec": 8,
       "targets": {
         "webm": "/interstitials/motion/int_kaelen_supercharged_matrix_motion_v1.webm"
       }
@@ -59,12 +146,41 @@
       "kind": "side-story",
       "title": "Warmth of the Suture",
       "firstFrame": {
-        "image": "/interstitials/int_val_hearth_warmth_key_v2.webp"
+        "prompt": "The geothermal pipe hearth from the reference image: Sister Martha, a strong adult woman in her sixties with grey braided hair, naked and straddling a nude adult man operator in a sealed helmet on the warm pipe saddle, a steaming ladle of balm in her hand, a frozen mutant dragging itself up the pipes toward them.",
+        "references": [
+          "public/interstitials/int_val_hearth_warmth_key_v2.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "Slow dolly-in to the saddle. Martha lifts a ladle of warm balm, breathes on it, and reaches out of frame; the camera follows her hands down to the operator's frost-white knuckles, which slowly flush as she works the balm in; frost on the cuff melts to beads. Steam curls through the amber light.",
-      "lastFrame": "close shot of Martha's steam-reddened hands working balm into the frost-burned knuckles of an armoured operator's bare hand, amber pipe glow behind them, the frost on the operator's cuff melted to droplets.",
-      "durationSec": 7,
+      "action": "Martha rides the operator in cowgirl position on the warm pipe, balm glistening on their skin. The frozen mutant grabs her ankle and she empties the boiling ladle over its head; its face sloughs off in a gush of steam and it drops away. She keeps riding him until they both finish, laughing.",
+      "lastFrame": "the same hearth: Martha and the operator wrapped naked together in her quilted coat on the pipe, the mutant's flesh boiled off its skull in a steaming puddle below, steam rising.",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/Warmth Beneath the Ice.mp3",
+      "durationSec": 7,
       "targets": {
         "webm": "/interstitials/motion/int_val_hearth_warmth_motion_v1.webm"
       }
@@ -74,12 +190,41 @@
       "kind": "side-story",
       "title": "Botanical Spore Oil",
       "firstFrame": {
-        "image": "/interstitials/int_val_spore_communion_key_v1.webp"
+        "prompt": "The lantern-lit tent from the reference image: Sister Martha, a strong adult woman in her sixties, naked and kneeling over a nude adult man operator in a sealed helmet lying on the cot, glowing spore oil on her hands and his body, a mould-zombie's silhouette pressing against the tent wall.",
+        "references": [
+          "public/interstitials/int_val_spore_communion_key_v1.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "Slow arc around the loom. Martha lays her palm on the spore sac; light pulses out along the mycelium in gold-green waves; with her other hand she draws the woven filter across the mouldy edge and it seals against the floor ribs. She turns toward camera and breathes out.",
-      "lastFrame": "the loom glowing evenly green-gold, the crimson mould sealed behind a drawn filter curtain; Martha framed in an arch of glowing threads, hand at her chest, calm.",
-      "durationSec": 7,
+      "action": "Martha strokes spore oil over the operator and takes him in her mouth, slow and eager. The mould-zombie rips through the canvas and the spore sac on the loom bursts against it, swelling it until it pops in a shower of black pulp and gold spores. Martha climbs up onto the operator's chest, both glowing.",
+      "lastFrame": "the same tent: Martha lying naked on the operator's chest on the cot, both glistening with gold spore oil, the mould-zombie burst open against the tent wall, its spores and black pulp dripping down the canvas.",
+      "trigger": "bl0wj0b",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/Tallow Keeps the Steam.mp3",
+      "durationSec": 7,
       "targets": {
         "webm": "/interstitials/motion/int_val_spore_communion_motion_v1.webm"
       }
@@ -89,12 +234,41 @@
       "kind": "side-story",
       "title": "The Eternal Hearth",
       "firstFrame": {
-        "image": "/interstitials/int_val_eternal_hearth_key_v1.webp"
+        "prompt": "The ice-cave forge vault from the reference image: two naked adult lovers in their thirties against the catwalk railing before the roaring forge, the woman bent forward gripping the rail, the man behind her, steam vents along the vault, a pack of ice crawlers swarming up the cavern wall.",
+        "references": [
+          "public/interstitials/int_val_eternal_hearth_key_v1.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "Slow tilt down and push along the catwalk. Martha hauls the valve wheel a half-turn; a deep thud runs through the pipes; vents open one after another up the vault, steam rolling out; cold blue light at the edges gives way to amber as the heat comes up.",
-      "lastFrame": "the whole vault glowing warm amber, white steam rolling up from every vent; Martha stands with the valve locked, silhouetted against the furnace light, quilted layers lifting in the warm draft.",
-      "durationSec": 8,
+      "action": "Doggy-position sex against the railing as Martha hauls the valve wheel off-frame; the vents blast open one after another up the vault and boiling steam scalds the crawlers, their flesh peeling and bursting as they fall. The lovers finish wrapped in steam and firelight.",
+      "lastFrame": "the same vault: the lovers naked in the rolling steam, arms around each other at the rail, the ice crawlers boiled alive and peeling off the cavern wall in red strips, amber firelight.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/Warmth Beneath the Ice.mp3",
+      "durationSec": 8,
       "targets": {
         "webm": "/interstitials/motion/int_val_eternal_hearth_motion_v1.webm"
       }
@@ -104,12 +278,41 @@
       "kind": "side-story",
       "title": "The Scorched Rig",
       "firstFrame": {
-        "image": "/interstitials/int_briggs_scorched_rig_key_v2.webp"
+        "prompt": "The trench gun-rig from the reference image: Commander Briggs, a broad adult Black man in his fifties, naked on top of a nude adult woman operator in a sealed helmet on the sandbags beside the big cannon, brass casings everywhere, a horde of mutants charging down the canyon behind them under a red lamp.",
+        "references": [
+          "public/interstitials/int_briggs_scorched_rig_key_v2.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "Steady push past sandbags. Briggs unlatches his helmet collar with a pneumatic hiss, lifts the helmet off, wipes his brow with the back of a heavy glove and exhales a long cloud; he surveys the canyon as the red lamp sweeps over him.",
-      "lastFrame": "close shot of Briggs bare-headed, soot on his face, breath fogging, grey hair cropped close, looking out over the barricade with tired resolve, the red lamp sweeping across him.",
-      "durationSec": 7,
+      "action": "Missionary sex on the sandbags; Briggs slams the cannon's firing lever without stopping, and the shell turns the charging horde into red mist and flying limbs that rain down around them. They finish in the hail of brass and gore.",
+      "lastFrame": "the same rig: Briggs and the operator lying naked in the brass casings, smoking, a crater of mutant gore and scattered limbs steaming in the canyon, the red lamp sweeping.",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/Briggs Keeps the Ledger.mp3",
+      "durationSec": 7,
       "targets": {
         "webm": "/interstitials/motion/int_briggs_scorched_rig_motion_v1.webm"
       }
@@ -119,12 +322,41 @@
       "kind": "side-story",
       "title": "Scar Tissue",
       "firstFrame": {
-        "image": "/interstitials/int_briggs_scar_tissue_key_v1.webp"
+        "prompt": "The armoury from the reference image: Commander Briggs, a broad adult Black man in his fifties, naked and sitting on the bench, the medic, an adult woman in her thirties with short dark hair, naked and straddling him, her palm on his scarred shoulder, a parasite crawler creeping along the rifle racks behind.",
+        "references": [
+          "public/interstitials/int_briggs_scar_tissue_key_v1.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "Slow orbit around the crate. Briggs fits the last pins with practised speed, works the bolt once, glances at the scar on his shoulder and presses a thumb to it, then turns the rifle around and holds it out stock first.",
-      "lastFrame": "Briggs holds the reassembled rifle across his knees and offers it, stock first, toward camera; his eyes meet the viewer; the bulb swings slightly.",
-      "durationSec": 7,
+      "action": "The medic rides Briggs in cowgirl position on the bench, his hands on her hips. The crawler drops from the rack and Briggs snatches the shotgun off the table and blasts it into yellow pulp across the lockers mid-thrust. They keep going until she sags against him.",
+      "lastFrame": "the same armoury: the medic asleep naked on Briggs's lap on the bench, his arm around her, the crawler shotgunned into a splatter of yellow pulp across the lockers.",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/Vesper Sleeps in Shifts.mp3",
+      "durationSec": 7,
       "targets": {
         "webm": "/interstitials/motion/int_briggs_scar_tissue_motion_v1.webm"
       }
@@ -134,12 +366,41 @@
       "kind": "side-story",
       "title": "Vanguard Unyielding",
       "firstFrame": {
-        "image": "/interstitials/int_briggs_vanguard_fire_key_v1.webp"
+        "prompt": "The canyon catwalk from the reference image: Commander Briggs, a broad adult Black man in his fifties, naked behind a nude adult woman soldier with short dark hair bent over the catwalk railing, the burning canyon below crawling with alien beasts.",
+        "references": [
+          "public/interstitials/int_briggs_vanguard_fire_key_v1.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "Crane down to a tight two-shot. Briggs swings the yoke; the three cables snap taut; out of frame the guns fire and the canyon flashes white; the deck shudders; Briggs holds through the shockwave and nods to the viewer.",
-      "lastFrame": "the canyon lit white by muzzle flare dissipating into smoke; Briggs braced at the yoke, turning his head toward camera with a grim nod; red beacons pulse along the rampart.",
-      "durationSec": 6,
+      "action": "Doggy-position sex at the railing as Briggs swings the gun yoke with one hand; the guns fire, the canyon flashes white and the alien beasts burst apart, chunks raining through the smoke. The deck shudders and they climax in the shockwave.",
+      "lastFrame": "the same catwalk: both lovers naked at the railing, her back against his chest, the canyon below a burning field of blasted alien carcasses, gore raining in the smoke.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/Briggs Became the Barricade.mp3",
+      "durationSec": 6,
       "targets": {
         "webm": "/interstitials/motion/int_briggs_vanguard_fire_motion_v1.webm"
       }
@@ -149,12 +410,41 @@
       "kind": "side-story",
       "title": "Synaptic Inoculation",
       "firstFrame": {
-        "image": "/interstitials/int_nahl_mind_link_key_v2.webp"
+        "prompt": "The bone dissection lab from the reference image: Dr. Nahl, a pale adult alien with luminous amber eyes and glowing nerve filaments trailing from the body, naked and straddling a nude adult operator in a sealed helmet on the dissection slab, filaments wrapped around them both, a half-dissected specimen twitching on the next table.",
+        "references": [
+          "public/interstitials/int_nahl_mind_link_key_v2.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "Slow push-in. Nahl's hand touches the visor; red static rippling across the visor glass slows and resolves into a steady amber line; Nahl's antennae brighten in rhythm; the relays around them quiet to a low hum.",
-      "lastFrame": "close shot of Nahl's three fingers resting on the operator's visor; the visor's red interference glitches have smoothed into a calm amber line; Nahl's antennae glow softly.",
-      "durationSec": 7,
+      "action": "Nahl rides the operator in cowgirl position, nerve filaments pulsing amber with every movement. The specimen lurches up and Nahl's filaments lash out and rip its ribcage open in a spray of ichor without missing a beat. They climax together as the filaments glow steady.",
+      "lastFrame": "the same lab: Nahl lying naked on the operator's chest, the amber filaments glowing calm, the specimen's ribcage burst open and torn apart on the next table, ichor dripping onto the floor.",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/Dr. Nahl Remembers the Tissue.mp3",
+      "durationSec": 7,
       "targets": {
         "webm": "/interstitials/motion/int_nahl_mind_link_motion_v1.webm"
       }
@@ -164,12 +454,41 @@
       "kind": "side-story",
       "title": "Cellular Empathy",
       "firstFrame": {
-        "image": "/interstitials/int_nahl_co_evolution_key_v1.webp"
+        "prompt": "The fungal walkway from the reference image: Dr. Nahl, a pale adult alien with branching luminous antlers and amber eyes, naked on the mossy walkway beneath a nude adult operator in a sealed helmet, glowing mushrooms, a spore-zombie lurching out of the vines.",
+        "references": [
+          "public/interstitials/int_nahl_co_evolution_key_v1.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "Slow tracking shot across the stand. Both draw their hoop back at once; the seam tightens; the clasp closes with a soft wet click and glows amber; light pulses out along the threads into the chamber walls.",
-      "lastFrame": "the seam pulled tight into a glowing resin clasp between the two hoops, amber light pulsing through it; Nahl's head bowed; the operator's hand still on the human hoop.",
-      "durationSec": 6,
+      "action": "Missionary sex on the moss, the operator thrusting into Nahl as golden light flows between them. The spore-zombie lunges and Nahl's filaments spear it and tear it in half in a burst of black pulp. They finish wrapped together in the glow.",
+      "lastFrame": "the same walkway: Nahl and the operator entwined naked on the moss, the spore-zombie impaled and torn in half on Nahl's antlers' filaments, black pulp across the mushrooms.",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/Dr. Nahl Remembers the Tissue.mp3",
+      "durationSec": 6,
       "targets": {
         "webm": "/interstitials/motion/int_nahl_co_evolution_motion_v1.webm"
       }
@@ -179,12 +498,41 @@
       "kind": "side-story",
       "title": "Neural Sovereignty",
       "firstFrame": {
-        "image": "/interstitials/int_nahl_transcendence_key_v1.webp"
+        "prompt": "The amber dome from the reference image: Dr. Nahl, a pale adult alien with luminous antlers, naked on hands and knees on the dome floor with a nude adult operator in a sealed helmet behind, violet-veined husks bulging from the dome walls around them.",
+        "references": [
+          "public/interstitials/int_nahl_transcendence_key_v1.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "Slow 180-degree orbit. Nahl raises both hands; amber light spreads from its antennae across the dome, pushing the violet veins back into the walls until they fade; the operator straightens as the light reaches them.",
-      "lastFrame": "the dome cleared of violet, glowing warm amber from Nahl's antennae outward; the operator stands upright and steady; Nahl's hand lowered.",
-      "durationSec": 8,
+      "action": "The operator takes Nahl from behind in doggy position; amber light spreads from Nahl's antlers across the dome with every thrust and the violet husks swell and burst like boils, spraying ichor. They climax as the light fills the dome.",
+      "lastFrame": "the same dome flooded with amber light: Nahl and the operator kneeling naked, embracing, the husks in the walls burst open like boils and dripping violet ichor.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/We Escaped Together, Technically.mp3",
+      "durationSec": 8,
       "targets": {
         "webm": "/interstitials/motion/int_nahl_transcendence_motion_v1.webm"
       }
@@ -194,12 +542,41 @@
       "kind": "side-story",
       "title": "Whispers in the Abyss",
       "firstFrame": {
-        "image": "/interstitials/int_aria_whispers_abyss_key_v1.webp"
+        "prompt": "The violet hive cavern from the reference image: Aria, an adult insectoid alien queen with a glossy black chitin body, a woman's figure and violet glowing eyes, naked and straddling a nude adult operator in a sealed helmet on the mushroom-lit cavern floor, hive drones creeping out of the dark.",
+        "references": [
+          "public/interstitials/int_aria_whispers_abyss_key_v1.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "Slow push toward the operator's back as spores drift; the silhouette glides closer without walking; the camera rounds to the visor where its reflection settles beside the operator's ear; the helmet lamp flickers once.",
-      "lastFrame": "extreme close shot of the visor; reflected in the glass, the silhouette leans close beside the operator's head; teal pinpoints flicker on the visor rim.",
-      "durationSec": 7,
+      "action": "Aria rides the operator in cowgirl position, her wings beating slowly. The drones rush in and her clawed arms shred them mid-motion, sending limbs and violet ichor flying. She keeps riding until they both finish.",
+      "lastFrame": "the same cavern: Aria lying on the operator, both spent, her wings folded over them, the hive drones torn to pieces by her claws and scattered in violet ichor around them.",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/Her Voice Inside Your Helmet.mp3",
+      "durationSec": 7,
       "targets": {
         "webm": "/interstitials/motion/int_aria_whispers_abyss_motion_v1.webm"
       }
@@ -209,12 +586,41 @@
       "kind": "side-story",
       "title": "The Silk Trance",
       "firstFrame": {
-        "image": "/interstitials/int_aria_silk_trance_key_v1.webp"
+        "prompt": "The silk-web chamber from the reference image: Aria, an adult insectoid alien queen with a glossy black chitin body and a woman's figure, lying back naked in a hammock of glowing silk with a nude adult operator in a sealed helmet on top of her, a brood-beast creeping along the webs above.",
+        "references": [
+          "public/interstitials/int_aria_silk_trance_key_v1.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "Slow dolly-in. The threads tighten and draw the operator a half-step forward; the operator stops, braces, and tears free; threads snap and drift; the silhouette pulls back into the silk and dims.",
-      "lastFrame": "the silk parted around the operator, who has stepped back with a hand up; the silhouette recedes into the threads, its light dimming.",
-      "durationSec": 7,
+      "action": "Missionary sex in the silk hammock, the operator thrusting, threads tightening around them with every movement. The brood-beast drops toward them and the threads snap taut, slicing it into chunks that rain violet ichor. They finish wrapped in silk.",
+      "lastFrame": "the same chamber: Aria and the operator asleep entwined in the silk hammock, the brood-beast sliced into hanging chunks by the taut silk threads, violet ichor dripping.",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/The Queen Makes a Reasonable Offer.mp3",
+      "durationSec": 7,
       "targets": {
         "webm": "/interstitials/motion/int_aria_silk_trance_motion_v1.webm"
       }
@@ -224,12 +630,41 @@
       "kind": "side-story",
       "title": "The Queen's Mark",
       "firstFrame": {
-        "image": "/interstitials/int_aria_queens_mark_key_v1.webp"
+        "prompt": "The hive altar from the reference image: Aria, an adult insectoid alien queen with a glossy black chitin body and a woman's figure, naked and bent over the egg-shell altar with a nude adult operator in a sealed helmet behind her, violet tendrils across the floor, cultist husks rising from the dark.",
+        "references": [
+          "public/interstitials/int_aria_queens_mark_key_v1.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "Top-down slow descent. The silhouette's hand lowers; teal light seeps into the gauntlet's seams and curls into a spiral; the egg-shell ring fades to dark around them.",
-      "lastFrame": "close shot of the gauntlet palm, a faint teal glyph-free spiral glowing beneath the plating seams; the egg-shell ring dark.",
-      "durationSec": 6,
+      "action": "The operator takes Aria from behind in doggy position on the altar; teal light seeps into the operator's skin and curls into a spiral, and the cultist husks around them swell and explode into wet shreds. They climax as the egg-shell ring goes dark.",
+      "lastFrame": "the same altar: Aria and the operator naked in each other's arms on the altar, a teal spiral mark glowing on the operator's skin, the cultist husks exploded into wet violet shreds around the altar.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/Mother of the Last World.mp3",
+      "durationSec": 6,
       "targets": {
         "webm": "/interstitials/motion/int_aria_queens_mark_motion_v1.webm"
       }
@@ -239,12 +674,41 @@
       "kind": "song-card",
       "title": "The Cave Was Breathing",
       "firstFrame": {
-        "image": "/interstitials/int_33_the_cave_was_breathing_key_v1.webp"
+        "prompt": "The breathing cave from the reference image: two naked adult survivors in their thirties having sex on the slimy floor among the glowing yellow egg clusters, the man on top of the woman, a shotgun beside them, one egg splitting open.",
+        "references": [
+          "public/interstitials/int_33_the_cave_was_breathing_key_v1.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "slow push into the cave; walls expand and contract twice like lungs; dust lifts off the floor on each exhale",
-      "lastFrame": "the cave mouth wall seen from inside, its ribbed stone walls swelled outward mid-breath, warm air fogging the operator's helmet lamp",
-      "durationSec": 7,
+      "action": "Missionary sex on the cave floor as the walls breathe in and out around them. An egg bursts and a crawler leaps; the woman grabs the shotgun and blasts it apart mid-air without stopping, showering them in slime and gore. They finish as the cave exhales.",
+      "lastFrame": "the same cave mouth seen from inside: the lovers sitting up naked and slime-covered, the woman holding the smoking shotgun, a hatched crawler blown apart across the egg clusters, the ribbed walls swollen mid-breath.",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/The Cave Was Breathing.mp3",
+      "durationSec": 7,
       "targets": {
         "webm": "/interstitials/motion/int_33_the_cave_was_breathing_motion_v1.webm",
         "mp4": "/interstitials/int_33_the_cave_was_breathing_key_v1.mp4"
@@ -255,12 +719,41 @@
       "kind": "song-card",
       "title": "Four Seats, One Survivor",
       "firstFrame": {
-        "image": "/interstitials/int_34_four_seats_one_survivor_key_v1.webp"
+        "prompt": "The shuttle cockpit from the reference image: an adult woman co-pilot in her thirties naked and straddling the adult male pilot in his forties in the pilot's seat, his flight suit open, the burning ice planet through the canopy, a stowaway alien clawing through the hatch behind them.",
+        "references": [
+          "public/interstitials/int_34_four_seats_one_survivor_key_v1.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "slow pan across the empty seats, landing on the operator who turns to look back",
-      "lastFrame": "the escape cockpit's four seats, three empty with straps hanging, one occupied by the operator looking back at the hatch",
-      "durationSec": 6,
+      "action": "The co-pilot rides the pilot in cowgirl position in his seat as the shuttle climbs. The stowaway lunges and the pilot slaps the airlock control; the alien is sucked out and shredded on the hatch in a spray of blood. They finish as the planet falls away.",
+      "lastFrame": "the same cockpit: the co-pilot asleep naked on the pilot's lap, the canopy full of stars, the stowaway alien's shredded remains smeared across the open airlock door.",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/Four Seats, One Survivor.mp3",
+      "durationSec": 6,
       "targets": {
         "webm": "/interstitials/motion/int_34_four_seats_one_survivor_motion_v1.webm",
         "mp4": "/interstitials/int_34_four_seats_one_survivor_key_v1.mp4"
@@ -271,12 +764,41 @@
       "kind": "song-card",
       "title": "Contraband Sunrise",
       "firstFrame": {
-        "image": "/interstitials/int_35_contraband_sunrise_key_v1.webp"
+        "prompt": "The smuggler hold from the reference image: two naked adult smugglers in their thirties, the woman bent over a crate of glowing amber contraband eggs, the man behind her, pipes and cables everywhere, one egg cracking open.",
+        "references": [
+          "public/interstitials/int_35_contraband_sunrise_key_v1.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "climb through cloud into sunrise; the camera tilts into the hold where the cargo cell pulses",
-      "lastFrame": "the escape vessel breaking through cloud into a cold dawn, a frosted cargo cell glowing faintly in the hold",
-      "durationSec": 7,
+      "action": "Doggy-position sex over the egg crate. An egg cracks and a hatchling slithers out toward them; the man stomps it into amber paste without breaking rhythm. Sunrise light floods the hold as they finish.",
+      "lastFrame": "the same hold at sunrise light through a hatch: the smugglers naked on the crates, the hatchling stomped into amber paste on the deck plating beside them.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/Contraband Sunrise.mp3",
+      "durationSec": 7,
       "targets": {
         "webm": "/interstitials/motion/int_35_contraband_sunrise_motion_v1.webm",
         "mp4": "/interstitials/int_35_contraband_sunrise_key_v1.mp4"
@@ -287,12 +809,41 @@
       "kind": "song-card",
       "title": "We Escaped Together, Technically",
       "firstFrame": {
-        "image": "/interstitials/int_36_we_escaped_together_technically_key_v1.webp"
+        "prompt": "The escape pod from the reference image: two naked adult survivors in their thirties having sex on the pod bench, the man on top, the other adult survivors around them in open orange suits, black aliens clawing at the crackling teal energy barrier.",
+        "references": [
+          "public/interstitials/int_36_we_escaped_together_technically_key_v1.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "slow track down the aisle; heads turn as the vessel shudders; the alien hand settles on the armrest",
-      "lastFrame": "a crowded cabin of humans and aliens strapped in side by side, an awkward shared silence, one alien hand resting on a human armrest",
-      "durationSec": 7,
+      "action": "Missionary sex on the pod bench as the pod launches. An alien forces its arm through the barrier and the energy field disintegrates it, blowing it apart in smoking chunks and black blood. The survivors cheer as the lovers finish.",
+      "lastFrame": "the same pod: the survivors laughing and naked, the lovers wrapped together on the bench, an alien disintegrated half-through the energy barrier in smoking chunks.",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/We Escaped Together, Technically.mp3",
+      "durationSec": 7,
       "targets": {
         "webm": "/interstitials/motion/int_36_we_escaped_together_technically_motion_v1.webm",
         "mp4": "/interstitials/int_36_we_escaped_together_technically_key_v1.mp4"
@@ -303,12 +854,41 @@
       "kind": "song-card",
       "title": "The Ice Gets Smaller",
       "firstFrame": {
-        "image": "/interstitials/int_37_the_ice_gets_smaller_key_v1.webp"
+        "prompt": "The observation window from the reference image: an adult woman in her fifties naked and straddling an adult man in his forties on the window ledge, their orange suits open, the ice planet shrinking outside, a frozen corpse drifting toward the glass.",
+        "references": [
+          "public/interstitials/int_37_the_ice_gets_smaller_key_v1.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "pull back from the window as the ice field falls away beneath",
-      "lastFrame": "the glacier and the bunker's crash scar shrinking far below through a frosted window",
-      "durationSec": 6,
+      "action": "She rides him in cowgirl position against the window as the planet shrinks. The frozen corpse strikes the glass and shatters into a burst of red ice. They finish watching the planet become a dot.",
+      "lastFrame": "the same window: the lovers naked in each other's arms, the planet a small white disc, the frozen corpse shattered into red ice fragments against the glass.",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/The Ice Gets Smaller.mp3",
+      "durationSec": 6,
       "targets": {
         "webm": "/interstitials/motion/int_37_the_ice_gets_smaller_motion_v1.webm",
         "mp4": "/interstitials/int_37_the_ice_gets_smaller_key_v1.mp4"
@@ -319,12 +899,41 @@
       "kind": "song-card",
       "title": "Destination: Core Worlds",
       "firstFrame": {
-        "image": "/interstitials/int_38_destination_core_worlds_key_v1.webp"
+        "prompt": "Inside the biomechanical ship from the reference image, a cabin of ribbed latex walls with a porthole: two naked adult lovers in their thirties, the woman on hands and knees on the bunk, the man behind her, green engine light, a pursuing fighter visible through the porthole as the ship's tentacles reach for it.",
+        "references": [
+          "public/interstitials/int_38_destination_core_worlds_key_v1.webp"
+        ],
+        "model": "zimage"
       },
-      "action": "the vessel glides toward the ring; docking lights sweep across its scarred hull",
-      "lastFrame": "a bright corporate orbital ring ahead, docking lights blinking, the battered vessel small against it",
-      "durationSec": 8,
+      "action": "Doggy-position sex on the bunk while through the porthole the ship's tentacles seize the pursuing fighter and crush it, splattering its pilot across the canopy. The ship accelerates into green light as the lovers finish and sink onto the bunk.",
+      "lastFrame": "the same cabin: the lovers asleep naked on the bunk, through the porthole the pursuing fighter crushed in the ship's tentacles, its pilot splattered across the cracked canopy, the core worlds glittering ahead.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
       "audio": "/audio/ost/Destination Core Worlds.mp3",
+      "durationSec": 8,
       "targets": {
         "webm": "/interstitials/motion/int_38_destination_core_worlds_motion_v1.webm",
         "mp4": "/interstitials/int_38_destination_core_worlds_key_v1.mp4"
@@ -336,14 +945,40 @@
       "title": "sleep-camp-scout",
       "soundDesign": "sleep-camp",
       "firstFrame": {
-        "prompt": "Low wide shot of a survivors' camp in a vast dark bunker hall, an oil-drum fire in the centre throwing flickering orange light over a ring of bedrolls, supply crates and sandbag walls, the Scout from the reference image, a slim operator in glossy bone-white armour plates over a black bodysuit, a sealed rounded white helmet with a black visor, an orange light on one knee and a cyan light on the other, sitting on a bedroll, helmet sealed, warming gloved hands at the fire, two adult survivors in patched coats and hoods silhouetted across the flames with their faces in shadow, laundry strung between pipes, monumental bone arches bound in black iron, with a sparse living cable system visible only where the bindings have split, vanishing into black overhead, sparks rising.",
+        "prompt": "Low wide shot of a survivors' camp in a vast bunker hall around an oil-drum fire, the Scout from the reference image, a slim adult woman in a sealed rounded white helmet with a black visor, her glossy bone-white armour plates unlatched and hanging open over her bare body, straddling a nude adult male survivor in his thirties on a bedroll, both naked in the firelight, a severed mutant arm still twitching on the sandbags behind them, sparks rising into monumental biomechanical arches of ivory vertebrae and black latex sinew.",
         "references": [
           "art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "The operator rides the survivor in cowgirl position by the fire, their bodies rocking in rhythm, sweat shining. At the barricade a mutant lunges over the sandbags and the sentry blasts its head clean off in a geyser of green blood that spatters the laundry lines. The lovers finish, collapse together and pull the blanket over themselves as the fire sinks to embers.",
+      "lastFrame": "the same camp at embers: the operator and the survivor asleep naked and entwined under one blanket, the sentry at the barricade holding a smoking shotgun over a headless mutant sprawled across the sandbags in a pool of green blood, fog creeping in.",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
         ]
       },
-      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
-      "action": "Slow quarter-orbit around the fire, ending high and wide over the camp. The operator lies back on the bedroll. A survivor feeds a broken chair leg into the flames, sending up a short burst of sparks, then lies down. The firelight gradually dims to an ember glow; shadows lengthen. Fog creeps along the floor. Fade to black.",
-      "lastFrame": "the same camp asleep, the fire burned down to a bed of glowing embers, the operator a dark shape curled on the bedroll, the survivors asleep under blankets, a single sentry silhouetted at the sandbag barricade, fog creeping in under the barricade.",
       "durationSec": 8,
       "audio": "/cutscenes/sleep-bunker.webm",
       "targets": {
@@ -358,14 +993,40 @@
       "title": "sleep-camp-tank",
       "soundDesign": "sleep-camp",
       "firstFrame": {
-        "prompt": "Low wide shot of a survivors' camp in a vast dark bunker hall, an oil-drum fire in the centre throwing flickering orange light over a ring of bedrolls, supply crates and sandbag walls, the Tank from the reference image, a huge hulking operator in heavy weathered olive-brown power armour with massive rounded pauldrons, a sealed helmet with a narrow amber visor slit, small amber and cyan status lights, sitting on a bedroll, helmet sealed, warming gloved hands at the fire, two adult survivors in patched coats and hoods silhouetted across the flames with their faces in shadow, laundry strung between pipes, monumental bone arches bound in black iron, with a sparse living cable system visible only where the bindings have split, vanishing into black overhead, sparks rising.",
+        "prompt": "Low wide shot of a survivors' camp in a vast bunker hall around an oil-drum fire, the Tank from the reference image, a huge muscular adult man in a sealed helmet with a narrow amber visor slit, his heavy olive-brown power armour stripped to the massive pauldrons, his bare chest and thighs scarred, straddling a nude adult male survivor in his thirties on a bedroll, both naked in the firelight, a severed mutant arm still twitching on the sandbags behind them, sparks rising into monumental biomechanical arches of ivory vertebrae and black latex sinew.",
         "references": [
           "art/source/art-remaster/sprite-v4/tank/identity/Tank.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "The operator rides the survivor in cowgirl position by the fire, their bodies rocking in rhythm, sweat shining. At the barricade a mutant lunges over the sandbags and the sentry blasts its head clean off in a geyser of green blood that spatters the laundry lines. The lovers finish, collapse together and pull the blanket over themselves as the fire sinks to embers.",
+      "lastFrame": "the same camp at embers: the operator and the survivor asleep naked and entwined under one blanket, the sentry at the barricade holding a smoking shotgun over a headless mutant sprawled across the sandbags in a pool of green blood, fog creeping in.",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
         ]
       },
-      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
-      "action": "Slow quarter-orbit around the fire, ending high and wide over the camp. The operator lies back on the bedroll. A survivor feeds a broken chair leg into the flames, sending up a short burst of sparks, then lies down. The firelight gradually dims to an ember glow; shadows lengthen. Fog creeps along the floor. Fade to black.",
-      "lastFrame": "the same camp asleep, the fire burned down to a bed of glowing embers, the operator a dark shape curled on the bedroll, the survivors asleep under blankets, a single sentry silhouetted at the sandbag barricade, fog creeping in under the barricade.",
       "durationSec": 8,
       "audio": "/cutscenes/sleep-bunker.webm",
       "targets": {
@@ -380,14 +1041,40 @@
       "title": "sleep-camp-engineer",
       "soundDesign": "sleep-camp",
       "firstFrame": {
-        "prompt": "Low wide shot of a survivors' camp in a vast dark bunker hall, an oil-drum fire in the centre throwing flickering orange light over a ring of bedrolls, supply crates and sandbag walls, the Engineer from the reference image, a lean operator in tan and gunmetal utility armour with chunky forearm tool braces, a sealed tan helmet with a glowing cyan visor, an orange light on one knee and a cyan light on the other, sitting on a bedroll, helmet sealed, warming gloved hands at the fire, two adult survivors in patched coats and hoods silhouetted across the flames with their faces in shadow, laundry strung between pipes, monumental bone arches bound in black iron, with a sparse living cable system visible only where the bindings have split, vanishing into black overhead, sparks rising.",
+        "prompt": "Low wide shot of a survivors' camp in a vast bunker hall around an oil-drum fire, the Engineer from the reference image, a lean athletic adult woman in a sealed tan helmet with a glowing cyan visor, her tan and gunmetal utility armour stripped to the forearm tool braces and boots, otherwise nude, straddling a nude adult male survivor in his thirties on a bedroll, both naked in the firelight, a severed mutant arm still twitching on the sandbags behind them, sparks rising into monumental biomechanical arches of ivory vertebrae and black latex sinew.",
         "references": [
           "art/source/art-remaster/sprite-v4/engineer/identity/Engineer.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "The operator rides the survivor in cowgirl position by the fire, their bodies rocking in rhythm, sweat shining. At the barricade a mutant lunges over the sandbags and the sentry blasts its head clean off in a geyser of green blood that spatters the laundry lines. The lovers finish, collapse together and pull the blanket over themselves as the fire sinks to embers.",
+      "lastFrame": "the same camp at embers: the operator and the survivor asleep naked and entwined under one blanket, the sentry at the barricade holding a smoking shotgun over a headless mutant sprawled across the sandbags in a pool of green blood, fog creeping in.",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
         ]
       },
-      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
-      "action": "Slow quarter-orbit around the fire, ending high and wide over the camp. The operator lies back on the bedroll. A survivor feeds a broken chair leg into the flames, sending up a short burst of sparks, then lies down. The firelight gradually dims to an ember glow; shadows lengthen. Fog creeps along the floor. Fade to black.",
-      "lastFrame": "the same camp asleep, the fire burned down to a bed of glowing embers, the operator a dark shape curled on the bedroll, the survivors asleep under blankets, a single sentry silhouetted at the sandbag barricade, fog creeping in under the barricade.",
       "durationSec": 8,
       "audio": "/cutscenes/sleep-bunker.webm",
       "targets": {
@@ -402,14 +1089,40 @@
       "title": "sleep-cryo-scout",
       "soundDesign": "sleep-cryo",
       "firstFrame": {
-        "prompt": "An emergency thermal cryo pod standing upright in a frozen chamber, its ribbed glass lid half open and furred with frost, the Scout from the reference image, a slim operator in glossy bone-white armour plates over a black bodysuit, a sealed rounded white helmet with a black visor, an orange light on one knee and a cyan light on the other, stepping into a fitted pressure cradle lined with segmented bruised-maroon shock cushions, helmet sealed, cyan instrument light washing over the frost from a strip inside the pod, icicles hanging from bone-braced coolant conduits overhead, white fog pouring slowly out of the pod's base across a floor of black ice.",
+        "prompt": "An upright emergency cryo pod in a frozen chamber, lid open and furred with frost, its lining of moist tufted plum-pink cushions folded like labial petals, the Scout from the reference image, a slim adult woman in a sealed rounded white helmet with a black visor, her glossy bone-white armour plates unlatched and hanging open over her bare body, lying back inside it with a nude adult partner in their thirties on top of them, bodies pressed together, breath fogging, cyan light, a frost-ghoul clawing at the glass from outside, icicles on bone-braced conduits.",
         "references": [
           "art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "Missionary sex inside the cryo pod, the partner thrusting slowly as frost blooms around them. Outside the frost-ghoul slams the glass and the pod's cold-jet fires, freezing it solid; it topples and shatters into bloody ice chunks. The lid swings shut with a hiss and frost seals the lovers in, falling asleep in each other's arms.",
+      "lastFrame": "the cryo pod sealed shut, frost ferns covering the glass so the two entwined lovers are a dark silhouette sleeping inside, the shattered frozen ghoul in red-pink ice chunks scattered across the black ice floor.",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
         ]
       },
-      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
-      "action": "Slow, steady push toward the pod. The operator settles back into the cradle and the lid swings closed with a soft hiss of vapour. Frost blooms across the glass from the edges inward in branching ferns until the silhouette inside is barely visible. A cyan light pulses three times, each slower than the last, then dims. Fog stops moving. Fade to black.",
-      "lastFrame": "the cryo pod sealed shut, its glass lid covered in dense fern-like frost so the operator is only a dark silhouette behind it, the cyan light inside dimmed to a faint standby glow, the frozen chamber silent and almost black.",
       "durationSec": 7,
       "audio": "/cutscenes/sleep-bunker.webm",
       "targets": {
@@ -424,14 +1137,40 @@
       "title": "sleep-cryo-tank",
       "soundDesign": "sleep-cryo",
       "firstFrame": {
-        "prompt": "An emergency thermal cryo pod standing upright in a frozen chamber, its ribbed glass lid half open and furred with frost, the Tank from the reference image, a huge hulking operator in heavy weathered olive-brown power armour with massive rounded pauldrons, a sealed helmet with a narrow amber visor slit, small amber and cyan status lights, stepping into a fitted pressure cradle lined with segmented bruised-maroon shock cushions, helmet sealed, cyan instrument light washing over the frost from a strip inside the pod, icicles hanging from bone-braced coolant conduits overhead, white fog pouring slowly out of the pod's base across a floor of black ice.",
+        "prompt": "An upright emergency cryo pod in a frozen chamber, lid open and furred with frost, its lining of moist tufted plum-pink cushions folded like labial petals, the Tank from the reference image, a huge muscular adult man in a sealed helmet with a narrow amber visor slit, his heavy olive-brown power armour stripped to the massive pauldrons, his bare chest and thighs scarred, lying back inside it with a nude adult partner in their thirties on top of them, bodies pressed together, breath fogging, cyan light, a frost-ghoul clawing at the glass from outside, icicles on bone-braced conduits.",
         "references": [
           "art/source/art-remaster/sprite-v4/tank/identity/Tank.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "Missionary sex inside the cryo pod, the partner thrusting slowly as frost blooms around them. Outside the frost-ghoul slams the glass and the pod's cold-jet fires, freezing it solid; it topples and shatters into bloody ice chunks. The lid swings shut with a hiss and frost seals the lovers in, falling asleep in each other's arms.",
+      "lastFrame": "the cryo pod sealed shut, frost ferns covering the glass so the two entwined lovers are a dark silhouette sleeping inside, the shattered frozen ghoul in red-pink ice chunks scattered across the black ice floor.",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
         ]
       },
-      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
-      "action": "Slow, steady push toward the pod. The operator settles back into the cradle and the lid swings closed with a soft hiss of vapour. Frost blooms across the glass from the edges inward in branching ferns until the silhouette inside is barely visible. A cyan light pulses three times, each slower than the last, then dims. Fog stops moving. Fade to black.",
-      "lastFrame": "the cryo pod sealed shut, its glass lid covered in dense fern-like frost so the operator is only a dark silhouette behind it, the cyan light inside dimmed to a faint standby glow, the frozen chamber silent and almost black.",
       "durationSec": 7,
       "audio": "/cutscenes/sleep-bunker.webm",
       "targets": {
@@ -446,14 +1185,40 @@
       "title": "sleep-cryo-engineer",
       "soundDesign": "sleep-cryo",
       "firstFrame": {
-        "prompt": "An emergency thermal cryo pod standing upright in a frozen chamber, its ribbed glass lid half open and furred with frost, the Engineer from the reference image, a lean operator in tan and gunmetal utility armour with chunky forearm tool braces, a sealed tan helmet with a glowing cyan visor, an orange light on one knee and a cyan light on the other, stepping into a fitted pressure cradle lined with segmented bruised-maroon shock cushions, helmet sealed, cyan instrument light washing over the frost from a strip inside the pod, icicles hanging from bone-braced coolant conduits overhead, white fog pouring slowly out of the pod's base across a floor of black ice.",
+        "prompt": "An upright emergency cryo pod in a frozen chamber, lid open and furred with frost, its lining of moist tufted plum-pink cushions folded like labial petals, the Engineer from the reference image, a lean athletic adult woman in a sealed tan helmet with a glowing cyan visor, her tan and gunmetal utility armour stripped to the forearm tool braces and boots, otherwise nude, lying back inside it with a nude adult partner in their thirties on top of them, bodies pressed together, breath fogging, cyan light, a frost-ghoul clawing at the glass from outside, icicles on bone-braced conduits.",
         "references": [
           "art/source/art-remaster/sprite-v4/engineer/identity/Engineer.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "Missionary sex inside the cryo pod, the partner thrusting slowly as frost blooms around them. Outside the frost-ghoul slams the glass and the pod's cold-jet fires, freezing it solid; it topples and shatters into bloody ice chunks. The lid swings shut with a hiss and frost seals the lovers in, falling asleep in each other's arms.",
+      "lastFrame": "the cryo pod sealed shut, frost ferns covering the glass so the two entwined lovers are a dark silhouette sleeping inside, the shattered frozen ghoul in red-pink ice chunks scattered across the black ice floor.",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
         ]
       },
-      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
-      "action": "Slow, steady push toward the pod. The operator settles back into the cradle and the lid swings closed with a soft hiss of vapour. Frost blooms across the glass from the edges inward in branching ferns until the silhouette inside is barely visible. A cyan light pulses three times, each slower than the last, then dims. Fog stops moving. Fade to black.",
-      "lastFrame": "the cryo pod sealed shut, its glass lid covered in dense fern-like frost so the operator is only a dark silhouette behind it, the cyan light inside dimmed to a faint standby glow, the frozen chamber silent and almost black.",
       "durationSec": 7,
       "audio": "/cutscenes/sleep-bunker.webm",
       "targets": {
@@ -468,14 +1233,40 @@
       "title": "sleep-hive-scout",
       "soundDesign": "sleep-hive",
       "firstFrame": {
-        "prompt": "Deep inside a biomechanical hive chamber, the Scout from the reference image, a slim operator in glossy bone-white armour plates over a black bodysuit, a sealed rounded white helmet with a black visor, an orange light on one knee and a cyan light on the other, lying back into a protective cradle of black resin vanes and curved ivory struts with a rain-wet sheen, helmet sealed, the cradle half open like an articulated hand, a few hair-thin sensory filaments lifting toward the armour seams, emerald bioluminescent capillaries pulsing slowly behind the ribbed walls, warm mist hanging in the air, everything beyond the cradle dissolving into dark.",
+        "prompt": "Deep inside a biomechanical hive chamber, the Scout from the reference image, a slim adult woman in a sealed rounded white helmet with a black visor, her glossy bone-white armour plates unlatched and hanging open over her bare body, on hands and knees in a womb-like cradle of glistening black latex flaps and ivory vertebrae, a nude adult hive-hybrid consort with glossy black chitin plating and emerald veins kneeling behind them, both naked and willing, emerald bioluminescence, warm wet mist, a drone's torn carcass dripping from the ribbed wall.",
         "references": [
           "art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "The consort takes the operator from behind in doggy position, both moving hard and eager. An intruder drone skitters into the chamber and the cradle's ivory ribs snap shut on it, tearing it apart in sprays of green ichor. The lovers sink down together, a translucent membrane seals over them and they sleep as the camera pulls back to rows of breathing cocoons.",
+      "lastFrame": "the hive chamber wall lined with breathing translucent cocoons, one holding the operator and the consort asleep entwined, an intruder drone's shredded remains hanging from the cradle ribs in strings of green ichor, wet mist.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
         ]
       },
-      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
-      "action": "The ribs of the cradle close slowly over the operator like fingers folding, and a translucent membrane seals between them. Tendrils settle gently across the armour. The membrane rises and falls in a slow breathing rhythm; the visor inside picks up the emerald glow. The camera pulls back and up to reveal rows of breathing cocoons. Fade to black. No sudden movements, no gore.",
-      "lastFrame": "the hive chamber wall lined with rows of closed translucent cocoons, each glowing softly emerald from within and breathing in unison, one holding the faint shape of the armoured operator, wet mist, monumental ivory ribs arching overhead into black.",
       "durationSec": 8,
       "audio": "/cutscenes/sleep-bunker.webm",
       "targets": {
@@ -490,14 +1281,40 @@
       "title": "sleep-hive-tank",
       "soundDesign": "sleep-hive",
       "firstFrame": {
-        "prompt": "Deep inside a biomechanical hive chamber, the Tank from the reference image, a huge hulking operator in heavy weathered olive-brown power armour with massive rounded pauldrons, a sealed helmet with a narrow amber visor slit, small amber and cyan status lights, lying back into a protective cradle of black resin vanes and curved ivory struts with a rain-wet sheen, helmet sealed, the cradle half open like an articulated hand, a few hair-thin sensory filaments lifting toward the armour seams, emerald bioluminescent capillaries pulsing slowly behind the ribbed walls, warm mist hanging in the air, everything beyond the cradle dissolving into dark.",
+        "prompt": "Deep inside a biomechanical hive chamber, the Tank from the reference image, a huge muscular adult man in a sealed helmet with a narrow amber visor slit, his heavy olive-brown power armour stripped to the massive pauldrons, his bare chest and thighs scarred, on hands and knees in a womb-like cradle of glistening black latex flaps and ivory vertebrae, a nude adult hive-hybrid consort with glossy black chitin plating and emerald veins kneeling behind them, both naked and willing, emerald bioluminescence, warm wet mist, a drone's torn carcass dripping from the ribbed wall.",
         "references": [
           "art/source/art-remaster/sprite-v4/tank/identity/Tank.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "The consort takes the operator from behind in doggy position, both moving hard and eager. An intruder drone skitters into the chamber and the cradle's ivory ribs snap shut on it, tearing it apart in sprays of green ichor. The lovers sink down together, a translucent membrane seals over them and they sleep as the camera pulls back to rows of breathing cocoons.",
+      "lastFrame": "the hive chamber wall lined with breathing translucent cocoons, one holding the operator and the consort asleep entwined, an intruder drone's shredded remains hanging from the cradle ribs in strings of green ichor, wet mist.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
         ]
       },
-      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
-      "action": "The ribs of the cradle close slowly over the operator like fingers folding, and a translucent membrane seals between them. Tendrils settle gently across the armour. The membrane rises and falls in a slow breathing rhythm; the visor inside picks up the emerald glow. The camera pulls back and up to reveal rows of breathing cocoons. Fade to black. No sudden movements, no gore.",
-      "lastFrame": "the hive chamber wall lined with rows of closed translucent cocoons, each glowing softly emerald from within and breathing in unison, one holding the faint shape of the armoured operator, wet mist, monumental ivory ribs arching overhead into black.",
       "durationSec": 8,
       "audio": "/cutscenes/sleep-bunker.webm",
       "targets": {
@@ -512,14 +1329,40 @@
       "title": "sleep-hive-engineer",
       "soundDesign": "sleep-hive",
       "firstFrame": {
-        "prompt": "Deep inside a biomechanical hive chamber, the Engineer from the reference image, a lean operator in tan and gunmetal utility armour with chunky forearm tool braces, a sealed tan helmet with a glowing cyan visor, an orange light on one knee and a cyan light on the other, lying back into a protective cradle of black resin vanes and curved ivory struts with a rain-wet sheen, helmet sealed, the cradle half open like an articulated hand, a few hair-thin sensory filaments lifting toward the armour seams, emerald bioluminescent capillaries pulsing slowly behind the ribbed walls, warm mist hanging in the air, everything beyond the cradle dissolving into dark.",
+        "prompt": "Deep inside a biomechanical hive chamber, the Engineer from the reference image, a lean athletic adult woman in a sealed tan helmet with a glowing cyan visor, her tan and gunmetal utility armour stripped to the forearm tool braces and boots, otherwise nude, on hands and knees in a womb-like cradle of glistening black latex flaps and ivory vertebrae, a nude adult hive-hybrid consort with glossy black chitin plating and emerald veins kneeling behind them, both naked and willing, emerald bioluminescence, warm wet mist, a drone's torn carcass dripping from the ribbed wall.",
         "references": [
           "art/source/art-remaster/sprite-v4/engineer/identity/Engineer.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "The consort takes the operator from behind in doggy position, both moving hard and eager. An intruder drone skitters into the chamber and the cradle's ivory ribs snap shut on it, tearing it apart in sprays of green ichor. The lovers sink down together, a translucent membrane seals over them and they sleep as the camera pulls back to rows of breathing cocoons.",
+      "lastFrame": "the hive chamber wall lined with breathing translucent cocoons, one holding the operator and the consort asleep entwined, an intruder drone's shredded remains hanging from the cradle ribs in strings of green ichor, wet mist.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
         ]
       },
-      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
-      "action": "The ribs of the cradle close slowly over the operator like fingers folding, and a translucent membrane seals between them. Tendrils settle gently across the armour. The membrane rises and falls in a slow breathing rhythm; the visor inside picks up the emerald glow. The camera pulls back and up to reveal rows of breathing cocoons. Fade to black. No sudden movements, no gore.",
-      "lastFrame": "the hive chamber wall lined with rows of closed translucent cocoons, each glowing softly emerald from within and breathing in unison, one holding the faint shape of the armoured operator, wet mist, monumental ivory ribs arching overhead into black.",
       "durationSec": 8,
       "audio": "/cutscenes/sleep-bunker.webm",
       "targets": {
@@ -534,16 +1377,42 @@
       "title": "sleep-squad",
       "soundDesign": "sleep-squad",
       "firstFrame": {
-        "prompt": "Three armoured operators inside the crash-site bunker at night: the Engineer from reference image 1, a lean operator in tan and gunmetal utility armour with chunky forearm tool braces, a sealed tan helmet with a glowing cyan visor, an orange light on one knee and a cyan light on the other, lying asleep on a steel cot under a foil blanket, the Scout from reference image 2, a slim operator in glossy bone-white armour plates over a black bodysuit, a sealed rounded white helmet with a black visor, an orange light on one knee and a cyan light on the other, asleep on a second cot, and the Tank from reference image 3, a huge hulking operator in heavy weathered olive-brown power armour with massive rounded pauldrons, a sealed helmet with a narrow amber visor slit, small amber and cyan status lights, sitting on an ammo crate by the open bunker door with a rifle across their knees keeping watch, all helmets sealed, a single caged amber lamp hanging between them, cold fog drifting in through the doorway from the black outside, the crashed ship's hull looming behind, its ribs fused with sinuous biomechanical sinew like a ribcage.",
+        "prompt": "The crash-site bunker at night: the Engineer from reference image 1, a lean athletic adult woman in a sealed tan helmet with a glowing cyan visor, her tan and gunmetal utility armour stripped to the forearm tool braces and boots, otherwise nude, lying back on a steel cot with the Scout from reference image 2, a slim adult woman in a sealed rounded white helmet with a black visor, her glossy bone-white armour plates unlatched and hanging open over her bare body, on top of her, both naked and kissing under a foil blanket, and the Tank from reference image 3, a huge muscular adult man in a sealed helmet with a narrow amber visor slit, his heavy olive-brown power armour stripped to the massive pauldrons, his bare chest and thighs scarred, sitting by the open door with a smoking rifle across his knees keeping watch, a dead alien sprawled in the doorway in a spreading pool of black blood, one caged amber lamp, the crashed ship's hull ribs fused with biomechanical sinew behind.",
         "references": [
           "art/source/art-remaster/sprite-v4/engineer/identity/Engineer.front-idle-master.png",
           "art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png",
           "art/source/art-remaster/sprite-v4/tank/identity/Tank.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "The Scout and the Engineer make love on the cot in missionary position, slow and tender. A second alien lunges through the doorway and the Tank fires point-blank, blowing it in half in a spray of black blood across the fog. The lovers fall asleep tangled together; the Tank's head nods forward; grey dawn rises in the doorway.",
+      "lastFrame": "the same bunker in deep dusk: the Scout and the Engineer asleep naked in each other's arms under the foil blanket, the Tank asleep against the door frame with the rifle on his knees, a second alien carcass blown in half across the threshold, grey dawn in the fog.",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            1.2
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.7
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
         ]
       },
-      "identityLock": "IDENTITY LOCK: preserve the reference character exactly—helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; helmet remains sealed; do not expose a face or redesign the suit.",
-      "action": "Slow lateral dolly from the sleeping operators across to the watcher at the door. Out in the dark beyond the doorway a distant cold glow drifts left to right and disappears; the watcher's visor tracks it. A long still moment. The watcher's head slowly nods forward in sleep. The lamp gutters low. Faint grey dawn light rises at the doorway. Fade to black.",
-      "lastFrame": "the same bunker in deep dusk: the sleepers still under their blankets, the watcher's helmet tipped forward in sleep against the door frame with the rifle across their knees, the amber lamp guttered to a faint ember glow, the first thin grey-blue light of dawn touching the fog in the doorway.",
       "durationSec": 8,
       "audio": "/cutscenes/sleep-bunker.webm",
       "targets": {

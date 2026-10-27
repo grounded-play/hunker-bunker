@@ -18,12 +18,12 @@ describe('motion clip jobs from the cinematics audit', () => {
         expect(byId['sleep-squad']?.kind).toBe('sleep');
     });
 
-    it('starts from the key art the game shows and lands where the runtime looks', () => {
+    it('redraws from the key art the game shows and lands where the runtime looks', () => {
         const card = byId.card_33;
-        expect(card.firstFrame.image).toBe(getSongInterstitial('33').image);
+        expect(card.firstFrame.references).toEqual([`public${getSongInterstitial('33').image}`]);
         expect(card.targets.webm).toBe('/interstitials/motion/int_33_the_cave_was_breathing_motion_v1.webm');
         expect(card.audio).toBe(getSongInterstitial('33').audio);
-        expect(byId.kaelen_diagnostic_cradle.firstFrame.image).toBe(SIDE_STORY_INTERSTITIALS.kaelen_diagnostic_cradle.image);
+        expect(byId.kaelen_diagnostic_cradle.firstFrame.references).toEqual([`public${SIDE_STORY_INTERSTITIALS.kaelen_diagnostic_cradle.image}`]);
         expect(byId['sleep-cryo-tank'].targets).toEqual({
             webm: '/cutscenes/sleep-cryo-tank.webm', mp4: '/cutscenes/sleep-cryo-tank.mp4', poster: '/cutscenes/sleep-cryo-tank-poster.jpg'
         });
@@ -40,16 +40,22 @@ describe('motion clip jobs from the cinematics audit', () => {
         expect(byId['sleep-squad'].firstFrame.references).toHaveLength(3);
     });
 
-    it('carries the art bible look and a usable action', () => {
+    it('makes every cut the grindhouse cut: first frame, last frame, action, trigger and adult add-ons', () => {
         for (const job of built.jobs) {
             expect(job.action, job.id).toBeTruthy();
+            expect(job.lastFrame, job.id).toBeTruthy();
+            expect(job.firstFrame.prompt, job.id).toBeTruthy();
+            expect(job.trigger, job.id).toMatch(/^(m15510n4ry|c0wg1rl|d0gg1e|bl0wj0b|d0ubl3_bj)$/);
+            expect(job.loras.wan.length, job.id).toBeGreaterThan(0);
+            expect(job.loras[job.firstFrame.model].length, job.id).toBeGreaterThan(0);
             expect(job.durationSec, job.id).toBeGreaterThanOrEqual(5);
         }
-        expect(built.style.prefix).toMatch(/Nordic cathedral biomechanical horror/);
-        expect(built.style.prefix).not.toMatch(/Giger|Event Horizon/i);
+        expect(built.style.prefix).toMatch(/Giger biomechanical eroticism/);
+        expect(built.style.prefix).toMatch(/Troma/);
+        expect(built.style.suffix).toMatch(/consenting adult/);
+        expect(built.style.negative).toMatch(/child, minor/);
         expect(built.style.characterLock).toMatch(/helmet silhouette/);
         expect(built.style.continuityLock).toMatch(/subject count/);
-        expect(JSON.stringify(built.style)).not.toMatch(/Giger|Event Horizon/i);
         for (const job of built.jobs.filter((entry) => entry.kind === 'sleep')) {
             expect(job.identityLock, job.id).toBe(built.style.characterLock);
         }
