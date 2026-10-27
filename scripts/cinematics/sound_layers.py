@@ -21,7 +21,6 @@ under the job's music (docs/cinematics-comfyui-pipeline.md).
 import argparse
 import json
 import subprocess
-import sys
 import zlib
 from pathlib import Path
 
@@ -124,4 +123,4 @@ def main():
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    main()

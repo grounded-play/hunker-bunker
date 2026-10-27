@@ -34,7 +34,6 @@ import random
 import re
 import shutil
 import subprocess
-import sys
 import time
 import urllib.parse
 import urllib.request
@@ -423,4 +422,4 @@ def main():
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    main()
