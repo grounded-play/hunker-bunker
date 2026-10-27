@@ -617,7 +617,8 @@ def cmd_batch(args):
                 continue
             command(argparse.Namespace(job=job_id, takes=1, seed=None, model=None if endpoint == 'first' else 'flux', lora=None, prompt_extra=None))
             pattern = 'still_*.png' if endpoint == 'first' else 'last_*.png'
-            newest = max(folder.glob(pattern), key=lambda p: int(p.stem.split('_')[-1]))
+            # last_*.png also matches the chosen last_frame.png: numbered takes only.
+            newest = max((p for p in folder.glob(pattern) if p.stem.split('_')[-1].isdigit()), key=lambda p: int(p.stem.split('_')[-1]))
             shutil.copy(newest, chosen)
             print(f'[batch] {job_id}: {newest.name} -> {chosen.name}', flush=True)
         takes = sorted(folder.glob(f'take_{args.model}_*.mp4'), key=lambda p: int(p.stem.split('_')[-1]))
