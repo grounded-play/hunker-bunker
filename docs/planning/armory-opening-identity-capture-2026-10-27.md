@@ -1,8 +1,26 @@
 # Armory departure and exact operator identity capture
 
-Status: process defined; capture tooling and departure animation are the next
-implementation slice. Do not start the 144 loadout-microclip batch until this
-spike is reviewed.
+Status: departure live on EMBARK; identity capture built; factory packs captured
+for Scout, Tank and Engineer; opening frames in review. The 144 loadout-microclip
+batch stays paused.
+
+## Built (2026-10-27)
+
+- **The departure** (`main.js` `playArmoryDeparture`, `src/armoryScene.js`): on
+  EMBARK the Armory UI fades, the bench gun and its display frame go, the camera
+  drops the sidebar pan (`setCaptureCamera('departure')`), and the operator turns
+  to screen right and walks out on the real walk cycle, paced by wall-clock time so
+  a slow frame never stalls it. Any key or click skips; reduced motion or
+  `hb_armory_departure=0` turns it off. Verified in the game with the Tank.
+- **The capture tool** (`scripts/cinematics/capture-operator-identity.mjs`): renders
+  the nine views, the 3 × 3 sheet and the clean departure first and empty frames
+  for each appearance hash from the Armory's own scene, framing each body from its
+  measured size, with a back light for the rear views. Without a fixture it
+  captures the three factory looks and copies them to
+  `art/source/cinematics/operator-identities/factory/<class>/`.
+- **The opening jobs** reference the factory identity sheet as image 2 of the
+  launch shot, under an identity lock that defers to the sheet (the factory Scout
+  has no helmet, so the sheet, not the prompt, decides).
 
 ## The ask
 

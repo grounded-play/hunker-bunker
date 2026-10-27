@@ -11,7 +11,8 @@
 // weaponSkinId, operatorPolishId, weaponSheenId, charmId, decalId, mod1Id, mod2Id }.
 // Output per appearance: art/source/cinematics/operator-identities/<hash>/
 // (nine PNGs, identity_sheet_3x3.png, armory_departure_first.png,
-// armory_departure_empty.png, identity.json). Run against a dev server.
+// armory_departure_empty.png, identity.json); the factory looks are also
+// copied to operator-identities/factory/<class>/. Run against a dev server.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -128,6 +129,8 @@ for (const look of appearances) {
     fs.writeFileSync(path.join(dir, 'identity.json'), `${JSON.stringify({
         hash, signature, views: SPEC.views.map((view) => `${view.id}.png`), capturedAt: new Date().toISOString(), baseUrl
     }, null, 2)}\n`);
+    // The factory looks also land at a stable path the cinematic jobs reference.
+    if (!fixturePath) fs.cpSync(dir, path.join(OUT, 'factory', look.classId), { recursive: true });
     console.log(`[identity] ${look.classId} ${hash} -> ${path.relative(ROOT, dir)}`);
 }
 await browser.close();

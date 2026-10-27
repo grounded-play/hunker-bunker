@@ -79,7 +79,8 @@ describe('motion clip jobs from the cinematics audit', () => {
         expect(byId['opening-launch-scout'].targets.webm).toBe('/cutscenes/scout-class-intro.webm');
         expect(byId['opening-flight-tank'].targets.webm).toBe('/cutscenes/tank-intro.webm');
         expect(byId['opening-crash-engineer'].targets.webm).toBe('/cutscenes/engineer-crash.webm');
-        expect(byId['opening-launch-tank'].firstFrame.references).toContain('art/source/art-remaster/sprite-v4/tank/identity/Tank.front-idle-master.png');
+        expect(byId['opening-launch-tank'].firstFrame.references).toContain('art/source/cinematics/operator-identities/factory/tank/identity_sheet_3x3.png');
+        expect(byId['opening-launch-tank'].identityLock).toMatch(/nine views/);
     });
 
     it('parses the audit entry and table formats', () => {

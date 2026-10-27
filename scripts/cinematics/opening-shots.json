@@ -3,7 +3,7 @@
   "style": {
     "prefix": "\"Nordic Cathedral Biomech\" style for the game \"Hunker Bunker\": the hard-line beauty of Nordic Jugendstil / National Romantic architecture — monumental stepped granite massing, deep round arches with heavy keystones, blackened-iron strap bindings and ring clasps, carved bone and stone relief, abstract serpentine interlace carving, frost-etched leaded glass, restrained taut curves — transposed into the sacred bunkers of a dead megacorporation's space-god cult and DECAYED: spalled granite, rust-bled iron, verdigris bronze, lichen and soot, failing lanterns. From WITHIN that design, H.R. Giger-like biology takes form: ribs, vertebrae, tendons, tubes and wet membranes grow out of joints, bindings and cracks, and deeper in adopt the design — vertebrae following the arches, carved interlace becoming living tendrils. Sensual organic curvature carried by form only (no nudity). Beautiful, dark, decorative decay; the juxtaposition of hard-line craft and organic form is the subject. 2D illustration: heavy black contours, woodcut/etching hatching on stone and iron, looser organic hatching with wet highlights on the biology, soft cel shading with painted texture. Mostly darkness; amber lantern light, pale cold light on stone, teal only for screens, bioluminescent green only on the biology. No text unless specified.",
     "suffix": "16:9 cinematic frame.",
-    "characterLock": "IDENTITY LOCK: preserve the operator from their reference exactly: helmet silhouette, visor shape and colour, armour proportions, plate layout, material colours, knee lights, tools and body scale; the helmet stays sealed; one operator only.",
+    "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
     "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
     "motionSuffix": "Single continuous shot, one camera move, natural weight and inertia; hold the final composition for twelve frames. No cuts, no new subjects, no text.",
     "negative": "readable text, logos with real brands, watermarks, photorealism, 3D render look, lens flare, depth of field, nudity, genitals, sexual acts, gore beyond blood splatter, clean sterile sci-fi, flat vector minimalism, French Art Nouveau excess, Mucha florals, whiplash everywhere, Viking clichés, horned helmets, longships, literal runes, real scripts, gold-leaf opulence, extra hues outside the palette, deformed anatomy, duplicated operator, identity drift, morphing ship, flicker"
@@ -21,30 +21,30 @@
   "classes": {
     "scout": {
       "name": "Scout",
-      "operator": "art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png",
-      "look": "a slim operator in glossy bone-white armour plates over a black bodysuit, a sealed rounded white helmet with a black visor, an orange light on one knee and a cyan light on the other",
+      "look": "a slim woman with short dark hair, no helmet, in a fitted white armoured bodysuit with black panels and black boots, a compact rifle at her side",
       "ship": "public/cutscenes/scout-class-intro.webm@7.6",
       "wreck": "public/scout_ship.png",
       "shipLook": "a sleek dark-iron delta interceptor with swept wings, a narrow canopy and twin engines, its seams lit with thin green running lights",
-      "accent": "green"
+      "accent": "green",
+      "identity": "art/source/cinematics/operator-identities/factory/scout/identity_sheet_3x3.png"
     },
     "tank": {
       "name": "Tank",
-      "operator": "art/source/art-remaster/sprite-v4/tank/identity/Tank.front-idle-master.png",
-      "look": "a huge hulking operator in heavy weathered olive-brown power armour with massive rounded pauldrons, a sealed helmet with a narrow amber visor slit, small amber and cyan status lights",
+      "look": "a huge hulking operator in heavy weathered olive and dark-grey power armour with massive rounded pauldrons, a sealed helmet with an amber visor and small cyan status lights, a heavy autocannon",
       "ship": "public/cutscenes/tank-class-intro.webm@5.5",
       "wreck": "public/tank_ship.png",
       "shipLook": "a massive armoured drop-hauler of stacked iron plating, a heavy rear ramp and banks of round amber-glowing thruster cans",
-      "accent": "amber"
+      "accent": "amber",
+      "identity": "art/source/cinematics/operator-identities/factory/tank/identity_sheet_3x3.png"
     },
     "engineer": {
       "name": "Engineer",
-      "operator": "art/source/art-remaster/sprite-v4/engineer/identity/Engineer.front-idle-master.png",
-      "look": "a lean operator in tan and gunmetal utility armour with chunky forearm tool braces, a sealed tan helmet with a glowing cyan visor, an orange light on one knee and a cyan light on the other",
+      "look": "a lean operator in a white helmet with a cyan visor, navy and white armour with cyan lights, a boxy backpack and a tesla rifle",
       "ship": "public/cutscenes/engineer-class-intro.webm@6.6",
       "wreck": "public/engineer_ship.png",
       "shipLook": "a long low survey shuttle with a teal-glass canopy bubble, sensor dishes and antennae, cyan diagnostic lines along its iron hull",
-      "accent": "teal"
+      "accent": "teal",
+      "identity": "art/source/cinematics/operator-identities/factory/engineer/identity_sheet_3x3.png"
     }
   },
   "shots": {
@@ -52,7 +52,11 @@
       "label": "Run to the ship and take off",
       "durationSec": 8,
       "target": "{class}-class-intro",
-      "refs": ["style", "operator", "ship"],
+      "refs": [
+        "style",
+        "identity",
+        "ship"
+      ],
       "firstFrame": {
         "scout": "The Mothership's launch nave, a cathedral hangar of stepped granite piers and blackened-iron strap bindings under a vault of ribbed bone, amber lanterns along the deck, a deep round-arched launch portal with a heavy keystone at the far end. {operator} sprints across the deck toward {ship} resting on its launch cradle at the mouth of a ribbed launch tube.",
         "tank": "The Mothership's heavy bay, a cathedral hangar of stepped granite massing and iron-banded columns, steam venting from carved grates, amber lanterns. {operator} strides with heavy steps toward the lowered rear ramp of {ship}, its thruster cans glowing faintly.",
@@ -73,7 +77,11 @@
       "label": "Fly through space",
       "durationSec": 5,
       "target": "{class}-intro",
-      "refs": ["style", "ship", "mothership"],
+      "refs": [
+        "style",
+        "ship",
+        "mothership"
+      ],
       "firstFrame": {
         "scout": "Deep space beside the vast derelict Mothership, a cathedral-hulled vessel of stepped iron plating and ribbed bone buttresses lit by a few amber ports. {ship} streaks away from its launch portal toward a field of tumbling hull debris.",
         "tank": "Deep space beside the vast derelict Mothership, a cathedral-hulled vessel of stepped iron plating and ribbed bone buttresses. {ship} pulls away from the hull on its amber thruster banks toward a drifting belt of ice shards.",
@@ -94,7 +102,11 @@
       "label": "The crash",
       "durationSec": 6,
       "target": "{class}-crash",
-      "refs": ["style", "ship", "wreck"],
+      "refs": [
+        "style",
+        "ship",
+        "wreck"
+      ],
       "firstFrame": {
         "scout": "High above the frozen sector, {ship} diving through the upper atmosphere wreathed in re-entry fire, the ice-bound surface and its buried granite bunker spires far below in cold light.",
         "tank": "High above the frozen sector, {ship} descending heavily through the upper atmosphere, its armour glowing with re-entry heat, the ice-bound surface and buried granite bunker spires far below.",

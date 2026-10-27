@@ -146,7 +146,7 @@ function sceneJob(cut, id, kind, spec, extra) {
 export function openingJobs(opening) {
     const ROLE = {
         style: 'the game key art, for style and architecture',
-        operator: 'the operator',
+        identity: 'the exact operator in nine views (identity sheet)',
         ship: 'the ship',
         wreck: 'the ship after the crash',
         mothership: 'the Mothership'
@@ -167,7 +167,7 @@ export function openingJobs(opening) {
                 style: opening.style,
                 soundDesign: `opening-${shotId}`,
                 firstFrame: { prompt: `Reference images: ${legend}. ${fill(shot.firstFrame[cls])}`, references: paths, model: 'flux' },
-                identityLock: shot.refs.includes('operator') ? opening.style.characterLock : undefined,
+                identityLock: shot.refs.includes('identity') ? opening.style.characterLock : undefined,
                 action: fill(shot.action[cls]),
                 lastFrame: fill(shot.lastFrame[cls]),
                 durationSec: shot.durationSec,
