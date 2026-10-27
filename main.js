@@ -26,6 +26,7 @@ import { renderReturnManifest } from './src/returnManifest.js';
 import { loadoutCardViews, loadoutEffectSummaryHtml, renderLoadoutStrip } from './src/itemCard.js';
 import { FabricatorManager, FAB_RECIPES, getFabricatedOutputIds } from './src/fabricator.js';
 import { createFabricationBay, fabMissingResourceText as fabMissingResourceTextFor } from './src/fabricationBay.js';
+import { BIO_HAZARD_FILTER_RECIPE_ID, toxinProtectionGuidance } from './src/toxinProtectionGuidance.js';
 import { ProfileManager, exportSaveCode, importSaveCode, resetAllDataFactory, shouldAutoStartSectorZero, startNewCampaign } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { getHeldWeaponLabel } from './src/heldWeaponLabel.js';
@@ -7853,14 +7854,24 @@ window.addEventListener('player-damaged', (event) => {
     updateMusicTension();
 });
 
+let _lastToxinGuidanceAt = -Infinity;
 window.addEventListener('player-poisoned', (event) => {
     document.body.classList.add('player-poisoned');
+    const guidance = toxinProtectionGuidance({
+        gasDamageReduction: window.game?.loadoutMods?.gasDamageReduction,
+        fabricated: fabricator.isFabricated(BIO_HAZARD_FILTER_RECIPE_ID)
+    });
     renderHazardStatus({
         kind: 'toxin',
         label: 'BIO-TOXIN EXPOSURE',
-        detail: 'FILTERS COMPROMISED · LEAVE THE SPORE CLOUD',
+        detail: guidance.detail,
         timeLeft: Number(event?.detail?.timeLeft)
     });
+    const now = Date.now();
+    if (now - _lastToxinGuidanceAt >= 45_000) {
+        _lastToxinGuidanceAt = now;
+        showBiomePrompt(guidance.prompt);
+    }
 });
 window.addEventListener('player-poison-cleared', () => {
     document.body.classList.remove('player-poisoned');

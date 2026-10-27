@@ -78,11 +78,14 @@ function setup({ activated = true, canRoll = true, hub = false, arcadeUnlocked =
         activateFoundry: vi.fn(() => { activated = true; return true; }),
         purchaseWallRepairTool: vi.fn(() => { repairToolUnlocked = true; return { ok: true }; })
     };
+    const loadoutState = { archetypeId: 'talon', charmId: null, mod1Id: null, mod2Id: null };
     const loadout = {
         activeClassId: 'scout',
         getEquippedId: () => null,
-        getClassLoadout: () => ({ archetypeId: 'talon', charmId: null, mod1Id: null, mod2Id: null }),
-        equip: vi.fn()
+        getClassLoadout: () => loadoutState,
+        equip: vi.fn(),
+        equipRigModule: vi.fn((_classId, slot, id) => { loadoutState[`mod${slot}Id`] = String(id); }),
+        getActiveModifiers: vi.fn(() => ({ gasDamageReduction: 0.12 }))
     };
     const finishCampRest = vi.fn();
     const game = {
@@ -116,7 +119,7 @@ function setup({ activated = true, canRoll = true, hub = false, arcadeUnlocked =
         eventTarget: new FakeElement('window')
     };
     const bay = createFabricationBay(deps);
-    return { bay, els, deps, fabricator, bankManager, printing, finishCampRest, game };
+    return { bay, els, deps, fabricator, bankManager, loadout, fabricated, printing, finishCampRest, game };
 }
 
 afterEach(() => vi.useRealTimers());
@@ -196,6 +199,24 @@ describe('fabrication bay', () => {
         button.click();
         expect(bankManager.purchaseWallRepairTool).toHaveBeenCalledOnce();
         expect(deps.showPrompt).toHaveBeenCalledWith('ui.fab.welder_ready');
+    });
+
+    it('confirms toxin protection when the printed filter is installed', () => {
+        const { bay, els, deps, fabricated, loadout, game } = setup();
+        fabricated.add('brood_chitin_plating');
+        bay.selectAisle('weapons');
+        const filterCard = els.get('fab-recipe-grid').children.find((card) => (
+            card.children.some((child) => child.innerHTML.includes('Bio-Hazard Filter Vent'))
+        ));
+        const install = filterCard.children.find((child) => child.tagName === 'BUTTON');
+
+        install.click();
+
+        expect(loadout.equipRigModule).toHaveBeenCalledWith('scout', 1, 4142);
+        expect(game.loadoutMods).toEqual({ gasDamageReduction: 0.12 });
+        expect(deps.showPrompt).toHaveBeenCalledWith(
+            '> BIO-HAZARD FILTER ACTIVE · SPORE AND GAS DAMAGE REDUCED 12%'
+        );
     });
 
     it('ticks prints every half second and stops the ticker when nothing is printing', () => {

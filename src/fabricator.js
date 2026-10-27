@@ -36,7 +36,7 @@ export const FAB_RECIPES = Object.freeze([
     recipe('tallow_thermal_wrap', 4140, 'MODULE', { kind: 'mod', itemdefid: 4140 }, { tech: 12, coin: 6, med: 6 }, 12, 'Extends cryogenic freeze duration.'),
     recipe('vesper_vanguard_rig', 4143, 'MODULE', { kind: 'mod', itemdefid: 4143 }, { tech: 18, coin: 10, med: 4 }, 15, 'Adds one live projectile penetration.'),
     recipe('meridian_frequency_scanner', 4145, 'MODULE', { kind: 'mod', itemdefid: 4145 }, { tech: 20, coin: 8, med: 0 }, 14, 'Detects hidden rooms within fifteen metres.'),
-    recipe('brood_chitin_plating', 4142, 'MODULE', { kind: 'mod', itemdefid: 4142 }, { tech: 16, coin: 6, med: 10 }, 16, 'Reduces live spore and gas damage.'),
+    recipe('brood_chitin_plating', 4142, 'MODULE', { kind: 'mod', itemdefid: 4142 }, { tech: 16, coin: 6, med: 10 }, 16, 'Toxin defense: print, then install in Suit Bay A or B for 12% less spore and gas damage.'),
     recipe('nahl_resonant_chitin', 4132, 'CHARM', { kind: 'charm', itemdefid: 4132 }, { tech: 24, coin: 14, med: 12 }, 18, 'A real animated weapon-mounted pearl charm.')
 ]);
 
