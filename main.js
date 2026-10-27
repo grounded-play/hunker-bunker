@@ -123,6 +123,7 @@ import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } fr
 import { getLocale, setLocale, t, t as i18nT, getAvailableLocales, applyStaticTranslations } from './src/i18n.js';
 import { mountDeferredMarkup, onDeferredMarkupMounted, setDeferredMarkupDecorator, watchDeferredMarkup } from './src/deferredMarkup.js';
 import { isSleepCutsceneShipped, sleepCutsceneBase } from './src/sleepCutscene.js';
+import { loadoutMicroclipBases } from './src/cinematics/loadoutMicroclips.js';
 import { formatLocationName } from './src/locationNames.js';
 import { planDeckVisibility } from './src/hudDeck.js';
 import { createDeveloperCommentary } from './src/developerCommentary.js';
@@ -8567,7 +8568,10 @@ function warmClassIntroMedia(playerType = 'SCOUT') {
 function playClassIntroSequence(playerType = 'SCOUT') {
     const charBase = CLASS_CHARACTER_INTRO_BASENAMES[playerType] ?? CLASS_CHARACTER_INTRO_BASENAMES.SCOUT;
     const launchBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
+    const loadoutBases = loadoutMicroclipBases(window.loadout, playerType);
+    const videoSequence = [...loadoutBases, charBase, launchBase];
     warmClassIntroMedia(playerType);
+    loadoutBases.forEach(warmCutsceneVideo);
     window.AudioManager?.unlock?.();
 
     return new Promise((resolve) => {
@@ -8593,7 +8597,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         skipHint.setAttribute('aria-label', t('ui.cinematic.skip_any'));
 
         let settled = false;
-        let step = 'character'; // 'character' | 'launch' | 'done'
+        let sequenceIndex = 0;
         let guardTimer = null;
         let videoElement = null;
         let checkSkipInterval = null;
@@ -8620,7 +8624,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         function cleanupAndResolve() {
             if (settled) return;
             settled = true;
-            step = 'done';
+            sequenceIndex = videoSequence.length;
             clearTimers();
             if (checkSkipInterval) {
                 clearInterval(checkSkipInterval);
@@ -8710,10 +8714,15 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             }).catch(onEndedHandler);
         }
 
-        function startLaunchStep() {
-            if (settled || step === 'launch') return;
-            step = 'launch';
-            playVideoSource(launchBase, cleanupAndResolve);
+        function playNextVideo() {
+            if (settled) return;
+            sequenceIndex += 1;
+            const next = videoSequence[sequenceIndex];
+            if (!next) {
+                cleanupAndResolve();
+                return;
+            }
+            playVideoSource(next, playNextVideo);
         }
 
 
@@ -8778,7 +8787,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             window.AudioManager?.playVoiceCallout?.('mission_active', { volume: 0.95, voicePackId: activeVoicePackId });
         }
 
-        playVideoSource(charBase, startLaunchStep);
+        playVideoSource(videoSequence[0], playNextVideo);
     });
 }
 
