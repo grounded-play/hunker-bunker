@@ -44804,8 +44804,9 @@ export class ThreeGame {
         const dz = this.player.position.z - sprite.position.z;
         const distToPlayer = Math.hypot(dx, dz);
 
-        const accel = isStalker ? 19.0 : 15.0;
-        const maxSpeed = isStalker ? 2.3 : 2.7;
+        // Charger only from here: stalkers returned to their own behaviour above.
+        const accel = 15.0;
+        const maxSpeed = 2.7;
         const friction = 0.88;
 
         data.vx = (data.vx ?? 0) * Math.pow(friction, delta * 60);
@@ -44871,20 +44872,19 @@ export class ThreeGame {
         );
         if (contactDistance <= SNAIL_ATTACK_RADIUS && (data.attackCooldown ?? 0) <= 0) {
             data.attackCooldown = 1.0;
-            const reason = isStalker ? 'mycelium_stalker' : 'bio_charger';
+            const reason = 'bio_charger';
             const hitApplied = this.takeDamage(
-                isStalker ? 1 : 2,
+                2,
                 reason,
                 sprite.position.x,
                 sprite.position.z
             );
             if (hitApplied) {
                 this.applySnailContactKnockback?.(sprite, data);
-                if (isStalker) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
                 if (typeof window !== 'undefined') {
                     window.dispatchEvent(new CustomEvent('player-hit', { detail: { reason } }));
                 }
-                this.triggerCameraShake?.(isStalker ? 0.16 : 0.24, 0.28);
+                this.triggerCameraShake?.(0.24, 0.28);
                 window.AudioManager?.playMetalStress?.({ volume: 0.35, playbackRate: 1.4, force: true });
             }
         } else {

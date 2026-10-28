@@ -136,7 +136,7 @@ describe('shipped motion clips', () => {
                 const base = path.basename(job.targets.webm, '.webm');
                 expect(base, id).toMatch(/^(scout|tank|engineer)-(class-intro|intro|crash)$/);
                 if (base.endsWith('-crash')) {
-                    expect(fs.readFileSync(path.join(process.cwd(), 'main.js'), 'utf8'), id).toContain('opening-crash-${cls}');
+                    expect(fs.readFileSync(path.join(process.cwd(), 'main.js'), 'utf8'), id).toContain(`id: '${id}', base: '${base}'`);
                 }
             } else {
                 expect(SHIPPED_SLEEP_CUTSCENES.has(id), id).toBe(true);

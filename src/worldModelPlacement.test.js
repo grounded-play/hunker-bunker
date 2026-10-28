@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { WORLD_3D_MODELS, WORLD_3D_MODEL_ALIASES } from './world3dOverlay.js';
 import { ROOM_THEME_CATALOG } from './roomThemes.js';
@@ -45,7 +46,9 @@ function placedTypes() {
 // placement code rather than in a pool.
 const DESCRIPTIVE = /(world3dOverlay|missingWorldStory50|propFx|propExperience|modelPresentationRegistry|debugShowroom|debugMuseum|debugAssetCatalogs|world3dCandidates|specialVariants|propBehavior|dressingTriangles|propInteractions|propSockets|surfaceAssetRegistry|propAnimations)/;
 function placementSource() {
-    const root = path.dirname(new URL(import.meta.url).pathname);
+    // fileURLToPath, not URL.pathname: on Windows the pathname is /D:/..., which
+    // path.join turned into D:\\D:\\... on the CI runner.
+    const root = path.dirname(fileURLToPath(import.meta.url));
     const chunks = [];
     const walk = (dir) => {
         for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

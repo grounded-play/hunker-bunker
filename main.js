@@ -8536,9 +8536,16 @@ const CLASS_INTRO_WEBM_BASENAMES = {
 
 // The opening's third shot, the crash (scripts/cinematics/opening-shots.json),
 // follows the flight once that class's take is live.
+// Constant names only: the class can come from a menu card's data-type, and
+// a file name built from it would reach video.src (CodeQL js/xss-through-dom).
+const CLASS_CRASH_CLIPS = Object.freeze({
+    SCOUT: Object.freeze({ id: 'opening-crash-scout', base: 'scout-crash' }),
+    TANK: Object.freeze({ id: 'opening-crash-tank', base: 'tank-crash' }),
+    ENGINEER: Object.freeze({ id: 'opening-crash-engineer', base: 'engineer-crash' })
+});
 function classCrashBase(playerType) {
-    const cls = String(playerType ?? 'SCOUT').toLowerCase();
-    return SHIPPED_MOTION_CLIPS.has(`opening-crash-${cls}`) ? `${cls}-crash` : null;
+    const clip = CLASS_CRASH_CLIPS[String(playerType ?? 'SCOUT').toUpperCase()];
+    return clip && SHIPPED_MOTION_CLIPS.has(clip.id) ? clip.base : null;
 }
 
 const cutsceneImagePreloadCache = new Map();
