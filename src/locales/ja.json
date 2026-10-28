@@ -868,7 +868,26 @@
     },
     "foundry_hud_prompt": {
       "press_e": "E を押す",
-      "open_fab_bay": "製造ベイを開く"
+      "open_fab_bay": "製造ベイを開く",
+      "grow_signal_dish": "通信アンテナを拡張",
+      "install_power_core": "パワーコアを設置",
+      "offline_missing_power_core": "オフライン · パワーコア未装着",
+      "recover_power_core": "製造パワーコアを回収",
+      "locked_line": "製造所の電源停止 — マップに示されたパワーコアを探せ。",
+      "offline_title": "製造所オフライン // 電源なし",
+      "offline_status": "> 製造ベイの電源カプラー停止<br>> {location}{distance}のパワーコアを回収（マップに表示）",
+      "offline_toast_title": "製造所オフライン",
+      "offline_toast_status": "電源がない。{location}{distance}のパワーコアを回収せよ（マップに表示）。",
+      "core_title": "製造コア確保",
+      "core_status": "> パワーコア回収<br>> 製造所に戻り電源を復旧せよ",
+      "core_toast_title": "パワーコア入手",
+      "core_toast_status": "製造所に戻って電源を復旧せよ。",
+      "online_title": "製造所オンライン",
+      "online_status": "> パワーコア設置 // 製造ベイ稼働",
+      "map_offline": "製造所（オフライン）",
+      "map_core": "製造コア",
+      "unknown_location": "セクター異常",
+      "speaker": "エンジニア・オペレーター"
     },
     "scientist_hud_prompt": {
       "press_e": "E を押す",

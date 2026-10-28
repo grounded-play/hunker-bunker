@@ -868,7 +868,26 @@
     },
     "foundry_hud_prompt": {
       "press_e": "E DRÜCKEN",
-      "open_fab_bay": "FERTIGUNGSBUCHT ÖFFNEN"
+      "open_fab_bay": "FERTIGUNGSBUCHT ÖFFNEN",
+      "grow_signal_dish": "SIGNALSCHÜSSEL AUSBAUEN",
+      "install_power_core": "ENERGIEKERN INSTALLIEREN",
+      "offline_missing_power_core": "OFFLINE · ENERGIEKERN FEHLT",
+      "recover_power_core": "FERTIGUNGS-ENERGIEKERN BERGEN",
+      "locked_line": "FERTIGUNG OHNE STROM — FINDE DEN ENERGIEKERN AUF DER KARTE.",
+      "offline_title": "FERTIGUNG OFFLINE // KEIN STROM",
+      "offline_status": "> STROMKUPPLUNG DER FERTIGUNGSBUCHT TOT<br>> ENERGIEKERN BEI {location}{distance} BERGEN (AUF DER KARTE MARKIERT)",
+      "offline_toast_title": "FERTIGUNG OFFLINE",
+      "offline_toast_status": "Kein Strom. Berge den Energiekern bei {location}{distance}, auf der Karte markiert.",
+      "core_title": "FERTIGUNGSKERN GESICHERT",
+      "core_status": "> ENERGIEKERN GEBORGEN<br>> ZURÜCK ZUR FERTIGUNG, UM DEN STROM WIEDERHERZUSTELLEN",
+      "core_toast_title": "ENERGIEKERN ERHALTEN",
+      "core_toast_status": "Kehre zur Fertigung zurück, um den Strom wiederherzustellen.",
+      "online_title": "FERTIGUNG ONLINE",
+      "online_status": "> ENERGIEKERN EINGESETZT // FERTIGUNGSBUCHT ONLINE",
+      "map_offline": "FERTIGUNG (OFFLINE)",
+      "map_core": "FERTIGUNGSKERN",
+      "unknown_location": "SEKTORANOMALIE",
+      "speaker": "INGENIEUR-OPERATOR"
     },
     "scientist_hud_prompt": {
       "press_e": "E DRÜCKEN",

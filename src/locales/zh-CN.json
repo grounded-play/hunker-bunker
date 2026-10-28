@@ -868,7 +868,26 @@
     },
     "foundry_hud_prompt": {
       "press_e": "按 E",
-      "open_fab_bay": "打开制造舱"
+      "open_fab_bay": "打开制造舱",
+      "grow_signal_dish": "扩建信号天线",
+      "install_power_core": "安装能量核心",
+      "offline_missing_power_core": "离线 · 缺少能量核心",
+      "recover_power_core": "回收铸造能量核心",
+      "locked_line": "铸造所断电 — 寻找地图上标记的能量核心。",
+      "offline_title": "铸造所离线 // 无电力",
+      "offline_status": "> 制造舱电力耦合器失效<br>> 前往 {location}{distance} 回收能量核心（已在地图标记）",
+      "offline_toast_title": "铸造所离线",
+      "offline_toast_status": "无电力。前往 {location}{distance} 回收能量核心，已在地图标记。",
+      "core_title": "铸造核心已取得",
+      "core_status": "> 能量核心已回收<br>> 返回铸造所以恢复制造电力",
+      "core_toast_title": "已获得能量核心",
+      "core_toast_status": "返回铸造所以恢复制造电力。",
+      "online_title": "铸造所上线",
+      "online_status": "> 能量核心已安装 // 制造舱上线",
+      "map_offline": "铸造所（离线）",
+      "map_core": "铸造核心",
+      "unknown_location": "扇区异常",
+      "speaker": "工程师干员"
     },
     "scientist_hud_prompt": {
       "press_e": "按 E",

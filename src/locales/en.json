@@ -868,7 +868,26 @@
     },
     "foundry_hud_prompt": {
       "press_e": "PRESS E",
-      "open_fab_bay": "OPEN FAB BAY"
+      "open_fab_bay": "OPEN FAB BAY",
+      "grow_signal_dish": "GROW THE SIGNAL DISH",
+      "install_power_core": "INSTALL POWER CORE",
+      "offline_missing_power_core": "OFFLINE · MISSING POWER CORE",
+      "recover_power_core": "RECOVER FOUNDRY POWER CORE",
+      "locked_line": "FOUNDRY POWER OFFLINE — FIND THE POWER CORE MARKED ON THE MAP.",
+      "offline_title": "FOUNDRY OFFLINE // NO POWER",
+      "offline_status": "> FABRICATION BAY POWER COUPLING DEAD<br>> RECOVER THE POWER CORE AT {location}{distance} (MARKED ON MAP)",
+      "offline_toast_title": "FOUNDRY OFFLINE",
+      "offline_toast_status": "No power. Recover the power core at {location}{distance}, marked on the map.",
+      "core_title": "FOUNDRY CORE SECURED",
+      "core_status": "> POWER CORE RECOVERED<br>> RETURN TO THE FOUNDRY TO RESTORE FABRICATION POWER",
+      "core_toast_title": "POWER CORE ACQUIRED",
+      "core_toast_status": "Return to the Foundry to restore fabrication power.",
+      "online_title": "FOUNDRY ONLINE",
+      "online_status": "> POWER CORE INSTALLED // FABRICATION BAY ONLINE",
+      "map_offline": "FOUNDRY (OFFLINE)",
+      "map_core": "FOUNDRY CORE",
+      "unknown_location": "SECTOR ANOMALY",
+      "speaker": "ENGINEER OPERATOR"
     },
     "scientist_hud_prompt": {
       "press_e": "PRESS E",

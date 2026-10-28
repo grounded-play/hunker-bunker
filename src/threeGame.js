@@ -2775,8 +2775,18 @@ export class ThreeGame {
 
         // Fabrication Foundry: in-world structure that powers up with the base
         // and opens the Fabrication Bay when reached (Beat 4).
-        this.foundry = new FabricationFoundry(this.scene);
+        this.foundry = new FabricationFoundry(this.scene, {
+            powered: false,
+            loadModel: (type) => this.createWorld3dModel?.(type) ?? createWorld3dModel(type)
+        });
         this._foundryPromptActive = false;
+        this._hasFoundryPart = false;
+        this._foundryPowered = false;
+        this._foundryPartActive = false;
+        this._foundryPartPosition = null;
+        this._foundryPartMarker = null;
+        this._foundryPartPromptActive = false;
+        this._foundryPartElapsed = 0;
 
         // Act 1 finale: organic cave entrance holding the "final ship component"
         // (actually the infection reveal — src/caveReveal.js). Revealed once the
@@ -6515,8 +6525,11 @@ export class ThreeGame {
             if (cp) return { x: cp.x, z: cp.z };
         }
 
-        // 5. Foundry
-        if (this.foundry?.isRevealed && !(this.bank?.isFoundryActivated?.())) {
+        // 5. Foundry or Foundry Power Core
+        if (this.foundry?.isRevealed && !this.isFoundryPowered()) {
+            if (!this._hasFoundryPart && this._foundryPartPosition) {
+                return { x: this._foundryPartPosition.x, z: this._foundryPartPosition.z };
+            }
             const fp = this.foundry.getPosition?.();
             if (fp) return { x: fp.x, z: fp.z };
         }
@@ -9835,6 +9848,9 @@ export class ThreeGame {
             if (this.tryInteractWithFoundryPointer(event.clientX, event.clientY)) {
                 return;
             }
+            if (this.tryInteractWithFoundryPartPointer(event.clientX, event.clientY)) {
+                return;
+            }
             if (this.tryInteractWithBlackBoxPointer(event.clientX, event.clientY)) {
                 return;
             }
@@ -10052,6 +10068,8 @@ export class ThreeGame {
         this.o2PromptEl?.addEventListener('pointerup', this.handlePromptTap);
         this.foundryPromptEl = document.getElementById('foundry-hud-prompt');
         this.foundryPromptEl?.addEventListener('pointerup', this.handlePromptTap);
+        this.foundryPartPromptEl = document.getElementById('foundry-part-hud-prompt');
+        this.foundryPartPromptEl?.addEventListener('pointerup', this.handlePromptTap);
         this.blackBoxPromptEl = document.getElementById('black-box-hud-prompt');
         this.blackBoxPromptEl?.addEventListener('pointerup', this.handlePromptTap);
         this.baseTurretPromptEl = document.getElementById('base-turret-hud-prompt');
@@ -10256,14 +10274,30 @@ export class ThreeGame {
             });
         }
         if (this.foundry?.isRevealed && this.foundry.isWithinInteractRange(px, pz)) {
+            const isPowered = this.isFoundryPowered();
             candidates.push({
                 id: 'foundry',
-                label: 'FABRICATION AUTO-MART',
+                label: isPowered
+                    ? 'FABRICATION AUTO-MART'
+                    : (this._hasFoundryPart ? 'INSTALL FOUNDRY CORE' : 'FOUNDRY (OFFLINE · MISSING CORE)'),
                 distance: this.foundry.distanceTo(px, pz),
                 secondary: Boolean(carriedObject),
                 priorityRank: carriedObject ? 2 : 1,
                 interact: () => this.interactWithFoundry()
             });
+        }
+        if (this._foundryPartActive && !this._hasFoundryPart && this._foundryPartPosition) {
+            const distance = Math.hypot(px - this._foundryPartPosition.x, pz - this._foundryPartPosition.z);
+            if (distance <= 2.5) {
+                candidates.push({
+                    id: 'foundry-part',
+                    label: 'RECOVER FOUNDRY POWER CORE',
+                    distance,
+                    secondary: false,
+                    priorityRank: 1,
+                    interact: () => this.interactWithFoundryPart()
+                });
+            }
         }
         if (this._blackBoxMarkerActive && this._blackBoxState) {
             const distance = Math.hypot(px - this._blackBoxState.x, pz - this._blackBoxState.z);
@@ -15106,6 +15140,8 @@ export class ThreeGame {
             fp.measure('baseLights.update', () => this.baseLights?.update(delta));
             fp.measure('foundry.update', () => this.foundry?.update(delta));
             fp.measure('updateFoundryPrompt', () => this.updateFoundryPrompt());
+            fp.measure('updateFoundryPart', () => this.updateFoundryPart?.(delta));
+            fp.measure('updateFoundryPartPrompt', () => this.updateFoundryPartPrompt?.());
             fp.measure('updateCaveEntrance', () => this.updateCaveEntrance(delta));
             fp.measure('updateAct2', () => this.updateAct2(delta));
             fp.measure('updateCamps', () => this.updateCamps(delta));
@@ -16661,6 +16697,15 @@ export class ThreeGame {
         return this.interactWithFoundry();
     }
 
+    tryInteractWithFoundryPartPointer(clientX, clientY) {
+        if (!this.isGameplayInputActive() || !this._foundryPartActive || this._hasFoundryPart) return false;
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint || !this._foundryPartPosition) return false;
+        const dist = Math.hypot(worldPoint.x - this._foundryPartPosition.x, worldPoint.z - this._foundryPartPosition.z);
+        if (dist > 1.8) return false;
+        return this.interactWithFoundryPart();
+    }
+
     tryInteractWithBlackBoxPointer(clientX, clientY) {
         if (!this.isGameplayInputActive() || !this._blackBoxMarkerActive) return false;
         const worldPoint = this.getWorldAimPoint(clientX, clientY);
@@ -17093,19 +17138,40 @@ export class ThreeGame {
 
         // 9. Check Foundry
         if (this.foundry?.isRevealed && this.foundry.isWithinInteractRange(worldPoint.x, worldPoint.z)) {
+            const isPowered = this.isFoundryPowered();
             return {
                 type: 'interact',
                 targetId: 'foundry',
                 badgeLabel: 'FOUNDRY',
-                kicker: 'FABRICATION FACILITY // CRAFTING',
+                kicker: isPowered ? 'FABRICATION FACILITY // CRAFTING' : 'FABRICATION FACILITY // OFFLINE',
                 title: 'AUTOMATED NANO-FOUNDRY',
-                subtitle: 'STATUS: ONLINE // BLUEPRINTS READY',
+                subtitle: isPowered ? 'STATUS: ONLINE // BLUEPRINTS READY' : (this._hasFoundryPart ? 'STATUS: CORE READY // AWAITING INSTALLATION' : 'STATUS: OFFLINE // POWER CORE MISSING'),
                 coords: { x: tileX, z: tileZ },
                 distance: playerDist,
                 integrity: 100,
                 promptKey: 'E',
-                promptText: 'OPEN FAB BAY'
+                promptText: isPowered ? 'OPEN FAB BAY' : (this._hasFoundryPart ? 'INSTALL POWER CORE' : 'OFFLINE - REQUIRES CORE')
             };
+        }
+
+        // 9b. Check Foundry Power Core
+        if (this._foundryPartActive && !this._hasFoundryPart && this._foundryPartPosition) {
+            const distPart = Math.hypot(worldPoint.x - this._foundryPartPosition.x, worldPoint.z - this._foundryPartPosition.z);
+            if (distPart <= 2.2) {
+                return {
+                    type: 'interact',
+                    targetId: 'foundry-part',
+                    badgeLabel: 'POWER CORE',
+                    kicker: 'FOUNDRY COMPONENT // AUXILIARY CELL',
+                    title: 'FABRICATOR INDUCTION CORE',
+                    subtitle: 'STATUS: DORMANT // READY FOR RETRIEVAL',
+                    coords: { x: Math.round(this._foundryPartPosition.x), z: Math.round(this._foundryPartPosition.z) },
+                    distance: playerDist,
+                    integrity: 100,
+                    promptKey: 'E',
+                    promptText: 'RECOVER POWER CORE'
+                };
+            }
         }
 
         // 10. Check Black Box
@@ -20373,8 +20439,14 @@ export class ThreeGame {
         const ship = this.getActiveShip();
         const cx = Number.isFinite(site?.x) ? site.x : (Number.isFinite(ship?.tileX) ? ship.tileX : 9);
         const cz = Number.isFinite(site?.z) ? site.z : (Number.isFinite(ship?.tileZ) ? ship.tileZ : 9);
-        if (instant) this.foundry.revealInstant(cx, cz);
-        else this.foundry.reveal(cx, cz);
+        const isPowered = (typeof this.isFoundryPowered === 'function')
+            ? this.isFoundryPowered()
+            : (ThreeGame.prototype.isFoundryPowered ? ThreeGame.prototype.isFoundryPowered.call(this) : true);
+        if (instant) this.foundry.revealInstant(cx, cz, { powered: isPowered });
+        else this.foundry.reveal(cx, cz, { powered: isPowered });
+        if (!isPowered && !this._hasFoundryPart && typeof this.ensureFoundryPartSpawned === 'function') {
+            this.ensureFoundryPartSpawned();
+        }
         if (!announce) return;
         window.dispatchEvent(new CustomEvent('foundry-discovered', {
             detail: {
@@ -20386,6 +20458,279 @@ export class ThreeGame {
                 randomEdge: Boolean(randomEdge),
                 builtBeforeReveal,
                 isRevealed: Boolean(this.foundry.isRevealed)
+            }
+        }));
+    }
+
+    isFoundryPowered() {
+        if (this._foundryPowered !== undefined && this._foundryPowered) return true;
+        if (this.bank) return Boolean(this.bank.isFoundryActivated?.());
+        if (this._foundryPowered === false) return false;
+        return true;
+    }
+
+    hasFoundryPart() {
+        return Boolean(this._hasFoundryPart);
+    }
+
+    chooseFoundryPartPosition() {
+        const anchor = this.getBiomeAnchorPosition();
+        const fp = this.foundry?.getPosition?.() ?? { x: anchor.x, z: anchor.z };
+        const random = this.createSeededRandom((this.hashTile(
+            Math.round(fp.x) + 521,
+            Math.round(fp.z) + 337
+        ) ^ (this.runEntropy ?? 0)) >>> 0);
+
+        const angles = [
+            Math.PI * 0.25, Math.PI * 0.75, Math.PI * 1.25, Math.PI * 1.75,
+            Math.PI * 0.5, Math.PI * 1.0, Math.PI * 1.5, 0
+        ];
+
+        for (let attempt = 0; attempt < 96; attempt += 1) {
+            const angle = angles[attempt % angles.length] + (random() - 0.5) * 0.4;
+            const dist = 24 + random() * 20;
+            const tx = Math.round(fp.x + Math.cos(angle) * dist);
+            const tz = Math.round(fp.z + Math.sin(angle) * dist);
+            if (this.isSnailTileWalkable?.(tx, tz) && (this.canOccupyPosition?.(tx, tz) ?? true)) {
+                return { x: tx, z: tz };
+            }
+        }
+        return { x: Math.round(fp.x + 28), z: Math.round(fp.z + 18) };
+    }
+
+    ensureFoundryPartSpawned() {
+        if (this.isFoundryPowered() || this._hasFoundryPart) return;
+        if (this._foundryPartActive && this._foundryPartMarker) return;
+
+        const pos = this._foundryPartPosition ?? this.chooseFoundryPartPosition();
+        this._foundryPartPosition = pos;
+
+        this._foundryPartMarker = this.createFoundryPartMarker(pos);
+        this.scene.add(this._foundryPartMarker);
+        this._foundryPartActive = true;
+
+        this.explorationTracker?.registerLandmark?.('foundry_part', {
+            x: pos.x,
+            z: pos.z,
+            label: 'FOUNDRY POWER CORE',
+            type: 'foundry_part',
+            revealOnMap: true,
+            priority: 850,
+            icon: 'core'
+        });
+    }
+
+    createFoundryPartMarker(pos) {
+        const group = new THREE.Group();
+        group.position.set(pos.x, 0, pos.z);
+
+        // Heavy industrial magnetic pedestal
+        const pedestal = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.38, 0.46, 0.14, 16),
+            new THREE.MeshStandardMaterial({
+                color: 0x162028,
+                metalness: 0.88,
+                roughness: 0.35,
+                emissive: 0x003d42,
+                emissiveIntensity: 0.3
+            })
+        );
+        pedestal.position.y = 0.07;
+        pedestal.castShadow = true;
+        pedestal.receiveShadow = true;
+        group.add(pedestal);
+
+        // Central floating core container
+        const coreGroup = new THREE.Group();
+        coreGroup.position.y = 0.45;
+
+        // Glowing plasma induction core
+        const coreMesh = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.12, 0.12, 0.28, 16),
+            new THREE.MeshStandardMaterial({
+                color: 0x00ffd2,
+                emissive: 0x00d2b4,
+                emissiveIntensity: 2.2,
+                roughness: 0.12,
+                metalness: 0.8
+            })
+        );
+        coreMesh.castShadow = true;
+        coreGroup.add(coreMesh);
+
+        // Counter-rotating magnetic gimbal rings
+        const gimbalInner = new THREE.Mesh(
+            new THREE.TorusGeometry(0.22, 0.02, 12, 32),
+            new THREE.MeshStandardMaterial({ color: 0x24323d, metalness: 0.9, roughness: 0.25 })
+        );
+        coreGroup.add(gimbalInner);
+
+        const gimbalOuter = new THREE.Mesh(
+            new THREE.TorusGeometry(0.28, 0.024, 12, 32),
+            new THREE.MeshStandardMaterial({ color: 0x1a2630, metalness: 0.92, roughness: 0.2 })
+        );
+        coreGroup.add(gimbalOuter);
+
+        // Vertical beacon beam
+        const beacon = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.04, 0.04, 3.8, 8),
+            new THREE.MeshBasicMaterial({ color: 0x00ffd2, transparent: true, opacity: 0.32, depthWrite: false })
+        );
+        beacon.position.y = 1.9;
+        group.add(beacon);
+
+        // No light of its own: adding one mid-run changes the light count and
+        // recompiles every lit shader. The core and beam glow instead.
+        // Store references for animation
+        this._foundryPartGimbalInner = gimbalInner;
+        this._foundryPartGimbalOuter = gimbalOuter;
+        this._foundryPartCore = coreGroup;
+        this._foundryPartCoreMaterial = coreMesh.material;
+        this._foundryPartBeaconMaterial = beacon.material;
+
+        group.add(coreGroup);
+
+        // Asynchronously load drop_meteor_core if available
+        if (typeof this.createWorld3dModel === 'function' || typeof createWorld3dModel === 'function') {
+            const loader = this.createWorld3dModel ? this.createWorld3dModel.bind(this) : createWorld3dModel;
+            Promise.resolve(loader('drop_meteor_core'))
+                .then((model) => {
+                    if (!model || !coreGroup.parent) return;
+                    model.position.set(0, 0, 0);
+                    model.scale.setScalar(0.7);
+                    coreGroup.add(model);
+                    coreMesh.visible = false;
+                })
+                .catch(() => {});
+        }
+
+        return group;
+    }
+
+    updateFoundryPart(delta) {
+        // A squadmate's install arrives as bank.foundryActivated (squad
+        // progress): light this machine and retire the core here too.
+        if (this.foundry?.isRevealed && this.isFoundryPowered() !== this.foundry.isPowered?.()) {
+            this.foundry.setPowered?.(this.isFoundryPowered());
+            if (this.isFoundryPowered()) this.clearFoundryPart();
+        }
+        if (!this._foundryPartActive || !this._foundryPartMarker || this._hasFoundryPart) return;
+        this._foundryPartElapsed = (this._foundryPartElapsed ?? 0) + delta;
+        const t = this._foundryPartElapsed;
+        if (this._foundryPartGimbalInner) {
+            this._foundryPartGimbalInner.rotation.x += delta * 1.8;
+            this._foundryPartGimbalInner.rotation.z += delta * 0.9;
+        }
+        if (this._foundryPartGimbalOuter) {
+            this._foundryPartGimbalOuter.rotation.y += delta * 1.4;
+        }
+        if (this._foundryPartCore) {
+            this._foundryPartCore.position.y = 0.45 + Math.sin(t * 3.2) * 0.06;
+            this._foundryPartCore.rotation.y += delta * 0.8;
+        }
+        if (this._foundryPartCoreMaterial) this._foundryPartCoreMaterial.emissiveIntensity = 2.0 + Math.sin(t * 3.8) * 0.6;
+        if (this._foundryPartBeaconMaterial) this._foundryPartBeaconMaterial.opacity = 0.26 + Math.sin(t * 3.8) * 0.08;
+    }
+
+    updateFoundryPartPrompt() {
+        if (!this.isGameplayInputActive() || !this._foundryPartActive || this._hasFoundryPart || !this.player || this.isPlayerDead || !this._foundryPartPosition) {
+            if (this._foundryPartPromptActive) {
+                this._foundryPartPromptActive = false;
+                window.dispatchEvent(new CustomEvent('foundry-part-prompt-clear'));
+            }
+            return;
+        }
+        const dist = Math.hypot(this.player.position.x - this._foundryPartPosition.x, this.player.position.z - this._foundryPartPosition.z);
+        const inRange = dist <= 2.4;
+        if (inRange && !this._foundryPartPromptActive) {
+            this._foundryPartPromptActive = true;
+            window.dispatchEvent(new CustomEvent('foundry-part-prompt-nearby'));
+        } else if (!inRange && this._foundryPartPromptActive) {
+            this._foundryPartPromptActive = false;
+            window.dispatchEvent(new CustomEvent('foundry-part-prompt-clear'));
+        }
+    }
+
+    interactWithFoundryPart() {
+        if (!this.isGameplayInputActive() || !this._foundryPartActive || this._hasFoundryPart || !this.player) return false;
+        const pos = this._foundryPartPosition;
+        if (!pos) return false;
+        const dist = Math.hypot(this.player.position.x - pos.x, this.player.position.z - pos.z);
+        if (dist > 2.6) return false;
+
+        this._hasFoundryPart = true;
+        this._foundryPartActive = false;
+        this._foundryPartPromptActive = false;
+        window.dispatchEvent(new CustomEvent('foundry-part-prompt-clear'));
+
+        this.removeFoundryPartMarker();
+
+        window.AudioManager?.play?.('ui_boot', { volume: 0.5, playbackRate: 1.35 });
+        window.AudioManager?.play?.('fx_achievement', { volume: 0.45 });
+
+        window.dispatchEvent(new CustomEvent('foundry-part-acquired', {
+            detail: {
+                position: pos,
+                foundry: this.foundry?.getPosition?.() ?? null
+            }
+        }));
+        return true;
+    }
+
+    removeFoundryPartMarker() {
+        const marker = this._foundryPartMarker;
+        if (marker) {
+            marker.parent?.remove?.(marker);
+            marker.traverse?.((child) => {
+                if (!child.isMesh) return;
+                child.geometry?.dispose?.();
+                child.material?.dispose?.();
+            });
+        }
+        this._foundryPartMarker = null;
+        this._foundryPartCore = null;
+        this._foundryPartCoreMaterial = null;
+        this._foundryPartBeaconMaterial = null;
+        this._foundryPartGimbalInner = null;
+        this._foundryPartGimbalOuter = null;
+        this.explorationTracker?.removeLandmark?.('foundry_part');
+    }
+
+    // Back to "no core anywhere": a new run, or the Foundry already powered.
+    clearFoundryPart() {
+        this.removeFoundryPartMarker();
+        this._hasFoundryPart = false;
+        this._foundryPartActive = false;
+        this._foundryPartPosition = null;
+        if (this._foundryPartPromptActive) {
+            this._foundryPartPromptActive = false;
+            window.dispatchEvent(new CustomEvent('foundry-part-prompt-clear'));
+        }
+    }
+
+    installFoundryPart() {
+        this._hasFoundryPart = false;
+        this._foundryPowered = true;
+        this.bank?.setFoundryActivated?.(true);
+        this.foundry?.setPowered?.(true);
+
+        window.AudioManager?.play?.('ui_boot', { volume: 0.65, playbackRate: 0.85 });
+        window.AudioManager?.play?.('generator_complete', { volume: 0.75 });
+        this.triggerCameraShake?.(0.35, 0.7);
+
+        window.dispatchEvent(new CustomEvent('foundry-power-restored', {
+            detail: {
+                foundry: this.foundry?.getPosition?.() ?? null
+            }
+        }));
+
+        const foundryPosition = this.foundry?.getPosition?.();
+        if (foundryPosition) this.focusCinematicCamera?.(foundryPosition, { immediate: true });
+        window.dispatchEvent(new CustomEvent('open-fabrication-bay', {
+            detail: {
+                source: 'surface-foundry',
+                foundry: this.foundry?.getPosition?.() ?? null,
+                player: { x: this.player.position.x, z: this.player.position.z }
             }
         }));
     }
@@ -20426,6 +20771,35 @@ export class ThreeGame {
             window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'dishBuilt' } }));
             return true;
         }
+
+        // Check if foundry is powered!
+        const isPowered = (typeof this.isFoundryPowered === 'function')
+            ? this.isFoundryPowered()
+            : (ThreeGame.prototype.isFoundryPowered ? ThreeGame.prototype.isFoundryPowered.call(this) : true);
+        if (!isPowered) {
+            if (!this._hasFoundryPart) {
+                window.AudioManager?.play?.('terminal_deny', { volume: 0.75 });
+                this.triggerCameraShake?.(0.25, 0.45);
+
+                this.ensureFoundryPartSpawned?.();
+                const partPos = this._foundryPartPosition;
+                const dist = partPos ? Math.round(Math.hypot(this.player.position.x - partPos.x, this.player.position.z - partPos.z)) : 0;
+
+                window.dispatchEvent(new CustomEvent('foundry-locked-access', {
+                    detail: {
+                        x: partPos?.x ?? 0,
+                        z: partPos?.z ?? 0,
+                        distance: dist
+                    }
+                }));
+                this.showBunkerLine?.(t('ui.foundry_hud_prompt.locked_line'));
+                return false;
+            }
+
+            this.installFoundryPart();
+            return true;
+        }
+
         const foundryPosition = this.foundry.getPosition?.();
         if (foundryPosition) this.focusCinematicCamera?.(foundryPosition, { immediate: true });
         window.dispatchEvent(new CustomEvent('open-fabrication-bay', {
@@ -23928,6 +24302,8 @@ export class ThreeGame {
         this.queenFightSprite = null;
         this._overnightCreepSprites = [];
         this.foundry?.reset?.();
+        this.clearFoundryPart?.();
+        this._foundryPowered = false;
         if (this.wandererManager?.load) this.wandererManager.state = this.wandererManager.load();
         this.persistDayCycleState?.();
         this.persistFatigueState?.();
@@ -27141,24 +27517,35 @@ export class ThreeGame {
             }
         }
 
-        // Beat 4 objective: once the Foundry is powered, the compass points to it
-        // until the player reaches and activates it — regardless of the radar
-        // upgrade, since this is a story objective, not a scanner perk. After
-        // activation the compass falls through to the build-site ladder so the
-        // run keeps a single clear "next step".
-        if (this.foundry?.isRevealed && !(this.bank?.isFoundryActivated?.())) {
-            const fp = this.foundry.getPosition();
-            const fdx = fp.x - this.player.position.x;
-            const fdz = fp.z - this.player.position.z;
-            const fdist = Math.hypot(fdx, fdz);
-            if (fdist > 2.0) {
-                return {
-                    active: true,
-                    mode: 'foundry',
-                    label: 'FABRICATION BAY',
-                    angle: this.planarAngleTo(fdx, fdz, fdist),
-                    distance: fdist
-                };
+        // Beat 4 objective: Foundry & Foundry Power Core
+        if (this.foundry?.isRevealed && !this.isFoundryPowered()) {
+            if (!this._hasFoundryPart && this._foundryPartPosition) {
+                const dx = this._foundryPartPosition.x - this.player.position.x;
+                const dz = this._foundryPartPosition.z - this.player.position.z;
+                const dist = Math.hypot(dx, dz);
+                if (dist > 1.5) {
+                    return {
+                        active: true,
+                        mode: 'foundry_part',
+                        label: 'FOUNDRY POWER CORE',
+                        angle: this.planarAngleTo(dx, dz, dist),
+                        distance: dist
+                    };
+                }
+            } else {
+                const fp = this.foundry.getPosition();
+                const fdx = fp.x - this.player.position.x;
+                const fdz = fp.z - this.player.position.z;
+                const fdist = Math.hypot(fdx, fdz);
+                if (fdist > 2.0) {
+                    return {
+                        active: true,
+                        mode: 'foundry',
+                        label: 'INSTALL FOUNDRY CORE',
+                        angle: this.planarAngleTo(fdx, fdz, fdist),
+                        distance: fdist
+                    };
+                }
             }
         }
 
@@ -29298,6 +29685,8 @@ export class ThreeGame {
             this._terminalObjectiveHistory = [];
             this._meridianCompassLock = null;
             this.foundry?.reset?.();
+            this.clearFoundryPart?.();
+            this._foundryPowered = false;
             this._foundryPromptActive = false;
             this.caveEntrance?.reset?.();
             this._cavePromptActive = false;
@@ -51215,6 +51604,7 @@ export class ThreeGame {
         this.consolePromptEl?.removeEventListener('pointerup', this.handlePromptTap);
         this.o2PromptEl?.removeEventListener('pointerup', this.handlePromptTap);
         this.foundryPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
+        this.foundryPartPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
         this.blackBoxPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
         this.baseTurretPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
         this.mayorTinaPromptEl?.removeEventListener('pointerup', this.handlePromptTap);

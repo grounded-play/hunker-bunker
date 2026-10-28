@@ -13232,9 +13232,32 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             ctx.strokeText('◆', lx, ly);
             if (!compact) ctx.fillText(landmark.label ?? 'BLACK BOX', lx, ly + 16);
         } else if (landmark.type === 'foundry') {
-            ctx.fillStyle = '#ffb238';
+            const isPowered = window.game?.isFoundryPowered?.() ?? true;
+            ctx.fillStyle = isPowered ? '#ffb238' : '#7a8590';
             ctx.fillText('⚒', lx, ly);
-            if (!compact) ctx.fillText(landmark.label ?? 'FOUNDRY', lx, ly + 16);
+            if (!compact) {
+                ctx.fillStyle = isPowered ? '#ffb238' : '#8899aa';
+                ctx.fillText(isPowered ? (landmark.label ?? 'FOUNDRY') : t('ui.foundry_hud_prompt.map_offline'), lx, ly + 16);
+            }
+        } else if (landmark.type === 'foundry_part') {
+            const pulse = 1 + Math.sin(performance.now() * 0.007) * 0.22;
+            ctx.save();
+            ctx.translate(lx, ly);
+            ctx.scale(pulse, pulse);
+            ctx.strokeStyle = '#00ffd2';
+            ctx.fillStyle = 'rgba(0, 255, 210, 0.28)';
+            ctx.lineWidth = compact ? 2 : 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, compact ? 7 : 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#00ffd2';
+            ctx.font = `bold ${compact ? 10 : 12}px sans-serif`;
+            ctx.fillText('⚡', 0, 0);
+            ctx.restore();
+            ctx.fillStyle = '#00ffd2';
+            ctx.font = 'bold 10px Space Mono, monospace';
+            if (!compact) ctx.fillText(t('ui.foundry_hud_prompt.map_core'), lx, ly + 16);
         } else if (landmark.type === 'camp') {
             ctx.fillStyle = '#ffaa00';
             ctx.fillText('⛺', lx, ly);
@@ -14573,16 +14596,82 @@ window.addEventListener('foundry-prompt-nearby', () => {
     if (key) setPromptKeyLabel(key);
     if (text) {
         // Act 2 dish phase hijacks the foundry interaction entirely.
-        text.textContent = (isAct2RunActive() && act2Manager.getPhase() === 'dish')
-            ? 'GROW THE SIGNAL DISH'
-            : (bankManager.isFoundryActivated() ? 'OPEN FAB BAY' : 'ACTIVATE FAB BAY');
+        if (isAct2RunActive() && act2Manager.getPhase() === 'dish') {
+            text.textContent = t('ui.foundry_hud_prompt.grow_signal_dish');
+        } else if (window.game?.isFoundryPowered?.()) {
+            text.textContent = t('ui.foundry_hud_prompt.open_fab_bay');
+        } else if (window.game?.hasFoundryPart?.()) {
+            text.textContent = t('ui.foundry_hud_prompt.install_power_core');
+        } else {
+            text.textContent = t('ui.foundry_hud_prompt.offline_missing_power_core');
+        }
     }
     prompt?.classList.remove('hidden');
+    prompt?.classList.add('visible');
 });
 window.addEventListener('foundry-prompt-clear', () => {
     const prompt = document.getElementById('foundry-hud-prompt');
     prompt?.classList.add('hidden');
     prompt?.classList.remove('visible');
+});
+
+window.addEventListener('foundry-part-prompt-nearby', () => {
+    if (!isGameplayPhase()) return;
+    const prompt = document.getElementById('foundry-part-hud-prompt');
+    const key = prompt?.querySelector('.prompt-key');
+    if (key) setPromptKeyLabel(key);
+    prompt?.classList.remove('hidden');
+    prompt?.classList.add('visible');
+});
+window.addEventListener('foundry-part-prompt-clear', () => {
+    const prompt = document.getElementById('foundry-part-hud-prompt');
+    prompt?.classList.add('hidden');
+    prompt?.classList.remove('visible');
+});
+
+// The Foundry stays dark until its power core is brought back (owner ask
+// 2026-10-28); the core is on the map and the compass.
+window.addEventListener('foundry-locked-access', (event) => {
+    const detail = event?.detail ?? {};
+    const location = (Number.isFinite(detail.x) && Number.isFinite(detail.z))
+        ? `[X: ${Math.round(detail.x)}, Z: ${Math.round(detail.z)}]`
+        : t('ui.foundry_hud_prompt.unknown_location');
+    const distance = detail.distance ? ` (${detail.distance}m)` : '';
+    showTacticalOverlay({
+        title: t('ui.foundry_hud_prompt.offline_title'),
+        status: t('ui.foundry_hud_prompt.offline_status', { location, distance }),
+        duration: 3800,
+        speaker: t('ui.foundry_hud_prompt.speaker'),
+        avatar: '/lore_portraits/survivor_03.webp'
+    });
+    showTacticalNotificationToast({
+        title: t('ui.foundry_hud_prompt.offline_toast_title'),
+        status: t('ui.foundry_hud_prompt.offline_toast_status', { location, distance })
+    });
+});
+
+window.addEventListener('foundry-part-acquired', () => {
+    showTacticalOverlay({
+        title: t('ui.foundry_hud_prompt.core_title'),
+        status: t('ui.foundry_hud_prompt.core_status'),
+        duration: 3000,
+        speaker: t('ui.foundry_hud_prompt.speaker'),
+        avatar: '/lore_portraits/survivor_03.webp'
+    });
+    showTacticalNotificationToast({
+        title: t('ui.foundry_hud_prompt.core_toast_title'),
+        status: t('ui.foundry_hud_prompt.core_toast_status')
+    });
+});
+
+window.addEventListener('foundry-power-restored', () => {
+    showTacticalOverlay({
+        title: t('ui.foundry_hud_prompt.online_title'),
+        status: t('ui.foundry_hud_prompt.online_status'),
+        duration: 2800,
+        speaker: t('ui.foundry_hud_prompt.speaker'),
+        avatar: '/lore_portraits/survivor_03.webp'
+    });
 });
 
 // ── Act 1 finale: cave entrance + infection reveal (Sprint 18 §5–§6) ──

@@ -868,7 +868,26 @@
     },
     "foundry_hud_prompt": {
       "press_e": "PULSA E",
-      "open_fab_bay": "ABRIR TALLER DE FABRICACIÓN"
+      "open_fab_bay": "ABRIR TALLER DE FABRICACIÓN",
+      "grow_signal_dish": "AMPLIAR ANTENA DE SEÑAL",
+      "install_power_core": "INSTALAR NÚCLEO DE ENERGÍA",
+      "offline_missing_power_core": "FUERA DE LÍNEA · FALTA NÚCLEO DE ENERGÍA",
+      "recover_power_core": "RECUPERAR NÚCLEO DE ENERGÍA DE LA FUNDICIÓN",
+      "locked_line": "FUNDICIÓN SIN ENERGÍA — BUSCA EL NÚCLEO MARCADO EN EL MAPA.",
+      "offline_title": "FUNDICIÓN FUERA DE LÍNEA // SIN ENERGÍA",
+      "offline_status": "> ACOPLE DE ENERGÍA DE LA BAHÍA MUERTO<br>> RECUPERA EL NÚCLEO EN {location}{distance} (MARCADO EN EL MAPA)",
+      "offline_toast_title": "FUNDICIÓN FUERA DE LÍNEA",
+      "offline_toast_status": "Sin energía. Recupera el núcleo en {location}{distance}, marcado en el mapa.",
+      "core_title": "NÚCLEO DE LA FUNDICIÓN ASEGURADO",
+      "core_status": "> NÚCLEO DE ENERGÍA RECUPERADO<br>> VUELVE A LA FUNDICIÓN PARA RESTAURAR LA ENERGÍA",
+      "core_toast_title": "NÚCLEO OBTENIDO",
+      "core_toast_status": "Vuelve a la fundición para restaurar la energía de fabricación.",
+      "online_title": "FUNDICIÓN EN LÍNEA",
+      "online_status": "> NÚCLEO INSTALADO // BAHÍA DE FABRICACIÓN EN LÍNEA",
+      "map_offline": "FUNDICIÓN (FUERA DE LÍNEA)",
+      "map_core": "NÚCLEO DE FUNDICIÓN",
+      "unknown_location": "ANOMALÍA DEL SECTOR",
+      "speaker": "OPERADOR INGENIERO"
     },
     "scientist_hud_prompt": {
       "press_e": "PULSA E",

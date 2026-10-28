@@ -13452,6 +13452,39 @@ html.phase-menu .menu-commentary-stack .commentary-toast,
   opacity: 1;
 }
 
+.foundry-part-hud-prompt {
+  position: absolute !important;
+  top: calc(var(--vu) * 12) !important;
+  right: calc(var(--vu) * 4) !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  background: rgba(11, 13, 15, 0.9) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1.5px solid rgba(0, 255, 210, 0.65) !important;
+  border-radius: 8px !important;
+  padding: calc(var(--vu) * 1.5) calc(var(--vu) * 3) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: calc(var(--vu) * 2) !important;
+  z-index: 9999 !important;
+  box-shadow: 0 0 14px rgba(0, 255, 210, 0.35), inset 0 0 8px rgba(0, 255, 210, 0.08) !important;
+  animation: prompt-float 2.5s infinite ease-in-out !important;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  color: #a8fff0 !important;
+}
+.foundry-part-hud-prompt.hidden {
+  display: none !important;
+}
+.foundry-part-hud-prompt.visible {
+  display: flex !important;
+  opacity: 1;
+}
+
 .mayor-tina-hud-prompt {
   border-color: rgba(255, 73, 183, 0.72) !important;
   color: #ffb4df !important;
