@@ -16,7 +16,8 @@ import {
     applyFabricatedRecipeOutput, describeRecipe, getFabricationOdds
 } from './fabricator.js';
 import { TerminalBezelController } from './terminalBezelInteractivity.js';
-import { BIO_HAZARD_FILTER_ITEM_ID } from './toxinProtectionGuidance.js';
+import { describeModifierChanges, installFeedbackLine } from './installFeedback.js';
+import { getEquipmentDefinition } from './data/equipmentDefinitions.js';
 
 const RESOURCES = [['tech', 'TECH'], ['coin', 'COIN'], ['med', 'MED']];
 const TICK_MS = 500;
@@ -376,6 +377,7 @@ export function createFabricationBay({
             button.textContent = label;
             button.addEventListener('click', () => {
                 syncOutputOwnership();
+                const modsBefore = loadout.getActiveModifiers?.(loadout.activeClassId) ?? {};
                 const result = applyFabricatedRecipeOutput(recipe, {
                     fabricator,
                     loadout,
@@ -386,8 +388,16 @@ export function createFabricationBay({
                 logRecipe(result.ok ? 'output-applied' : 'output-rejected', recipe, { granted: result.id ?? result.itemdefid ?? null, slot: result.slot ?? null, reason: result.reason ?? null });
                 if (result.ok) {
                     playSound('class_lock', { volume: 0.55 });
-                    if (String(result.itemdefid ?? '') === BIO_HAZARD_FILTER_ITEM_ID) {
-                        showPrompt('> BIO-HAZARD FILTER ACTIVE · SPORE AND GAS DAMAGE REDUCED 12%');
+                    // Say where it went and what it changed (src/installFeedback.js).
+                    if (result.kind === 'mod' || result.kind === 'charm') {
+                        const definition = getEquipmentDefinition(result.itemdefid);
+                        showPrompt(installFeedbackLine({
+                            name: definition?.name ?? view.name,
+                            slot: result.slot ?? null,
+                            kind: result.kind,
+                            mount: definition?.mount ?? null,
+                            changes: describeModifierChanges(modsBefore, loadout.getActiveModifiers?.(loadout.activeClassId) ?? {})
+                        }));
                     }
                     syncEquippedWeaponLabel();
                     render();

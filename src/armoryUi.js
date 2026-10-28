@@ -19,7 +19,8 @@ import { getVoiceBank } from './data/voiceBanks.js';
 import { getItemName, getItemView } from './data/itemCatalog.js';
 import { hudThemeInlineStyle, resolveHudTheme } from './hudThemes.js';
 import { getSelectedPolish, unlockAllPolishes } from './operatorPolishes.js';
-import { getEquipmentStatus } from './data/equipmentDefinitions.js';
+import { getEquipmentDefinition, getEquipmentStatus } from './data/equipmentDefinitions.js';
+import { describeModifierChanges, installFeedbackLine } from './installFeedback.js';
 import {
     ARCHETYPE_SKINS,
     CLASS_ARCHETYPES,
@@ -903,8 +904,22 @@ export function createArmoryUi({
             const field = pickerFields()[openField];
             if (!field) return;
             const value = tile.dataset.value ?? '';
+            const cls = activeClass.toLowerCase();
+            const isEquipment = ['charm', 'mod1', 'mod2'].includes(openField);
+            const modsBefore = isEquipment ? (loadoutManager.getActiveModifiers?.(cls) ?? {}) : null;
             if (!field.apply(value)) return;
             playSound(field.sound);
+            // What the install changed, before -> after (src/installFeedback.js).
+            if (isEquipment && value) {
+                const definition = getEquipmentDefinition(value);
+                globalThis.showToastNotification?.(installFeedbackLine({
+                    name: definition?.name ?? getItemName(value),
+                    slot: openField === 'mod1' ? 1 : openField === 'mod2' ? 2 : null,
+                    kind: openField === 'charm' ? 'charm' : 'mod',
+                    mount: definition?.mount ?? null,
+                    changes: describeModifierChanges(modsBefore, loadoutManager.getActiveModifiers?.(cls) ?? {})
+                }).replace(/^> /, ''), { tone: 'info', duration: 6000 });
+            }
             field.after?.(value);
             onEquip?.(openField, value || null);
             const selectedField = openField;

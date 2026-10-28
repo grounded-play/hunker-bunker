@@ -85,7 +85,7 @@ function setup({ activated = true, canRoll = true, hub = false, arcadeUnlocked =
         getClassLoadout: () => loadoutState,
         equip: vi.fn(),
         equipRigModule: vi.fn((_classId, slot, id) => { loadoutState[`mod${slot}Id`] = String(id); }),
-        getActiveModifiers: vi.fn(() => ({ gasDamageReduction: 0.12 }))
+        getActiveModifiers: vi.fn(() => ({ gasDamageReduction: [loadoutState.mod1Id, loadoutState.mod2Id].includes('4142') ? 0.12 : 0 }))
     };
     const finishCampRest = vi.fn();
     const game = {
@@ -215,7 +215,7 @@ describe('fabrication bay', () => {
         expect(loadout.equipRigModule).toHaveBeenCalledWith('scout', 1, 4142);
         expect(game.loadoutMods).toEqual({ gasDamageReduction: 0.12 });
         expect(deps.showPrompt).toHaveBeenCalledWith(
-            '> BIO-HAZARD FILTER ACTIVE · SPORE AND GAS DAMAGE REDUCED 12%'
+            '> BIO-HAZARD FILTER VENT INSTALLED IN SUIT BAY A · CHEST · TOXIN DAMAGE 1.00 → 0.88'
         );
     });
 
