@@ -16,16 +16,19 @@ describe('applyVoidDepth', () => {
     const ship = new THREE.Vector2(5, -7);
     const range = { cryoStart: 60, cryoEnd: 80, bioStart: 130, bioEnd: 150 };
 
-    it('casts each pixel down to a floor far below and lights it faintly', () => {
+    it('casts each pixel onto two sparse light fields far below', () => {
         const material = applyVoidDepth(new THREE.MeshBasicMaterial({ color: 0x020304 }), { shipWorldPos: () => ship, range });
         const shader = compile(material);
         expect(shader.vertexShader).toContain('vVoidWorldPos');
         expect(shader.fragmentShader).toContain('cameraPosition');
-        expect(shader.fragmentShader).toContain(`-${VOID_DEPTH.floorDepth.toFixed(1)}`);
+        expect(shader.fragmentShader).toContain(`-${VOID_DEPTH.nearPlane.toFixed(1)}`);
+        expect(shader.fragmentShader).toContain(`-${VOID_DEPTH.farPlane.toFixed(1)}`);
+        expect(shader.fragmentShader).toContain('hbVoidLightLayer( hbNearProjection');
+        expect(shader.fragmentShader).toContain('hbVoidLightLayer( hbFarProjection');
         // Light is added after the rest of the fragment, so fog and the base colour stay.
         expect(shader.fragmentShader.indexOf('gl_FragColor.rgb +=')).toBeGreaterThan(shader.fragmentShader.indexOf('#include <dithering_fragment>'));
         expect(shader.uniforms.uShipWorldPos.value).toBe(ship);
-        expect(material.customProgramCacheKey()).toBe('hb-void-depth');
+        expect(material.customProgramCacheKey()).toBe('hb-void-depth-v2');
     });
 
     it('tints the light by district: ember, then teal in cryo, green in bio', () => {
@@ -49,10 +52,12 @@ describe('applyVoidUplight', () => {
         fragmentShader: 'varying vec3 vCanyonDropWorldPos;\nvoid main() {\n#include <fog_fragment>\n#include <dithering_fragment>\n}'
     });
 
-    it('lights the cliff wall from below: none at the rim, full near the bottom, after fog', () => {
+    it('lights the cliff wall from below and adds sparse rising motes after fog', () => {
         const shader = applyVoidUplight(wallShader(), 'active');
         expect(shader.fragmentShader).toContain(`smoothstep( ${VOID_UPLIGHT.startY.toFixed(1)}, ${VOID_UPLIGHT.fullY.toFixed(1)}, vCanyonDropWorldPos.y )`);
         expect(shader.fragmentShader).toContain('uniform float uVoidTime;');
+        expect(shader.fragmentShader).toContain('float hbMotePhase');
+        expect(shader.fragmentShader).toContain('float hbMoteLane');
         expect(shader.fragmentShader.indexOf('gl_FragColor.rgb +=')).toBeGreaterThan(shader.fragmentShader.indexOf('#include <fog_fragment>'));
         expect(shader.fragmentShader).toContain('fogFactor');
     });
@@ -67,7 +72,9 @@ describe('applyVoidUplight', () => {
         expect(a.uniforms.uVoidTime).toBe(floor.uniforms.uVoidTime);
     });
 
-    it('lights the void floor enough to see', () => {
-        expect(VOID_DEPTH.ambient + VOID_DEPTH.peak).toBeGreaterThan(0.25);
+    it('keeps the field dark while allowing readable light peaks', () => {
+        expect(VOID_DEPTH.ambient).toBeLessThan(0.02);
+        expect(VOID_DEPTH.nearPeak).toBeGreaterThan(0.4);
+        expect(VOID_DEPTH.farPlane - VOID_DEPTH.nearPlane).toBeGreaterThan(20);
     });
 });
