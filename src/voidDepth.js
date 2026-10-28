@@ -15,14 +15,54 @@ import * as THREE from 'three';
 export const VOID_DEPTH = Object.freeze({
     /** How far below the rim the lit floor appears (metres). */
     floorDepth: 14,
-    /** Base glow everywhere down there, and the extra at the drifting light's peaks. */
-    ambient: 0.015,
-    peak: 0.09,
+    /** Base glow everywhere down there, and the extra at the drifting light's
+     * peaks. At 0.015/0.09 it never cleared about 3% and pits read as black
+     * (owner, 2026-10-28: "imply things are way down"). */
+    ambient: 0.07,
+    peak: 0.32,
     /** Exponential fade per metre of ray travelled below the rim. */
-    fade: 0.035
+    fade: 0.028
+});
+
+/**
+ * Light rising out of the pit onto the cliff walls that drop into it: none at
+ * the rim, building toward the bottom, in the district's colour, breathing
+ * slowly on the same clock as the void floor. Added after fog (softened by
+ * it, so a distant pit glows without punching through haze). No lights.
+ */
+export const VOID_UPLIGHT = Object.freeze({
+    /** World y where the glow starts, and where it is full (wall bottom is -14). */
+    startY: -2.5,
+    fullY: -12.5,
+    strength: 0.42,
+    tint: Object.freeze({
+        active: Object.freeze([1.0, 0.42, 0.12]),
+        cryo: Object.freeze([0.25, 0.72, 1.0]),
+        bio: Object.freeze([0.45, 0.95, 0.25])
+    })
 });
 
 const VOID_TIME = { value: 0 };
+
+/**
+ * Patches a cliff-drop wall shader (from an onBeforeCompile) with the rising
+ * light. The shader must already pass `vCanyonDropWorldPos`.
+ */
+export function applyVoidUplight(shader, biomeKey) {
+    const [r, g, b] = VOID_UPLIGHT.tint[biomeKey] ?? VOID_UPLIGHT.tint.active;
+    shader.uniforms.uVoidTime = VOID_TIME;
+    shader.fragmentShader = shader.fragmentShader
+        .replace('void main() {', 'uniform float uVoidTime;\nvoid main() {')
+        .replace('#include <dithering_fragment>', `#include <dithering_fragment>
+            float hbUp = smoothstep( ${VOID_UPLIGHT.startY.toFixed(1)}, ${VOID_UPLIGHT.fullY.toFixed(1)}, vCanyonDropWorldPos.y );
+            float hbBreath = 0.82 + 0.18 * sin( uVoidTime * 0.6 + vCanyonDropWorldPos.x * 0.31 + vCanyonDropWorldPos.z * 0.23 );
+            float hbUpGlow = hbUp * hbUp * ${VOID_UPLIGHT.strength.toFixed(2)} * hbBreath;
+            #ifdef USE_FOG
+                hbUpGlow *= 1.0 - fogFactor * 0.7;
+            #endif
+            gl_FragColor.rgb += vec3( ${r.toFixed(2)}, ${g.toFixed(2)}, ${b.toFixed(2)} ) * hbUpGlow;`);
+    return shader;
+}
 
 /** Advances the drifting light; called once a frame. */
 export function setVoidDepthTime(seconds) {

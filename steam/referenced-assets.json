@@ -269,6 +269,21 @@
     "3d/runtime/new3ds/door_arch_guillotine_assembled.glb",
     "3d/runtime/new3ds/door_arch_guillotine_frame.glb",
     "3d/runtime/new3ds/door_arch_guillotine_slab.glb",
+    "3d/runtime/new3ds/door_biomechanical_iris.glb",
+    "3d/runtime/new3ds/drop_black_flask.glb",
+    "3d/runtime/new3ds/drop_child_drawing.glb",
+    "3d/runtime/new3ds/drop_dig_manifest.glb",
+    "3d/runtime/new3ds/drop_dogtags.glb",
+    "3d/runtime/new3ds/drop_first_bore_tag.glb",
+    "3d/runtime/new3ds/drop_frozen_letter.glb",
+    "3d/runtime/new3ds/drop_horizon_badge.glb",
+    "3d/runtime/new3ds/drop_meteor_core.glb",
+    "3d/runtime/new3ds/drop_moult_shard.glb",
+    "3d/runtime/new3ds/drop_prayer_stone.glb",
+    "3d/runtime/new3ds/drop_ration_ledger.glb",
+    "3d/runtime/new3ds/drop_resin_locket.glb",
+    "3d/runtime/new3ds/drop_security_log.glb",
+    "3d/runtime/new3ds/drop_survey_probe.glb",
     "3d/runtime/new3ds/engineer_magnetic_bottle_cell.glb",
     "3d/runtime/new3ds/engineer_robotic_welding_arm.glb",
     "3d/runtime/new3ds/engineer_wave_relay_dynamo.glb",
@@ -279,12 +294,15 @@
     "3d/runtime/new3ds/evac_crew_belongings_mesh.glb",
     "3d/runtime/new3ds/evac_cryo_hypergolic_manifold.glb",
     "3d/runtime/new3ds/evac_egg_coldchain_harness.glb",
+    "3d/runtime/new3ds/evac_empty_cockpit_quad.glb",
     "3d/runtime/new3ds/evac_empty_seat_memorial_latches.glb",
     "3d/runtime/new3ds/evac_four_seat_cockpit_module.glb",
+    "3d/runtime/new3ds/evac_hidden_egg_coolant_rack.glb",
     "3d/runtime/new3ds/evac_infection_screening_arch.glb",
     "3d/runtime/new3ds/evac_launch_mass_trim_track.glb",
     "3d/runtime/new3ds/evac_manifest_allocation_terminal.glb",
     "3d/runtime/new3ds/evac_manual_abort_detonator.glb",
+    "3d/runtime/new3ds/evac_mixed_crew_divider.glb",
     "3d/runtime/new3ds/evac_mixed_crew_translation_rail.glb",
     "3d/runtime/new3ds/evac_passenger_muster_abacus.glb",
     "3d/runtime/new3ds/evac_preflight_fuel_umbilical.glb",
@@ -469,6 +487,8 @@
     "3d/runtime/new3ds/npc_nahl.glb",
     "3d/runtime/new3ds/npc_queen.glb",
     "3d/runtime/new3ds/npc_val.glb",
+    "3d/runtime/new3ds/prop_alien_feeding_basin.glb",
+    "3d/runtime/new3ds/prop_alien_respiratory_vent.glb",
     "3d/runtime/new3ds/prop_ammo_crate_stack.glb",
     "3d/runtime/new3ds/prop_autopsy_dissection_slab.glb",
     "3d/runtime/new3ds/prop_base_defense_turret.glb",
@@ -492,9 +512,19 @@
     "3d/runtime/new3ds/prop_camp_cookfire_lit.glb",
     "3d/runtime/new3ds/prop_camp_cot.glb",
     "3d/runtime/new3ds/prop_camp_crate.glb",
+    "3d/runtime/new3ds/prop_camp_grave_fresh.glb",
+    "3d/runtime/new3ds/prop_camp_grave_old.glb",
     "3d/runtime/new3ds/prop_camp_laundry.glb",
+    "3d/runtime/new3ds/prop_camp_meridian_battery_bank.glb",
     "3d/runtime/new3ds/prop_camp_meridian_radio.glb",
+    "3d/runtime/new3ds/prop_camp_meridian_repair_rig.glb",
     "3d/runtime/new3ds/prop_camp_shutter_lockdown.glb",
+    "3d/runtime/new3ds/prop_camp_tallow_resin_urn.glb",
+    "3d/runtime/new3ds/prop_camp_tallow_spore_trays.glb",
+    "3d/runtime/new3ds/prop_camp_tallow_still.glb",
+    "3d/runtime/new3ds/prop_camp_vesper_ammo_press.glb",
+    "3d/runtime/new3ds/prop_camp_vesper_shield_rack.glb",
+    "3d/runtime/new3ds/prop_camp_vesper_turret.glb",
     "3d/runtime/new3ds/prop_camp_warning_placard.glb",
     "3d/runtime/new3ds/prop_cave_bones.glb",
     "3d/runtime/new3ds/prop_cave_eggs_hatched.glb",
@@ -525,7 +555,12 @@
     "3d/runtime/new3ds/prop_fungal_spore_dispenser.glb",
     "3d/runtime/new3ds/prop_fungal_tendril_altar.glb",
     "3d/runtime/new3ds/prop_hive_carapace_molt.glb",
+    "3d/runtime/new3ds/prop_hive_chitin_hatchery.glb",
+    "3d/runtime/new3ds/prop_hive_relay_antenna.glb",
     "3d/runtime/new3ds/prop_hive_resin_sac.glb",
+    "3d/runtime/new3ds/prop_hive_suture_organ.glb",
+    "3d/runtime/new3ds/prop_hive_synaptic_web.glb",
+    "3d/runtime/new3ds/prop_hive_wound_cauterizer.glb",
     "3d/runtime/new3ds/prop_icey_frost_manifold.glb",
     "3d/runtime/new3ds/prop_icey_frost_vent.glb",
     "3d/runtime/new3ds/prop_icey_thermal_pod.glb",
@@ -540,6 +575,7 @@
     "3d/runtime/new3ds/prop_oxygen_bottle_cascade_rack.glb",
     "3d/runtime/new3ds/prop_pipe_organ_heat_exchanger.glb",
     "3d/runtime/new3ds/prop_pipe_rupture.glb",
+    "3d/runtime/new3ds/prop_ruptured_coolant_pump.glb",
     "3d/runtime/new3ds/prop_security_barricade.glb",
     "3d/runtime/new3ds/prop_shrine_plinth_broken.glb",
     "3d/runtime/new3ds/prop_specimen_tank.glb",
@@ -555,6 +591,16 @@
     "3d/runtime/new3ds/prop_votive_candle_shrine.glb",
     "3d/runtime/new3ds/prop_wall_cable_tray_swag.glb",
     "3d/runtime/new3ds/queen_royal_brood_throne.glb",
+    "3d/runtime/new3ds/quest_briggs_memorial_wall.glb",
+    "3d/runtime/new3ds/quest_cultist_shrine.glb",
+    "3d/runtime/new3ds/quest_hive_archive_node.glb",
+    "3d/runtime/new3ds/quest_holdout_barricade.glb",
+    "3d/runtime/new3ds/quest_infested_armory_cabinet.glb",
+    "3d/runtime/new3ds/quest_kaelen_ledger_desk.glb",
+    "3d/runtime/new3ds/quest_lost_probe.glb",
+    "3d/runtime/new3ds/quest_martha_warm_pipe_junction.glb",
+    "3d/runtime/new3ds/quest_reactor_valves.glb",
+    "3d/runtime/new3ds/quest_red_mould_bloom.glb",
     "3d/runtime/new3ds/relay_acoustic_diaphragm.glb",
     "3d/runtime/new3ds/relay_false_beacon_spire.glb",
     "3d/runtime/new3ds/relay_harmonic_tuning_fork.glb",
@@ -565,8 +611,12 @@
     "3d/runtime/new3ds/royal_egg_clutch_caul.glb",
     "3d/runtime/new3ds/salvage_tagged_heap.glb",
     "3d/runtime/new3ds/scatter_bolts.glb",
+    "3d/runtime/new3ds/scatter_broken_drone.glb",
     "3d/runtime/new3ds/scatter_cable_coil.glb",
+    "3d/runtime/new3ds/scatter_cryo_icicle.glb",
+    "3d/runtime/new3ds/scatter_cryo_shards.glb",
     "3d/runtime/new3ds/scatter_hive_eggs.glb",
+    "3d/runtime/new3ds/scatter_ice_stalagmite.glb",
     "3d/runtime/new3ds/scout_ejection_pod_chassis.glb",
     "3d/runtime/new3ds/scout_tachyon_radar_mast.glb",
     "3d/runtime/new3ds/scout_tracking_beacon_core.glb",
@@ -2013,8 +2063,38 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/decal_amber_resin_fracture_leak.png",
+      "bytes": 1235175,
+      "classification": "unknown"
+    },
+    {
       "path": "3d/runtime/decals/decal_amputation_arterial_spray.png",
       "bytes": 974613,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_armory_spent_brass_scatter.png",
+      "bytes": 1327176,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_armory_spent_brass_scatter1.png",
+      "bytes": 1327176,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_armory_spent_brass_scatter2.png",
+      "bytes": 1086825,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_armory_spent_brass_scatter3.png",
+      "bytes": 1110660,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_battery_acid_sulfur_boil.png",
+      "bytes": 2369733,
       "classification": "unknown"
     },
     {
@@ -2218,6 +2298,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/decal_bore_mandible_puncture_drag.png",
+      "bytes": 1367915,
+      "classification": "unknown"
+    },
+    {
       "path": "3d/runtime/decals/decal_butts_and_ash_a_albedo.ktx2",
       "bytes": 515650,
       "classification": "runtime-required"
@@ -2258,8 +2343,23 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/decal_carbon_dust_document_ash.png",
+      "bytes": 1110237,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_cauterizer_plasma_splatter_scab.png",
+      "bytes": 1428009,
+      "classification": "unknown"
+    },
+    {
       "path": "3d/runtime/decals/decal_chasm_shear_fault_line.png",
       "bytes": 1758939,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_chitin_moult_calcium_bloom.png",
+      "bytes": 959039,
       "classification": "unknown"
     },
     {
@@ -2308,8 +2408,53 @@
       "classification": "unknown"
     },
     {
+      "path": "3d/runtime/decals/decal_covenant_copper_arcing_burn.png",
+      "bytes": 1234528,
+      "classification": "unknown"
+    },
+    {
       "path": "3d/runtime/decals/decal_crash_drag_skid_trench.png",
       "bytes": 1374238,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_crayon_wax_floor_graffiti.png",
+      "bytes": 1549489,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_cryo_glass_frost_powder_fan.png",
+      "bytes": 2308839,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_cultist_wax_runoff_pool.png",
+      "bytes": 1740268,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_datapad_glass_shatter_spray.png",
+      "bytes": 1151864,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_deserted_cockpit_boot_scuff_panic.png",
+      "bytes": 1135832,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_distiller_mineral_scale_runoff.png",
+      "bytes": 1509841,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_dogtag_scraped_rub_halo.png",
+      "bytes": 752108,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_drone_crash_skid_shrapnel.png",
+      "bytes": 633841,
       "classification": "unknown"
     },
     {
@@ -2478,6 +2623,16 @@
       "classification": "unknown"
     },
     {
+      "path": "3d/runtime/decals/decal_falling_icicle_impact_patter.png",
+      "bytes": 1104676,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_feeding_slurry_regurgitation_splash.png",
+      "bytes": 1246633,
+      "classification": "unknown"
+    },
+    {
       "path": "3d/runtime/decals/decal_floor_lane_chevrons_a_albedo.ktx2",
       "bytes": 590489,
       "classification": "runtime-required"
@@ -2563,8 +2718,78 @@
       "classification": "unknown"
     },
     {
+      "path": "3d/runtime/decals/decal_glycol_coolant_slick_flooding.png",
+      "bytes": 1291436,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_grave_spade_excavation_dirt.png",
+      "bytes": 1978039,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_gunpowder_spill_carbon_smear.png",
+      "bytes": 1271347,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_hatchery_mucus_wallowing_pool.png",
+      "bytes": 1561991,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_hidden_egg_frost_bleed_seam.png",
+      "bytes": 864176,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_hive_optic_nerve_puddle.png",
+      "bytes": 1398824,
+      "classification": "unknown"
+    },
+    {
       "path": "3d/runtime/decals/decal_hive_symbiont_trail.png",
       "bytes": 1186892,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_holdout_defensive_recoil_scuff.png",
+      "bytes": 986028,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_hybrid_claw_scratch_containment.png",
+      "bytes": 1102539,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_hydro_nutrient_lime_tide.png",
+      "bytes": 1960061,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_impact_radiation_halo.png",
+      "bytes": 1547576,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_iris_sphincter_rub_apron.png",
+      "bytes": 876179,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_liquor_spill_evaporation_stain.png",
+      "bytes": 780028,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_melted_lanyard_char_mark.png",
+      "bytes": 1132592,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_memorial_gun_oil_footprint_tally.png",
+      "bytes": 790464,
       "classification": "unknown"
     },
     {
@@ -2611,6 +2836,56 @@
       "path": "3d/runtime/decals/decal_paper_scatter_d_detail.ktx2",
       "bytes": 479616,
       "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_prayer_kneeling_wear_crescent.png",
+      "bytes": 1197278,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_probe_crater_scuff_impact.png",
+      "bytes": 1047504,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_rations_fingerprint_grime.png",
+      "bytes": 1182751,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_reactor_scorch_flange_leak.png",
+      "bytes": 1201716,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_red_mould_spore_crust_ring.png",
+      "bytes": 1306344,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_relay_neural_static_lichen_ring.png",
+      "bytes": 1605675,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_resin_urn_ring_overflow.png",
+      "bytes": 1194996,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_respiratory_exhale_spore_cone.png",
+      "bytes": 1410012,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_shield_impact_gouges_apron.png",
+      "bytes": 1353369,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_soldering_flux_droplet_spray.png",
+      "bytes": 1503034,
+      "classification": "unknown"
     },
     {
       "path": "3d/runtime/decals/decal_spent_casings_a_albedo.ktx2",
@@ -2693,8 +2968,38 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/decal_stalagmite_thaw_puddle_rings.png",
+      "bytes": 1729969,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_sublimated_frost_paper_outline.png",
+      "bytes": 1779465,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_sunken_permafrost_grave_heave.png",
+      "bytes": 1969146,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_suture_silk_thread_drool.png",
+      "bytes": 1665056,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_synaptic_discharge_scorched_membrane.png",
+      "bytes": 1018533,
+      "classification": "unknown"
+    },
+    {
       "path": "3d/runtime/decals/decal_tina_dermis_shed_residue.png",
       "bytes": 1021913,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_turret_traverse_ring_swarf.png",
+      "bytes": 1758852,
       "classification": "unknown"
     },
     {
@@ -2705,6 +3010,11 @@
     {
       "path": "3d/runtime/decals/decal_vesper_kill_tally.png",
       "bytes": 649085,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/decals/decal_vitrified_crater_ring.png",
+      "bytes": 1373080,
       "classification": "unknown"
     },
     {
@@ -2828,6 +3138,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/decal_warm_pipe_condensate_drip_fan.png",
+      "bytes": 1021346,
+      "classification": "unknown"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_abandoned_meal_tray_albedo.ktx2",
       "bytes": 240484,
       "classification": "runtime-required"
@@ -2838,6 +3153,56 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_amber_resin_fracture_leak_albedo.ktx2",
+      "bytes": 214144,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_amber_resin_fracture_leak_detail.ktx2",
+      "bytes": 160074,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_armory_spent_brass_scatter1_albedo.ktx2",
+      "bytes": 278070,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_armory_spent_brass_scatter1_detail.ktx2",
+      "bytes": 211062,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_armory_spent_brass_scatter2_albedo.ktx2",
+      "bytes": 249107,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_armory_spent_brass_scatter2_detail.ktx2",
+      "bytes": 170300,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_armory_spent_brass_scatter3_albedo.ktx2",
+      "bytes": 239800,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_armory_spent_brass_scatter3_detail.ktx2",
+      "bytes": 175324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_armory_spent_brass_scatter_albedo.ktx2",
+      "bytes": 278070,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_armory_spent_brass_scatter_detail.ktx2",
+      "bytes": 211062,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_barricade_last_stand_albedo.ktx2",
       "bytes": 222810,
       "classification": "runtime-required"
@@ -2845,6 +3210,16 @@
     {
       "path": "3d/runtime/decals/legacy/decal_barricade_last_stand_detail.ktx2",
       "bytes": 162885,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_battery_acid_sulfur_boil_albedo.ktx2",
+      "bytes": 322112,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_battery_acid_sulfur_boil_detail.ktx2",
+      "bytes": 257930,
       "classification": "runtime-required"
     },
     {
@@ -2908,6 +3283,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_bore_mandible_puncture_drag_albedo.ktx2",
+      "bytes": 234102,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_bore_mandible_puncture_drag_detail.ktx2",
+      "bytes": 167662,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_bullet_holes_albedo.ktx2",
       "bytes": 285407,
       "classification": "runtime-required"
@@ -2928,6 +3313,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_carbon_dust_document_ash_albedo.ktx2",
+      "bytes": 221577,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_carbon_dust_document_ash_detail.ktx2",
+      "bytes": 179404,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_cathedral_runic_albedo.ktx2",
       "bytes": 289644,
       "classification": "runtime-required"
@@ -2935,6 +3330,16 @@
     {
       "path": "3d/runtime/decals/legacy/decal_cathedral_runic_detail.ktx2",
       "bytes": 233186,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_cauterizer_plasma_splatter_scab_albedo.ktx2",
+      "bytes": 226576,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_cauterizer_plasma_splatter_scab_detail.ktx2",
+      "bytes": 187042,
       "classification": "runtime-required"
     },
     {
@@ -2955,6 +3360,16 @@
     {
       "path": "3d/runtime/decals/legacy/decal_chitin_cluster_detail.ktx2",
       "bytes": 202096,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_chitin_moult_calcium_bloom_albedo.ktx2",
+      "bytes": 178604,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_chitin_moult_calcium_bloom_detail.ktx2",
+      "bytes": 123642,
       "classification": "runtime-required"
     },
     {
@@ -2998,6 +3413,26 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_covenant_copper_arcing_burn_albedo.ktx2",
+      "bytes": 239255,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_covenant_copper_arcing_burn_detail.ktx2",
+      "bytes": 187767,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_crayon_wax_floor_graffiti_albedo.ktx2",
+      "bytes": 265926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_crayon_wax_floor_graffiti_detail.ktx2",
+      "bytes": 209050,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_cryo_fracture_albedo.ktx2",
       "bytes": 291731,
       "classification": "runtime-required"
@@ -3005,6 +3440,16 @@
     {
       "path": "3d/runtime/decals/legacy/decal_cryo_fracture_detail.ktx2",
       "bytes": 243050,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_cryo_glass_frost_powder_fan_albedo.ktx2",
+      "bytes": 308299,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_cryo_glass_frost_powder_fan_detail.ktx2",
+      "bytes": 253722,
       "classification": "runtime-required"
     },
     {
@@ -3048,6 +3493,56 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_cultist_wax_runoff_pool_albedo.ktx2",
+      "bytes": 290168,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_cultist_wax_runoff_pool_detail.ktx2",
+      "bytes": 237252,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_datapad_glass_shatter_spray_albedo.ktx2",
+      "bytes": 205280,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_datapad_glass_shatter_spray_detail.ktx2",
+      "bytes": 153598,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_deserted_cockpit_boot_scuff_panic_albedo.ktx2",
+      "bytes": 231064,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_deserted_cockpit_boot_scuff_panic_detail.ktx2",
+      "bytes": 184392,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_distiller_mineral_scale_runoff_albedo.ktx2",
+      "bytes": 256297,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_distiller_mineral_scale_runoff_detail.ktx2",
+      "bytes": 197010,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_dogtag_scraped_rub_halo_albedo.ktx2",
+      "bytes": 129158,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_dogtag_scraped_rub_halo_detail.ktx2",
+      "bytes": 92526,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_door_wear_apron_albedo.ktx2",
       "bytes": 232647,
       "classification": "runtime-required"
@@ -3085,6 +3580,16 @@
     {
       "path": "3d/runtime/decals/legacy/decal_door_wear_apron_detail.ktx2",
       "bytes": 184647,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_drone_crash_skid_shrapnel_albedo.ktx2",
+      "bytes": 122183,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_drone_crash_skid_shrapnel_detail.ktx2",
+      "bytes": 95020,
       "classification": "runtime-required"
     },
     {
@@ -3215,6 +3720,26 @@
     {
       "path": "3d/runtime/decals/legacy/decal_failed_decon_kit_detail.ktx2",
       "bytes": 153772,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_falling_icicle_impact_patter_albedo.ktx2",
+      "bytes": 189733,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_falling_icicle_impact_patter_detail.ktx2",
+      "bytes": 142392,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_feeding_slurry_regurgitation_splash_albedo.ktx2",
+      "bytes": 226938,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_feeding_slurry_regurgitation_splash_detail.ktx2",
+      "bytes": 171234,
       "classification": "runtime-required"
     },
     {
@@ -3378,6 +3903,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_glycol_coolant_slick_flooding_albedo.ktx2",
+      "bytes": 247768,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_glycol_coolant_slick_flooding_detail.ktx2",
+      "bytes": 181029,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_graffiti_tally_1_albedo.ktx2",
       "bytes": 201805,
       "classification": "runtime-required"
@@ -3395,6 +3930,16 @@
     {
       "path": "3d/runtime/decals/legacy/decal_graffiti_tally_2_detail.ktx2",
       "bytes": 192731,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_grave_spade_excavation_dirt_albedo.ktx2",
+      "bytes": 272551,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_grave_spade_excavation_dirt_detail.ktx2",
+      "bytes": 212690,
       "classification": "runtime-required"
     },
     {
@@ -3438,6 +3983,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_gunpowder_spill_carbon_smear_albedo.ktx2",
+      "bytes": 202128,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_gunpowder_spill_carbon_smear_detail.ktx2",
+      "bytes": 160748,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_hand_smears_1_albedo.ktx2",
       "bytes": 163550,
       "classification": "runtime-required"
@@ -3455,6 +4010,16 @@
     {
       "path": "3d/runtime/decals/legacy/decal_hand_smears_2_detail.ktx2",
       "bytes": 151518,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hatchery_mucus_wallowing_pool_albedo.ktx2",
+      "bytes": 277922,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hatchery_mucus_wallowing_pool_detail.ktx2",
+      "bytes": 220298,
       "classification": "runtime-required"
     },
     {
@@ -3478,6 +4043,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_hidden_egg_frost_bleed_seam_albedo.ktx2",
+      "bytes": 165404,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hidden_egg_frost_bleed_seam_detail.ktx2",
+      "bytes": 130326,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_hive_growth_albedo.ktx2",
       "bytes": 199844,
       "classification": "runtime-required"
@@ -3485,6 +4060,66 @@
     {
       "path": "3d/runtime/decals/legacy/decal_hive_growth_detail.ktx2",
       "bytes": 174236,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hive_optic_nerve_puddle_albedo.ktx2",
+      "bytes": 248404,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hive_optic_nerve_puddle_detail.ktx2",
+      "bytes": 186633,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_holdout_defensive_recoil_scuff_albedo.ktx2",
+      "bytes": 211158,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_holdout_defensive_recoil_scuff_detail.ktx2",
+      "bytes": 164254,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hybrid_claw_scratch_containment_albedo.ktx2",
+      "bytes": 200554,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hybrid_claw_scratch_containment_detail.ktx2",
+      "bytes": 159158,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hydro_nutrient_lime_tide_albedo.ktx2",
+      "bytes": 264352,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hydro_nutrient_lime_tide_detail.ktx2",
+      "bytes": 201497,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_impact_radiation_halo_albedo.ktx2",
+      "bytes": 263353,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_impact_radiation_halo_detail.ktx2",
+      "bytes": 188187,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_iris_sphincter_rub_apron_albedo.ktx2",
+      "bytes": 179921,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_iris_sphincter_rub_apron_detail.ktx2",
+      "bytes": 118024,
       "classification": "runtime-required"
     },
     {
@@ -3578,6 +4213,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_liquor_spill_evaporation_stain_albedo.ktx2",
+      "bytes": 198522,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_liquor_spill_evaporation_stain_detail.ktx2",
+      "bytes": 144754,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_maintenance_shrine_albedo.ktx2",
       "bytes": 169569,
       "classification": "runtime-required"
@@ -3585,6 +4230,26 @@
     {
       "path": "3d/runtime/decals/legacy/decal_maintenance_shrine_detail.ktx2",
       "bytes": 120089,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_melted_lanyard_char_mark_albedo.ktx2",
+      "bytes": 203074,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_melted_lanyard_char_mark_detail.ktx2",
+      "bytes": 161573,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_memorial_gun_oil_footprint_tally_albedo.ktx2",
+      "bytes": 157449,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_memorial_gun_oil_footprint_tally_detail.ktx2",
+      "bytes": 118483,
       "classification": "runtime-required"
     },
     {
@@ -3718,6 +4383,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_prayer_kneeling_wear_crescent_albedo.ktx2",
+      "bytes": 220279,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_prayer_kneeling_wear_crescent_detail.ktx2",
+      "bytes": 158405,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_probe_capture_skid_albedo.ktx2",
       "bytes": 147948,
       "classification": "runtime-required"
@@ -3725,6 +4400,16 @@
     {
       "path": "3d/runtime/decals/legacy/decal_probe_capture_skid_detail.ktx2",
       "bytes": 99973,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_probe_crater_scuff_impact_albedo.ktx2",
+      "bytes": 166782,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_probe_crater_scuff_impact_detail.ktx2",
+      "bytes": 118063,
       "classification": "runtime-required"
     },
     {
@@ -3798,6 +4483,26 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_rations_fingerprint_grime_albedo.ktx2",
+      "bytes": 231151,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_rations_fingerprint_grime_detail.ktx2",
+      "bytes": 169228,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_reactor_scorch_flange_leak_albedo.ktx2",
+      "bytes": 233015,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_reactor_scorch_flange_leak_detail.ktx2",
+      "bytes": 171885,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_red_mold_quarantine_edge_albedo.ktx2",
       "bytes": 321939,
       "classification": "runtime-required"
@@ -3808,6 +4513,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_red_mould_spore_crust_ring_albedo.ktx2",
+      "bytes": 229177,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_red_mould_spore_crust_ring_detail.ktx2",
+      "bytes": 171131,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_refusal_cautery_fan_albedo.ktx2",
       "bytes": 209689,
       "classification": "runtime-required"
@@ -3815,6 +4530,36 @@
     {
       "path": "3d/runtime/decals/legacy/decal_refusal_cautery_fan_detail.ktx2",
       "bytes": 173586,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_relay_neural_static_lichen_ring_albedo.ktx2",
+      "bytes": 260126,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_relay_neural_static_lichen_ring_detail.ktx2",
+      "bytes": 205231,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_resin_urn_ring_overflow_albedo.ktx2",
+      "bytes": 243992,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_resin_urn_ring_overflow_detail.ktx2",
+      "bytes": 175093,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_respiratory_exhale_spore_cone_albedo.ktx2",
+      "bytes": 212805,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_respiratory_exhale_spore_cone_detail.ktx2",
+      "bytes": 156502,
       "classification": "runtime-required"
     },
     {
@@ -3878,6 +4623,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_shield_impact_gouges_apron_albedo.ktx2",
+      "bytes": 217474,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_shield_impact_gouges_apron_detail.ktx2",
+      "bytes": 177363,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_sled_tracks_albedo.ktx2",
       "bytes": 168597,
       "classification": "runtime-required"
@@ -3918,6 +4673,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_soldering_flux_droplet_spray_albedo.ktx2",
+      "bytes": 248800,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_soldering_flux_droplet_spray_detail.ktx2",
+      "bytes": 186392,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_spore_growth_patch_albedo.ktx2",
       "bytes": 220788,
       "classification": "runtime-required"
@@ -3955,6 +4720,16 @@
     {
       "path": "3d/runtime/decals/legacy/decal_spore_stain_03_detail.ktx2",
       "bytes": 135246,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_stalagmite_thaw_puddle_rings_albedo.ktx2",
+      "bytes": 242982,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_stalagmite_thaw_puddle_rings_detail.ktx2",
+      "bytes": 185913,
       "classification": "runtime-required"
     },
     {
@@ -4568,6 +5343,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_sublimated_frost_paper_outline_albedo.ktx2",
+      "bytes": 270011,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_sublimated_frost_paper_outline_detail.ktx2",
+      "bytes": 221501,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_substation_stencil_albedo.ktx2",
       "bytes": 328584,
       "classification": "runtime-required"
@@ -4575,6 +5360,36 @@
     {
       "path": "3d/runtime/decals/legacy/decal_substation_stencil_detail.ktx2",
       "bytes": 274588,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_sunken_permafrost_grave_heave_albedo.ktx2",
+      "bytes": 271353,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_sunken_permafrost_grave_heave_detail.ktx2",
+      "bytes": 203345,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_suture_silk_thread_drool_albedo.ktx2",
+      "bytes": 264050,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_suture_silk_thread_drool_detail.ktx2",
+      "bytes": 205766,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_synaptic_discharge_scorched_membrane_albedo.ktx2",
+      "bytes": 199862,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_synaptic_discharge_scorched_membrane_detail.ktx2",
+      "bytes": 150204,
       "classification": "runtime-required"
     },
     {
@@ -4595,6 +5410,16 @@
     {
       "path": "3d/runtime/decals/legacy/decal_turned_resin_veins_fan_detail.ktx2",
       "bytes": 166952,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_turret_traverse_ring_swarf_albedo.ktx2",
+      "bytes": 264999,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_turret_traverse_ring_swarf_detail.ktx2",
+      "bytes": 203188,
       "classification": "runtime-required"
     },
     {
@@ -4675,6 +5500,16 @@
     {
       "path": "3d/runtime/decals/legacy/decal_vine_iron_shadow_2_detail.ktx2",
       "bytes": 86538,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_vitrified_crater_ring_albedo.ktx2",
+      "bytes": 215672,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_vitrified_crater_ring_detail.ktx2",
+      "bytes": 176320,
       "classification": "runtime-required"
     },
     {
@@ -4805,6 +5640,16 @@
     {
       "path": "3d/runtime/decals/legacy/decal_warm_pipe_body_polish_detail.ktx2",
       "bytes": 181374,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_warm_pipe_condensate_drip_fan_albedo.ktx2",
+      "bytes": 208845,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_warm_pipe_condensate_drip_fan_detail.ktx2",
+      "bytes": 145475,
       "classification": "runtime-required"
     },
     {
@@ -6998,6 +7843,81 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/door_biomechanical_iris.glb",
+      "bytes": 1772948,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/drop_black_flask.glb",
+      "bytes": 879544,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/drop_child_drawing.glb",
+      "bytes": 513496,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/drop_dig_manifest.glb",
+      "bytes": 939320,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/drop_dogtags.glb",
+      "bytes": 830988,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/drop_first_bore_tag.glb",
+      "bytes": 1004192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/drop_frozen_letter.glb",
+      "bytes": 949812,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/drop_horizon_badge.glb",
+      "bytes": 970940,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/drop_meteor_core.glb",
+      "bytes": 570236,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/drop_moult_shard.glb",
+      "bytes": 573956,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/drop_prayer_stone.glb",
+      "bytes": 697056,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/drop_ration_ledger.glb",
+      "bytes": 924828,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/drop_resin_locket.glb",
+      "bytes": 995224,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/drop_security_log.glb",
+      "bytes": 761492,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/drop_survey_probe.glb",
+      "bytes": 689612,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/engineer_magnetic_bottle_cell.glb",
       "bytes": 3275056,
       "classification": "runtime-required"
@@ -7048,6 +7968,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/evac_empty_cockpit_quad.glb",
+      "bytes": 2404424,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/evac_empty_seat_memorial_latches.glb",
       "bytes": 2905596,
       "classification": "runtime-required"
@@ -7055,6 +7980,11 @@
     {
       "path": "3d/runtime/new3ds/evac_four_seat_cockpit_module.glb",
       "bytes": 2343072,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/evac_hidden_egg_coolant_rack.glb",
+      "bytes": 2321044,
       "classification": "runtime-required"
     },
     {
@@ -7075,6 +8005,11 @@
     {
       "path": "3d/runtime/new3ds/evac_manual_abort_detonator.glb",
       "bytes": 2704484,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/evac_mixed_crew_divider.glb",
+      "bytes": 2003816,
       "classification": "runtime-required"
     },
     {
@@ -7998,6 +8933,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_alien_feeding_basin.glb",
+      "bytes": 2174808,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_alien_respiratory_vent.glb",
+      "bytes": 1479508,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_ammo_crate_stack.glb",
       "bytes": 802236,
       "classification": "runtime-required"
@@ -8113,8 +9058,23 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_camp_grave_fresh.glb",
+      "bytes": 3167896,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_camp_grave_old.glb",
+      "bytes": 2754040,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_camp_laundry.glb",
       "bytes": 3095008,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_camp_meridian_battery_bank.glb",
+      "bytes": 2365288,
       "classification": "runtime-required"
     },
     {
@@ -8123,8 +9083,43 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_camp_meridian_repair_rig.glb",
+      "bytes": 2378052,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_camp_shutter_lockdown.glb",
       "bytes": 3662216,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_camp_tallow_resin_urn.glb",
+      "bytes": 2535064,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_camp_tallow_spore_trays.glb",
+      "bytes": 2934400,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_camp_tallow_still.glb",
+      "bytes": 2422488,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_camp_vesper_ammo_press.glb",
+      "bytes": 1909236,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_camp_vesper_shield_rack.glb",
+      "bytes": 2139020,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_camp_vesper_turret.glb",
+      "bytes": 2086368,
       "classification": "runtime-required"
     },
     {
@@ -8278,8 +9273,33 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_hive_chitin_hatchery.glb",
+      "bytes": 2325088,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_hive_relay_antenna.glb",
+      "bytes": 1988196,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_hive_resin_sac.glb",
       "bytes": 237664,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_hive_suture_organ.glb",
+      "bytes": 1656212,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_hive_synaptic_web.glb",
+      "bytes": 1745420,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_hive_wound_cauterizer.glb",
+      "bytes": 2466068,
       "classification": "runtime-required"
     },
     {
@@ -8350,6 +9370,11 @@
     {
       "path": "3d/runtime/new3ds/prop_pipe_rupture.glb",
       "bytes": 776772,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_ruptured_coolant_pump.glb",
+      "bytes": 2380240,
       "classification": "runtime-required"
     },
     {
@@ -8428,6 +9453,56 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/quest_briggs_memorial_wall.glb",
+      "bytes": 2210756,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/quest_cultist_shrine.glb",
+      "bytes": 1739324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/quest_hive_archive_node.glb",
+      "bytes": 2375744,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/quest_holdout_barricade.glb",
+      "bytes": 1893316,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/quest_infested_armory_cabinet.glb",
+      "bytes": 1938824,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/quest_kaelen_ledger_desk.glb",
+      "bytes": 2152052,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/quest_lost_probe.glb",
+      "bytes": 2283844,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/quest_martha_warm_pipe_junction.glb",
+      "bytes": 3062412,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/quest_reactor_valves.glb",
+      "bytes": 1954016,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/quest_red_mould_bloom.glb",
+      "bytes": 2607060,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/relay_acoustic_diaphragm.glb",
       "bytes": 2460804,
       "classification": "runtime-required"
@@ -8478,13 +9553,33 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/scatter_broken_drone.glb",
+      "bytes": 1948008,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/scatter_cable_coil.glb",
       "bytes": 280452,
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/scatter_cryo_icicle.glb",
+      "bytes": 2135496,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/scatter_cryo_shards.glb",
+      "bytes": 1912340,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/scatter_hive_eggs.glb",
       "bytes": 2241032,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/scatter_ice_stalagmite.glb",
+      "bytes": 1767612,
       "classification": "runtime-required"
     },
     {
@@ -30659,17 +31754,32 @@
     },
     {
       "path": "cutscenes/engineer-class-intro-poster.jpg",
-      "bytes": 70560,
+      "bytes": 291261,
       "classification": "runtime-required"
     },
     {
       "path": "cutscenes/engineer-class-intro.mp4",
-      "bytes": 2307236,
+      "bytes": 9125478,
       "classification": "runtime-required"
     },
     {
       "path": "cutscenes/engineer-class-intro.webm",
-      "bytes": 4699250,
+      "bytes": 7289830,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/engineer-crash-poster.jpg",
+      "bytes": 298431,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/engineer-crash.mp4",
+      "bytes": 7521944,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/engineer-crash.webm",
+      "bytes": 6911737,
       "classification": "runtime-required"
     },
     {
@@ -30859,27 +31969,47 @@
     },
     {
       "path": "cutscenes/scout-class-intro-poster.jpg",
-      "bytes": 75498,
+      "bytes": 307675,
       "classification": "runtime-required"
     },
     {
       "path": "cutscenes/scout-class-intro.mp4",
-      "bytes": 2468421,
+      "bytes": 9473229,
       "classification": "runtime-required"
     },
     {
       "path": "cutscenes/scout-class-intro.webm",
-      "bytes": 5030596,
+      "bytes": 8104240,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/scout-crash-poster.jpg",
+      "bytes": 247422,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/scout-crash.mp4",
+      "bytes": 8240173,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/scout-crash.webm",
+      "bytes": 7230109,
       "classification": "runtime-required"
     },
     {
       "path": "cutscenes/scout-intro-poster.jpg",
-      "bytes": 64324,
+      "bytes": 232070,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/scout-intro.mp4",
+      "bytes": 7760545,
       "classification": "runtime-required"
     },
     {
       "path": "cutscenes/scout-intro.webm",
-      "bytes": 1483713,
+      "bytes": 6030165,
       "classification": "runtime-required"
     },
     {
@@ -30898,28 +32028,78 @@
       "classification": "runtime-required"
     },
     {
+      "path": "cutscenes/sleep-camp-scout-poster.jpg",
+      "bytes": 268018,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/sleep-camp-scout.mp4",
+      "bytes": 8353401,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/sleep-camp-scout.webm",
+      "bytes": 6166838,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/sleep-cryo-engineer-poster.jpg",
+      "bytes": 318580,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/sleep-cryo-engineer.mp4",
+      "bytes": 11378491,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/sleep-cryo-engineer.webm",
+      "bytes": 8482518,
+      "classification": "runtime-required"
+    },
+    {
       "path": "cutscenes/tank-class-intro-poster.jpg",
-      "bytes": 74024,
+      "bytes": 266877,
       "classification": "runtime-required"
     },
     {
       "path": "cutscenes/tank-class-intro.mp4",
-      "bytes": 2776712,
+      "bytes": 8279137,
       "classification": "runtime-required"
     },
     {
       "path": "cutscenes/tank-class-intro.webm",
-      "bytes": 5377618,
+      "bytes": 6373313,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/tank-crash-poster.jpg",
+      "bytes": 325884,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/tank-crash.mp4",
+      "bytes": 10153242,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/tank-crash.webm",
+      "bytes": 9417366,
       "classification": "runtime-required"
     },
     {
       "path": "cutscenes/tank-intro-poster.jpg",
-      "bytes": 67860,
+      "bytes": 174366,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/tank-intro.mp4",
+      "bytes": 5522823,
       "classification": "runtime-required"
     },
     {
       "path": "cutscenes/tank-intro.webm",
-      "bytes": 1604017,
+      "bytes": 4947726,
       "classification": "runtime-required"
     },
     {
@@ -30938,8 +32118,38 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_amber_resin_fracture_leak.png",
+      "bytes": 1235175,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_armory_spent_brass_scatter.png",
+      "bytes": 1327176,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_armory_spent_brass_scatter1.png",
+      "bytes": 1327176,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_armory_spent_brass_scatter2.png",
+      "bytes": 1086825,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_armory_spent_brass_scatter3.png",
+      "bytes": 1110660,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_barricade_last_stand.png",
       "bytes": 455520,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_battery_acid_sulfur_boil.png",
+      "bytes": 2369733,
       "classification": "runtime-required"
     },
     {
@@ -30973,6 +32183,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_bore_mandible_puncture_drag.png",
+      "bytes": 1367915,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_bullet_holes.png",
       "bytes": 1895762,
       "classification": "runtime-required"
@@ -30983,8 +32198,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_carbon_dust_document_ash.png",
+      "bytes": 1110237,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_cathedral_runic.png",
       "bytes": 561262,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_cauterizer_plasma_splatter_scab.png",
+      "bytes": 1428009,
       "classification": "runtime-required"
     },
     {
@@ -30995,6 +32220,11 @@
     {
       "path": "decal_chitin_cluster.png",
       "bytes": 450908,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_chitin_moult_calcium_bloom.png",
+      "bytes": 959039,
       "classification": "runtime-required"
     },
     {
@@ -31018,8 +32248,23 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_covenant_copper_arcing_burn.png",
+      "bytes": 1234528,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_crayon_wax_floor_graffiti.png",
+      "bytes": 1549489,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_cryo_fracture.png",
       "bytes": 603215,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_cryo_glass_frost_powder_fan.png",
+      "bytes": 2308839,
       "classification": "runtime-required"
     },
     {
@@ -31043,6 +32288,31 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_cultist_wax_runoff_pool.png",
+      "bytes": 1740268,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_datapad_glass_shatter_spray.png",
+      "bytes": 1151864,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_deserted_cockpit_boot_scuff_panic.png",
+      "bytes": 1135832,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_distiller_mineral_scale_runoff.png",
+      "bytes": 1509841,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_dogtag_scraped_rub_halo.png",
+      "bytes": 752108,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_door_wear_apron.png",
       "bytes": 1932992,
       "classification": "runtime-required"
@@ -31060,6 +32330,11 @@
     {
       "path": "decal_door_wear_apron_d.png",
       "bytes": 1842738,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_drone_crash_skid_shrapnel.png",
+      "bytes": 633841,
       "classification": "runtime-required"
     },
     {
@@ -31125,6 +32400,16 @@
     {
       "path": "decal_failed_decon_kit.png",
       "bytes": 441461,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_falling_icicle_impact_patter.png",
+      "bytes": 1104676,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_feeding_slurry_regurgitation_splash.png",
+      "bytes": 1246633,
       "classification": "runtime-required"
     },
     {
@@ -31208,6 +32493,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_glycol_coolant_slick_flooding.png",
+      "bytes": 1291436,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_graffiti_tally_1.png",
       "bytes": 316748,
       "classification": "runtime-required"
@@ -31215,6 +32505,11 @@
     {
       "path": "decal_graffiti_tally_2.png",
       "bytes": 375738,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_grave_spade_excavation_dirt.png",
+      "bytes": 1978039,
       "classification": "runtime-required"
     },
     {
@@ -31238,6 +32533,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_gunpowder_spill_carbon_smear.png",
+      "bytes": 1271347,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_hand_smears_1.png",
       "bytes": 283484,
       "classification": "runtime-required"
@@ -31245,6 +32545,11 @@
     {
       "path": "decal_hand_smears_2.png",
       "bytes": 322009,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_hatchery_mucus_wallowing_pool.png",
+      "bytes": 1561991,
       "classification": "runtime-required"
     },
     {
@@ -31258,8 +32563,43 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_hidden_egg_frost_bleed_seam.png",
+      "bytes": 864176,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_hive_growth.png",
       "bytes": 1031146,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_hive_optic_nerve_puddle.png",
+      "bytes": 1398824,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_holdout_defensive_recoil_scuff.png",
+      "bytes": 986028,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_hybrid_claw_scratch_containment.png",
+      "bytes": 1102539,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_hydro_nutrient_lime_tide.png",
+      "bytes": 1960061,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_impact_radiation_halo.png",
+      "bytes": 1547576,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_iris_sphincter_rub_apron.png",
+      "bytes": 876179,
       "classification": "runtime-required"
     },
     {
@@ -31308,8 +32648,23 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_liquor_spill_evaporation_stain.png",
+      "bytes": 780028,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_maintenance_shrine.png",
       "bytes": 340606,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_melted_lanyard_char_mark.png",
+      "bytes": 1132592,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_memorial_gun_oil_footprint_tally.png",
+      "bytes": 790464,
       "classification": "runtime-required"
     },
     {
@@ -31378,8 +32733,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_prayer_kneeling_wear_crescent.png",
+      "bytes": 1197278,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_probe_capture_skid.png",
       "bytes": 589545,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_probe_crater_scuff_impact.png",
+      "bytes": 1047504,
       "classification": "runtime-required"
     },
     {
@@ -31418,13 +32783,43 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_rations_fingerprint_grime.png",
+      "bytes": 1182751,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_reactor_scorch_flange_leak.png",
+      "bytes": 1201716,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_red_mold_quarantine_edge.png",
       "bytes": 2317595,
       "classification": "runtime-required"
     },
     {
+      "path": "decal_red_mould_spore_crust_ring.png",
+      "bytes": 1306344,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_refusal_cautery_fan.png",
       "bytes": 1180027,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_relay_neural_static_lichen_ring.png",
+      "bytes": 1605675,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_resin_urn_ring_overflow.png",
+      "bytes": 1194996,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_respiratory_exhale_spore_cone.png",
+      "bytes": 1410012,
       "classification": "runtime-required"
     },
     {
@@ -31458,6 +32853,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_shield_impact_gouges_apron.png",
+      "bytes": 1353369,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_sled_tracks.png",
       "bytes": 1525814,
       "classification": "runtime-required"
@@ -31478,6 +32878,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_soldering_flux_droplet_spray.png",
+      "bytes": 1503034,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_spore_growth_patch.png",
       "bytes": 482483,
       "classification": "runtime-required"
@@ -31495,6 +32900,11 @@
     {
       "path": "decal_spore_stain_03.png",
       "bytes": 19593,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_stalagmite_thaw_puddle_rings.png",
+      "bytes": 1729969,
       "classification": "runtime-required"
     },
     {
@@ -31803,8 +33213,28 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_sublimated_frost_paper_outline.png",
+      "bytes": 1779465,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_substation_stencil.png",
       "bytes": 595444,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_sunken_permafrost_grave_heave.png",
+      "bytes": 1969146,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_suture_silk_thread_drool.png",
+      "bytes": 1665056,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_synaptic_discharge_scorched_membrane.png",
+      "bytes": 1018533,
       "classification": "runtime-required"
     },
     {
@@ -31815,6 +33245,11 @@
     {
       "path": "decal_turned_resin_veins_fan.png",
       "bytes": 1127689,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_turret_traverse_ring_swarf.png",
+      "bytes": 1758852,
       "classification": "runtime-required"
     },
     {
@@ -31855,6 +33290,11 @@
     {
       "path": "decal_vine_iron_shadow_2.png",
       "bytes": 138633,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_vitrified_crater_ring.png",
+      "bytes": 1373080,
       "classification": "runtime-required"
     },
     {
@@ -31920,6 +33360,11 @@
     {
       "path": "decal_warm_pipe_body_polish.png",
       "bytes": 1291101,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_warm_pipe_condensate_drip_fan.png",
+      "bytes": 1021346,
       "classification": "runtime-required"
     },
     {
@@ -34433,13 +35878,28 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_34_four_seats_one_survivor_key_v1.mp4",
+      "bytes": 7660765,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_34_four_seats_one_survivor_key_v1.webp",
       "bytes": 87192,
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_35_contraband_sunrise_key_v1.mp4",
+      "bytes": 8971280,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_35_contraband_sunrise_key_v1.webp",
       "bytes": 84126,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_36_we_escaped_together_technically_key_v1.mp4",
+      "bytes": 8606590,
       "classification": "runtime-required"
     },
     {
@@ -34720,6 +36180,26 @@
     {
       "path": "interstitials/motion/int_33_the_cave_was_breathing_motion_v1.webm",
       "bytes": 1133680,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_34_four_seats_one_survivor_motion_v1.webm",
+      "bytes": 6559558,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_35_contraband_sunrise_motion_v1.webm",
+      "bytes": 7211552,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_36_we_escaped_together_technically_motion_v1.webm",
+      "bytes": 6770870,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_val_eternal_hearth_motion_v1.webm",
+      "bytes": 8211717,
       "classification": "runtime-required"
     },
     {

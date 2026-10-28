@@ -4,9 +4,6 @@ Generates docs/planning/missing-world-story-3d-props-and-decals-2026-10-27.md
 and docs/planning/missing-world-story-3d-props-and-decals-2026-10-27.tsv.
 """
 
-import sys
-import os
-
 STYLE_BLOCK = (
     "Darkly sensual, mature biomechanical design in the Hunker Bunker key-art language: "
     "Nordic Jugendstil and National Romantic monumentality, deep round cathedral arches, "

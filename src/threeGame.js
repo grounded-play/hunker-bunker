@@ -519,7 +519,7 @@ import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js';
 import { applyCompressedSprite, bakedKeyedSpriteUrl, isUploadableCompressedSprite, keyedSpriteBakeKey, recordKeyedSprite } from './keyedSpriteBakes.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
-import { applyVoidDepth, setVoidDepthTime } from './voidDepth.js';
+import { applyVoidDepth, applyVoidUplight, setVoidDepthTime } from './voidDepth.js';
 import { chasmLandmarkForm, chasmLandmarkMapEntry, chasmLandmarkYaw, createChasmLandmarkGeometry, createChasmLandmarkMaterial, isChasmLandmarksEnabled, pickChasmLandmarkSites } from './chasmLandmarks.js';
 import { DOOR_LIGHT_POOL, createDoorLightPoolGeometry, createDoorLightPoolMaterial, doorLightPoolMatrices } from './doorLightPools.js';
 import { WALL_LIGHT_SHAPE_FRAGMENT, planWallFootDressing, planWallIcicles, planWallTopDressing, createCornerCutDepthMaterial, createCornerCutPoolGeometry, createCornerCutWallGeometry, isWallAutotileEnabled, patchCornerCutVertexShader, wallCornerCutMask, wallHeightScale } from './wallAutotile.js';
@@ -4837,7 +4837,11 @@ export class ThreeGame {
                     gl_FragColor.rgb *= depthFade * depthFade;
                     `
                 );
+                // The walls darken into the pit, then catch light rising from
+                // far below, so the drop reads as deep, not painted black.
+                applyVoidUplight(shader, biomeKey);
             };
+            dropMat.customProgramCacheKey = () => `hb-canyon-drop-${biomeKey}`;
             this.canyonDropMaterials[biomeKey] = dropMat;
         }
 
