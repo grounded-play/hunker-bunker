@@ -277,3 +277,18 @@ then 5 s (warm caches). The 5.5 s first-frame task on D3D11 is still there.
   (`hostDecided`), refusals are logged (`refused`), the avatar check waits on the local body as a control,
   guest enemy copies are deferred under the intro, and `intro:*` perf phases were added. Microtxn report
   stall fixed in `2d9e8621` (relay `candidate-2d9e8621`, not deployed).
+- 2026-10-28 14:15–14:28 replay (Deck host TANK + PC guest ENGINEER, co-op, build `a7febf7e`). Logs:
+  `hunker-bunker-session-2026-10-28T21-26-52-078Z-mvsmk99w-2y12.json` (Deck) and
+  `…T21-28-23-194Z-mvsmm7nx-66me.json` (PC). Damage and visibility now hold. Routed bite at 14:22:33 was
+  `applied: true`, both took hits, and `remote-avatar-render-ok` on the Deck. `relay-features` still reports
+  `missing: ["deployGate"]`, so `candidate-9227d03a` is not deployed. **Break:** the Deck went down at 14:26:02
+  (`boss_cybersnail`, hp 0 → `enterDownedState`). The PC pressed E beside it at 14:26:06 (picked up a field
+  weapon) and 14:26:25 (locked Foundry). Revive was mouse-click-only (`tryInteractWithRevivePointer`), so it
+  never came, and the downed Deck had no input until it quit to settings at 14:26:42. Nothing logged the down.
+  Fixed in `fed9b20f`: E / pad revive (priority interact candidate, 2.5 m), a localized "how to revive" toast,
+  `player-downed` / `remote-player-downed` / `revive-sent` / `*-revived` log lines, and the `remote.isDowned`
+  typo. **Also seen:** after the boss kills, both machines compiled new shader programs mid-run (PC 181 → 195,
+  Deck 166 → 168). The PC had renders of 496 ms and 860 ms at 14:26:13–14:26:23, and both hit
+  `graphics-auto-nothing-left` (PC 16.9 fps, Deck 10.2 fps). Boss arrival at 14:25:32 added ~37 programs on
+  both. Cause not yet traced (boss death burst / corpse / shell materials are candidates). **Open:** no
+  bleed-out or give-up for a downed player whose squadmate is far away (owner decision).
