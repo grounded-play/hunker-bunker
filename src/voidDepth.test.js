@@ -68,6 +68,6 @@ describe('applyVoidUplight', () => {
     });
 
     it('lights the void floor enough to see', () => {
-        expect(VOID_DEPTH.ambient + VOID_DEPTH.peak).toBeGreaterThan(0.3);
+        expect(VOID_DEPTH.ambient + VOID_DEPTH.peak).toBeGreaterThan(0.25);
     });
 });

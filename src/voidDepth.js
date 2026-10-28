@@ -17,9 +17,10 @@ export const VOID_DEPTH = Object.freeze({
     floorDepth: 14,
     /** Base glow everywhere down there, and the extra at the drifting light's
      * peaks. At 0.015/0.09 it never cleared about 3% and pits read as black
-     * (owner, 2026-10-28: "imply things are way down"). */
-    ambient: 0.07,
-    peak: 0.32,
+     * (owner, 2026-10-28: "imply things are way down"); the peaks are soft,
+     * wide pools so it reads as distant light, not a near lava floor. */
+    ambient: 0.06,
+    peak: 0.24,
     /** Exponential fade per metre of ray travelled below the rim. */
     fade: 0.028
 });
@@ -99,7 +100,7 @@ export function applyVoidDepth(material, { shipWorldPos, range }) {
                 vec2 hbQ = hbDeep.xz * 0.8;
                 float hbN = sin( hbQ.x + uVoidTime * 0.13 + sin( hbQ.y * 1.7 ) ) * sin( hbQ.y * 1.3 - uVoidTime * 0.09 + sin( hbQ.x * 1.1 ) );
                 hbN += 0.5 * sin( hbQ.x * 2.3 + hbQ.y * 1.9 + uVoidTime * 0.21 );
-                float hbGlow = smoothstep( 0.9, 1.4, hbN );
+                float hbGlow = smoothstep( 0.35, 1.6, hbN );
                 float hbDist = length( vVoidWorldPos.xz - uShipWorldPos );
                 vec3 hbTint = mix( vec3( 0.55, 0.2, 0.06 ), vec3( 0.08, 0.38, 0.5 ), smoothstep( ${cryoStart.toFixed(1)}, ${cryoEnd.toFixed(1)}, hbDist ) );
                 hbTint = mix( hbTint, vec3( 0.22, 0.5, 0.12 ), smoothstep( ${bioStart.toFixed(1)}, ${bioEnd.toFixed(1)}, hbDist ) );
