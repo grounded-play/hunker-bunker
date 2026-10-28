@@ -504,8 +504,8 @@ against the live tracker before closing.
 | Ticket/theme | Plan disposition | Closure evidence |
 | --- | --- | --- |
 | `#52` performance | Keep open | Packaged fixed-route Deck and PC thresholds pass after the deployment fix. |
-| `#53` co-op/PvP acceptance | Keep open | Required PvE and PvP route rows complete on two real devices/accounts. |
-| `#51` Deck/controller journey | Keep open | Controller-only Title → Sector 0 → camp → extraction → debrief passes at 1280×800. |
+| `#51` PvP acceptance | Keep open | Armed deployment, proportional damage, results, rematch, and return-to-lobby complete on two real devices/accounts. |
+| `#53` Deck/controller journey | Keep open | Controller-only Title → Sector 0 → camp → extraction → debrief passes at 1280×800. |
 | `#85` / `#77` mission/companion trust | Close only reproduced findings individually | Objective ownership is unique; correction metrics and paired video show acceptable remote motion. |
 | `#45` broader release readiness | Keep open as umbrella | All subordinate evidence is attached; no external gate is represented as locally complete. |
 | Weapon pickup orientation | Candidate for closure | Same packaged world pickup lies correctly and remains interactable on flat and uneven floors. |
@@ -603,3 +603,18 @@ Checked without a code change:
 Not started here, needing hardware or a free GPU: the CPU profile of the
 deployment stall and dense rooms (§7 P0-B steps 2–6; the GPU was busy with the
 overnight cinematic render), remote interpolation metrics, and every `[2P]` row.
+
+### 2026-10-28 continuation
+
+- **P0-B, exact wall-query broad phase:** cached padded bounds reject an
+  unreachable instanced wall batch before examining its individual walls.
+  Short rays beginning inside a batch remain eligible; destruction, movement,
+  rebuilds, layers, and native hit ordering are preserved. Five regression
+  tests compare hits against Three.js, including nine chunks and axis-aligned
+  rays. The repeatable CPU-only workload in
+  [`scripts/benchmark-wall-raycasts.mjs`](../../scripts/benchmark-wall-raycasts.mjs)
+  (2,304 walls, 1,000 rays, median of seven rounds) fell from **23.62 ms to
+  16.56 ms**, with the same 26,502 accumulated hits. This is a **30% query-cost
+  reduction**, not a claim about whole-game FPS or hardware acceptance.
+- Corrected the ticket mapping: `#51` is PvP; `#53` is the physical Deck
+  journey. No acceptance marks or ticket states changed.
