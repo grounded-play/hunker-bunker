@@ -8,48 +8,26 @@
  *   debug museum's "2D -> 3D REVIEW" row shows each sprite beside each of its
  *   candidates, so the decision is made by eye, not by name.
  *
- * Resolved by new art (2026-10-05 gap batch, own GLBs now): cave spores, spore
- * colony, lichen, wounded hive wall.
+ * Resolved by new art (2026-10-05 gap batch & 2026-10-27 story batch, own GLBs
+ * now): cave spores, spore colony, lichen, wounded hive wall, all camp
+ * signature/service props, hive site props, and ruptured coolant pump.
  *
- * Every camp and hive signature-prop sprite (.jpg) is a ~10 KB placeholder
- * tile (dashed box + initials), so for those any fitting model is an upgrade.
- *
- * `site` says which spawn path draws the type. Territory rooms spawn camp and
- * hive signature/service types as room props, which an alias covers; the site
- * sprites camp.js / hiveSite.js build name the same type as their spec's
- * `model`, which syncSiteProps3d resolves through the same alias.
+ * `site` says which spawn path draws the type.
  */
 export const WORLD_3D_CANDIDATES = Object.freeze([
     { type: 'prop_fusion_generator', sprite: '/prop_fusion_generator.png', site: 'scatter', status: 'wired', candidates: ['fusion_generator'] },
     { type: 'prop_camp_cookfire_doused', sprite: '/prop_camp_cookfire_doused.png', site: 'scatter', status: 'wired', candidates: ['prop_camp_cookfire'] },
-    { type: 'prop_camp_vesper_turret', sprite: '/prop_camp_vesper_turret.jpg', site: 'scatter', status: 'wired', candidates: ['prop_base_defense_turret'] },
     { type: 'scatter_camp_supplies', sprite: '/scatter_camp_supplies.png', site: 'scatter', status: 'wired', candidates: ['prop_camp_crate'] },
 
     // Looked like name matches, were not: the sprite is a console with a
     // junction box bolted on, and the vent is a purple alien bloom.
     { type: 'prop_cyber_junction', sprite: '/prop_cyber_junction.png', site: 'scatter', status: 'wired', candidates: ['prop_diagnostic_console', 'prop_terminal_ruptured', 'prop_conduit_junction_box'] },
-    { type: 'prop_alien_respiratory_vent', sprite: '/prop_alien_respiratory_vent.png', site: 'scatter', status: 'wired', candidates: ['prop_biomech_sphincter_hatch_vent', 'prop_biomech_respirator'] },
     { type: 'prop_biomech_pillar_left', sprite: '/prop_biomech_pillar_left.png', site: 'scatter', status: 'wired', candidates: ['prop_biomech_arch', 'arch_pillar_buttress_01'] },
     { type: 'prop_biomech_pillar_right', sprite: '/prop_biomech_pillar_right.png', site: 'scatter', status: 'wired', candidates: ['prop_biomech_arch', 'arch_pillar_buttress_02'] },
     { type: 'scatter_bio_pod', sprite: '/scatter_bio_pod.png', site: 'scatter', status: 'wired', candidates: ['prop_biomech_incubator'] },
     { type: 'prop_cryo_sleep_pod', sprite: '/prop_cryo_sleep_pod.png', site: 'scatter', status: 'wired', candidates: ['prop_flesh_steel_coffin', 'prop_icey_thermal_pod'] },
     { type: 'prop_engineering_bench', sprite: '/prop_engineering_bench.png', site: 'scatter', status: 'wired', candidates: ['prop_fabricator_workstation', 'prop_maintenance_tool_cart', 'prop_surgical_cart'] },
-    { type: 'prop_ruptured_coolant_pump', sprite: '/prop_ruptured_coolant_pump.png', site: 'scatter', status: 'wired', candidates: ['prop_icey_frost_manifold', 'prop_pipe_rupture', 'prop_o2_filter_vat'] },
     { type: 'lore_terminal', sprite: '/console.png', site: 'scatter', status: 'wired', candidates: ['prop_terminal_ruptured', 'prop_liturgical_terminal_lectern'] },
     { type: 'scatter_horizon_black_box', sprite: '/drop_survey_probe.png', site: 'scatter', status: 'wired', candidates: ['prop_camp_meridian_radio'] },
-    { type: 'prop_hydraulic_piston_actuator', sprite: null, site: 'room-anchor', status: 'wired', candidates: ['prop_exosuit_docking_gantry'] },
-
-    { type: 'prop_hive_chitin_hatchery', sprite: '/prop_hive_chitin_hatchery.jpg', site: 'hive', status: 'wired', candidates: ['prop_biomech_incubator'] },
-    { type: 'prop_hive_synaptic_web', sprite: '/prop_hive_synaptic_web.jpg', site: 'hive', status: 'wired', candidates: ['prop_biomech_neural_synapse'] },
-    { type: 'prop_hive_suture_organ', sprite: '/prop_hive_suture_organ.jpg', site: 'hive', status: 'wired', candidates: ['prop_flesh_steel_inhaler'] },
-    { type: 'prop_hive_wound_cauterizer', sprite: '/prop_hive_wound_cauterizer.jpg', site: 'hive', status: 'wired', candidates: ['prop_biomech_triage_cradle'] },
-    { type: 'prop_hive_relay_antenna', sprite: '/prop_hive_relay_antenna.jpg', site: 'hive', status: 'wired', candidates: ['prop_vertebral_cable_riser'] },
-
-    { type: 'prop_camp_tallow_resin_urn', sprite: '/prop_camp_tallow_resin_urn.jpg', site: 'camp', status: 'wired', candidates: ['prop_fungal_resin_basin'] },
-    { type: 'prop_camp_tallow_spore_trays', sprite: '/prop_camp_tallow_spore_trays.jpg', site: 'camp', status: 'wired', candidates: ['prop_fungal_mycelium_loom'] },
-    { type: 'prop_camp_tallow_still', sprite: '/prop_camp_tallow_still.jpg', site: 'camp', status: 'wired', candidates: ['prop_pipe_organ_heat_exchanger'] },
-    { type: 'prop_camp_vesper_ammo_press', sprite: '/prop_camp_vesper_ammo_press.jpg', site: 'camp', status: 'wired', candidates: ['prop_fabricator_workstation'] },
-    { type: 'prop_camp_vesper_shield_rack', sprite: '/prop_camp_vesper_shield_rack.jpg', site: 'camp', status: 'wired', candidates: ['prop_security_barricade'] },
-    { type: 'prop_camp_meridian_repair_rig', sprite: '/prop_camp_meridian_repair_rig.jpg', site: 'camp', status: 'wired', candidates: ['prop_maintenance_tool_cart'] },
-    { type: 'prop_camp_meridian_battery_bank', sprite: '/prop_camp_meridian_battery_bank.jpg', site: 'camp', status: 'wired', candidates: ['prop_oxygen_bottle_cascade_rack'] }
+    { type: 'prop_hydraulic_piston_actuator', sprite: null, site: 'room-anchor', status: 'wired', candidates: ['prop_exosuit_docking_gantry'] }
 ]);
