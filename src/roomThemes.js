@@ -192,7 +192,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         ],
         smallProps: ['prop_cave_spores', 'prop_cave_webs', 'decal_tallow_symbol', 'fixture_sconce_vine'],
         ambientProps: LIVED_IN_DECALS.bio,
-        rareProps: ['prop_fungal_tendril_altar'],
+        // The guillotine door's slab, fallen out of its frame (unplaced until 2026-10-28).
+        rareProps: ['prop_fungal_tendril_altar', 'door_arch_guillotine_slab'],
         encounterProfile: 'bio-standard'
     },
     {
@@ -366,7 +367,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         largeProps: ['prop_camp_crates', 'prop_votive_candle_shrine', 'arch_deco_archway_grand_04', 'arch_pillar_buttress_03', 'corp_biometric_wall_safe', 'evac_cargo_ballast_scale'],
         smallProps: ['scatter_bolts', 'decal_hazard_stripes', 'decal_meridian_stencil'],
         ambientProps: LIVED_IN_DECALS.bunker,
-        rareProps: ['scatter_horizon_black_box', 'arch_window_stained', 'arch_niche_shrine', 'prop_shrine_plinth_broken', 'prop_flesh_steel_coffin'],
+        // Tina's decoy beacon still lures salvagers into caches (unplaced until 2026-10-28).
+        rareProps: ['scatter_horizon_black_box', 'arch_window_stained', 'arch_niche_shrine', 'prop_shrine_plinth_broken', 'prop_flesh_steel_coffin', 'tina_secret_distress_beacon'],
         encounterProfile: 'safe'
     },
     {
@@ -389,7 +391,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         ],
         smallProps: ['prop_overhead_cage_fluorescent', 'scatter_bolts', 'scatter_cable_coil', 'fixture_sconce_vine'],
         ambientProps: LIVED_IN_DECALS.bio,
-        rareProps: ['prop_corporate_saint_reliquary', 'prop_votive_candle_shrine'],
+        // The assembled guillotine door stands as a working gate (unplaced until 2026-10-28).
+        rareProps: ['prop_corporate_saint_reliquary', 'prop_votive_candle_shrine', 'door_arch_guillotine_assembled'],
         encounterProfile: 'security'
     },
     {

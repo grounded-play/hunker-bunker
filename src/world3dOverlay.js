@@ -827,7 +827,6 @@ export const WORLD_3D_MODEL_ALIASES = Object.freeze({
     // on a look live in src/data/world3dCandidates.js.
     prop_fusion_generator: 'fusion_generator',
     prop_camp_cookfire_doused: 'prop_camp_cookfire',
-    prop_camp_vesper_turret: 'prop_base_defense_turret',
     scatter_camp_supplies: 'prop_camp_crate',
     // Session 2026-10-06 (PC + Deck): still flat in rooms. Matches the debug
     // museum review verdicts in docs/reports/2d-to-3d-gap-audit-2026-10-05.md.
@@ -836,28 +835,15 @@ export const WORLD_3D_MODEL_ALIASES = Object.freeze({
     prop_biomech_pillar_right: 'prop_biomech_arch',
     prop_cryo_sleep_pod: 'prop_flesh_steel_coffin',
     scatter_bio_pod: 'prop_biomech_incubator',
-    prop_alien_respiratory_vent: 'prop_biomech_sphincter_hatch_vent',
     prop_engineering_bench: 'prop_fabricator_workstation',
-    prop_ruptured_coolant_pump: 'prop_icey_frost_manifold',
     // Authored interaction ids keep their gameplay meaning while reviewed
     // stand-ins remove the last flat/missing anchors from furnished rooms.
     lore_terminal: 'prop_terminal_ruptured',
     scatter_horizon_black_box: 'prop_camp_meridian_radio',
     prop_hydraulic_piston_actuator: 'prop_exosuit_docking_gantry',
-    // Camp and hive signature/service props: their sprites are placeholder
-    // tiles (dashed box + initials), so any fitting model is an upgrade.
-    prop_camp_meridian_repair_rig: 'prop_maintenance_tool_cart',
-    prop_camp_meridian_battery_bank: 'prop_oxygen_bottle_cascade_rack',
-    prop_camp_tallow_still: 'prop_pipe_organ_heat_exchanger',
-    prop_camp_tallow_spore_trays: 'prop_fungal_mycelium_loom',
-    prop_camp_tallow_resin_urn: 'prop_fungal_resin_basin',
-    prop_camp_vesper_ammo_press: 'prop_fabricator_workstation',
-    prop_camp_vesper_shield_rack: 'prop_security_barricade',
-    prop_hive_suture_organ: 'prop_flesh_steel_inhaler',
-    prop_hive_wound_cauterizer: 'prop_biomech_triage_cradle',
-    prop_hive_relay_antenna: 'prop_vertebral_cable_riser',
-    prop_hive_synaptic_web: 'prop_biomech_neural_synapse',
-    prop_hive_chitin_hatchery: 'prop_biomech_incubator'
+    // Camp and hive signature/service props used to borrow models here; since
+    // 2026-10-27 each has its own (src/data/missingWorldStory50.js). Never alias
+    // a type that has its own model: the borrowed one would hide it.
 });
 
 export function world3dModelTypeFor(type) {

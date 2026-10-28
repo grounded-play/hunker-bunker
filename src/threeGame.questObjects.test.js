@@ -41,10 +41,12 @@ function attachFakeModel(sprite) {
 }
 
 describe('quest objects in the world', () => {
-    it("wears its quest's stand-in model and carries a beacon in the quest's colour", () => {
+    it("wears its quest's own model and carries a beacon in the quest's colour", () => {
         const { game, group, camp } = makeGame('reactor_venting');
         const sprite = game.spawnCampQuestMarkerProp(camp, { type: 'quest_prop', x: 3, z: 3 });
-        expect(sprite.userData.world3dModelType).toBe('prop_valve_wheel_fused');
+        // The quest's dedicated model (2026-10-27); the valve wheel it used to
+        // borrow keeps its own placements in room dressing.
+        expect(sprite.userData.world3dModelType).toBe('quest_reactor_valves');
         const beacon = sprite.userData.questBeacon;
         expect(beacon?.parent).toBe(group);
         expect(beacon.position.x).toBe(3);
@@ -75,7 +77,7 @@ describe('quest objects in the world', () => {
     it('marks a kill quest with a landmark that never counts as a target', () => {
         const { game, group, camp } = makeGame('armory_breach', 'kill');
         const landmark = game.spawnCampQuestLandmark(camp, { x: 5, z: 5 });
-        expect(landmark.userData.world3dModelType).toBe('prop_oxygen_bottle_cascade_rack');
+        expect(landmark.userData.world3dModelType).toBe('quest_infested_armory_cabinet');
         expect(game._activeCampQuest.props).not.toContain(landmark);
         expect(game._activeCampQuest.landmarks).toContain(landmark);
         attachFakeModel(landmark);

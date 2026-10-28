@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { LEGACY_DECAL_LAYERS } from './data/legacyDecalLayers.js';
 import { WORLD_EXPANSION_80_SPECS } from './data/worldExpansion80.js';
+import { MISSING_WORLD_STORY_50_SPECS } from './data/missingWorldStory50.js';
 import { DECAL_WORLD_SCALES, DRESSING_KITS, ROLE_DRESSING, dressingKitFor } from './roomDressingKits.js';
 import { getSurfaceAssetProfile } from './surfaceAssetRegistry.js';
 
@@ -13,7 +14,7 @@ describe('total room decal usage', () => {
         for (const kit of [...Object.values(DRESSING_KITS), ...Object.values(ROLE_DRESSING)]) {
             for (const type of [...(kit.wallDecals ?? []), ...(kit.floorDecals ?? [])]) used.add(type);
         }
-        for (const spec of WORLD_EXPANSION_80_SPECS) {
+        for (const spec of [...WORLD_EXPANSION_80_SPECS, ...MISSING_WORLD_STORY_50_SPECS]) {
             const kit = dressingKitFor(spec.theme, spec.role);
             for (const type of [...kit.wallDecals, ...kit.floorDecals]) used.add(type);
         }

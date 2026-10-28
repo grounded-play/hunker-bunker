@@ -16,10 +16,12 @@ export { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y, SHOWROOM_CHUNK_KEY } from './debugW
 import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugWorldLayout.js';
 import { createGltfLoader } from './gltfLoaderFactory.js';
 import { WORLD_EXPANSION_80_IDS } from './data/worldExpansion80.js';
+import { MISSING_WORLD_STORY_50_IDS } from './data/missingWorldStory50.js';
 
 // Categorized catalog for exhibition
 export const SHOWROOM_CATEGORIES = Object.freeze({
     WORLD_EXPANSION_80: WORLD_EXPANSION_80_IDS,
+    WORLD_STORY_50: MISSING_WORLD_STORY_50_IDS,
     // Kenney modular kits, restyled to the game palette. Exhibited so the
     // museum coverage guard stays meaningful -- a registered model nobody can
     // look at is a model nobody notices is broken.

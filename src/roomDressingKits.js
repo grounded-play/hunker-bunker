@@ -16,11 +16,22 @@
  */
 import { WALL_FIXTURE_ELEVATIONS } from './modelPresentationRegistry.js';
 import { WORLD_EXPANSION_80_SPECS } from './data/worldExpansion80.js';
+import { MISSING_WORLD_STORY_50_SPECS, missingWorldStory50DecalScale } from './data/missingWorldStory50.js';
 
 const WORLD80_BY_THEME = WORLD_EXPANSION_80_SPECS.reduce((groups, spec) => {
     (groups[spec.theme] ??= []).push(spec);
     return groups;
 }, {});
+
+// The 2026-10-27 cohort (src/data/missingWorldStory50.js): every decal goes to
+// its theme; models dress the theme only when no other system places them.
+const STORY50_BY_THEME = MISSING_WORLD_STORY_50_SPECS.reduce((groups, spec) => {
+    (groups[spec.theme] ??= []).push(spec);
+    return groups;
+}, {});
+const STORY50_DECAL_SCALES = Object.fromEntries(MISSING_WORLD_STORY_50_SPECS.flatMap((spec) => (
+    spec.decals.map((decal) => [decal, missingWorldStory50DecalScale(spec.decalSize)])
+)));
 
 const WORLD80_DECAL_SCALES = Object.fromEntries(WORLD_EXPANSION_80_SPECS.map((spec) => [
     spec.decal,
@@ -388,7 +399,9 @@ export const DECAL_WORLD_SCALES = Object.freeze({
     decal_vesper_kill_tally: Object.freeze({ min: 0.50, max: 0.80 }),
 
     // World Expansion 80 story traces (2026-10-16)
-    ...WORLD80_DECAL_SCALES
+    ...WORLD80_DECAL_SCALES,
+    // World-story 50 companions (2026-10-27), at their authored sizes
+    ...STORY50_DECAL_SCALES
 });
 
 export function decalWorldScale(type, random) {
@@ -430,6 +443,13 @@ export function dressingKitFor(themeId, role) {
         else merged.corners.push(spec.id);
         const decalLayer = spec.placement === 'wall' || spec.placement === 'ceiling' ? 'wallDecals' : 'floorDecals';
         merged[decalLayer].push(spec.decal);
+    }
+    for (const spec of STORY50_BY_THEME[String(themeId ?? '')] ?? []) {
+        if (spec.placedBy === 'dressing') {
+            if (spec.placement === 'wall' || spec.placement === 'ceiling') merged.wallProps.push(spec.id);
+            else merged.corners.push(spec.id);
+        }
+        merged[spec.decalPlane === 'wall' ? 'wallDecals' : 'floorDecals'].push(...spec.decals);
     }
     for (const layer of Object.keys(merged)) merged[layer] = [...new Set(merged[layer])];
     return merged;

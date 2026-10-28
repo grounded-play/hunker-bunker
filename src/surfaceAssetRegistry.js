@@ -1,5 +1,6 @@
 import { DRESSING_KITS, ROLE_DRESSING } from './roomDressingKits.js';
 import { WORLD_EXPANSION_80_SPECS } from './data/worldExpansion80.js';
+import { MISSING_WORLD_STORY_50_SPECS } from './data/missingWorldStory50.js';
 
 export const SURFACE_ASSET_PLACEMENT = Object.freeze({
     FLOOR: 'floor',
@@ -33,6 +34,9 @@ const wallTypes = collectLayerTypes('wallDecals');
 const floorTypes = collectLayerTypes('floorDecals');
 for (const type of world80WallDecals) wallTypes.add(type);
 for (const type of world80FloorDecals) floorTypes.add(type);
+for (const spec of MISSING_WORLD_STORY_50_SPECS) {
+    for (const type of spec.decals) (spec.decalPlane === 'wall' ? wallTypes : floorTypes).add(type);
+}
 const profiles = {};
 
 for (const type of new Set([...wallTypes, ...floorTypes])) {

@@ -66,7 +66,9 @@ export const CAMP_DRESSING_MODELS = Object.freeze({
         // the grid drum Kaelen shows on the first meeting (S-1) and the seal
         // both palms sign for the Grid Covenant (S-3).
         { type: 'meridian_logic_core_drum', x: -1.2, z: 3.2, yaw: 0.3 },
-        { type: 'meridian_grid_covenant_seal', x: 1.4, z: -3.4, yaw: -0.4 }
+        { type: 'meridian_grid_covenant_seal', x: 1.4, z: -3.4, yaw: -0.4 },
+        // Fresh grave on the back perimeter (world-story 50, 2026-10-27).
+        { type: 'prop_camp_grave_fresh', x: -2.0, z: 5.4, yaw: 0.1 }
     ]),
     camp_tallow: Object.freeze([
         { type: 'prop_fungal_resin_basin', x: -3.0, z: 2.6, yaw: 0.2 },
@@ -89,7 +91,10 @@ export const CAMP_DRESSING_MODELS = Object.freeze({
         // chair and devotion tree every camp shares.
         { type: 'life_meat_smoking_rack', x: -5.9, z: 0.6, yaw: Math.PI / 2 },
         { type: 'life_barber_chair', x: 5.8, z: -0.7, yaw: -Math.PI / 2 },
-        { type: 'life_devotion_tree', x: 0.1, z: -5.9, yaw: 0 }
+        { type: 'life_devotion_tree', x: 0.1, z: -5.9, yaw: 0 },
+        // Tallow buries its own: a fresh mound and an old sunken grave (2026-10-27).
+        { type: 'prop_camp_grave_fresh', x: -1.9, z: 5.3, yaw: 0.1 },
+        { type: 'prop_camp_grave_old', x: 2.1, z: 5.3, yaw: -0.15 }
     ]),
     camp_vesper: Object.freeze([
         { type: 'prop_base_defense_turret', x: -3.2, z: -2.6, yaw: 0.9 },
@@ -111,7 +116,9 @@ export const CAMP_DRESSING_MODELS = Object.freeze({
         // chair and devotion tree every camp shares.
         { type: 'life_training_dummy', x: -5.9, z: 0.6, yaw: Math.PI / 2 },
         { type: 'life_barber_chair', x: 5.8, z: -0.7, yaw: -Math.PI / 2 },
-        { type: 'life_devotion_tree', x: 0.1, z: -5.9, yaw: 0 }
+        { type: 'life_devotion_tree', x: 0.1, z: -5.9, yaw: 0 },
+        // Vesper keeps its dead on the roster, and in the ground (2026-10-27).
+        { type: 'prop_camp_grave_fresh', x: -1.9, z: 5.3, yaw: -0.1 }
     ])
 });
 

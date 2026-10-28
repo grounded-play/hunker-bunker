@@ -4,7 +4,7 @@ import { WORLD_3D_MODELS } from './world3dOverlay.js';
 import { ROOM_THEME_CATALOG } from './roomThemes.js';
 import { PROP_VARIANT_GROUPS } from './propVariants.js';
 import { PROP_INTERACTION_SPECS } from './propInteractions.js';
-import { CAMP_PROP_MODELS, CAMP_DRESSING_MODELS } from './camp.js';
+import { CAMP_PROP_MODELS, CAMP_DRESSING_MODELS, CAMP_SIGNATURE_PROPS } from './camp.js';
 import { HIVE_PROP_MODELS, HIVE_SIGNATURE_PROPS } from './hiveSite.js';
 
 const SPECIAL_SET_PIECE_PROPS = Object.freeze([
@@ -51,6 +51,8 @@ function themedPropTypes() {
     // Camps and hives place these themselves (camp.js / hiveSite.js builders).
     for (const type of [...Object.values(CAMP_PROP_MODELS), ...Object.values(HIVE_PROP_MODELS)]) types.add(type);
     for (const specs of Object.values(CAMP_DRESSING_MODELS)) for (const spec of specs) types.add(spec.type);
+    // Each camp's signature and service props (camp.js CAMP_SIGNATURE_PROPS).
+    for (const specs of Object.values(CAMP_SIGNATURE_PROPS)) for (const spec of specs) if (spec.model) types.add(spec.model);
     for (const specs of Object.values(HIVE_SIGNATURE_PROPS)) for (const spec of specs) if (spec.model) types.add(spec.model);
     return types;
 }
