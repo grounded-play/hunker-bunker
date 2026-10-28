@@ -14,8 +14,12 @@ describe('MatureContentAudit', () => {
     it('lists only categories the game contains', () => {
         const ids = MATURE_CONTENT_MANIFEST.map((m) => m.id);
         const base = ['sensual_storylines_romance', 'parasite_symbiosis', 'queen_subjugation', 'self_annihilation', 'combat_violence'];
-        // The grindhouse cut is listed exactly when one of its clips has shipped.
-        expect(ids).toEqual(SHIPPED_MOTION_CLIPS.size ? [...base, 'explicit_cutscenes'] : base);
+        // The grindhouse cut and the class openings are listed exactly when
+        // one of their clips has shipped.
+        const shipped = [...SHIPPED_MOTION_CLIPS];
+        const grindhouse = shipped.some((id) => !id.startsWith('opening-')) ? ['explicit_cutscenes'] : [];
+        const openings = shipped.some((id) => id.startsWith('opening-')) ? ['opening_nudity'] : [];
+        expect(ids).toEqual([...base, ...grindhouse, ...openings]);
         // Valve review 2026-09: these two existed only in this gallery.
         expect(ids).not.toContain('veiled_nudity');
         expect(ids).not.toContain('survival_economy_eroticism');

@@ -16,6 +16,7 @@ import { AudioManager } from './src/audio.js';
 import { assetUrl } from './src/assetUrl.js';
 import { debugLog } from './src/debugConsole.js';
 import { installWebglContextWatch, isCanvasContextLost, replaceLostCanvas } from './src/webglContextWatch.js';
+import { SHIPPED_MOTION_CLIPS } from './src/cinematics/shippedMotionClips.js';
 import { captureMenuVisibilitySnapshot, describeOverlayTransition } from './src/menuVisibility.js';
 import { selectReticleState, resolveReticlePlacement, parseWeaponBlockReason, targetFromCursorClasses, isWeaponDry, diffReticleTelemetry } from './src/reticleState.js';
 import { presentationTelemetry, PRESENTATION_EVENTS } from './src/presentationTelemetry.js';
@@ -8481,6 +8482,13 @@ const CLASS_INTRO_WEBM_BASENAMES = {
     ENGINEER: 'engineer-intro'
 };
 
+// The opening's third shot, the crash (scripts/cinematics/opening-shots.json),
+// follows the flight once that class's take is live.
+function classCrashBase(playerType) {
+    const cls = String(playerType ?? 'SCOUT').toLowerCase();
+    return SHIPPED_MOTION_CLIPS.has(`opening-crash-${cls}`) ? `${cls}-crash` : null;
+}
+
 const cutsceneImagePreloadCache = new Map();
 const cutsceneVideoPreloadCache = new Map();
 
@@ -8585,13 +8593,14 @@ function warmClassIntroMedia(playerType = 'SCOUT') {
     const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
     warmCutsceneVideo(charBase);
     warmCutsceneVideo(webmBase);
+    warmCutsceneVideo(classCrashBase(playerType));
 }
 
 function playClassIntroSequence(playerType = 'SCOUT') {
     const charBase = CLASS_CHARACTER_INTRO_BASENAMES[playerType] ?? CLASS_CHARACTER_INTRO_BASENAMES.SCOUT;
     const launchBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
     const loadoutBases = loadoutMicroclipBases(window.loadout, playerType);
-    const videoSequence = [...loadoutBases, charBase, launchBase];
+    const videoSequence = [...loadoutBases, charBase, launchBase, classCrashBase(playerType)].filter(Boolean);
     warmClassIntroMedia(playerType);
     loadoutBases.forEach(warmCutsceneVideo);
     window.AudioManager?.unlock?.();

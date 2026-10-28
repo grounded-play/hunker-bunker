@@ -28,6 +28,11 @@ export const REVIEWER_LOG_LETTERS = Object.freeze({
     }
 });
 
+// The class openings ship apart from the grindhouse cut (side stories, cards,
+// sleep films) and show less, so the guide counts them separately.
+const OPENING_CLIPS = [...SHIPPED_MOTION_CLIPS].filter((id) => id.startsWith('opening-'));
+const GRINDHOUSE_CLIPS = [...SHIPPED_MOTION_CLIPS].filter((id) => !id.startsWith('opening-'));
+
 export const MATURE_CONTENT_MANIFEST = Object.freeze([
     {
         id: 'sensual_storylines_romance',
@@ -35,7 +40,7 @@ export const MATURE_CONTENT_MANIFEST = Object.freeze([
         rating: 'Adult / Mature (18+) Romance',
         description: 'Interactive branching dialogue trees with camp leaders and entities featuring intense physical and emotional intimacy, thermal shelter body heat, seductive touch, erotic bio-link synchronization, and sensual spore massages.',
         tags: ['Erotic Sci-Fi', 'Sensual Choices', 'Camp Romance', 'Intimate Touch', 'Adult Themes'],
-        inPlay: `${SHIPPED_MOTION_CLIPS.size ? 'Text dialogue with still artwork; the side-story cutscenes are explicit (see Explicit Sex & Graphic Gore in Cutscenes).' : 'Text dialogue with still artwork; non-explicit, no nudity is depicted.'} In play: talk to Sister Martha at Camp Tallow (also Briggs at Camp Vesper, Kaelen at Camp Meridian, Aria at hive relays, Dr. Nahl at the bio-lab).`,
+        inPlay: `${GRINDHOUSE_CLIPS.length ? 'Text dialogue with still artwork; the side-story cutscenes are explicit (see Explicit Sex & Graphic Gore in Cutscenes).' : 'Text dialogue with still artwork; non-explicit, no nudity is depicted.'} In play: talk to Sister Martha at Camp Tallow (also Briggs at Camp Vesper, Kaelen at Camp Meridian, Aria at hive relays, Dr. Nahl at the bio-lab).`,
         dialogueTrees: [
             { id: 'sister_val', label: '🩸 SISTER MARTHA (TALLOW FLESH COMMUNION)' },
             { id: 'commander_briggs', label: '🛡️ BRIGGS (VESPER COMBAT ADRENALINE)' },
@@ -87,13 +92,21 @@ export const MATURE_CONTENT_MANIFEST = Object.freeze([
     },
     // Listed only once a grindhouse cut has shipped, so the guide never
     // describes content the build doesn't contain (Valve review 2026-09).
-    ...(SHIPPED_MOTION_CLIPS.size ? [{
+    ...(GRINDHOUSE_CLIPS.length ? [{
         id: 'explicit_cutscenes',
         title: 'Explicit Sex & Graphic Gore in Cutscenes (The Grindhouse Cut)',
         rating: 'Adults Only Sexual Content / Graphic Violence',
         description: 'Full-motion cutscenes show explicit, consensual sex between adults (nudity, genitals and sex acts) alongside grindhouse gore against alien creatures: heads blown off, bodies boiled, crushed and torn apart.',
         tags: ['Explicit Sex', 'Full Nudity', 'Consenting Adults', 'Graphic Gore', 'Grindhouse Horror'],
-        inPlay: `In play: camp side stories with Sister Martha, Briggs, Kaelen, Dr. Nahl and Aria, the ending cards and the sleep films after resting (${SHIPPED_MOTION_CLIPS.size} cutscenes in this build).`
+        inPlay: `In play: camp side stories with Sister Martha, Briggs, Kaelen, Dr. Nahl and Aria, the ending cards and the sleep films after resting (${GRINDHOUSE_CLIPS.length} cutscenes in this build).`
+    }] : []),
+    ...(OPENING_CLIPS.length ? [{
+        id: 'opening_nudity',
+        title: 'Nudity & Sexual Biomechanical Imagery in the Class Openings',
+        rating: 'Adult / Mature (18+) Nudity',
+        description: 'The class opening films show fully nude adult crew in the launch hangar and sexualised biomechanical hardware: phallic and vulvic machine forms and wet organic tissue on the ships. No sex acts are shown.',
+        tags: ['Full Nudity', 'Consenting Adults', 'Sexual Imagery', 'Biomechanical Horror'],
+        inPlay: `In play: the class opening after EMBARK in the Armory (${OPENING_CLIPS.length} clips in this build).`
     }] : [])
 ]);
 
