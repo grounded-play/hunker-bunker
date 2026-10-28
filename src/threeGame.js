@@ -1,5 +1,6 @@
 import { getRunRating } from './runRating.js';
 import { createRemoteMotionDiagnostics, REMOTE_MOTION_SNAP_UNITS } from './remoteMotionDiagnostics.js';
+import { remoteAvatarRenderProblems } from './remoteAvatarRenderCheck.js';
 import { computeRunScore } from './runScore.js';
 import { getFieldWeaponProfile } from './fieldWeapon.js';
 import { resolveSweptConeHits } from './flameWeapon.js';
@@ -2056,6 +2057,8 @@ export function isRoomGatewayFrameEligible(room, door, metadata = {}) {
 
 // Co-op guests create host enemies they lack (handleEnemyStateSnapshot).
 const REMOTE_ENEMY_MATERIALIZE_PER_SNAPSHOT = 4;
+// Routes this client expects from the relay; see server/relay.js RELAY_FEATURES.
+const RELAY_FEATURES_EXPECTED = Object.freeze(['enemyContactHit', 'pvpEnemyState', 'missionState']);
 const REMOTE_REPLICA_STALE_MS = 3000;
 
 // The closest open cell to a point, searched ring by ring (companions).
@@ -7042,6 +7045,14 @@ export class ThreeGame {
         }
         this.multiplayerRoomCode = session.roomCode || 'SECTOR-7';
         this.multiplayerCrashPlan = session.crashPlan || null;
+        // What the deployed relay can route (server/relay.js RELAY_FEATURES).
+        // An older relay sends nothing, and the routes it lacks fall back to
+        // the behaviour that relay carried.
+        this.relayFeatures = new Set(Array.isArray(session.relayFeatures) ? session.relayFeatures : []);
+        debugLog.info('MULTIPLAYER', 'relay-features', {
+            features: [...this.relayFeatures],
+            missing: RELAY_FEATURES_EXPECTED.filter((feature) => !this.relayFeatures.has(feature))
+        });
         this.remotePlayers = new Map();
         this.netSocket = session.socket || null;
         this.multiplayerLocalPlayerId = this.netSocket?.id || session.localPlayerId || null;
@@ -7247,6 +7258,7 @@ export class ThreeGame {
         this._appliedWorldEvents = null;
         this.multiplayerRoomCode = null;
         this.multiplayerCrashPlan = null;
+        this.relayFeatures = null;
         this.multiplayerLocalPlayerId = null;
         this.isMultiplayerHost = false;
         this.lastNetBroadcastTime = 0;
@@ -7538,6 +7550,7 @@ export class ThreeGame {
                     opClass: remote.opClass
                 });
             }
+            this.armRemoteAvatarRenderCheck(remote, generation);
         } catch (error) {
             remote.sprite.visible = true;
             if (typeof window !== 'undefined' && window.hbLog) {
@@ -7550,6 +7563,79 @@ export class ThreeGame {
         } finally {
             if (remote.overlayGeneration === generation) remote.overlayLoading = false;
         }
+    }
+
+    // A few seconds into gameplay, checks that the squadmate's 3D body drew,
+    // linked and stands where they are (src/remoteAvatarRenderCheck.js), logs
+    // what it found, and shows the sprite again if not (QA 2026-10-28: each
+    // side saw only the other's shadow).
+    armRemoteAvatarRenderCheck(remote, generation, delayMs = 4000) {
+        const meshes = [];
+        remote.overlay?.root?.traverse?.((object) => { if (object.isMesh) meshes.push(object); });
+        remote.overlayDrawn = false;
+        for (const mesh of meshes) {
+            const previous = mesh.onAfterRender;
+            mesh.onAfterRender = function onRemoteAvatarDrawn(...args) {
+                remote.overlayDrawn = true;
+                return previous?.apply(this, args);
+            };
+        }
+        const run = () => {
+            if (this._destroyed || this.remotePlayers?.get(remote.id) !== remote || remote.overlayGeneration !== generation || !remote.overlay) return;
+            // Bodies arrive behind the deployment doors; judge them on screen.
+            if (this.performanceProfile !== 'gameplay' || remote.isDown || remote.mesh?.visible === false) {
+                remote.overlayDrawn = false;
+                setTimeout(run, delayMs);
+                return;
+            }
+            this.checkRemoteAvatarRender(remote, meshes);
+        };
+        setTimeout(run, delayMs);
+    }
+
+    checkRemoteAvatarRender(remote, meshes) {
+        const gl = this.renderer?.getContext?.();
+        const programs = [];
+        for (const mesh of meshes) {
+            for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+                const program = material ? this.renderer?.properties?.get?.(material)?.currentProgram?.program : null;
+                programs.push(program && gl ? Boolean(gl.getProgramParameter(program, gl.LINK_STATUS)) : null);
+            }
+        }
+        const root = remote.overlay.root;
+        root.updateMatrixWorld?.(true);
+        const box = new THREE.Box3().setFromObject(root, true);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const facts = {
+            drawn: remote.overlayDrawn,
+            meshes: meshes.length,
+            programs,
+            height: size.y,
+            offset: Math.hypot(center.x - remote.mesh.position.x, center.z - remote.mesh.position.z)
+        };
+        const problems = remoteAvatarRenderProblems(facts);
+        const detail = {
+            playerId: remote.id,
+            opClass: remote.opClass,
+            chassisSkinId: remote.chassisSkinId ?? null,
+            problems,
+            drawn: facts.drawn,
+            meshes: facts.meshes,
+            unlinked: programs.filter((linked) => linked === false).length,
+            noProgram: programs.filter((linked) => linked === null).length,
+            height: Number(size.y.toFixed(2)),
+            offset: Number(facts.offset.toFixed(2)),
+            maxTextures: this.renderer?.capabilities?.maxTextures ?? null
+        };
+        if (!problems.length) {
+            debugLog.info('MULTIPLAYER', 'remote-avatar-render-ok', detail);
+            return true;
+        }
+        debugLog.warn('MULTIPLAYER', 'remote-avatar-render-failed', detail);
+        root.visible = false;
+        if (remote.sprite) remote.sprite.visible = true;
+        return false;
     }
 
     // Points a remote player's own (already-cloned, per-instance) texture at
@@ -7870,6 +7956,8 @@ export class ThreeGame {
 
     reportEnemyContactHit(target, sprite, damage) {
         if (!this.isMultiplayerHost || !this.netSocket || !target?.id || target.id === 'local') return false;
+        // An older relay drops this event; the guest's replica bites instead.
+        if (!this.relayFeatures?.has('enemyContactHit')) return false;
         this._enemyContactHitSequence = (this._enemyContactHitSequence ?? 0) + 1;
         const eventId = `${sprite?.userData?.scatterKey ?? sprite?.userData?.type ?? 'enemy'}:${target.id}:${this._enemyContactHitSequence}`;
         this.netSocket.emit('enemyContactHit', {
@@ -46229,12 +46317,24 @@ export class ThreeGame {
                 this.faceSpriteFromDir(sprite, dx);
             }
         }
-        // Contact damage is an explicit host event. Replica interpolation is
-        // presentation only and must never independently decide player HP.
-        void player;
-        void huntingMe;
-        void dx;
-        void dz;
+        // Contact damage is an explicit host event when the relay routes it.
+        // A relay without that route (deployed before 2026-10-26) dropped
+        // every host bite, so the guest decides its own, as before.
+        if (this.relayFeatures?.has('enemyContactHit')) return;
+        if (!player || this.isPlayerDead || (!huntingMe && !data.isBoss)) return;
+        if ((data.attackCooldown ?? 0) > 0) return;
+        // The same exemptions the host gives its own player: hive kin are left
+        // alone, and an Act 2 snail that would talk does not bite.
+        if (this.isHiveKinPassive?.(sprite) || this.canEnemyTargetPlayer?.(sprite) === false) return;
+        if (!data.isBoss && ['cybersnail', 'cryosnail', 'sporesnail'].includes(data.type)
+            && !data.isCompanion && !data.encounterResolved && this.isAct2Active?.()) return;
+        const reach = this.getSnailContactReach?.(data) ?? SNAIL_ATTACK_RADIUS * (data.isBoss ? 2.4 : 1.0);
+        if (Math.hypot(dx, dz) > reach) return;
+        data.attackCooldown = SNAIL_ATTACK_COOLDOWN;
+        const applied = this.takeDamage(data.isBoss ? 2 : 1, data.type, sprite.position.x, sprite.position.z);
+        if (applied === false) return;
+        this.applySnailContactKnockback?.(sprite, data);
+        if (data.type === 'cryosnail' || data.type === 'boss_cryosnail') this.applyPlayerSlow?.(2.5);
     }
 
     resolveCryosnailShockwave(sprite) {

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import http from 'node:http';
 import { io as ioClient } from 'socket.io-client';
-import { attachRelay, PVP_DEFAULT_MAX_HP } from './relay.js';
+import { attachRelay, PVP_DEFAULT_MAX_HP, RELAY_FEATURES } from './relay.js';
 
 function startTestServer() {
     const httpServer = http.createServer();
@@ -81,6 +81,9 @@ describe('Server Relay: PvP 4-Heart Authority Contract (GAP-PV-01)', () => {
         const [start1, start2] = await Promise.all([matchStartedP1, matchStartedP2]);
         expect(start1?.mode).toBe('pvp');
         expect(start2?.mode).toBe('pvp');
+        // Clients built ahead of the relay read this to pick their fallbacks.
+        expect(start1?.relayFeatures).toEqual([...RELAY_FEATURES]);
+        expect(RELAY_FEATURES).toContain('enemyContactHit');
 
         const damageEvents = [];
         p2.on('playerDamaged', (data) => damageEvents.push(data));

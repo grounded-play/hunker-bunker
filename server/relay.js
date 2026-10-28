@@ -66,6 +66,11 @@ const PVE_HIT_RANGE = PVP_WEAPON_RANGE;
 const PVE_MIN_HIT_INTERVAL_MS = MIN_FIRE_INTERVAL_MS;
 const PVE_STATE_MIN_INTERVAL_MS = 75;
 const PVE_CONTACT_HIT_MIN_INTERVAL_MS = 120;
+// Routes a client may depend on, sent with matchStarted. A client built ahead
+// of the deployed relay checks this list and keeps its older behaviour for a
+// route the relay lacks (QA 2026-10-28: a 10-07 relay silently dropped the
+// host's contact bites, so co-op guests took no enemy damage at all).
+export const RELAY_FEATURES = Object.freeze(['enemyContactHit', 'pvpEnemyState', 'missionState']);
 // A world beat is a rare, deliberate event (a goal built, a boss staged), so a
 // low ceiling is generous while still bounding a misbehaving client.
 // A Tank slam can break several walls at once, each its own event.
@@ -677,7 +682,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                 logRelayEvent('MATCH_DEPLOY', { roomCode, mode, seed, startedBy });
 
                 dressingAuthority.clear(roomCode);
-                io.to(roomCode).emit('matchStarted', { seed, mode, crashPlan, startedBy, timestamp: Date.now(), roundId });
+                io.to(roomCode).emit('matchStarted', { seed, mode, crashPlan, startedBy, timestamp: Date.now(), roundId, relayFeatures: RELAY_FEATURES });
             }, MATCH_COUNTDOWN_MS);
 
             roomCountdowns.set(roomCode, { timeout });
@@ -1325,7 +1330,8 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                     mode: 'pvp',
                     startedBy: socket.id,
                     timestamp: Date.now(),
-                    roundId: nextRoundId
+                    roundId: nextRoundId,
+                    relayFeatures: RELAY_FEATURES
                 });
             }
         });

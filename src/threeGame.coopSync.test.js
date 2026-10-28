@@ -167,13 +167,34 @@ describe('a host enemy chases the same player on both screens', () => {
         sprite
     });
 
+    // A relay that routes enemyContactHit (server/relay.js RELAY_FEATURES).
+    const routedGuest = (sprite) => ({ ...guest(sprite), relayFeatures: new Set(['enemyContactHit']) });
+
     it('does not infer a bite from an interpolated guest replica', () => {
         const sprite = enemy({ netTargetX: 0, netTargetZ: 0, netAggroTargetId: 'guest-socket', netAggroMode: 'hunt' });
-        const game = guest(sprite);
+        const game = routedGuest(sprite);
         ThreeGame.prototype.updateRemoteEnemyReplica.call(game, sprite, 1 / 60);
         ThreeGame.prototype.updateRemoteEnemyReplica.call(game, sprite, 1 / 60);
         expect(game.takeDamage).not.toHaveBeenCalled();
         expect(game.applySnailContactKnockback).not.toHaveBeenCalled();
+    });
+
+    // QA 2026-10-28: the deployed relay predated the enemyContactHit route and
+    // dropped every host bite, so the guest took no damage at all.
+    it('bites the guest from its replica when the relay cannot route host bites', () => {
+        const sprite = enemy({ netTargetX: 0, netTargetZ: 0, netAggroTargetId: 'guest-socket', netAggroMode: 'hunt' });
+        const game = { ...guest(sprite), relayFeatures: new Set() };
+        ThreeGame.prototype.updateRemoteEnemyReplica.call(game, sprite, 1 / 60);
+        expect(game.takeDamage).toHaveBeenCalledTimes(1);
+        expect(game.applySnailContactKnockback).toHaveBeenCalledTimes(1);
+    });
+
+    it('sends no host bite the relay would drop', () => {
+        const emit = vi.fn();
+        const host = { isMultiplayerHost: true, netSocket: { emit }, relayFeatures: new Set() };
+        const sent = ThreeGame.prototype.reportEnemyContactHit.call(host, { id: 'guest-socket', x: 0, z: 0 }, enemy(), 1);
+        expect(sent).toBe(false);
+        expect(emit).not.toHaveBeenCalled();
     });
 
     it('leaves the guest alone while it chases the host', () => {
@@ -195,7 +216,7 @@ describe('a host enemy chases the same player on both screens', () => {
 
     it("does not infer boss body damage from the guest's render replica", () => {
         const sprite = enemy({ type: 'boss_cybersnail', isBoss: true, netTargetX: 0, netTargetZ: 0, netAggroTargetId: 'ship', netAggroMode: 'hunt' });
-        const game = guest(sprite);
+        const game = routedGuest(sprite);
         ThreeGame.prototype.updateRemoteEnemyReplica.call(game, sprite, 1 / 60);
         expect(game.takeDamage).not.toHaveBeenCalled();
     });
