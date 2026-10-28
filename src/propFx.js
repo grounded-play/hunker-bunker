@@ -595,7 +595,56 @@ const AMBIENT_PROFILES = {
     prop_cave_queen_throne: organicProfile({ radius: 0.3 }),
     prop_biomech_arch: organicProfile({ spores: false, motion: 0.004 }),
     prop_body_empty_exosuit: poweredProfile({ sparks: true, lit: false, glowAt: [0.5, 0.7, 0.5], color: 0xff3b2f }),
-    body_empty_exosuit: poweredProfile({ sparks: true, lit: false, glowAt: [0.5, 0.7, 0.5], color: 0xff3b2f })
+    body_empty_exosuit: poweredProfile({ sparks: true, lit: false, glowAt: [0.5, 0.7, 0.5], color: 0xff3b2f }),
+
+    // 2026-10-27 Missing World Story Cohort (50 models)
+    quest_reactor_valves: thermalProfile({ flameAt: [0.5, 0.7, 0.5], glowAt: [0.5, 0.7, 0.5], color: 0xef4444, scale: 0.25, intensity: 0.9, distance: 3.0 }),
+    quest_lost_probe: poweredProfile({ glowAt: [0.5, 0.85, 0.5], color: 0x22d3ee, pulse: 0.35, intensity: 1.1, distance: 3.5, sparks: true }),
+    quest_hive_archive_node: organicProfile({ glowAt: [0.5, 0.65, 0.5], color: 0x10b981, radius: 0.26, pulse: 0.22, motion: 0.02, lit: true, intensity: 0.85, distance: 2.8 }),
+    quest_red_mould_bloom: organicProfile({ glowAt: [0.5, 0.45, 0.5], sporeAt: [0.5, 0.55, 0.5], color: 0xef4444, sporeColor: 0xf87171, radius: 0.32, pulse: 0.25, motion: 0.025, lit: true, intensity: 0.9, distance: 3.0 }),
+    quest_cultist_shrine: thermalProfile({ flameAt: [0.5, 0.55, 0.5], glowAt: [0.5, 0.55, 0.5], color: 0xf59e0b, intensity: 0.9, distance: 2.8 }),
+    quest_kaelen_ledger_desk: poweredProfile({ glowAt: [0.5, 0.7, 0.5], sparkAt: [0.5, 0.75, 0.5], color: 0x22d3ee, radius: 0.22, pulse: 0.18, intensity: 0.85, distance: 2.8, sparks: true, sparkCount: 5 }),
+    quest_martha_warm_pipe_junction: thermalProfile({ flameAt: [0.5, 0.6, 0.5], glowAt: [0.5, 0.6, 0.5], color: 0xf97316, intensity: 0.95, distance: 3.2 }),
+    quest_infested_armory_cabinet: organicProfile({ glowAt: [0.5, 0.65, 0.5], color: 0x84cc16, radius: 0.25, pulse: 0.16, lit: true, intensity: 0.75, distance: 2.6 }),
+    quest_holdout_barricade: lampProfile({ glowAt: [0.5, 0.8, 0.5], color: 0xef4444, pulse: 0.4, intensity: 1.2, distance: 3.6 }),
+    quest_briggs_memorial_wall: lampProfile({ glowAt: [0.5, 0.85, 0.5], color: 0xf59e0b, pulse: 0.08, intensity: 0.85, distance: 3.0 }),
+
+    prop_camp_meridian_battery_bank: poweredProfile({ glowAt: [0.5, 0.7, 0.5], sparkAt: [0.5, 0.8, 0.5], color: 0x38bdf8, pulse: 0.25, intensity: 0.9, distance: 2.9, sparks: true }),
+    prop_camp_meridian_repair_rig: poweredProfile({ glowAt: [0.5, 0.75, 0.5], sparkAt: [0.5, 0.85, 0.5], color: 0x06b6d4, pulse: 0.3, intensity: 1.0, distance: 3.2, sparks: true, sparkCount: 8 }),
+    prop_camp_tallow_still: liquidProfile({ surfaceAt: [0.5, 0.65, 0.5], bubblesAt: [0.5, 0.4, 0.5], color: 0xf59e0b, bubbleColor: 0xfde68a, count: 7, intensity: 0.8, distance: 2.7 }),
+    prop_camp_tallow_spore_trays: organicProfile({ glowAt: [0.5, 0.5, 0.5], sporeAt: [0.5, 0.6, 0.5], color: 0x84cc16, sporeColor: 0xa3e635, radius: 0.28, pulse: 0.18, motion: 0.015, lit: true, intensity: 0.7, distance: 2.5 }),
+    prop_camp_tallow_resin_urn: organicProfile({ glowAt: [0.5, 0.55, 0.5], color: 0xf59e0b, radius: 0.24, pulse: 0.14, lit: true, intensity: 0.75, distance: 2.6 }),
+    prop_camp_vesper_turret: poweredProfile({ glowAt: [0.5, 0.75, 0.5], color: 0xef4444, pulse: 0.2, intensity: 0.85, distance: 2.8 }),
+    prop_camp_vesper_ammo_press: poweredProfile({ glowAt: [0.5, 0.65, 0.5], color: 0xf59e0b, pulse: 0.1, intensity: 0.65, distance: 2.4 }),
+    prop_camp_vesper_shield_rack: lampProfile({ glowAt: [0.5, 0.8, 0.5], color: 0xfde047, pulse: 0.05, intensity: 0.7, distance: 2.5 }),
+    prop_camp_grave_fresh: coldProfile({ at: [0.5, 0.3, 0.5], count: 5 }),
+    prop_camp_grave_old: coldProfile({ at: [0.5, 0.25, 0.5], count: 4 }),
+
+    prop_alien_feeding_basin: liquidProfile({ surfaceAt: [0.5, 0.45, 0.5], bubblesAt: [0.5, 0.25, 0.5], color: 0x84cc16, bubbleColor: 0xbef264, count: 8, intensity: 0.75, distance: 2.6 }),
+    prop_alien_respiratory_vent: ventProfile({ at: [0.5, 0.7, 0.5], color: 0xfda4af, count: 7, height: 0.6, radius: 0.25 }),
+    prop_hive_chitin_hatchery: organicProfile({ glowAt: [0.5, 0.6, 0.5], sporeAt: [0.5, 0.7, 0.5], color: 0x10b981, sporeColor: 0x6ee7b7, radius: 0.32, pulse: 0.22, motion: 0.02, lit: true, intensity: 0.85, distance: 2.8 }),
+    prop_hive_relay_antenna: poweredProfile({ glowAt: [0.5, 0.88, 0.5], sparkAt: [0.5, 0.92, 0.5], color: 0x22d3ee, pulse: 0.3, intensity: 1.15, distance: 3.5, sparks: true, sparkCount: 6 }),
+    prop_hive_suture_organ: organicProfile({ glowAt: [0.5, 0.55, 0.5], color: 0xf43f5e, radius: 0.28, pulse: 0.24, motion: 0.022, lit: true, intensity: 0.8, distance: 2.7 }),
+    prop_hive_synaptic_web: poweredProfile({ glowAt: [0.5, 0.65, 0.5], sparkAt: [0.5, 0.7, 0.5], color: 0xa855f7, pulse: 0.28, intensity: 0.9, distance: 2.9, sparks: true, sparkCount: 5 }),
+    prop_hive_wound_cauterizer: thermalProfile({ flameAt: [0.5, 0.65, 0.5], glowAt: [0.5, 0.65, 0.5], color: 0x38bdf8, scale: 0.22, intensity: 0.85, distance: 2.8 }),
+    door_biomechanical_iris: organicProfile({ glowAt: [0.5, 0.5, 0.5], color: 0x84cc16, radius: 0.35, pulse: 0.16, motion: 0.018, lit: true, intensity: 0.7, distance: 2.7 }),
+
+    scatter_broken_drone: poweredProfile({ glowAt: [0.5, 0.35, 0.5], sparkAt: [0.5, 0.4, 0.5], color: 0x38bdf8, pulse: 0.2, sparks: true, sparkCount: 4, intensity: 0.6, distance: 2.2 }),
+    scatter_cryo_icicle: coldProfile({ at: [0.5, 0.6, 0.5], glowAt: [0.5, 0.5, 0.5], count: 6 }),
+    scatter_ice_stalagmite: coldProfile({ at: [0.5, 0.7, 0.5], glowAt: [0.5, 0.6, 0.5], count: 5 }),
+    scatter_cryo_shards: coldProfile({ at: [0.5, 0.3, 0.5], count: 4 }),
+
+    prop_ruptured_coolant_pump: liquidProfile({ surfaceAt: [0.5, 0.4, 0.5], bubblesAt: [0.5, 0.25, 0.5], color: 0x22d3ee, count: 6, intensity: 0.8, distance: 2.6 }),
+    evac_empty_cockpit_quad: lampProfile({ glowAt: [0.5, 0.6, 0.5], color: 0xf59e0b, pulse: 0.15, intensity: 0.85, distance: 2.9 }),
+    evac_mixed_crew_divider: poweredProfile({ glowAt: [0.5, 0.65, 0.5], color: 0x38bdf8, pulse: 0.12, intensity: 0.75, distance: 2.6 }),
+    evac_hidden_egg_coolant_rack: organicProfile({ glowAt: [0.5, 0.5, 0.5], color: 0x84cc16, radius: 0.25, pulse: 0.2, motion: 0.015, lit: true, intensity: 0.7, distance: 2.5 }),
+
+    ...profilesFor([
+        'drop_horizon_badge', 'drop_dig_manifest', 'drop_security_log', 'drop_survey_probe',
+        'drop_meteor_core', 'drop_ration_ledger', 'drop_dogtags', 'drop_child_drawing',
+        'drop_resin_locket', 'drop_moult_shard', 'drop_first_bore_tag', 'drop_prayer_stone',
+        'drop_frozen_letter', 'drop_black_flask'
+    ], () => poweredProfile({ glowAt: [0.5, 0.5, 0.5], color: 0xf59e0b, pulse: 0.22, intensity: 0.75, distance: 2.4 }))
 };
 
 // The loose ends of a severed spline (src/splineDressingRenderer.js): a cut

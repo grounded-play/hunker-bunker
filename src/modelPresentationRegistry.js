@@ -1,4 +1,5 @@
 import { WORLD_EXPANSION_80_SPECS } from './data/worldExpansion80.js';
+import { MISSING_WORLD_STORY_50_WALL_DEPTHS } from './data/missingWorldStory50.js';
 
 export const MODEL_SURFACE = Object.freeze({
     FLOOR: 'floor',
@@ -159,7 +160,8 @@ export const WALL_MODEL_DEPTHS = Object.freeze({
     life_vertebral_restraint_rack: 1.30,
     life_fuse_bypass_panel: 0.57,
     fixture_sconce_vine: 0.22,
-    prop_ceiling_crane_hoist: 4.02
+    prop_ceiling_crane_hoist: 4.02,
+    ...MISSING_WORLD_STORY_50_WALL_DEPTHS
 });
 
 export const WALL_MODELS = Object.keys(WALL_MODEL_DEPTHS);

@@ -12,6 +12,7 @@ import { applyCableSway } from './cableSway.js';
 import { createGltfLoader as createSharedGltfLoader } from './gltfLoaderFactory.js';
 import { getModelPresentationProfile, getWallModelDepth } from './modelPresentationRegistry.js';
 import { WORLD_EXPANSION_80_MODELS } from './data/worldExpansion80.js';
+import { MISSING_WORLD_STORY_50_MODELS } from './data/missingWorldStory50.js';
 
 // docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws without this registered first.
@@ -559,7 +560,10 @@ export const WORLD_3D_MODELS = Object.freeze({
 
     // 2026-10-16 World Expansion 80. The shared manifest also owns each
     // model's interaction, FX, surface, decal, and placement contract.
-    ...WORLD_EXPANSION_80_MODELS
+    ...WORLD_EXPANSION_80_MODELS,
+
+    // 2026-10-27 Missing World Story 50 models (10 quest, 14 drops, 10 camp, 8 alien/hive, 4 scatter, 1 hazard, 3 evac)
+    ...MISSING_WORLD_STORY_50_MODELS
 });
 
 // Metric-scale set-piece shells are deliberately separate from prop models.

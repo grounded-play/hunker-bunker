@@ -22178,15 +22178,66 @@ export class ThreeGame {
         const baseMat = this.scatterMaterials[drop.key] || this.scatterMaterials.lore_terminal;
         if (!baseMat?.map) return null;
         const mat = baseMat.clone();
-        mat.color.setHex(drop.rarity === 'legendary' ? 0xffd27a : drop.rarity === 'rare' ? 0x9be8ff : 0xffffff);
+        const rarityColor = drop.rarity === 'legendary' ? 0xffd27a : drop.rarity === 'rare' ? 0x9be8ff : 0x75d5a0;
+        mat.color.setHex(rarityColor);
         const sprite = new THREE.Sprite(mat);
         sprite.center.set(0.5, 0);
         const collectibleScale = drop.rarity === 'legendary' ? 0.78 : drop.rarity === 'rare' ? 0.7 : 0.64;
         sprite.scale.set(collectibleScale, collectibleScale, 1);
-        sprite.position.set(x, 0.06, z);
+        sprite.position.set(x, 0.16, z);
         sprite.renderOrder = 5;
         this.scene.add(sprite);
-        this.loreDrops.push({ sprite, drop, baseY: 0.06, t: Math.random() * Math.PI * 2 });
+
+        // Subtle glowing ground circle and rotating ring under lore drop
+        const glowGroup = new THREE.Group();
+        glowGroup.position.set(x, 0, z);
+
+        const ringGeom = new THREE.RingGeometry(0.32, 0.44, 32);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: rarityColor,
+            transparent: true,
+            opacity: 0.65,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+            fog: false
+        });
+        const groundRing = new THREE.Mesh(ringGeom, ringMat);
+        groundRing.rotation.x = -Math.PI / 2;
+        groundRing.position.y = 0.04;
+        glowGroup.add(groundRing);
+
+        const discGeom = new THREE.CircleGeometry(0.32, 24);
+        const discMat = new THREE.MeshBasicMaterial({
+            color: rarityColor,
+            transparent: true,
+            opacity: 0.22,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+            fog: false
+        });
+        const groundDisc = new THREE.Mesh(discGeom, discMat);
+        groundDisc.rotation.x = -Math.PI / 2;
+        groundDisc.position.y = 0.035;
+        glowGroup.add(groundDisc);
+
+        this.scene.add(glowGroup);
+
+        // Stream in the 3D model if registered
+        if (hasWorld3dModel(drop.key)) {
+            void this.setupWorld3dReplacement(sprite, drop.key);
+        }
+
+        this.loreDrops.push({
+            sprite,
+            drop,
+            baseY: 0.16,
+            t: Math.random() * Math.PI * 2,
+            glowGroup,
+            groundRing,
+            groundDisc
+        });
         return sprite;
     }
 
@@ -22281,8 +22332,28 @@ export class ThreeGame {
         for (let i = this.loreDrops.length - 1; i >= 0; i -= 1) {
             const entry = this.loreDrops[i];
             entry.t += delta;
-            entry.sprite.position.y = entry.baseY + 0.12 + Math.sin(entry.t * 2.6) * 0.08;
-            entry.sprite.material.opacity = 0.85 + Math.sin(entry.t * 3.5) * 0.15;
+            const hoverY = entry.baseY + 0.12 + Math.sin(entry.t * 2.6) * 0.08;
+            entry.sprite.position.y = hoverY;
+            if (entry.sprite.material) {
+                entry.sprite.material.opacity = 0.85 + Math.sin(entry.t * 3.5) * 0.15;
+            }
+
+            // Continuous 3D floating and spinning
+            const root = entry.sprite.userData?.world3dRoot;
+            if (root) {
+                root.position.set(entry.sprite.position.x, hoverY, entry.sprite.position.z);
+                root.rotation.y += delta * 1.8;
+            }
+
+            // Pulse and spin ground circle/ring
+            if (entry.glowGroup) {
+                entry.glowGroup.position.set(entry.sprite.position.x, 0, entry.sprite.position.z);
+                const pulse = 0.5 + Math.sin(entry.t * 3.2) * 0.2;
+                entry.groundRing.material.opacity = Math.max(0.1, pulse);
+                entry.groundDisc.material.opacity = Math.max(0.05, pulse * 0.35);
+                entry.groundRing.rotation.z += delta * 0.7;
+            }
+
             if (this.isPlayerDead) continue;
             const dx = this.player.position.x - entry.sprite.position.x;
             const dz = this.player.position.z - entry.sprite.position.z;
@@ -22300,30 +22371,48 @@ export class ThreeGame {
         const entry = this.loreDrops[index];
         if (!entry) return;
         this.loreDrops.splice(index, 1);
+        if (entry.glowGroup) {
+            this.scene.remove(entry.glowGroup);
+            entry.glowGroup.traverse((node) => {
+                node.geometry?.dispose?.();
+                node.material?.dispose?.();
+            });
+            entry.glowGroup = null;
+        }
+        if (entry.sprite.userData?.world3dRoot) {
+            const root = entry.sprite.userData.world3dRoot;
+            this.scene.remove(root);
+            if (root.userData?.mixer) {
+                this.world3dMixers?.delete(root.userData.mixer);
+            }
+            entry.sprite.userData.world3dRoot = null;
+        }
         this.scene.remove(entry.sprite);
         markLoreDropFound(entry.drop.key);
-        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.65 });
-        window.AudioManager?.play?.('item_pickup', { volume: 0.55 });
-        if (typeof this.spawnPhysicalBurst === 'function') {
-            this.spawnPhysicalBurst(entry.sprite.position.x, entry.sprite.position.z, {
-                color: entry.drop.rarity === 'legendary' ? 0xffd27a : entry.drop.rarity === 'rare' ? 0x9be8ff : 0x75d5a0,
-                count: 8,
-                upward: 0.28
-            });
-        }
-        window.dispatchEvent(new CustomEvent('lore-drop-collected', {
-            detail: { key: entry.drop.key, title: entry.drop.title, rarity: entry.drop.rarity }
-        }));
-        window.dispatchEvent(new CustomEvent('lore-terminal-read', {
-            detail: { loreKey: entry.drop.key, loreText: entry.drop.text, skipSave: true }
-        }));
-        window.dispatchEvent(new CustomEvent('objective-resolved', {
-            detail: { id: 'retrieve-relic' }
-        }));
-        if (this.loadoutMods?.loreDropsGrantSalvage) {
-            window.dispatchEvent(new CustomEvent('pickup-collected', {
-                detail: { type: 'coin', rarity: entry.drop.rarity, value: 1, amount: 1, source: 'archivist-lens' }
+        if (typeof window !== 'undefined') {
+            window.AudioManager?.play?.('ui_scan_ping', { volume: 0.65 });
+            window.AudioManager?.play?.('item_pickup', { volume: 0.55 });
+            if (typeof this.spawnPhysicalBurst === 'function') {
+                this.spawnPhysicalBurst(entry.sprite.position.x, entry.sprite.position.z, {
+                    color: entry.drop.rarity === 'legendary' ? 0xffd27a : entry.drop.rarity === 'rare' ? 0x9be8ff : 0x75d5a0,
+                    count: 8,
+                    upward: 0.28
+                });
+            }
+            window.dispatchEvent(new CustomEvent('lore-drop-collected', {
+                detail: { key: entry.drop.key, title: entry.drop.title, rarity: entry.drop.rarity }
             }));
+            window.dispatchEvent(new CustomEvent('lore-terminal-read', {
+                detail: { loreKey: entry.drop.key, loreText: entry.drop.text, skipSave: true }
+            }));
+            window.dispatchEvent(new CustomEvent('objective-resolved', {
+                detail: { id: 'retrieve-relic' }
+            }));
+            if (this.loadoutMods?.loreDropsGrantSalvage) {
+                window.dispatchEvent(new CustomEvent('pickup-collected', {
+                    detail: { type: 'coin', rarity: entry.drop.rarity, value: 1, amount: 1, source: 'archivist-lens' }
+                }));
+            }
         }
     }
 

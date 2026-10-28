@@ -271,7 +271,49 @@ export const PROP_EXPERIENCE_PROFILES = Object.freeze({
     evac_cabin_co2_scrubber: terminal(0xf59e0b, { duration: 0.45, intensity: 1.8 }),
     evac_manual_abort_detonator: terminal(0xef4444, { duration: 0.4, intensity: 2.2 }),
     evac_cargo_ballast_scale: terminal(0xf59e0b, { duration: 0.35, intensity: 1.7 }),
-    mothership_docking_umbilical_collar: mechanism(0xeab308, ['use', 'ambient', 'damage'])
+    mothership_docking_umbilical_collar: mechanism(0xeab308, ['use', 'ambient', 'damage']),
+
+    // 2026-10-27 Missing World Story Cohort (Quest, Camp, Alien/Hive, Scatter, Evac)
+    quest_reactor_valves: mechanism(0xef4444, ['use', 'ambient', 'damage']),
+    quest_lost_probe: terminal(0x22d3ee, { duration: 0.5, intensity: 2.2 }),
+    quest_hive_archive_node: terminal(0x10b981, { duration: 0.55, intensity: 2.0 }),
+    quest_red_mould_bloom: mechanism(0xef4444, ['use', 'ambient', 'damage']),
+    quest_cultist_shrine: terminal(0xf59e0b, { duration: 0.45, intensity: 1.8 }),
+    quest_kaelen_ledger_desk: terminal(0x22d3ee, { duration: 0.5, intensity: 2.1 }),
+    quest_martha_warm_pipe_junction: mechanism(0xf97316, ['use', 'ambient', 'damage']),
+    quest_infested_armory_cabinet: mechanism(0x84cc16, ['use', 'damage']),
+    quest_holdout_barricade: mechanism(0xef4444, ['use', 'damage']),
+    quest_briggs_memorial_wall: terminal(0xf59e0b, { duration: 0.45, intensity: 1.9 }),
+
+    prop_camp_meridian_battery_bank: mechanism(0x38bdf8, ['use', 'ambient', 'damage']),
+    prop_camp_meridian_repair_rig: mechanism(0x06b6d4, ['use', 'ambient', 'damage']),
+    prop_camp_tallow_still: mechanism(0xf59e0b, ['use', 'ambient', 'damage']),
+    prop_camp_tallow_spore_trays: mechanism(0x84cc16, ['use', 'ambient', 'damage']),
+    prop_camp_tallow_resin_urn: terminal(0xf59e0b, { duration: 0.45, intensity: 1.8 }),
+    prop_camp_vesper_turret: mechanism(0xef4444, ['use', 'damage']),
+    prop_camp_vesper_ammo_press: mechanism(0xf59e0b, ['use', 'damage']),
+    prop_camp_vesper_shield_rack: mechanism(0xfde047, ['use', 'damage']),
+    prop_camp_grave_fresh: terminal(0x94a3b8, { duration: 0.35, intensity: 1.4 }),
+    prop_camp_grave_old: terminal(0x7dd3fc, { duration: 0.35, intensity: 1.4 }),
+
+    prop_alien_feeding_basin: mechanism(0x84cc16, ['use', 'ambient', 'damage']),
+    prop_alien_respiratory_vent: mechanism(0xf43f5e, ['use', 'ambient', 'damage']),
+    prop_hive_chitin_hatchery: mechanism(0x10b981, ['use', 'ambient', 'damage']),
+    prop_hive_relay_antenna: mechanism(0x22d3ee, ['use', 'ambient', 'damage']),
+    prop_hive_suture_organ: mechanism(0xf43f5e, ['use', 'ambient', 'damage']),
+    prop_hive_synaptic_web: mechanism(0xa855f7, ['use', 'damage']),
+    prop_hive_wound_cauterizer: mechanism(0x38bdf8, ['use', 'damage']),
+    door_biomechanical_iris: mechanism(0x84cc16, ['use', 'ambient', 'damage']),
+
+    scatter_broken_drone: terminal(0x38bdf8, { duration: 0.4, intensity: 1.6 }),
+    scatter_cryo_icicle: mechanism(0xa5f3fc, ['damage']),
+    scatter_ice_stalagmite: mechanism(0x7dd3fc, ['damage']),
+    scatter_cryo_shards: mechanism(0xbae6fd, ['damage']),
+
+    prop_ruptured_coolant_pump: mechanism(0x22d3ee, ['use', 'ambient', 'damage']),
+    evac_empty_cockpit_quad: terminal(0xf59e0b, { duration: 0.45, intensity: 1.9 }),
+    evac_mixed_crew_divider: mechanism(0x38bdf8, ['use', 'damage']),
+    evac_hidden_egg_coolant_rack: mechanism(0x84cc16, ['use', 'damage'])
 });
 
 const BASE_ENVIRONMENT_TYPES = new Set([
@@ -404,6 +446,16 @@ export function createPropExperience(root, model, type) {
         acknowledge({ toggleArticulation = true } = {}) {
             if (disposed) return false;
             if (toggleArticulation) articulation?.toggle();
+            if (root?.userData?.mixer && Array.isArray(root?.userData?.animations)) {
+                const interactClip = root.userData.animations.find((c) => /interact|activate|open|use/i.test(c.name));
+                if (interactClip) {
+                    const action = root.userData.mixer.clipAction(interactClip);
+                    action.reset();
+                    action.setLoop(THREE.LoopOnce, 1);
+                    action.clampWhenFinished = false;
+                    action.play();
+                }
+            }
             if (duration > 0) {
                 remaining = duration;
                 applyStrength(0.12);

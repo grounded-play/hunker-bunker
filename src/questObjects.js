@@ -19,16 +19,16 @@ const CYAN = 0x22d3ee;
 const AMBER = 0xf59e0b;
 
 export const QUEST_OBJECTS = Object.freeze({
-    reactor_venting: Object.freeze({ accent: RED, target: Object.freeze({ standIn: 'prop_valve_wheel_fused', model: 'quest_reactor_valves' }) }),
-    lost_probe: Object.freeze({ accent: CYAN, target: Object.freeze({ standIn: 'radar', model: 'quest_lost_probe' }) }),
-    hive_archive: Object.freeze({ accent: 0x10b981, target: Object.freeze({ standIn: 'prop_hive_resin_sac', model: 'quest_hive_archive_node' }) }),
-    spore_cleansing: Object.freeze({ accent: RED, target: Object.freeze({ standIn: 'prop_fungal_resin_basin', model: 'quest_red_mould_bloom' }) }),
-    lost_cultist: Object.freeze({ accent: AMBER, landmark: Object.freeze({ standIn: 'prop_votive_candle_shrine', model: 'quest_cultist_shrine' }) }),
-    grid_covenant: Object.freeze({ accent: AMBER, target: Object.freeze({ standIn: 'prop_conduit_junction_box', model: 'quest_kaelen_ledger_desk' }) }),
-    warm_pipes: Object.freeze({ accent: 0xf97316, target: Object.freeze({ standIn: 'prop_pipe_rupture', model: 'quest_martha_warm_pipe_junction' }) }),
-    armory_breach: Object.freeze({ accent: CYAN, landmark: Object.freeze({ standIn: 'prop_oxygen_bottle_cascade_rack', model: 'quest_infested_armory_cabinet' }) }),
-    bunker_holdout: Object.freeze({ accent: AMBER, landmark: Object.freeze({ standIn: 'prop_security_barricade', model: 'quest_holdout_barricade' }) }),
-    iron_ledger: Object.freeze({ accent: AMBER, landmark: Object.freeze({ standIn: 'arch_niche_shrine', model: 'quest_briggs_memorial_wall' }) })
+    reactor_venting: Object.freeze({ accent: RED, target: Object.freeze({ standIn: 'quest_reactor_valves', model: 'quest_reactor_valves' }) }),
+    lost_probe: Object.freeze({ accent: CYAN, target: Object.freeze({ standIn: 'quest_lost_probe', model: 'quest_lost_probe' }) }),
+    hive_archive: Object.freeze({ accent: 0x10b981, target: Object.freeze({ standIn: 'quest_hive_archive_node', model: 'quest_hive_archive_node' }) }),
+    spore_cleansing: Object.freeze({ accent: RED, target: Object.freeze({ standIn: 'quest_red_mould_bloom', model: 'quest_red_mould_bloom' }) }),
+    lost_cultist: Object.freeze({ accent: AMBER, landmark: Object.freeze({ standIn: 'quest_cultist_shrine', model: 'quest_cultist_shrine' }) }),
+    grid_covenant: Object.freeze({ accent: AMBER, target: Object.freeze({ standIn: 'quest_kaelen_ledger_desk', model: 'quest_kaelen_ledger_desk' }) }),
+    warm_pipes: Object.freeze({ accent: 0xf97316, target: Object.freeze({ standIn: 'quest_martha_warm_pipe_junction', model: 'quest_martha_warm_pipe_junction' }) }),
+    armory_breach: Object.freeze({ accent: CYAN, landmark: Object.freeze({ standIn: 'quest_infested_armory_cabinet', model: 'quest_infested_armory_cabinet' }) }),
+    bunker_holdout: Object.freeze({ accent: AMBER, landmark: Object.freeze({ standIn: 'quest_holdout_barricade', model: 'quest_holdout_barricade' }) }),
+    iron_ledger: Object.freeze({ accent: AMBER, landmark: Object.freeze({ standIn: 'quest_briggs_memorial_wall', model: 'quest_briggs_memorial_wall' }) })
 });
 
 // One archive node, tinted per chapter.
