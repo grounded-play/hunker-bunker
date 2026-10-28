@@ -4,9 +4,18 @@
 // play the clip: side stories and cards 33-38 in src/songInterstitials.js,
 // sleep styles in src/sleepCutscene.js.
 export const SHIPPED_MOTION_CLIPS = Object.freeze(new Set([
+    'card_34',
+    'card_35',
+    'card_36',
+    'opening-crash-engineer',
     'opening-crash-scout',
+    'opening-crash-tank',
     'opening-flight-scout',
+    'opening-flight-tank',
     'opening-launch-engineer',
     'opening-launch-scout',
     'opening-launch-tank',
+    'sleep-camp-scout',
+    'sleep-cryo-engineer',
+    'val_eternal_hearth',
 ]));
