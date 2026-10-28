@@ -527,7 +527,7 @@ export async function runMicroTxnReconciliation({
             state = { version: 1, startTime: since, cursor: since, orders: [] };
         }
         const report = await scanMicroTxnReport({
-            time: state.cursor, orders: state.orders, maxPages, maxOrders,
+            time: state.cursor, orders: state.orders, maxPages, maxOrders, pageSize: maxResults,
             fetchPage: (time) => fetchMicroTxnReport({ key, appId, time, type, maxResults, sandbox, fetchImpl }),
             onPage: async (page) => {
                 if (!durable) return;

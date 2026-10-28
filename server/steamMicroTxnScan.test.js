@@ -53,6 +53,31 @@ describe('Steam timestamp report enumeration', () => {
         expect(fetchPage).toHaveBeenCalledTimes(3);
     });
 
+    // Steam's window includes its start: the newest known order returns at
+    // the cursor until a later one exists (prod, 2026-10-21 to 10-28).
+    it('is caught up when a short batch repeats only known orders at the cursor', async () => {
+        const fetchPage = vi.fn().mockResolvedValue(page([order(1)]));
+        const result = await scanMicroTxnReport({ time: FIRST, orders: [order(1)], fetchPage, pageSize: 1000 });
+        expect(result).toMatchObject({ ok: true, complete: true, cursor: FIRST });
+        expect(result.orders).toHaveLength(1);
+        expect(fetchPage).toHaveBeenCalledTimes(1);
+    });
+
+    it('still reports a stall when a full batch repeats one timestamp', async () => {
+        const fetchPage = vi.fn().mockResolvedValue(page([order(1), order(2)]));
+        const result = await scanMicroTxnReport({ time: FIRST, orders: [order(1), order(2)], fetchPage, pageSize: 2 });
+        expect(result).toMatchObject({ ok: false, reason: 'report_cursor_stalled', cursor: FIRST });
+    });
+
+    it('records a new order at the cursor before calling the scan caught up', async () => {
+        const fetchPage = vi.fn().mockResolvedValue(page([order(1), order(2)]));
+        const onPage = vi.fn();
+        const result = await scanMicroTxnReport({ time: FIRST, orders: [order(1)], fetchPage, onPage, pageSize: 1000 });
+        expect(result).toMatchObject({ ok: true, cursor: FIRST });
+        expect(result.orders).toHaveLength(2);
+        expect(onPage).toHaveBeenCalledTimes(1);
+    });
+
     it('returns partial evidence and an unhealthy result on page limit or outage', async () => {
         const fetchPage = vi.fn().mockResolvedValueOnce(page([order(1)])).mockResolvedValueOnce({ ok: false, reason: 'offline' });
         const failed = await scanMicroTxnReport({ time: START, fetchPage });
