@@ -2375,7 +2375,8 @@
       "hit": "PEDIR",
       "stand": "PLANTARSE",
       "double": "DOBLAR",
-      "pull_lever": "Tira de la palanca para girar"
+      "pull_lever": "Tira de la palanca para girar",
+      "scroll_more": "▼ HAY MÁS ABAJO · DESPLAZAR · W / S · ↑ / ↓ · CRUCETA"
     }
   },
   "narrative": {

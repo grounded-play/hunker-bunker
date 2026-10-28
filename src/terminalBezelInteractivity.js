@@ -140,6 +140,9 @@ export class TerminalBezelController {
             `;
             this.container.appendChild(bezelControls);
         }
+        // Pointer toys only: the pad and arrow keys move between the
+        // terminal's real controls (main.js getVisibleControllerFocusables).
+        bezelControls?.setAttribute?.('data-controller-skip', '');
 
         this._bindEvents();
     }

@@ -2375,7 +2375,8 @@
       "hit": "KARTE",
       "stand": "HALTEN",
       "double": "VERDOPPELN",
-      "pull_lever": "Hebel ziehen, um zu drehen"
+      "pull_lever": "Hebel ziehen, um zu drehen",
+      "scroll_more": "▼ MEHR UNTEN · SCROLLEN · W / S · ↑ / ↓ · STEUERKREUZ"
     }
   },
   "narrative": {

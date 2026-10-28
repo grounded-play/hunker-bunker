@@ -2375,7 +2375,8 @@
       "hit": "要牌",
       "stand": "停牌",
       "double": "加倍",
-      "pull_lever": "拉动拉杆开始转动"
+      "pull_lever": "拉动拉杆开始转动",
+      "scroll_more": "▼ 下方还有 · 滚动 · W / S · ↑ / ↓ · 方向键"
     }
   },
   "narrative": {

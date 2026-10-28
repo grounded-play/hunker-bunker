@@ -29,6 +29,37 @@ function screenWrapper(doc, className) {
     return wrapper;
 }
 
+// A machine's screen is a small hole in its painting, so most of a bay's list
+// sits below it, and nothing said it scrolled (QA 2026-10-28). The cue sticks
+// to the bottom of the screen while there is more below, and names the ways
+// to get there. Returns a function that removes it.
+export function attachScrollCue(screen, doc = globalThis.document) {
+    if (!screen || !doc?.createElement) return () => {};
+    const cue = doc.createElement('div');
+    cue.className = 'kiosk-scroll-cue';
+    cue.setAttribute('aria-hidden', 'true');
+    cue.textContent = t('ui.kiosk.scroll_more');
+    screen.appendChild(cue);
+    const update = () => {
+        const more = screen.scrollHeight - screen.clientHeight - screen.scrollTop > 8;
+        cue.classList.toggle('is-hidden', !more);
+    };
+    screen.addEventListener('scroll', update, { passive: true });
+    const Resize = globalThis.ResizeObserver;
+    const resizeWatch = Resize ? new Resize(update) : null;
+    resizeWatch?.observe(screen);
+    const Observer = globalThis.MutationObserver;
+    const contentWatch = Observer ? new Observer(update) : null;
+    contentWatch?.observe(screen, { childList: true, subtree: true });
+    update();
+    return () => {
+        screen.removeEventListener('scroll', update);
+        resizeWatch?.disconnect();
+        contentWatch?.disconnect();
+        cue.remove();
+    };
+}
+
 function moveInto(target, element) {
     if (element && element.parentNode !== target) target.appendChild(element);
 }
@@ -51,6 +82,8 @@ function seatBezel(frame, content, overlayName) {
         const element = layer.querySelector(selector);
         if (!element) continue;
         moved.push({ element, parent: element.parentNode, next: element.nextSibling, hidden: element.hidden });
+        // Seated outside its layer, a control still is no pad stop.
+        element.setAttribute('data-controller-skip', '');
         if (controls[control]) moveInto(frame.slot(control), element);
         else element.hidden = true;
     }
@@ -59,6 +92,7 @@ function seatBezel(frame, content, overlayName) {
         for (const { element, parent, next, hidden } of moved.reverse()) {
             parent.insertBefore(element, next?.parentNode === parent ? next : null);
             element.hidden = hidden;
+            element.removeAttribute('data-controller-skip');
         }
         layer.classList.remove('bezel-interactive-layer--seated');
     };
@@ -112,6 +146,14 @@ export function mountFabricationKiosk({ doc = globalThis.document, onRoll = null
     });
 
     function seat() {
+        // Moving a focused button blurs it: picking the Lotto aisle with the
+        // pad swapped machines and left focus nowhere (QA 2026-10-28).
+        const focused = doc.activeElement;
+        reseat();
+        if (focused?.isConnected && focused !== doc.body && doc.activeElement !== focused) focused.focus?.({ preventScroll: true });
+    }
+
+    function reseat() {
         const slotMachine = modal.dataset.activeAisle === 'lotto';
         frame.setOverlay(slotMachine ? SLOT_MACHINE : 'fab_automart_overlay');
         if (slotMachine) {
@@ -136,6 +178,7 @@ export function mountFabricationKiosk({ doc = globalThis.document, onRoll = null
         }
     }
     seat();
+    const removeScrollCue = attachScrollCue(screen, doc);
 
     // The bay marks the aisle on the modal; the reels spin while it reveals.
     const Observer = globalThis.MutationObserver;
@@ -161,6 +204,7 @@ export function mountFabricationKiosk({ doc = globalThis.document, onRoll = null
     function dispose() {
         if (disposed) return;
         disposed = true;
+        removeScrollCue();
         layerWatch?.disconnect();
         unseat();
         aisleWatch?.disconnect();

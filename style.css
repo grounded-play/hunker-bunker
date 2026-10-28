@@ -26385,6 +26385,41 @@ html.phase-gameplay #tactical-telemeter-box {
   max-width: 100%;
 }
 
+/* More of the list sits below the machine's screen (src/kioskTerminals.js). */
+/* Sticks clear of the painted lip that overlaps the screen hole's bottom. */
+.kiosk-screen .kiosk-scroll-cue {
+  position: sticky;
+  bottom: 1.2em;
+  z-index: 2;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0.8em auto 0;
+  padding: 0.35em 1em;
+  text-align: center;
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #9ff5df;
+  background: rgba(4, 16, 14, 0.94);
+  border: 1px solid rgba(71, 197, 169, 0.75);
+  border-radius: 999px;
+  box-shadow: 0 0 0.8em rgba(71, 197, 169, 0.35);
+  pointer-events: none;
+  animation: kiosk-scroll-cue-pulse 1.6s ease-in-out infinite;
+}
+
+.kiosk-screen .kiosk-scroll-cue.is-hidden {
+  visibility: hidden;
+}
+
+@keyframes kiosk-scroll-cue-pulse {
+  50% { color: #e9fff8; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-screen .kiosk-scroll-cue { animation: none; }
+}
+
 /* What the machine's painted bezel already says, the UI need not repeat. */
 .kiosk-screen .fab-minimart-bezel-top,
 .kiosk-screen .fab-minimart-footer-tray,

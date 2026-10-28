@@ -2375,7 +2375,8 @@
       "hit": "ヒット",
       "stand": "スタンド",
       "double": "ダブル",
-      "pull_lever": "レバーを引いて回す"
+      "pull_lever": "レバーを引いて回す",
+      "scroll_more": "▼ 下に続きあり · スクロール · W / S · ↑ / ↓ · 十字キー"
     }
   },
   "narrative": {

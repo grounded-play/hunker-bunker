@@ -2375,7 +2375,8 @@
       "hit": "HIT",
       "stand": "STAND",
       "double": "DOUBLE",
-      "pull_lever": "Pull the lever to roll"
+      "pull_lever": "Pull the lever to roll",
+      "scroll_more": "▼ MORE BELOW · SCROLL · W / S · ↑ / ↓ · D-PAD"
     }
   },
   "narrative": {

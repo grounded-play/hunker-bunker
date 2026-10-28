@@ -2375,7 +2375,8 @@
       "hit": "PEDIR",
       "stand": "PARAR",
       "double": "DOBRAR",
-      "pull_lever": "Puxe a alavanca para girar"
+      "pull_lever": "Puxe a alavanca para girar",
+      "scroll_more": "▼ MAIS ABAIXO · ROLAR · W / S · ↑ / ↓ · DIRECIONAL"
     }
   },
   "narrative": {

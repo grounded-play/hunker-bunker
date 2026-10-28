@@ -937,6 +937,10 @@ function getVisibleControllerFocusables(root = document) {
         if (element.getAttribute('aria-disabled') === 'true' && !element.hasAttribute('data-controller-focusable')) return false;
         if (element.closest('.hidden, [hidden], [inert]')) return false;
         if (element.closest('[aria-hidden="true"]')) return false;
+        // Decor a pointer can play with (a kiosk's bezel screws and keypad)
+        // is no stop for the pad or arrow keys: on the Deck the Fab Bay's
+        // d-pad walked the screws instead of the aisles (QA 2026-10-28).
+        if (element.closest('[data-controller-skip]')) return false;
         const style = window.getComputedStyle(element);
         if (style.display === 'none' || style.visibility === 'hidden') return false;
         return true;
@@ -1402,6 +1406,22 @@ function scrollFocuslessRegion(root, code) {
     return true;
 }
 
+// The scrollable region around the focused control, scrolled one step when
+// up / down found no control to move to and the region has room that way.
+function scrollFocusedRegion(from, code) {
+    const down = code === 'ArrowDown' || code === 'KeyS';
+    const up = code === 'ArrowUp' || code === 'KeyW';
+    if (!from?.parentElement || (!up && !down) || typeof getComputedStyle !== 'function') return false;
+    for (let el = from.parentElement; el && el !== document.body; el = el.parentElement) {
+        if (el.scrollHeight <= el.clientHeight + 4 || !/(auto|scroll)/.test(getComputedStyle(el).overflowY)) continue;
+        const room = down ? el.scrollHeight - el.clientHeight - el.scrollTop : el.scrollTop;
+        if (room <= 2) return false;
+        el.scrollBy({ top: (down ? 1 : -1) * Math.max(48, el.clientHeight * 0.6), behavior: 'smooth' });
+        return true;
+    }
+    return false;
+}
+
 const MENU_DIRECTION_BY_CODE = Object.freeze({
     ArrowUp: 'up', KeyW: 'up',
     ArrowDown: 'down', KeyS: 'down',
@@ -1438,6 +1458,9 @@ function navigateMenu(root, code) {
     else if (moveArmoryAdvanceFocus(root, code)) handled = true;
     else if (moveExplicitNavTarget(from, direction)) handled = true;
     else handled = moveSpatialControllerFocus(root, direction);
+    // Up / down at the last control in a scrolled list (the Fab Bay's
+    // machine screen) scrolls the rest into view instead of stopping.
+    if (document.activeElement === from && scrollFocusedRegion(from, code)) handled = true;
 
     const to = document.activeElement;
     if (handled && from !== to) {
@@ -14007,7 +14030,13 @@ document.getElementById('fabrication-btn')?.addEventListener('click', openFabric
 document.getElementById('close-fabrication-modal')?.addEventListener('click', closeFabricationModal);
 // The main terminal is the Meridian MK IV-B console (src/kioskTerminals.js).
 mountTerminalKiosk({ doc: document });
-setupClickOutside('fabrication-modal', closeFabricationModal);
+// The world Fab Bay is a whole machine with its own EXIT; a tap beside it
+// closed the bay mid-browse on the Deck (QA 2026-10-28), so only the menu
+// Fab Bay closes on an outside click.
+setupClickOutside('fabrication-modal', () => {
+    if (document.querySelector('#fabrication-modal .kiosk-framed')) return;
+    closeFabricationModal();
+});
 window.addEventListener('o2-generator-upgraded', refreshFabAccess);
 window.addEventListener('bank-updated', () => {
     const modal = document.getElementById('fabrication-modal');
