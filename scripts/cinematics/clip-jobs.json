@@ -1781,7 +1781,7 @@
           ]
         ]
       },
-      "action": "The drop-hauler ploughs straight through the ice belt, shards bursting against its armour; the camera holds behind it as the frozen planet rises ahead.",
+      "action": "The drop-hauler surges fast across the frame from left to right on blazing amber thrusters, ramming through the ice belt so shards and frozen hive bodies burst apart against its armour; the camera races after it as the frozen planet rushes up to fill the frame.",
       "lastFrame": "Wide cinematic establishing shot floating in open space: no ground, no terrain, no horizon, no people, no figures and no faces; the ship is the only subject and stays fully in frame, dwarfed by the black void and the colossal Mothership behind it; every organic form belongs to hulls and spires, never a body. the drop-hauler, plating scarred and glinting with frost, lumbering toward the frozen planet that fills the frame ahead.",
       "durationSec": 5,
       "audio": null,
@@ -1827,7 +1827,7 @@
           ]
         ]
       },
-      "action": "The shuttle threads a careful path while teal scan beams sweep the dark and lock onto the planet; the camera drifts alongside as the frozen planet grows to fill the frame.",
+      "action": "The shuttle banks hard and accelerates across the frame, weaving between tumbling debris while teal scan beams sweep out and lock onto the planet; the camera whips alongside as the frozen planet rushes up to fill the frame.",
       "lastFrame": "Wide cinematic establishing shot floating in open space: no ground, no terrain, no horizon, no people, no figures and no faces; the ship is the only subject and stays fully in frame, dwarfed by the black void and the colossal Mothership behind it; every organic form belongs to hulls and spires, never a body. the shuttle a small teal spark before the frozen planet that fills the frame, a scan grid traced across the planet's surface.",
       "durationSec": 5,
       "audio": null,
@@ -1897,14 +1897,14 @@
       },
       "soundDesign": "opening-crash",
       "firstFrame": {
-        "prompt": "Reference images: image 1 is the ship; image 2 is the ship after the crash. Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. High above the frozen sector, the Tank's ship (a massive armoured drop-hauler of stacked iron plating, a heavy rear ramp and banks of round amber-glowing thruster cans) descending heavily through the upper atmosphere, its armour glowing with re-entry heat, the ice-bound surface far below veined with biomechanical tissue.",
+        "prompt": "Reference images: image 1 is the ship; image 2 is the ship after the crash. Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. Inside a vast ice cavern overgrown with biomechanical tissue: the Tank's ship (a massive armoured drop-hauler of stacked iron plating, a heavy rear ramp and banks of round amber-glowing thruster cans) smashing down through the shattered cavern ceiling in fire and falling ice, thrusters dying, a moment before impact; the cavern floor directly below swarms with a hive brood of glistening chitinous alien creatures that look up as it falls on them.",
         "references": [
           "public/cutscenes/tank-class-intro.webm@5.5",
           "public/tank_ship.png"
         ],
         "model": "flux"
       },
-      "camera": "Heavy shuddering crane shot following the drop-hauler smashing through the ice and skidding across the cavern floor",
+      "camera": "Heavy shuddering low-angle shot with violent camera shake as the drop-hauler lands on the brood and ploughs toward the camera",
       "loras": {
         "zimage": [
           [
@@ -1919,7 +1919,7 @@
           ]
         ]
       },
-      "action": "A hypersonic strike slams into the drop-hauler's flank; thruster banks fail one by one and it drops like a stone, smashes through the ice belly-first and ploughs a gory trench through the hive brood on the cavern floor.",
+      "action": "The drop-hauler slams belly-first onto the hive brood, crushing them in bursts of green ichor and torn chitin, then ploughs forward across the cavern floor gouging a gory trench, ice and viscera spraying, until it grinds to a smoking halt.",
       "lastFrame": "Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. the wrecked drop-hauler belly-down at the end of a long gouged trench in an ice cavern overgrown with biomechanical tissue, a hive brood smashed into gore beneath it, green ichor and viscera across the ice, thruster cans smoking.",
       "durationSec": 6,
       "audio": null,
@@ -1943,14 +1943,14 @@
       },
       "soundDesign": "opening-crash",
       "firstFrame": {
-        "prompt": "Reference images: image 1 is the ship; image 2 is the ship after the crash. Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. High above the frozen sector, the Engineer's ship (a long low survey shuttle with a teal-glass canopy bubble, sensor dishes and antennae, cyan diagnostic lines along its iron hull) gliding down through the upper atmosphere, teal canopy lit, re-entry glow along its hull, the ice-bound surface far below veined with biomechanical tissue.",
+        "prompt": "Reference images: image 1 is the ship; image 2 is the ship after the crash. Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. Inside a vast ice cavern overgrown with biomechanical tissue: the Engineer's ship (a long low survey shuttle with a teal-glass canopy bubble, sensor dishes and antennae, cyan diagnostic lines along its iron hull) tumbling down through the shattered cavern ceiling in sparks and falling ice, panels tearing loose, a moment before impact; below it a hive creature rears up on the cavern floor among glistening egg sacs, directly in its path.",
         "references": [
           "public/cutscenes/engineer-class-intro.webm@6.6",
           "public/engineer_ship.png"
         ],
         "model": "flux"
       },
-      "camera": "Spiraling downward dive and shake following the shuttle tumbling through the breach and rolling across the cavern floor",
+      "camera": "Fast tracking shot with impact shake following the shuttle as it hits, skewers the creature and rolls across the cavern floor",
       "loras": {
         "zimage": [
           [
@@ -1965,7 +1965,7 @@
           ]
         ]
       },
-      "action": "A hypersonic strike flashes past and the shockwave tears panels off the shuttle; its systems flicker teal and red as it spirals down, breaks through the ice and rolls across the cavern, impaling a hive creature on its snapped dish.",
+      "action": "The shuttle hits the cavern floor hard, its snapped sensor dish spearing the rearing hive creature in a spray of ichor, then rolls across the ice scattering panels and bursting egg sacs before it stops on its side, sparks and teal screens flickering.",
       "lastFrame": "Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. the wrecked shuttle on its side in an ice cavern overgrown with biomechanical tissue, panels scattered, a hive creature impaled on a snapped dish spraying ichor, sparks and flickering teal screens through the cracked canopy.",
       "durationSec": 6,
       "audio": null,

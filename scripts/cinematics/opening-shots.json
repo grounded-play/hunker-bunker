@@ -98,8 +98,8 @@
       },
       "action": {
         "scout": "The interceptor barrel-rolls through the tumbling debris at speed, slipping between spinning hull plates; the camera chases it out of the field as the frozen planet swings into view.",
-        "tank": "The drop-hauler ploughs straight through the ice belt, shards bursting against its armour; the camera holds behind it as the frozen planet rises ahead.",
-        "engineer": "The shuttle threads a careful path while teal scan beams sweep the dark and lock onto the planet; the camera drifts alongside as the frozen planet grows to fill the frame."
+        "tank": "The drop-hauler surges fast across the frame from left to right on blazing amber thrusters, ramming through the ice belt so shards and frozen hive bodies burst apart against its armour; the camera races after it as the frozen planet rushes up to fill the frame.",
+        "engineer": "The shuttle banks hard and accelerates across the frame, weaving between tumbling debris while teal scan beams sweep out and lock onto the planet; the camera whips alongside as the frozen planet rushes up to fill the frame."
       },
       "camera": {
         "scout": "Dynamic orbital pan and chase tracking the interceptor barrel-rolling across the planet horizon",
@@ -133,8 +133,8 @@
       ],
       "firstFrame": {
         "scout": "High above the frozen sector, {ship} diving through the upper atmosphere wreathed in re-entry fire, the ice-bound surface far below veined with biomechanical tissue and glowing vents.",
-        "tank": "High above the frozen sector, {ship} descending heavily through the upper atmosphere, its armour glowing with re-entry heat, the ice-bound surface far below veined with biomechanical tissue.",
-        "engineer": "High above the frozen sector, {ship} gliding down through the upper atmosphere, teal canopy lit, re-entry glow along its hull, the ice-bound surface far below veined with biomechanical tissue."
+        "tank": "Inside a vast ice cavern overgrown with biomechanical tissue: {ship} smashing down through the shattered cavern ceiling in fire and falling ice, thrusters dying, a moment before impact; the cavern floor directly below swarms with a hive brood of glistening chitinous alien creatures that look up as it falls on them.",
+        "engineer": "Inside a vast ice cavern overgrown with biomechanical tissue: {ship} tumbling down through the shattered cavern ceiling in sparks and falling ice, panels tearing loose, a moment before impact; below it a hive creature rears up on the cavern floor among glistening egg sacs, directly in its path."
       },
       "lastFrame": {
         "scout": "the wrecked interceptor, one wing torn away, nose buried in an ice cavern overgrown with biomechanical tissue and phallic stalactites, hive creatures crushed under the wreck in sprays of green ichor and torn flesh, smoke and one amber emergency lamp.",
@@ -143,13 +143,13 @@
       },
       "action": {
         "scout": "A hypersonic streak lances up from the surface and clips the interceptor; a wing shears away and it cartwheels down trailing fire, punches through the ice into the cavern and skids through a hive brood, crushing them in bursts of green ichor.",
-        "tank": "A hypersonic strike slams into the drop-hauler's flank; thruster banks fail one by one and it drops like a stone, smashes through the ice belly-first and ploughs a gory trench through the hive brood on the cavern floor.",
-        "engineer": "A hypersonic strike flashes past and the shockwave tears panels off the shuttle; its systems flicker teal and red as it spirals down, breaks through the ice and rolls across the cavern, impaling a hive creature on its snapped dish."
+        "tank": "The drop-hauler slams belly-first onto the hive brood, crushing them in bursts of green ichor and torn chitin, then ploughs forward across the cavern floor gouging a gory trench, ice and viscera spraying, until it grinds to a smoking halt.",
+        "engineer": "The shuttle hits the cavern floor hard, its snapped sensor dish spearing the rearing hive creature in a spray of ichor, then rolls across the ice scattering panels and bursting egg sacs before it stops on its side, sparks and teal screens flickering."
       },
       "camera": {
         "scout": "Violent plunging dive and camera shake following the flaming interceptor breaking through the ice",
-        "tank": "Heavy shuddering crane shot following the drop-hauler smashing through the ice and skidding across the cavern floor",
-        "engineer": "Spiraling downward dive and shake following the shuttle tumbling through the breach and rolling across the cavern floor"
+        "tank": "Heavy shuddering low-angle shot with violent camera shake as the drop-hauler lands on the brood and ploughs toward the camera",
+        "engineer": "Fast tracking shot with impact shake following the shuttle as it hits, skewers the creature and rolls across the cavern floor"
       },
       "stillModel": "flux",
       "framing": "Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body.",
