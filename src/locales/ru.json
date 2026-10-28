@@ -866,6 +866,12 @@
       "press_e": "НАЖМИТЕ E",
       "defense_turret_controls": "УПРАВЛЕНИЕ ТУРЕЛЬЮ"
     },
+    "coop": {
+      "revive_prompt": "ПОДНЯТЬ {callsign}",
+      "reviving_toast": "ПОДНИМАЕМ {callsign}...",
+      "downed_toast": "ВЫ ВЫВЕДЕНЫ ИЗ СТРОЯ — НАПАРНИК МОЖЕТ ВАС ПОДНЯТЬ",
+      "squadmate_down_toast": "НАПАРНИК ВЫВЕДЕН ИЗ СТРОЯ: {callsign} — ВСТАНЬТЕ РЯДОМ И НАЖМИТЕ «ВЗАИМОДЕЙСТВИЕ»"
+    },
     "foundry_hud_prompt": {
       "press_e": "НАЖМИТЕ E",
       "open_fab_bay": "ОТКРЫТЬ ЦЕХ СБОРКИ",

@@ -866,6 +866,12 @@
       "press_e": "PULSA E",
       "defense_turret_controls": "CONTROLES DE TORRETA DEFENSIVA"
     },
+    "coop": {
+      "revive_prompt": "REANIMAR A {callsign}",
+      "reviving_toast": "REANIMANDO A {callsign}...",
+      "downed_toast": "ESTÁS CAÍDO — UN COMPAÑERO PUEDE REANIMARTE",
+      "squadmate_down_toast": "COMPAÑERO CAÍDO: {callsign} — PÁRATE SOBRE ÉL Y PULSA INTERACTUAR PARA REANIMAR"
+    },
     "foundry_hud_prompt": {
       "press_e": "PULSA E",
       "open_fab_bay": "ABRIR TALLER DE FABRICACIÓN",

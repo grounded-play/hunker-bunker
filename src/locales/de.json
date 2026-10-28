@@ -866,6 +866,12 @@
       "press_e": "E DRÜCKEN",
       "defense_turret_controls": "STEUERUNG DES VERTEIDIGUNGSGESCHÜTZES"
     },
+    "coop": {
+      "revive_prompt": "{callsign} WIEDERBELEBEN",
+      "reviving_toast": "{callsign} WIRD WIEDERBELEBT...",
+      "downed_toast": "DU BIST AUSGESCHALTET — EIN TRUPPMITGLIED KANN DICH WIEDERBELEBEN",
+      "squadmate_down_toast": "TRUPPMITGLIED AUSGESCHALTET: {callsign} — STELL DICH DARÜBER UND DRÜCKE INTERAGIEREN"
+    },
     "foundry_hud_prompt": {
       "press_e": "E DRÜCKEN",
       "open_fab_bay": "FERTIGUNGSBUCHT ÖFFNEN",

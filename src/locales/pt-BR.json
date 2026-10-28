@@ -866,6 +866,12 @@
       "press_e": "PRESSIONE E",
       "defense_turret_controls": "CONTROLES DA TORRE DE DEFESA"
     },
+    "coop": {
+      "revive_prompt": "REANIMAR {callsign}",
+      "reviving_toast": "REANIMANDO {callsign}...",
+      "downed_toast": "VOCÊ CAIU — UM COLEGA DE ESQUADRÃO PODE TE REANIMAR",
+      "squadmate_down_toast": "COLEGA CAÍDO: {callsign} — FIQUE SOBRE ELE E APERTE INTERAGIR PARA REANIMAR"
+    },
     "foundry_hud_prompt": {
       "press_e": "PRESSIONE E",
       "open_fab_bay": "ABRIR BAIA DE FABRICAÇÃO",

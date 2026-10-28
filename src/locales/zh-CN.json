@@ -866,6 +866,12 @@
       "press_e": "按 E",
       "defense_turret_controls": "防御炮塔控制"
     },
+    "coop": {
+      "revive_prompt": "复活 {callsign}",
+      "reviving_toast": "正在复活 {callsign}...",
+      "downed_toast": "你已倒地 — 队友可以复活你",
+      "squadmate_down_toast": "队友倒地：{callsign} — 站到其身旁按互动键复活"
+    },
     "foundry_hud_prompt": {
       "press_e": "按 E",
       "open_fab_bay": "打开制造舱",

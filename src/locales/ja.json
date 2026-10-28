@@ -866,6 +866,12 @@
       "press_e": "E を押す",
       "defense_turret_controls": "防衛タレット制御"
     },
+    "coop": {
+      "revive_prompt": "{callsign} を蘇生",
+      "reviving_toast": "{callsign} を蘇生中...",
+      "downed_toast": "ダウンしました — 仲間が蘇生できます",
+      "squadmate_down_toast": "仲間がダウン: {callsign} — 近くでインタラクトを押して蘇生"
+    },
     "foundry_hud_prompt": {
       "press_e": "E を押す",
       "open_fab_bay": "製造ベイを開く",

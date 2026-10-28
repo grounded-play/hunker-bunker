@@ -1308,6 +1308,8 @@ const FRIENDLY_FIRE_PUSH_DISTANCE = 0.55;
 // Squadmate avatars are roughly player-sized; keep the catch radius forgiving
 // enough that a shove reads as intentional rather than pixel-perfect.
 const SQUADMATE_HIT_RADIUS = 0.55;
+// Reach for E / pad-interact revive: standing over a downed squadmate.
+const SQUADMATE_REVIVE_RADIUS = 2.5;
 
 // --- Sprint 10 combat tuning / feature flags ---
 const FEATURE_WALL_DECALS = true;
@@ -7847,6 +7849,7 @@ export class ThreeGame {
         }
         if (!this.remotePlayers?.has(data.targetId)) return;
         const remote = this.remotePlayers.get(data.targetId);
+        debugLog.info('MULTIPLAYER', 'remote-player-revived', { playerId: data.targetId, reviverId: data.reviverId ?? null });
         remote.isDown = false;
         remote.hp = remote.maxHp;
         remote.overlay?.setDowned?.(false);
@@ -7861,7 +7864,9 @@ export class ThreeGame {
         remote.isDown = true;
         remote.hp = 0;
         remote.overlay?.setDowned?.(true);
-        window.showToastNotification?.(`SQUADMATE DOWN: ${remote.callsign}`);
+        debugLog.info('MULTIPLAYER', 'remote-player-downed', { playerId, callsign: remote.callsign ?? null });
+        // Say how to bring them back: the only cue used to be a click target.
+        window.showToastNotification?.(t('ui.coop.squadmate_down_toast', { callsign: remote.callsign ?? 'SQUADMATE' }));
         window.AudioManager?.play?.('ui_error', { volume: 0.4 });
         this.resolveCoopSquadWipe?.();
     }
@@ -8176,7 +8181,7 @@ export class ThreeGame {
         const pz = projectile.mesh.position.z;
         for (const [id, remote] of this.remotePlayers) {
             const mesh = remote?.mesh;
-            if (!mesh || mesh.visible === false || remote.isDowned) continue;
+            if (!mesh || mesh.visible === false || remote.isDown) continue;
             const distance = Math.hypot(px - mesh.position.x, pz - mesh.position.z);
             if (distance <= SQUADMATE_HIT_RADIUS) return { id, remote };
         }
@@ -10219,6 +10224,18 @@ export class ThreeGame {
             return candidates;
         }
         const carriedObject = this.carryState?.carried;
+        // Reviving a squadmate outranks everything else in reach: a downed
+        // operator has no input of their own until someone brings them back.
+        const downed = this.getNearestDownedSquadmate?.();
+        if (downed) {
+            candidates.push({
+                id: `revive-squadmate:${downed.remote.id}`,
+                label: t('ui.coop.revive_prompt', { callsign: (downed.remote.callsign || 'SQUADMATE').toUpperCase() }),
+                distance: downed.distance,
+                priorityRank: -1,
+                interact: () => this.reviveSquadmate(downed.remote, 'interact')
+            });
+        }
         const consoleShip = this.activeInteractiveConsole;
         if (consoleShip) {
             const x = consoleShip.tileX + consoleShip.consoleOffset.x;
@@ -16776,14 +16793,33 @@ export class ThreeGame {
             const rPos = remote.mesh?.position;
             if (!rPos) continue;
             const dist = Math.hypot(worldPoint.x - rPos.x, worldPoint.z - rPos.z);
-            if (dist <= 2.2) {
-                this.netSocket?.emit('playerRevive', { targetId: remote.id });
-                window.showToastNotification?.(`REVIVING ${(remote.callsign || 'SQUADMATE').toUpperCase()}...`);
-                window.AudioManager?.play?.('fx_level_up', { volume: 0.35 });
-                return true;
-            }
+            if (dist <= 2.2) return this.reviveSquadmate(remote, 'pointer');
         }
         return false;
+    }
+
+    // The one revive path for a click, E and the pad's interact button.
+    reviveSquadmate(remote, source = 'interact') {
+        if (!remote?.isDown || !this.netSocket) return false;
+        this.netSocket.emit('playerRevive', { targetId: remote.id });
+        debugLog.info('MULTIPLAYER', 'revive-sent', { targetId: remote.id, callsign: remote.callsign ?? null, source });
+        window.showToastNotification?.(t('ui.coop.reviving_toast', { callsign: (remote.callsign || 'SQUADMATE').toUpperCase() }));
+        window.AudioManager?.play?.('fx_level_up', { volume: 0.35 });
+        return true;
+    }
+
+    // A downed squadmate in co-op within reach of the local player.
+    getNearestDownedSquadmate(maxDistance = SQUADMATE_REVIVE_RADIUS) {
+        if (!this.isMultiplayer || this.multiplayerMode === 'pvp' || !this.remotePlayers?.size || !this.player) return null;
+        let best = null;
+        for (const remote of this.remotePlayers.values()) {
+            if (!remote?.isDown || remote.isDead) continue;
+            const rPos = remote.mesh?.position;
+            if (!rPos) continue;
+            const distance = Math.hypot(this.player.position.x - rPos.x, this.player.position.z - rPos.z);
+            if (distance <= maxDistance && (!best || distance < best.distance)) best = { remote, distance };
+        }
+        return best;
     }
 
     resolveTacticalInspectTarget(worldPoint) {
@@ -29324,9 +29360,10 @@ export class ThreeGame {
         this.emitHealthState?.();
         this.setInputEnabled?.(false);
         this.closeConsoleModal?.();
-        window.showToastNotification?.('YOU ARE DOWNED -- AWAIT REVIVAL');
+        window.showToastNotification?.(t('ui.coop.downed_toast'));
         window.AudioManager?.play?.('ui_error', { volume: 0.5 });
         this.player3dOverlay?.setDowned?.(true);
+        debugLog.info('MULTIPLAYER', 'player-downed', { reason, x: this.player?.position?.x ?? null, z: this.player?.position?.z ?? null });
         if (this.netSocket) {
             this.netSocket.emit('playerDowned', {});
         }
@@ -29336,6 +29373,7 @@ export class ThreeGame {
 
     revivePlayerFromDowned(reviverCallsign = 'SQUADMATE') {
         if (!this.isPlayerDowned) return;
+        debugLog.info('MULTIPLAYER', 'player-revived', { reviver: reviverCallsign ?? null });
         this.isPlayerDowned = false;
         this.playerVitals.hp = Math.max(1, Math.round((this.playerVitals.maxHp || 100) * 0.5));
         this.emitHealthState?.();

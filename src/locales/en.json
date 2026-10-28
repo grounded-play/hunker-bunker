@@ -866,6 +866,12 @@
       "press_e": "PRESS E",
       "defense_turret_controls": "DEFENSE TURRET CONTROLS"
     },
+    "coop": {
+      "revive_prompt": "REVIVE {callsign}",
+      "reviving_toast": "REVIVING {callsign}...",
+      "downed_toast": "YOU ARE DOWN — A SQUADMATE CAN REVIVE YOU",
+      "squadmate_down_toast": "SQUADMATE DOWN: {callsign} — STAND OVER THEM AND PRESS INTERACT TO REVIVE"
+    },
     "foundry_hud_prompt": {
       "press_e": "PRESS E",
       "open_fab_bay": "OPEN FAB BAY",
