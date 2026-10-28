@@ -568,3 +568,27 @@ This plan consolidates, rather than replaces, the following work:
 - [October 27 PvE/PvP playthrough](qa-2026-10-27-pve-pvp-playthrough.md)
 - [Historical gameplay FPS findings](../log13-gameplay-fps-findings-and-fix-plan-2026-08-20.md)
 - [Earlier broad gameplay/tutorial plan](aaa-gameplay-juice-story-tutorial-and-arcade-expansion-plan-2026-10-16.md), used only where it agrees with the newer product state and bounded Proof Run.
+
+## 15. Implementation log
+
+Code changes made against this plan. Each is a hypothesis until the matching
+evidence in §10–§11 exists; none of them closes a ticket by itself.
+
+### 2026-10-28 (overnight, `dev/sprint-53`)
+
+| Workstream | Change | Commit | Evidence still owed |
+| --- | --- | --- | --- |
+| P0-A / P0-C | PvP rounds put the class gun in hand at gameplay-ready and never start the Sector Zero tutorial (its unarmed rack start lost the Deck a round). | `73f8ca3f` | `[2P]` PvP round on Deck + PC: both armed at first frame. |
+| P0-A | Every field-weapon equip is logged (`WEAPON field-weapon-equipped`); the analyzer prints the first equip time. | `73f8ca3f`, `502c359c` | Next uploaded logs show `armed: firstEquip=`. |
+| P0-C | Abort confirm names its scope: co-op, only you leave; PvP, the relay awards the round. The October 27 "abort ends the squad" finding was wrong (the host aborted separately) and is corrected in the QA doc. | `73f8ca3f` | `[2P]` co-op abort: guest leaves, host keeps playing. |
+| P1-H | Unaffordable and used workbench choices are `aria-disabled` + `data-controller-focusable`, so a pad can reach them and read the shortfall. | `73f8ca3f` | Controller-only workbench visit on Deck. |
+| P0-A | Oxygen and cold name the immediate escape and the durable answer (repair/upgrade the O₂ generator, live class-discounted cost); ≥20% installed protection is confirmed instead. Act 2 hazard walls announce themselves and point at the Substation Keycard. Detail wraps to two lines. | `45532bd8` | Fresh-player test: names the O₂ answer at minute eight. |
+| P1-E | Every module/charm install (Foundry and Armory) shows where it went, its mount, and before → after per stat, e.g. `PRESSURE SEAL INSTALLED IN SUIT BAY A · CHEST · O₂ DRAIN 1.00 → 0.75 · HEALING RECEIVED 1.00 → 0.60`. | `9e5e05d1` | Player can state what the install changed. |
+| P1-E | The debrief build line names installed suit modules instead of "no field upgrades". | `50ba2c2e` | — |
+| §5 | The single prompt lane ranks the optional camp quest below the required step and the zone prompt (it was ranked urgent). | `e80eceaf` | Proof Run capture: one primary, one optional, one survival state. |
+| P0-B | GLB budget gate: all 699 runtime models measured from their headers; the 47 already over budget are baselined and may not grow; new over-budget models fail the suite (`npm run audit:glb-budgets`). No LOD rule: the engine has no LOD system to consume one. | `502c359c` | — |
+| P0-B | Per-platform scene budgets (visible chunks 9; draw calls, triangles, programs per Deck/PC), checked every frame-breakdown window and logged as `PERF scene-budget-exceeded`; the analyzer reports worst overages. | `502c359c` | Fixed-route Deck + PC captures with zero overage windows. |
+
+Not started here, needing hardware or a free GPU: the CPU profile of the
+deployment stall and dense rooms (§7 P0-B steps 2–6; the GPU was busy with the
+overnight cinematic render), remote interpolation metrics, and every `[2P]` row.
