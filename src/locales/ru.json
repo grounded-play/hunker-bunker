@@ -476,6 +476,8 @@
       "system_build": "СБОРКА СИСТЕМЫ",
       "dev_console": "КОНСОЛЬ DEV",
       "initializing_systems": "ИНИЦИАЛИЗАЦИЯ СИСТЕМ",
+      "squad_waiting": "СИНХРОНИЗАЦИЯ ОТРЯДА — ГОТОВО {loaded} / {total}",
+      "squad_ready": "ОТРЯД ГОТОВ — ОТКРЫВАЕМ ГЕРМОДВЕРИ",
       "msg_biometric_airlock": "КАЛИБРОВКА БИОМЕТРИЧЕСКОГО ШЛЮЗА",
       "msg_reactor_bulkhead": "ЭКРАНИРОВАНИЕ ПЕРЕБОРКИ ОХЛАЖДЕНИЯ РЕАКТОРА",
       "msg_thermal_shield": "СТАБИЛИЗАЦИЯ ТЕРМОСВЕРХПРОВОДЯЩЕГО ЩИТА",

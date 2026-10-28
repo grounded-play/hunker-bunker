@@ -9742,7 +9742,11 @@ async function runMissionIntroSequence({ deploymentHold = null, forceSectorZero 
 
         let choice = 'skip';
         introStages.enter('dialogue');
-        if (!window.skipAllIntro) {
+        // The Mothership's only question is "tutorial or skip". A squad is
+        // assumed to have played (owner ask 2026-10-28), so co-op and PvP
+        // never ask it.
+        const isMultiplayerRun = Boolean(window.game?.isMultiplayer);
+        if (!window.skipAllIntro && !isMultiplayerRun) {
             choice = await dialogueManager?.openMothershipDialogue({ playerType }) ?? 'skip';
         }
         introStages.end();
@@ -9752,10 +9756,9 @@ async function runMissionIntroSequence({ deploymentHold = null, forceSectorZero 
         // Fresh profiles enter Sector 0 regardless of whether they skip the
         // cinematic/dialogue layer. Returning operators retain the explicit
         // Mothership tutorial choice.
-        // Never in PvP: the tutorial's unarmed rack start hands the round to
-        // whoever is already armed.
-        const isPvp = window.game?.isMultiplayer && window.game?.multiplayerMode === 'pvp';
-        const startTutorial = !isPvp && (forceSectorZero || (choice === 'tutorial' && !window.skipAllIntro));
+        // Never in multiplayer: a squad is assumed to have played, and in PvP
+        // the tutorial's unarmed rack start hands the round to whoever is armed.
+        const startTutorial = !isMultiplayerRun && (forceSectorZero || (choice === 'tutorial' && !window.skipAllIntro));
         if (!isSkippingWithDoor) {
             document.body.classList.add('hud-hidden');
             await new Promise((resolve) => {
@@ -10097,6 +10100,23 @@ async function openArmoryGate(embarkAction, { skipDoor = false } = {}) {
     }
 }
 
+// Multiplayer: keep this operator behind the closed doors, with the squad's
+// readiness on the door face, until everyone has loaded (src/threeGame.js
+// waitForSquadDeployGate). Solo and older relays pass straight through.
+async function waitForSquadAtDoors() {
+    const game = window.game;
+    if (!game?.isMultiplayer || typeof game.waitForSquadDeployGate !== 'function') return;
+    const show = (loaded, total) => showRunLoadingScreen(
+        t('ui.loading.squad_waiting', { loaded, total }), 99, { overDoor: true }
+    );
+    const result = await game.waitForSquadDeployGate({
+        onProgress: ({ loaded, total }) => show(loaded, total)
+    });
+    if (result.reason === 'no-gate') return;
+    showRunLoadingScreen(t('ui.loading.squad_ready'), 100, { overDoor: true });
+    await hideRunLoadingScreen({ fade: true });
+}
+
 function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapshot = null } = {}) {
     const playerType = resumeSnapshot?.player?.classType ?? getSelectedHeroType();
     const forceSectorZero = shouldAutoStartSectorZero({
@@ -10162,7 +10182,7 @@ function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapsho
                 if (resumeSnapshot && !window.game?.restoreExpeditionSuspend?.(resumeSnapshot)) {
                     throw new Error('Expedition continuation could not be restored.');
                 }
-            });
+            }).then(() => waitForSquadAtDoors());
         },
         () => {
             if (!playIntro && forceSectorZero) window.game?.startSectorZeroTutorial?.();

@@ -476,6 +476,8 @@
       "system_build": "系统版本",
       "dev_console": "开发者控制台",
       "initializing_systems": "正在初始化系统",
+      "squad_waiting": "小队同步中 — {loaded} / {total} 名队员就绪",
+      "squad_ready": "小队就绪 — 正在开启防爆门",
       "msg_biometric_airlock": "正在校准生物识别气闸通道",
       "msg_reactor_bulkhead": "正在屏蔽反应堆冷却隔舱",
       "msg_thermal_shield": "正在稳定热超导护盾",

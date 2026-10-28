@@ -1257,7 +1257,8 @@ export class MultiplayerLobby {
             roundId: data.roundId || null,
             // A relay older than 2026-10-28 sends none: the game then keeps
             // the behaviour that relay can carry.
-            relayFeatures: Array.isArray(data.relayFeatures) ? data.relayFeatures : []
+            relayFeatures: Array.isArray(data.relayFeatures) ? data.relayFeatures : [],
+            deployGateId: typeof data.deployGateId === 'string' ? data.deployGateId : null
         });
     }
 
@@ -1268,13 +1269,14 @@ export class MultiplayerLobby {
     // twice: once instantly and redundantly from its own deployMatch, and
     // again moments later reacting to its own matchStarted echo from the
     // server (io.to() includes the sender). Consolidated to one place.
-    finalizeDeploy({ mode, seed, crashPlan, roundId = null, relayFeatures = [] }) {
+    finalizeDeploy({ mode, seed, crashPlan, roundId = null, relayFeatures = [], deployGateId = null }) {
         this.activeMatch = {
             roomCode: this.roomCode,
             mode,
             seed,
             roundId,
             relayFeatures,
+            deployGateId,
             crashPlan: crashPlan || null,
             isMultiplayer: true,
             isHost: Boolean(this.isLocalPlayerHost),

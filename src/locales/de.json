@@ -476,6 +476,8 @@
       "system_build": "SYSTEM-BUILD",
       "dev_console": "DEV-KONSOLE",
       "initializing_systems": "SYSTEME WERDEN INITIALISIERT",
+      "squad_waiting": "TRUPP-SYNC — {loaded} / {total} OPERATOREN BEREIT",
+      "squad_ready": "TRUPP BEREIT — DRUCKTÜREN ÖFFNEN SICH",
       "msg_biometric_airlock": "BIOMETRISCHES LUFTSCHLEUSENTOR WIRD KALIBRIERT",
       "msg_reactor_bulkhead": "REAKTOR-KÜHLMITTELSCHOTT WIRD ABGESCHIRMT",
       "msg_thermal_shield": "THERMISCHER SUPRALEITERSCHILD WIRD STABILISIERT",

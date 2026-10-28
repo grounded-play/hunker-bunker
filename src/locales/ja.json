@@ -476,6 +476,8 @@
       "system_build": "システムビルド",
       "dev_console": "開発コンソール",
       "initializing_systems": "システム初期化中",
+      "squad_waiting": "分隊同期中 — {loaded} / {total} 名準備完了",
+      "squad_ready": "分隊準備完了 — 防爆扉を開放",
       "msg_biometric_airlock": "生体認証エアロック通路を校正中",
       "msg_reactor_bulkhead": "原子炉冷却隔壁を遮蔽中",
       "msg_thermal_shield": "熱超伝導シールドを安定化中",

@@ -476,6 +476,8 @@
       "system_build": "BUILD DO SISTEMA",
       "dev_console": "CONSOLE DEV",
       "initializing_systems": "INICIALIZANDO SISTEMAS",
+      "squad_waiting": "SINCRONIZANDO ESQUADRÃO — {loaded} / {total} OPERADORES PRONTOS",
+      "squad_ready": "ESQUADRÃO PRONTO — ABRINDO AS COMPORTAS",
       "msg_biometric_airlock": "CALIBRANDO A ECLUSA BIOMÉTRICA",
       "msg_reactor_bulkhead": "BLINDANDO A ANTEPARA DE REFRIGERANTE DO REATOR",
       "msg_thermal_shield": "ESTABILIZANDO O ESCUDO SUPERCONDUTOR TÉRMICO",

@@ -2065,7 +2065,10 @@ function refuseDamage(game, why) {
 // Co-op guests create host enemies they lack (handleEnemyStateSnapshot).
 const REMOTE_ENEMY_MATERIALIZE_PER_SNAPSHOT = 4;
 // Routes this client expects from the relay; see server/relay.js RELAY_FEATURES.
-const RELAY_FEATURES_EXPECTED = Object.freeze(['enemyContactHit', 'pvpEnemyState', 'missionState']);
+const RELAY_FEATURES_EXPECTED = Object.freeze(['enemyContactHit', 'pvpEnemyState', 'missionState', 'deployGate']);
+// A little past the relay's own backstop (server/relay.js DEPLOY_GATE_TIMEOUT_MS),
+// so a relay that went quiet cannot keep this client's doors shut.
+const DEPLOY_GATE_CLIENT_TIMEOUT_MS = 100_000;
 const REMOTE_REPLICA_STALE_MS = 3000;
 
 // The closest open cell to a point, searched ring by ring (companions).
@@ -7056,6 +7059,7 @@ export class ThreeGame {
         // An older relay sends nothing, and the routes it lacks fall back to
         // the behaviour that relay carried.
         this.relayFeatures = new Set(Array.isArray(session.relayFeatures) ? session.relayFeatures : []);
+        this.deployGateId = typeof session.deployGateId === 'string' ? session.deployGateId : null;
         debugLog.info('MULTIPLAYER', 'relay-features', {
             features: [...this.relayFeatures],
             missing: RELAY_FEATURES_EXPECTED.filter((feature) => !this.relayFeatures.has(feature))
@@ -7266,6 +7270,7 @@ export class ThreeGame {
         this.multiplayerRoomCode = null;
         this.multiplayerCrashPlan = null;
         this.relayFeatures = null;
+        this.deployGateId = null;
         this.multiplayerLocalPlayerId = null;
         this.isMultiplayerHost = false;
         this.lastNetBroadcastTime = 0;
@@ -7281,6 +7286,47 @@ export class ThreeGame {
         this.globalSeedOffset = 0;
         this._descentIndex = 0;
         this._descentBaseOffset = null;
+    }
+
+    // Holds this client's closed doors until every operator in the match has
+    // loaded (owner ask 2026-10-28: open together, "x / x ready"). Resolves
+    // at once when there is no gate: solo, an older relay, or no socket.
+    // onProgress({ loaded, total, players }) drives the door readout.
+    waitForSquadDeployGate({ onProgress = () => {}, timeoutMs = DEPLOY_GATE_CLIENT_TIMEOUT_MS } = {}) {
+        const socket = this.netSocket;
+        const gateId = this.deployGateId;
+        if (!this.isMultiplayer || !socket || !gateId || !this.relayFeatures?.has('deployGate')) {
+            return Promise.resolve({ reason: 'no-gate', waitedMs: 0 });
+        }
+        this.deployGateId = null; // One wait per match.
+        const startedAt = Date.now();
+        debugLog.info('MULTIPLAYER', 'deploy-gate-waiting', { gateId });
+        return new Promise((resolve) => {
+            let timer = null;
+            const finish = (reason, detail = {}) => {
+                clearTimeout(timer);
+                socket.off?.('deployGateProgress', onGateProgress);
+                socket.off?.('deployGateOpen', onGateOpen);
+                socket.off?.('disconnect', onDisconnect);
+                const result = { reason, waitedMs: Date.now() - startedAt, ...detail };
+                debugLog.info('MULTIPLAYER', 'deploy-gate-open', result);
+                resolve(result);
+            };
+            const onGateProgress = (data = {}) => {
+                if (data.gateId !== gateId) return;
+                onProgress({ loaded: data.loaded, total: data.total, players: data.players ?? [] });
+            };
+            const onGateOpen = (data = {}) => {
+                if (data.gateId != null && data.gateId !== gateId) return;
+                finish(data.reason ?? 'opened', { loaded: data.loaded ?? null, total: data.total ?? null });
+            };
+            const onDisconnect = () => finish('disconnected');
+            socket.on?.('deployGateProgress', onGateProgress);
+            socket.on?.('deployGateOpen', onGateOpen);
+            socket.on?.('disconnect', onDisconnect);
+            timer = setTimeout(() => finish('client-timeout'), timeoutMs);
+            socket.emit('deployLoaded', { gateId });
+        });
     }
 
     notifyPvpGameplayReady() {

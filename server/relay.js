@@ -70,7 +70,11 @@ const PVE_CONTACT_HIT_MIN_INTERVAL_MS = 120;
 // of the deployed relay checks this list and keeps its older behaviour for a
 // route the relay lacks (QA 2026-10-28: a 10-07 relay silently dropped the
 // host's contact bites, so co-op guests took no enemy damage at all).
-export const RELAY_FEATURES = Object.freeze(['enemyContactHit', 'pvpEnemyState', 'missionState']);
+export const RELAY_FEATURES = Object.freeze(['enemyContactHit', 'pvpEnemyState', 'missionState', 'deployGate']);
+// The squad's doors open together: each client loads its world behind closed
+// doors, says so, and waits until every operator who deployed has (owner ask
+// 2026-10-28). A client that never reports cannot hold the rest past this.
+export const DEPLOY_GATE_TIMEOUT_MS = 90_000;
 // A world beat is a rare, deliberate event (a goal built, a boss staged), so a
 // low ceiling is generous while still bounding a misbehaving client.
 // A Tank slam can break several walls at once, each its own event.
@@ -279,6 +283,46 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
     // launching solo the instant they click deploy.
     const roomCountdowns = new Map();
     const MATCH_COUNTDOWN_MS = 3000;
+    // Map: roomCode -> { gateId, expected: Set<socketId>, loaded: Set<socketId>, timeout }.
+    const deployGates = new Map();
+    const deployGateRoster = (gate) => [...gate.expected].map((id) => ({
+        id, callsign: players.get(id)?.callsign ?? 'OPERATIVE', loaded: gate.loaded.has(id)
+    }));
+    const closeDeployGate = (roomCode, reason) => {
+        const gate = deployGates.get(roomCode);
+        if (!gate) return;
+        clearTimeout(gate.timeout);
+        deployGates.delete(roomCode);
+        io.to(roomCode).emit('deployGateOpen', {
+            gateId: gate.gateId, reason, loaded: gate.loaded.size, total: gate.expected.size
+        });
+        logRelayEvent('DEPLOY_GATE_OPEN', { roomCode, gateId: gate.gateId, reason, loaded: gate.loaded.size, total: gate.expected.size });
+    };
+    const reportDeployGate = (roomCode) => {
+        const gate = deployGates.get(roomCode);
+        if (!gate) return;
+        if (gate.expected.size === 0 || [...gate.expected].every((id) => gate.loaded.has(id))) {
+            closeDeployGate(roomCode, 'all_loaded');
+            return;
+        }
+        io.to(roomCode).emit('deployGateProgress', {
+            gateId: gate.gateId, loaded: gate.loaded.size, total: gate.expected.size, players: deployGateRoster(gate)
+        });
+    };
+    const openDeployGateFor = (roomCode) => {
+        const previous = deployGates.get(roomCode);
+        if (previous) clearTimeout(previous.timeout);
+        const gate = {
+            gateId: randomUUID(),
+            expected: new Set(rooms.get(roomCode) ?? []),
+            loaded: new Set(),
+            timeout: null
+        };
+        gate.timeout = setTimeout(() => closeDeployGate(roomCode, 'timeout'), DEPLOY_GATE_TIMEOUT_MS);
+        gate.timeout.unref?.();
+        deployGates.set(roomCode, gate);
+        return gate.gateId;
+    };
     // Map: roomCode -> stable identity key (steamId64 when real, otherwise
     // the client's persisted localStorage profileId -- see
     // src/profile.js's ProfileManager) of whoever should be that room's
@@ -682,10 +726,29 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                 logRelayEvent('MATCH_DEPLOY', { roomCode, mode, seed, startedBy });
 
                 dressingAuthority.clear(roomCode);
-                io.to(roomCode).emit('matchStarted', { seed, mode, crashPlan, startedBy, timestamp: Date.now(), roundId, relayFeatures: RELAY_FEATURES });
+                const deployGateId = openDeployGateFor(roomCode);
+                io.to(roomCode).emit('matchStarted', { seed, mode, crashPlan, startedBy, timestamp: Date.now(), roundId, relayFeatures: RELAY_FEATURES, deployGateId });
             }, MATCH_COUNTDOWN_MS);
 
             roomCountdowns.set(roomCode, { timeout });
+        });
+
+        // This client's world is built and warmed behind its closed doors.
+        socket.on('deployLoaded', (data = {}) => {
+            const roomCode = player.roomCode;
+            const gate = roomCode ? deployGates.get(roomCode) : null;
+            if (!gate || data?.gateId !== gate.gateId) {
+                // A late or stale report: tell this client the gate is not
+                // holding anyone, so it never waits on a gate that closed.
+                socket.emit('deployGateOpen', { gateId: data?.gateId ?? null, reason: 'not_waiting' });
+                return;
+            }
+            if (gate.loaded.has(socket.id)) return;
+            // A socket that reconnected during deployment has a new id; the
+            // old one already left the gate, so this one counts in its place.
+            gate.expected.add(socket.id);
+            gate.loaded.add(socket.id);
+            reportDeployGate(roomCode);
         });
 
         socket.on('pvpGameplayReady', (data = {}) => {
@@ -1331,7 +1394,8 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                     startedBy: socket.id,
                     timestamp: Date.now(),
                     roundId: nextRoundId,
-                    relayFeatures: RELAY_FEATURES
+                    relayFeatures: RELAY_FEATURES,
+                    deployGateId: openDeployGateFor(roomCode)
                 });
             }
         });
@@ -1356,7 +1420,15 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                     roomCountdowns.delete(roomCode);
                     io.to(roomCode).emit('matchCountdownCancelled', { reason: 'player_disconnected', playerId: socket.id });
                 }
+                // Whoever left cannot hold the squad's doors shut.
+                const gate = deployGates.get(roomCode);
+                if (gate?.expected.delete(socket.id)) {
+                    gate.loaded.delete(socket.id);
+                    reportDeployGate(roomCode);
+                }
                 if (roomSet.size === 0) {
+                    clearTimeout(deployGates.get(roomCode)?.timeout);
+                    deployGates.delete(roomCode);
                     rooms.delete(roomCode);
                     roomModes.delete(roomCode);
                     pvpRounds.delete(roomCode);
