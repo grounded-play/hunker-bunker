@@ -79,7 +79,8 @@ describe('motion clip jobs from the cinematics audit', () => {
         expect(bible).toContain('## 5b. Production style: biomech corporate hardware, the explicit cut');
         expect(byId['opening-crash-tank'].style.prefix).toContain('graphic-novel horror');
         expect(byId['opening-crash-tank'].style.negative).toMatch(/soap opera/);
-        expect(byId['opening-crash-tank'].firstFrame.model).toBe('zimage');
+        // Flight and crash frames are steered by the real ship art (FLUX klein).
+        expect(byId['opening-crash-tank'].firstFrame.model).toBe('flux');
         expect(byId['opening-crash-tank'].style.negative).toMatch(/child, minor/);
         expect(byId['opening-launch-scout'].targets.webm).toBe('/cutscenes/scout-class-intro.webm');
         expect(byId['opening-flight-tank'].targets.webm).toBe('/cutscenes/tank-intro.webm');
@@ -129,6 +130,14 @@ describe('shipped motion clips', () => {
                 expect(SIDE_STORY_INTERSTITIALS[id].motionWebm, id).toBe(job.targets.webm);
             } else if (job.kind === 'song-card') {
                 expect(getSongInterstitial(id.replace('card_', '')).motionWebm, id).toBe(job.targets.webm);
+            } else if (job.kind === 'opening') {
+                // The class intro plays these by file name (main.js
+                // playClassIntroSequence: class-intro, intro, then crash).
+                const base = path.basename(job.targets.webm, '.webm');
+                expect(base, id).toMatch(/^(scout|tank|engineer)-(class-intro|intro|crash)$/);
+                if (base.endsWith('-crash')) {
+                    expect(fs.readFileSync(path.join(process.cwd(), 'main.js'), 'utf8'), id).toContain('opening-crash-${cls}');
+                }
             } else {
                 expect(SHIPPED_SLEEP_CUTSCENES.has(id), id).toBe(true);
             }
