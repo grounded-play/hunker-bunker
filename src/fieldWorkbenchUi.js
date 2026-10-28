@@ -1,4 +1,5 @@
 import { t } from './i18n.js';
+import { getRecalibrationFeedback } from './fieldRecalibrationPresentation.js';
 import {
     generateRecalibrationChoices,
     checkRecalibrationAffordability,
@@ -266,10 +267,11 @@ export function createFieldWorkbenchUi({
                 ? `<div class="field-workbench-fusion-tag">${t('ui.workbench.fusion_tag', {}, 'CRYO + BIO FUSION')}</div>`
                 : '';
 
+            const feedback = getRecalibrationFeedback(choice);
             const diffRows = (choice.preview?.afterStats || []).map((row) => `
                 <div class="field-workbench-diff-row ${row.highlight ? 'is-highlight' : ''}">
                     <span class="field-workbench-diff-label">${row.label}</span>
-                    <span class="field-workbench-diff-val ${row.diff ? 'diff--positive' : ''}">${row.value}</span>
+                    <span class="field-workbench-diff-val ${Number.parseFloat(row.diff) > 0 ? 'diff--positive' : Number.parseFloat(row.diff) < 0 ? 'diff--negative' : ''}">${row.value}</span>
                 </div>
             `).join('');
 
@@ -280,7 +282,8 @@ export function createFieldWorkbenchUi({
                     <div class="field-workbench-card__effect">${choice.element
                         ? t('ui.workbench.element_overclock', { element: choice.element.toUpperCase() }, `${choice.element.toUpperCase()} OVERCLOCK`)
                         : t('ui.workbench.weapon_overclock', {}, 'WEAPON OVERCLOCK')}</div>
-                    <p class="field-workbench-card__desc">${choice.description}</p>
+                    <p class="field-workbench-card__desc"><strong>${t('recalibration_feedback.action_label')}</strong> ${feedback.action}</p>
+                    <p class="field-workbench-card__tradeoff"><strong>${t('recalibration_feedback.tradeoff_label')}</strong> ${feedback.tradeoff}</p>
                     <div class="field-workbench-diff-box">
                         ${diffRows}
                     </div>
@@ -312,12 +315,14 @@ export function createFieldWorkbenchUi({
             }
 
             btn.addEventListener('click', () => {
-                if (!affordable || isRecalibrated) return;
+                if (!isOpen || !affordable || isRecalibrated || currentCamp?.recalibrated) return;
                 const result = game?.recalibrateFieldWeapon?.(choice.id, campId);
                 if (result) {
                     if (currentCamp) currentCamp.recalibrated = true;
-                    renderStats();
-                    renderRecalibration();
+                    // Close before staging: the runner waits for blocking
+                    // overlays, and currency/mod state has already committed.
+                    close();
+                    void game?.presentFieldRecalibration?.(choice.id, campId);
                 }
             });
 

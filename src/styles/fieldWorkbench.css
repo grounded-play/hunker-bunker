@@ -419,3 +419,19 @@
 .field-workbench-diff-val.diff--positive {
   color: #b9ff78;
 }
+
+.field-workbench-diff-val.diff--negative,
+.field-workbench-card__tradeoff {
+  color: #ffbd9e;
+}
+
+.field-workbench-card__tradeoff {
+  font-size: calc(var(--vu, 10px) * 1.2);
+  line-height: 1.45;
+  margin: 0 0 calc(var(--vu, 10px) * 1);
+}
+
+.field-workbench-card__desc strong,
+.field-workbench-card__tradeoff strong {
+  color: #e0e0e0;
+}

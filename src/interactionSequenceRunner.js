@@ -131,7 +131,7 @@ export class InteractionSequenceRunner {
 
     canRun(specOrId) {
         const spec = typeof specOrId === 'string' ? INTERACTION_SEQUENCES[specOrId] : specOrId;
-        return Boolean(spec && !this.isSequenceCompleted(spec.id) && this.resolveAnchors(spec));
+        return Boolean(spec && (spec.remember === false || !this.isSequenceCompleted(spec.id)) && this.resolveAnchors(spec));
     }
 
     async runSequence(specOrId, context = {}) {
@@ -140,12 +140,12 @@ export class InteractionSequenceRunner {
             return { ok: false, reason: 'Sequence not found' };
         }
 
-        if (this.isSequenceCompleted(spec.id) || this.activeSequence) {
+        if ((spec.remember !== false && this.isSequenceCompleted(spec.id)) || this.activeSequence) {
             return { ok: false, reason: this.activeSequence ? 'Another sequence is playing' : 'Sequence already completed' };
         }
         // Spent before anything runs: an end state that reopens a conversation
         // can call back into the trigger, which must not start it again.
-        this.markSequenceCompleted(spec.id);
+        if (spec.remember !== false) this.markSequenceCompleted(spec.id);
         this._rewardGranted = false;
 
         // A missing anchor applies the end state. A sequence may name its own
@@ -263,7 +263,11 @@ export class InteractionSequenceRunner {
                 break;
 
             case 'line':
-                await this.game?.displaySequenceSubtitle?.(step.speaker, step.key, step.text, { campId: spec.campId });
+                await this.game?.displaySequenceSubtitle?.(step.speaker, step.key, step.text, {
+                    campId: spec.campId,
+                    ...(step.holdMs != null ? { holdMs: step.holdMs } : {}),
+                    ...(step.params ? { params: step.params } : {})
+                });
                 break;
 
             case 'grantReward': {

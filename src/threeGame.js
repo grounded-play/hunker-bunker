@@ -1,4 +1,5 @@
 import { getRunRating } from './runRating.js';
+import { createRemoteMotionDiagnostics, REMOTE_MOTION_SNAP_UNITS } from './remoteMotionDiagnostics.js';
 import { computeRunScore } from './runScore.js';
 import { getFieldWeaponProfile } from './fieldWeapon.js';
 import { resolveSweptConeHits } from './flameWeapon.js';
@@ -810,6 +811,7 @@ import {
     REWARD_CACHE_I18N_KEYS
 } from './rewardCache.js';
 import { InteractionSequenceRunner } from './interactionSequenceRunner.js';
+import { createRecalibrationInstallSequence, getRecalibrationFeedback } from './fieldRecalibrationPresentation.js';
 import { advanceHitStop, extendHitStop, HIT_STOP_PRESETS } from './hitStop.js';
 import { CHITIN_SCUTTLER, planScuttlerPack, scuttlerTuning } from './chitinScuttler.js';
 import { resolveFootstepSurface } from './footstepSurface.js';
@@ -7212,6 +7214,9 @@ export class ThreeGame {
     // any surviving socket listeners would keep mutating this (now solo)
     // instance's state in response to stale multiplayer events.
     teardownMultiplayerNetwork() {
+        const motion = this._remoteMotionDiagnostics?.flush(Date.now(), { force: true });
+        if (motion) debugLog.info('MULTIPLAYER', 'remote-motion-window', motion);
+        this._remoteMotionDiagnostics = null;
         if (this.remotePlayers) {
             for (const remote of this.remotePlayers.values()) {
                 remote.overlay?.dispose?.();
@@ -7551,7 +7556,16 @@ export class ThreeGame {
         const remote = this.getOrCreateRemotePlayer(data);
         if (!remote) return;
 
+        const receivedAt = Date.now();
         if (Number.isFinite(data.x) && Number.isFinite(data.z)) {
+            // The first packet establishes a spawn target, not a correction.
+            if (Number.isFinite(remote.lastMotionPacketAt) && remote.mesh?.position) {
+                this._remoteMotionDiagnostics ??= createRemoteMotionDiagnostics();
+                this._remoteMotionDiagnostics.sample('player',
+                    Math.hypot(remote.mesh.position.x - data.x, remote.mesh.position.z - data.z),
+                    receivedAt - remote.lastMotionPacketAt, receivedAt);
+            }
+            remote.lastMotionPacketAt = receivedAt;
             remote.targetPos.set(data.x, 0, data.z);
         }
         if (Number.isFinite(data.yaw)) {
@@ -7560,7 +7574,7 @@ export class ThreeGame {
         remote.vx = Number.isFinite(data.vx) ? data.vx : 0;
         remote.vz = Number.isFinite(data.vz) ? data.vz : 0;
         remote.animState = data.animState || 'idle';
-        remote.lastUpdate = Date.now();
+        remote.lastUpdate = receivedAt;
     }
 
     handleRemotePlayerFired(data) {
@@ -8552,7 +8566,7 @@ export class ThreeGame {
         if (!Array.isArray(remoteCompanions)) return;
         this.companions = this.companions || [];
         for (const remote of remoteCompanions) {
-            if (!remote || !remote.id) continue;
+            if (!remote || !remote.id || !Number.isFinite(remote.x) || !Number.isFinite(remote.z)) continue;
             let companion = this.companions.find((c) => c.id === remote.id || (remote.wandererId && c.wanderer?.id === remote.wandererId));
             if (!companion) {
                 companion = {
@@ -8588,13 +8602,18 @@ export class ThreeGame {
                     }).catch(() => {});
                 }
             } else {
+                const receivedAt = Date.now();
+                const packetGapMs = Number.isFinite(companion.lastNetUpdate) ? receivedAt - companion.lastNetUpdate : null;
                 companion.netTargetX = remote.x;
                 companion.netTargetZ = remote.z;
                 companion.netTargetYaw = remote.yaw;
-                companion.lastNetUpdate = Date.now();
+                companion.lastNetUpdate = receivedAt;
                 if (companion.instance3d?.root) {
                     const currentDist = Math.hypot(companion.instance3d.root.position.x - remote.x, companion.instance3d.root.position.z - remote.z);
-                    if (currentDist > 6.0) {
+                    this._remoteMotionDiagnostics ??= createRemoteMotionDiagnostics();
+                    this._remoteMotionDiagnostics.sample('companion', currentDist, packetGapMs, receivedAt);
+                    if (currentDist > REMOTE_MOTION_SNAP_UNITS) {
+                        this._remoteMotionDiagnostics.snap('companion', currentDist, receivedAt);
                         companion.instance3d.root.position.x = remote.x;
                         companion.instance3d.root.position.z = remote.z;
                     }
@@ -8674,6 +8693,9 @@ export class ThreeGame {
             : `SQUADMATE LOST: ${remote.callsign ?? ''}`.trim());
         window.AudioManager?.play?.('ui_error', { volume: 0.4 });
         debugLog.info('MULTIPLAYER', 'remote-player-died', { playerId: detail.playerId, reason: detail.reason ?? null, x: detail.x, z: detail.z });
+        // Full deaths skip playerDownedBroadcast. A downed partner still
+        // needs the all-down check when their last rescuer aborts or falls.
+        this.resolveCoopSquadWipe?.();
         return true;
     }
 
@@ -8757,8 +8779,15 @@ export class ThreeGame {
                 const mesh = remote.mesh;
                 if (!mesh) continue;
 
-                // Smooth position lerp
-                mesh.position.lerp(remote.targetPos, Math.min(1.0, delta * 12));
+                // Smooth position lerp. A frame >83 ms applies the full
+                // correction; measure large jumps separately from target lag.
+                const positionAlpha = Math.min(1.0, delta * 12);
+                const positionError = mesh.position.distanceTo(remote.targetPos);
+                if (positionAlpha === 1 && positionError > REMOTE_MOTION_SNAP_UNITS) {
+                    this._remoteMotionDiagnostics ??= createRemoteMotionDiagnostics();
+                    this._remoteMotionDiagnostics.snap('player', positionError);
+                }
+                mesh.position.lerp(remote.targetPos, positionAlpha);
                 this.trackRemoteSteps?.(remote);
 
                 // Smooth rotation lerp
@@ -8776,7 +8805,7 @@ export class ThreeGame {
                 // broadcast in playerMove -- mirrors updatePlayerSpriteAnimation
                 // but writes into this remote's own cloned texture.
                 const speedSq = remote.vx * remote.vx + remote.vz * remote.vz;
-                const posDeltaDist = mesh.position.distanceTo(remote.targetPos);
+                const posDeltaDist = positionError * (1 - positionAlpha);
                 const isMoving = remote.animState === 'run' || remote.animState === 'walk' || speedSq > 0.0001 || posDeltaDist > 0.02;
                 const moveDirX = Math.abs(remote.vx) > 0.001 ? remote.vx : (remote.targetPos.x - mesh.position.x);
                 const moveDirZ = Math.abs(remote.vz) > 0.001 ? remote.vz : (remote.targetPos.z - mesh.position.z);
@@ -8815,6 +8844,8 @@ export class ThreeGame {
                 }
             }
         }
+        const motion = this._remoteMotionDiagnostics?.flush();
+        if (motion) debugLog.info('MULTIPLAYER', 'remote-motion-window', motion);
     }
 
     async setupEnemy3dCosmeticOverlay(sprite) {
@@ -24459,6 +24490,18 @@ export class ThreeGame {
     // so every sequence fell back.
     resolveSequenceAnchor(anchorName, spec = {}) {
         if (!anchorName) return null;
+        if (anchorName === 'field_recalibration_socket') {
+            const camp = this.camps?.find((entry) => entry.id === spec.campId);
+            const propType = {
+                camp_meridian: 'prop_fabricator_workstation',
+                camp_tallow: 'prop_o2_filter_vat',
+                camp_vesper: 'life_reloading_bench'
+            }[camp?.id];
+            const model = camp?.dressingModels?.find((entry) => entry.userData?.propType === propType);
+            if (!model?.parent || !model.getWorldPosition) return null;
+            const position = model.getWorldPosition(new THREE.Vector3());
+            return { x: position.x, z: position.z };
+        }
         if (anchorName === 'base_cot_installed') {
             const cot = this.carryState?.installed?.find((item) => item.definitionId === 'cot_bed');
             return Number.isFinite(cot?.x) && Number.isFinite(cot?.z) ? { x: cot.x, z: cot.z } : null;
@@ -24556,8 +24599,8 @@ export class ThreeGame {
     // Nothing listened for 'narrative-sequence-subtitle', so sequence lines
     // never showed. They go out as a bunker line (subtitle strip, co-op
     // broadcast) and hold for a reading beat.
-    async displaySequenceSubtitle(speaker, key, text, { holdMs = null, campId = null } = {}) {
-        const line = t(key, {}, text ?? '');
+    async displaySequenceSubtitle(speaker, key, text, { holdMs = null, campId = null, params = {} } = {}) {
+        const line = t(key, params, text ?? '');
         if (!line) return;
         const name = speaker === 'mothership'
             ? 'MOTHERSHIP'
@@ -25485,6 +25528,31 @@ export class ThreeGame {
             rerollCount,
             runEntropy: this.runEntropy || 0
         });
+    }
+
+    async presentFieldRecalibration(choiceId, campId) {
+        const choice = this.fieldRecalibrations?.findLast((entry) => entry.id === choiceId);
+        if (!choice || !this.isCampRecalibrated?.(campId) || this._fieldRecalibrationModId !== choiceId) return false;
+        this._presentedFieldRecalibrations ??= new WeakSet();
+        if (this._presentedFieldRecalibrations.has(choice)) return false;
+        this._presentedFieldRecalibrations.add(choice);
+
+        const feedback = getRecalibrationFeedback(choice);
+        const spec = createRecalibrationInstallSequence({ campId, choice });
+        const socket = this.resolveSequenceAnchor?.('field_recalibration_socket', spec);
+        const reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+        // Co-op does not pause either operator. Missing models and reduced
+        // motion use the same acknowledgement over the committed state.
+        if (socket && !this.isMultiplayer && !reducedMotion && this.interactionSequenceRunner?.canRun?.(spec)) {
+            await this.interactionSequenceRunner.runSequence(spec);
+        } else if (socket && !reducedMotion) {
+            this.spawnPropFx?.(socket, 'recalibration_pulse', feedback.color);
+        }
+        this.showBunkerLine?.(t('recalibration_feedback.next_fight', { name: feedback.name, action: feedback.action }));
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('field-recalibration-presented', { detail: { campId, choiceId } }));
+        }
+        return true;
     }
 
     recalibrateFieldWeapon(choiceId, campId) {
@@ -28798,14 +28866,17 @@ export class ThreeGame {
             });
             this._blackBoxState = blackBoxState;
         }
-        // Every co-op death, not only being downed, reaches the squad: a
-        // pit-fall comes straight here, and the partner used to keep seeing a
-        // standing operator.
+        // Co-op TRY AGAIN preserves this expedition's world changes.
         if (coopRole(this) !== COOP_ROLE.SOLO) {
             // TRY AGAIN continues this map with its changes (owner's rule,
             // 2026-09-24): keep this run's world changes for the retry. Both
             // clients hold the same changes because each one is networked.
             this._coopRunCarry = { roomCode: this.multiplayerRoomCode ?? null, maze: this.getMazePersistenceState?.() ?? null };
+        }
+        // PvP aborts and hazards must reach the relay to settle the round.
+        // A rival's fatal hit is already settled there; reporting that again
+        // would announce two results with different causes for one round.
+        if (this.isMultiplayer && this.netSocket && (!isPvp || reason !== 'pvp-rival')) {
             this._coopLifeSeq = (this._coopLifeSeq ?? 0) + 1;
             this.broadcastSharedWorldEvent?.('player-died', {
                 playerId: this.multiplayerLocalPlayerId ?? null,

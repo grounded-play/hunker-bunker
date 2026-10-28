@@ -117,7 +117,7 @@ describe('Server Relay: PvP Round Completion and Synchronized Rematch', () => {
         expect(rematch1?.roundId).toBe(rematch2?.roundId);
     }, 12000);
 
-    it('broadcasts pvpRoundCompleted on environmental death in PvP mode', async () => {
+    it.each(['poison', 'mission-abort'])('broadcasts matching PvP results to both players for %s', async (reason) => {
         ({ httpServer, url } = await startTestServer());
         const roomCode = 'PVP-ENV-DEATH-TEST';
 
@@ -143,22 +143,22 @@ describe('Server Relay: PvP Round Completion and Synchronized Rematch', () => {
         const roundCompletedP1 = waitForEvent(p1, 'pvpRoundCompleted', 5000);
         const roundCompletedP2 = waitForEvent(p2, 'pvpRoundCompleted', 5000);
 
-        // P2 dies to poison hazard puddle
+        // Environmental deaths and confirmed forfeits use the same relay path.
         p2.emit('worldEvent', {
             event: 'player-died',
-            detail: { reason: 'poison', x: 12, z: 15 }
+            detail: { reason, x: 12, z: 15 }
         });
 
         const [outcome1, outcome2] = await Promise.all([roundCompletedP1, roundCompletedP2]);
         expect(outcome1).toMatchObject({
             winnerId: p1.id,
             loserId: p2.id,
-            reason: 'poison'
+            reason
         });
         expect(outcome2).toMatchObject({
             winnerId: p1.id,
             loserId: p2.id,
-            reason: 'poison'
+            reason
         });
     }, 10000);
 });
