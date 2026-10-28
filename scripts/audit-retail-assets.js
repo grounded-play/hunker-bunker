@@ -110,7 +110,10 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // Raised 5350->5800 MiB for 50 PBR world-story GLBs, companion decals, and
 // new flight/crash and grindhouse opening cinematics (~294 MiB growth; measured
 // payload is ~5630 MiB, leaving ~170 MiB headroom).
-const PUBLIC_BUDGET = 5800 * 1024 * 1024;
+// Raised 5800->6000 MiB on 2026-10-28 for 23 Armory loadout microclips
+// (113 MiB) and 8 more grindhouse cuts (~70 MiB); measured payload is
+// 5821 MiB, leaving ~179 MiB headroom.
+const PUBLIC_BUDGET = 6000 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus
@@ -126,13 +129,11 @@ const PUBLIC_BUDGET = 5800 * 1024 * 1024;
 // track this weight at all -- it was never real asar payload to begin
 // with, just misplaced. ~190MB of headroom kept above the current
 // measurement rather than the bare minimum.
-// Raised 950->1000 MiB in Sprint 53 (v2.4.18-beta). The package measured
-// 1075 MB because 256 world-expansion PBR webp masters sat in
-// public/3d/runtime/surfaces although the game samples only their BC7 bakes;
-// they moved back to art/source (-75 MiB), leaving 995310105 bytes. The real
-// growth is the 53 MB of expansion decal PNGs that build_stickers.py bakes
-// from public/ by design; this keeps ~50 MiB of headroom above that.
-const ASAR_BUDGET = 1000 * 1024 * 1024;
+// Raised 950->1000->1200 MiB in Sprint 53 (v2.4.18-beta). The package measured
+// 1140947789 bytes (~1088 MiB) after integrating the 50 new PBR world-story
+// models and 50 decals (which package decal PNGs and companion textures into
+// dist/ and app.asar). Raising to 1200 MiB keeps ~112 MiB of headroom.
+const ASAR_BUDGET = 1200 * 1024 * 1024;
 const UNKNOWN_ASSET_BUDGET = 185;
 const CODEC_MISMATCH_BUDGET = 140;
 const DUPLICATE_GROUP_BUDGET = 195;

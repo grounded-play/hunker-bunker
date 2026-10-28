@@ -31898,6 +31898,351 @@
       "classification": "runtime-required"
     },
     {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-4103-poster.jpg",
+      "bytes": 231544,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-4103.mp4",
+      "bytes": 2527160,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-4103.webm",
+      "bytes": 1843523,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-4109-poster.jpg",
+      "bytes": 217713,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-4109.mp4",
+      "bytes": 2710117,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-4109.webm",
+      "bytes": 1942054,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-4111-poster.jpg",
+      "bytes": 224598,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-4111.mp4",
+      "bytes": 2457040,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-4111.webm",
+      "bytes": 1634751,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-4215-poster.jpg",
+      "bytes": 209341,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-4215.mp4",
+      "bytes": 2552677,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-4215.webm",
+      "bytes": 1847212,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-4236-poster.jpg",
+      "bytes": 242184,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-4236.mp4",
+      "bytes": 3016441,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-4236.webm",
+      "bytes": 2220074,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-5009-poster.jpg",
+      "bytes": 233930,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-5009.mp4",
+      "bytes": 3152320,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-5009.webm",
+      "bytes": 2475074,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-5010-poster.jpg",
+      "bytes": 221417,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-5010.mp4",
+      "bytes": 2373934,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-5010.webm",
+      "bytes": 1714352,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-frame-tesla_lock-poster.jpg",
+      "bytes": 224127,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-frame-tesla_lock.mp4",
+      "bytes": 2854790,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-engineer-weapon-frame-tesla_lock.webm",
+      "bytes": 2092334,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-2200-poster.jpg",
+      "bytes": 219047,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-2200.mp4",
+      "bytes": 3274923,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-2200.webm",
+      "bytes": 2643266,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4100-poster.jpg",
+      "bytes": 227331,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4100.mp4",
+      "bytes": 2764447,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4100.webm",
+      "bytes": 2183451,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4101-poster.jpg",
+      "bytes": 253424,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4101.mp4",
+      "bytes": 3693281,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4101.webm",
+      "bytes": 3042383,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4104-poster.jpg",
+      "bytes": 205006,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4104.mp4",
+      "bytes": 2333922,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4104.webm",
+      "bytes": 1694905,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4105-poster.jpg",
+      "bytes": 227875,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4105.mp4",
+      "bytes": 2894635,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4105.webm",
+      "bytes": 2260023,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4108-poster.jpg",
+      "bytes": 206722,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4108.mp4",
+      "bytes": 2491479,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4108.webm",
+      "bytes": 1849278,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4110-poster.jpg",
+      "bytes": 184010,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4110.mp4",
+      "bytes": 2079573,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4110.webm",
+      "bytes": 1525757,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4222-poster.jpg",
+      "bytes": 218013,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4222.mp4",
+      "bytes": 2858904,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-4222.webm",
+      "bytes": 2118493,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-frame-talon-poster.jpg",
+      "bytes": 239637,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-frame-talon.mp4",
+      "bytes": 2828015,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-frame-talon.webm",
+      "bytes": 2072026,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-frame-talon_c-poster.jpg",
+      "bytes": 234425,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-frame-talon_c.mp4",
+      "bytes": 2887930,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-scout-weapon-frame-talon_c.webm",
+      "bytes": 2194005,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-tank-weapon-4102-poster.jpg",
+      "bytes": 222315,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-tank-weapon-4102.mp4",
+      "bytes": 2691581,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-tank-weapon-4102.webm",
+      "bytes": 1943717,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-tank-weapon-4107-poster.jpg",
+      "bytes": 243173,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-tank-weapon-4107.mp4",
+      "bytes": 3145631,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-tank-weapon-4107.webm",
+      "bytes": 2453518,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-tank-weapon-4208-poster.jpg",
+      "bytes": 220356,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-tank-weapon-4208.mp4",
+      "bytes": 2825813,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-tank-weapon-4208.webm",
+      "bytes": 2102425,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-tank-weapon-4229-poster.jpg",
+      "bytes": 249090,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-tank-weapon-4229.mp4",
+      "bytes": 3226785,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-tank-weapon-4229.webm",
+      "bytes": 2476585,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-tank-weapon-5006-poster.jpg",
+      "bytes": 208066,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-tank-weapon-5006.mp4",
+      "bytes": 2843046,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/loadout/loadout-tank-weapon-5006.webm",
+      "bytes": 2009911,
+      "classification": "runtime-required"
+    },
+    {
       "path": "cutscenes/poster-art/death-abyss.png",
       "bytes": 2622478,
       "classification": "runtime-required"
@@ -32028,6 +32373,21 @@
       "classification": "runtime-required"
     },
     {
+      "path": "cutscenes/sleep-camp-engineer-poster.jpg",
+      "bytes": 317615,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/sleep-camp-engineer.mp4",
+      "bytes": 10708841,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/sleep-camp-engineer.webm",
+      "bytes": 8935629,
+      "classification": "runtime-required"
+    },
+    {
       "path": "cutscenes/sleep-camp-scout-poster.jpg",
       "bytes": 268018,
       "classification": "runtime-required"
@@ -32055,6 +32415,21 @@
     {
       "path": "cutscenes/sleep-cryo-engineer.webm",
       "bytes": 8482518,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/sleep-squad-poster.jpg",
+      "bytes": 233230,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/sleep-squad.mp4",
+      "bytes": 5590769,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/sleep-squad.webm",
+      "bytes": 4057764,
       "classification": "runtime-required"
     },
     {
@@ -35869,7 +36244,7 @@
     },
     {
       "path": "interstitials/int_33_the_cave_was_breathing_key_v1.mp4",
-      "bytes": 2463460,
+      "bytes": 11118788,
       "classification": "runtime-required"
     },
     {
@@ -36179,7 +36554,7 @@
     },
     {
       "path": "interstitials/motion/int_33_the_cave_was_breathing_motion_v1.webm",
-      "bytes": 1133680,
+      "bytes": 9543358,
       "classification": "runtime-required"
     },
     {
@@ -36198,8 +36573,33 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/motion/int_aria_queens_mark_motion_v1.webm",
+      "bytes": 7465826,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_briggs_vanguard_fire_motion_v1.webm",
+      "bytes": 6907114,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_nahl_co_evolution_motion_v1.webm",
+      "bytes": 6515707,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_nahl_transcendence_motion_v1.webm",
+      "bytes": 7802907,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/motion/int_val_eternal_hearth_motion_v1.webm",
       "bytes": 8211717,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_val_hearth_warmth_motion_v1.webm",
+      "bytes": 6150550,
       "classification": "runtime-required"
     },
     {
