@@ -91,6 +91,19 @@ describe('host enemies a guest does not have', () => {
         expect(game.scatterSprites).toHaveLength(0);
     });
 
+    // QA 2026-10-28: the PC guest stuttered through the intro video while
+    // the Deck host did not; each copy clones and prepares a model.
+    it('waits out an intro video before creating host enemies', () => {
+        const { game } = makeGuest();
+        game.loadingPaused = true;
+        const snapshot = { enemies: [{ scatterKey: 'spawned:snail:1', enemyType: 'cybersnail', x: 5, z: 6, hp: 3 }] };
+        game.handleEnemyStateSnapshot(snapshot);
+        expect(game.scatterSprites).toHaveLength(0);
+        game.loadingPaused = false;
+        game.handleEnemyStateSnapshot(snapshot);
+        expect(game.scatterSprites).toHaveLength(1);
+    });
+
     it('creates at most a few per snapshot so a burst cannot hitch the guest', () => {
         const { game } = makeGuest();
         const enemies = Array.from({ length: 20 }, (_, i) => ({ scatterKey: `s${i}`, enemyType: 'cybersnail', x: 1 + i, z: 1, hp: 3 }));

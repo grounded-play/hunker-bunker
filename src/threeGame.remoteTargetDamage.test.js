@@ -59,6 +59,18 @@ describe('enemy attacks on remote squadmates', () => {
         expect(reportEnemyContactHit).toHaveBeenCalledWith(expect.objectContaining({ id: 'guest' }), expect.anything(), 1);
     });
 
+    // QA 2026-10-28: the host sent bites the guest's own containment check
+    // then refused. The host judges safe zones and doors once.
+    it('sends no bite into a safe zone the local player would be safe in', () => {
+        const { game, reportEnemyContactHit, tick } = fixture();
+        game.getCurrentContainmentOptions = () => ({
+            containmentZones: [{ id: 'camp', isSafe: true, bounds: { minX: 0.2, maxX: 2, minZ: -1, maxZ: 1 } }],
+            doors: []
+        });
+        tick();
+        expect(reportEnemyContactHit).not.toHaveBeenCalled();
+    });
+
     it('still damages the local player when the snail reaches them', () => {
         const { takeDamage, tick } = fixture({ localAt: [0.3, 0, 0], remoteAt: [100, 0, 0] });
         tick();
@@ -90,5 +102,18 @@ describe('enemy attacks on remote squadmates', () => {
         expect(emit).toHaveBeenCalledWith('enemyContactHitAck', {
             eventId: payload.eventId, hostId: 'host', applied: true
         });
+    });
+
+    it("takes the host's bite without re-judging this client's doors", () => {
+        const takeDamage = vi.fn(() => true);
+        const game = {
+            multiplayerLocalPlayerId: 'guest', multiplayerMode: 'coop', isPlayerDead: false,
+            player: { position: { x: 2, z: 0 } }, takeDamage,
+            pushPlayerAlong: vi.fn(), netSocket: { emit: vi.fn() }
+        };
+        ThreeGame.prototype.handleEnemyContactHit.call(game, {
+            eventId: 'e:guest:1', targetId: 'guest', hostId: 'host', enemyType: 'cybersnail', x: 1, z: 0, damage: 1
+        });
+        expect(takeDamage).toHaveBeenCalledWith(1, 'cybersnail', 1, 0, { hostDecided: true });
     });
 });

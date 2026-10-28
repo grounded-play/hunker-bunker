@@ -9660,6 +9660,7 @@ async function runMissionIntroSequence({ deploymentHold = null, forceSectorZero 
     const game = window.game;
     let resumeIntroRendering = deploymentHold || suspendGameForFullscreenVideo();
     const playerType = getSelectedHeroType();
+    const introStages = trackStartupStages('intro');
 
     // This is independent of renderer warm-up pause state: scripted intro
     // sequences must remain invulnerable even if another caller changes the
@@ -9725,10 +9726,12 @@ async function runMissionIntroSequence({ deploymentHold = null, forceSectorZero 
             return;
         }
 
+        introStages.enter('class-video');
         if (!window.skipAllIntro) {
             await playClassIntroSequence(playerType);
         }
 
+        introStages.enter('cutscene');
         if (!window.skipAllIntro) {
             await cutsceneManager?.play({
                 playerType,
@@ -9738,9 +9741,11 @@ async function runMissionIntroSequence({ deploymentHold = null, forceSectorZero 
         }
 
         let choice = 'skip';
+        introStages.enter('dialogue');
         if (!window.skipAllIntro) {
             choice = await dialogueManager?.openMothershipDialogue({ playerType }) ?? 'skip';
         }
+        introStages.end();
 
         if (skipBtn) skipBtn.classList.add('hidden');
 
@@ -9811,6 +9816,7 @@ async function runMissionIntroSequence({ deploymentHold = null, forceSectorZero 
         // Start gameplay background music and loop ambience now that intro sequences are finished
         window.AudioManager?.startAmbience?.();
     } finally {
+        introStages.end();
         resumeIntroRendering?.();
         document.body.classList.remove('mission-intro-active');
         document.body.classList.remove('hud-hidden');
@@ -10000,6 +10006,8 @@ async function playArmoryDeparture() {
     scene.setBenchVisible?.(false);
     scene.setCaptureCamera?.('departure');
     window.hbLog?.('CINEMATIC', 'info', 'Armory departure');
+    const departureStages = trackStartupStages('intro');
+    departureStages.enter('armory-departure');
     await new Promise((resolve) => {
         let done = false;
         const finish = () => {
@@ -10016,6 +10024,7 @@ async function playArmoryDeparture() {
         // Let the clean frame land before they move.
         window.setTimeout(() => scene.beginDeparture().then(finish), 450);
     });
+    departureStages.end();
     document.documentElement.classList.remove('presentation-cursor-hidden');
 }
 

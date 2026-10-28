@@ -50,12 +50,14 @@ export function measurePerfPhase(phase, context, operation) {
 // One open `startup:<stage>` phase per deployment loading stage, so a
 // main-thread stall during deploy is attributed to its stage instead of
 // arriving with no active phase (QA 2026-09-30: 13.6 s, `activePhases: []`).
-export function trackStartupStages() {
+// `intro:` labels the mission intro and Armory departure the same way: the PC
+// stuttered through them on 2026-10-28 with no phase named.
+export function trackStartupStages(prefix = 'startup') {
     let current = null;
     let span = null;
     return {
         enter(stage) {
-            const name = `startup:${String(stage).toLowerCase()}`;
+            const name = `${prefix}:${String(stage).toLowerCase()}`;
             if (name === current) return;
             span?.end();
             current = name;

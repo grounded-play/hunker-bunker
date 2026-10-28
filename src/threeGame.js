@@ -2055,6 +2055,13 @@ export function isRoomGatewayFrameEligible(room, door, metadata = {}) {
     return true;
 }
 
+// Why the last takeDamage() landed nothing, for logs: a co-op guest refused
+// every host bite on 2026-10-28 and nothing said why.
+function refuseDamage(game, why) {
+    game.lastDamageRefusal = why;
+    return false;
+}
+
 // Co-op guests create host enemies they lack (handleEnemyStateSnapshot).
 const REMOTE_ENEMY_MATERIALIZE_PER_SNAPSHOT = 4;
 // Routes this client expects from the relay; see server/relay.js RELAY_FEATURES.
@@ -7580,11 +7587,31 @@ export class ThreeGame {
                 return previous?.apply(this, args);
             };
         }
+        // The local body is the control: if it did not draw either, the
+        // world was not being rendered (an intro video holds the frame loop),
+        // which on 2026-10-28 read as a failed squadmate and hid them.
+        const localMeshes = [];
+        this.player3dOverlay?.root?.traverse?.((object) => { if (object.isMesh) localMeshes.push(object); });
+        for (const mesh of localMeshes) {
+            if (mesh.userData.hbDrawStamp) continue;
+            mesh.userData.hbDrawStamp = true;
+            const previous = mesh.onAfterRender;
+            const game = this;
+            mesh.onAfterRender = function onLocalBodyDrawn(...args) {
+                game._localBodyDrawn = true;
+                return previous?.apply(this, args);
+            };
+        }
+        this._localBodyDrawn = false;
         const run = () => {
             if (this._destroyed || this.remotePlayers?.get(remote.id) !== remote || remote.overlayGeneration !== generation || !remote.overlay) return;
             // Bodies arrive behind the deployment doors; judge them on screen.
-            if (this.performanceProfile !== 'gameplay' || remote.isDown || remote.mesh?.visible === false) {
+            const rendering = this.performanceProfile === 'gameplay' && !this.loadingPaused
+                && !globalThis.document?.body?.classList?.contains?.('mission-intro-active')
+                && (localMeshes.length === 0 || this._localBodyDrawn);
+            if (!rendering || remote.isDown || remote.mesh?.visible === false) {
                 remote.overlayDrawn = false;
+                this._localBodyDrawn = false;
                 setTimeout(run, delayMs);
                 return;
             }
@@ -7988,7 +8015,7 @@ export class ThreeGame {
         const sourceX = Number(data.x);
         const sourceZ = Number(data.z);
         const applied = !this.isPlayerDead && Number.isFinite(sourceX) && Number.isFinite(sourceZ)
-            ? this.takeDamage(damage, data.enemyType ?? 'enemy', sourceX, sourceZ) !== false
+            ? this.takeDamage(damage, data.enemyType ?? 'enemy', sourceX, sourceZ, { hostDecided: true }) !== false
             : false;
         if (applied && this.player) {
             const dx = this.player.position.x - sourceX;
@@ -8005,7 +8032,8 @@ export class ThreeGame {
             eventId: data.eventId,
             enemyType: data.enemyType ?? 'unknown',
             damage,
-            applied
+            applied,
+            refused: applied ? null : (this.isPlayerDead ? 'dead' : (this.lastDamageRefusal ?? 'invalid-source'))
         });
         return applied;
     }
@@ -8605,7 +8633,11 @@ export class ThreeGame {
                 // chased the guest with a snail the guest could not see or be hurt
                 // by (co-op session 2026-10-06). Capped per snapshot so a burst of
                 // spawns cannot hitch the guest; the rest arrive 100 ms later.
-                if (!sprite?.userData && !state.burstTriggered && (state.hp ?? 1) > 0 && materialized < REMOTE_ENEMY_MATERIALIZE_PER_SNAPSHOT) {
+                // Not while an intro video holds the game (loadingPaused): each
+                // copy clones and prepares a model on the main thread, and the
+                // guest's PC stuttered through the intro (QA 2026-10-28). The
+                // first snapshot after the reveal brings them in.
+                if (!sprite?.userData && !this.loadingPaused && !state.burstTriggered && (state.hp ?? 1) > 0 && materialized < REMOTE_ENEMY_MATERIALIZE_PER_SNAPSHOT) {
                     sprite = this.materializeRemoteEnemy?.(state) ?? null;
                     if (sprite) materialized += 1;
                 }
@@ -28636,21 +28668,24 @@ export class ThreeGame {
         return elite;
     }
 
-    takeDamage(amount = 1, reason = 'hazard', sourceX = null, sourceZ = null) {
+    takeDamage(amount = 1, reason = 'hazard', sourceX = null, sourceZ = null, { hostDecided = false } = {}) {
+        this.lastDamageRefusal = null;
         const isPvpHit = this.isMultiplayer && this.multiplayerMode === 'pvp' && reason === 'pvp-rival';
-        if (this.isPlayerDead || this.isPlayerDowned) return false;
+        if (this.isPlayerDead || this.isPlayerDowned) return refuseDamage(this, 'down');
         // Menu/showroom previews share the player object with gameplay, but
         // defensive effects must never damage the preview operator.
-        if (this.performanceProfile && this.performanceProfile !== 'gameplay') return false;
-        if (this.godMode || this.noclip) return false;
-        if (this.cinematicLock) return false; // untouchable during scripted sequences
+        if (this.performanceProfile && this.performanceProfile !== 'gameplay') return refuseDamage(this, 'not-gameplay');
+        if (this.godMode || this.noclip) return refuseDamage(this, 'god-mode');
+        if (this.cinematicLock) return refuseDamage(this, 'cinematic-lock'); // untouchable during scripted sequences
         if (this.isSectorZeroOnboardingActive?.()
-            && this.sectorZeroTutorial?.getCurrentPhase?.() !== SECTOR_ZERO_PHASES.COMBAT) return false;
-        if (this.isInPocket) return false; // untouchable while resolving a fall inside a pocket
-        if (this.iFrameTimer > 0 && reason !== 'abyss') return false;
+            && this.sectorZeroTutorial?.getCurrentPhase?.() !== SECTOR_ZERO_PHASES.COMBAT) return refuseDamage(this, 'sector-zero-onboarding');
+        if (this.isInPocket) return refuseDamage(this, 'pocket'); // untouchable while resolving a fall inside a pocket
+        if (this.iFrameTimer > 0 && reason !== 'abyss') return refuseDamage(this, 'i-frames');
         // GAP-PV-02: spawn protection prevents instant spawn-camping on respawn.
-        if (this.spawnInvulnerabilityTimer > 0 && reason !== 'abyss') return false;
-        if (sourceX != null && sourceZ != null && this.player?.position) {
+        if (this.spawnInvulnerabilityTimer > 0 && reason !== 'abyss') return refuseDamage(this, 'spawn-protection');
+        // A bite the host routed was already judged against the host's safe
+        // zones and doors; this client's doors are its own and need not agree.
+        if (!hostDecided && sourceX != null && sourceZ != null && this.player?.position) {
             const containmentClamped = shouldBlockAttackPath(
                 { x: sourceX, z: sourceZ },
                 { x: this.player.position.x, z: this.player.position.z },
@@ -28660,17 +28695,17 @@ export class ThreeGame {
                 }
             );
             if (containmentClamped) {
-                return false; // Damage absorbed by safe haven or closed containment barrier
+                return refuseDamage(this, 'containment'); // Damage absorbed by safe haven or closed containment barrier
             }
         }
         if (!isPvpHit && reason !== 'abyss' && this.playerType === 'TANK' && Math.random() < (this.blockChance ?? 0)) {
             window.AudioManager?.play('fx_tank_shockwave', { volume: 0.4, bus: 'sfx' });
             window.dispatchEvent(new CustomEvent('player-blocked', { detail: { reason } }));
-            return false;
+            return refuseDamage(this, 'tank-block');
         }
         if (!isPvpHit && reason !== 'abyss' && typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_bio_cloaking') && Math.random() < 0.15) {
             window.dispatchEvent(new CustomEvent('player-evaded', { detail: { reason } }));
-            return false;
+            return refuseDamage(this, 'evaded');
         }
         // "Queen's Milk" (docs/design/one-more-ring-design-pillars.md item 2):
         // a genuine alien-body contact hit heals instead of damaging. Checked
@@ -28679,7 +28714,7 @@ export class ThreeGame {
         const queensMilkHeal = getQueensMilkAlienContactHeal(reason, this.runRelics ?? []);
         if (queensMilkHeal != null) {
             this.healPlayer(queensMilkHeal, { skipQueensMilkPenalty: true });
-            return false;
+            return refuseDamage(this, 'queens-milk');
         }
         const previousHp = this.playerVitals.hp;
         const previousShieldHp = this.playerShieldHp ?? 0;
@@ -28739,7 +28774,7 @@ export class ThreeGame {
                 if (this.player) this.tintPlayerSprites?.(0x9beaff);
                 setTimeout(() => this.tintPlayerSprites?.(this._playerPolishHex ?? 0xffffff), 120);
             }
-            return false;
+            return refuseDamage(this, 'no-hp-change');
         }
 
         if (this.act2 && this.isAct2Active?.()) {
@@ -46249,7 +46284,17 @@ export class ThreeGame {
             data.attackCooldown = SNAIL_ATTACK_COOLDOWN;
             const damage = data.isBoss ? 2 : 1;
             if (target.type === 'player' && target.id !== 'local') {
-                this.reportEnemyContactHit?.(target, sprite, damage);
+                // The same safe-zone and door rule the local player gets, judged
+                // here once: the guest takes the routed bite as decided.
+                const blocked = shouldBlockAttackPath(
+                    { x: sprite.position.x, z: sprite.position.z },
+                    { x: target.x, z: target.z },
+                    this.getCurrentContainmentOptions?.() ?? {
+                        containmentZones: this.getActiveContainmentZones?.() ?? [],
+                        doors: this.getActiveDoors?.() ?? []
+                    }
+                );
+                if (!blocked) this.reportEnemyContactHit?.(target, sprite, damage);
             } else if (target.type === 'player') {
                 data.playerContactCooldown = SNAIL_ATTACK_COOLDOWN;
                 const damageApplied = this.takeDamage(damage, data.type, sprite.position.x, sprite.position.z);
