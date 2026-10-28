@@ -589,6 +589,17 @@ evidence in §10–§11 exists; none of them closes a ticket by itself.
 | P0-B | GLB budget gate: all 699 runtime models measured from their headers; the 47 already over budget are baselined and may not grow; new over-budget models fail the suite (`npm run audit:glb-budgets`). No LOD rule: the engine has no LOD system to consume one. | `502c359c` | — |
 | P0-B | Per-platform scene budgets (visible chunks 9; draw calls, triangles, programs per Deck/PC), checked every frame-breakdown window and logged as `PERF scene-budget-exceeded`; the analyzer reports worst overages. | `502c359c` | Fixed-route Deck + PC captures with zero overage windows. |
 
+Checked without a code change:
+
+- **Modal fit at 1280×800:** all 44 modals measured in a live run fit the Deck
+  screen with their actions visible (the Foundry scrolls by 2 px).
+- **CPU frame costs in the October 27 logs:** `updateCrashSiteGuidance`
+  averaged 13.2 ms in 23 of 43 PvE windows; in that build it re-ran waypoint
+  routing every 1.2 s or 2.5 m. `fa73104c`, after that build, computes the
+  route only on a scan, so it is now a few assignments a frame; the next logs
+  should confirm. Render submission (`render:effect-composer-submit`, about
+  17 ms) is the remaining top cost and is what the scene budgets now track.
+
 Not started here, needing hardware or a free GPU: the CPU profile of the
 deployment stall and dense rooms (§7 P0-B steps 2–6; the GPU was busy with the
 overnight cinematic render), remote interpolation metrics, and every `[2P]` row.
