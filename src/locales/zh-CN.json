@@ -1996,6 +1996,7 @@
         "bio_predator": "构建：生化掠食者触发{count}次，恢复{o2}%氧气和{hearts}颗心",
         "subzero_necrosis": "构建：零下坏死触发{count}次，造成{damage}点伤害",
         "equipped": "构建：{drops}（未触发协同）",
+        "loadout": "配装：已安装 {list}（未触发协同）",
         "none": "构建：本次部署没有战地升级"
       },
       "field": {

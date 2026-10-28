@@ -178,6 +178,7 @@ import { mapRotationForWorldYaw } from './mapHeading.js';
 import { getSelectedSheen } from './weaponSheens.js';
 import { captureHardwareCapabilities, createGpuMemoryTracker } from './gpuMemoryBudget.js';
 import { evaluateSceneBudget } from './sceneBudgets.js';
+import { getEquipmentDefinition } from './data/equipmentDefinitions.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
@@ -49246,7 +49247,8 @@ export class ThreeGame {
             })(),
             build: summarizeBuild({
                 equippedDropIds: [...(this.runOverclocks ?? []), ...(this.runRelics ?? [])].map((drop) => drop?.id),
-                telemetry: this._runBuildTelemetry ?? {}
+                telemetry: this._runBuildTelemetry ?? {},
+                suitModules: this.getInstalledSuitModuleNames?.() ?? []
             }),
             death: this.getDeathReportData?.(goalKey) ?? null,
             nextGoal: goalKey ? {
@@ -49255,6 +49257,15 @@ export class ThreeGame {
                 bank: { tech: bankState.tech ?? 0, med: bankState.med ?? 0, coin: bankState.coin ?? 0 }
             } : null
         };
+    }
+
+    // Installed charm and suit-bay modules by name, for the debrief's build line.
+    getInstalledSuitModuleNames() {
+        const loadout = typeof window !== 'undefined' ? window.loadout?.getClassLoadout?.(String(this.playerType ?? 'scout').toLowerCase()) : null;
+        if (!loadout) return [];
+        return [loadout.mod1Id, loadout.mod2Id, loadout.charmId]
+            .map((id) => getEquipmentDefinition(id)?.name)
+            .filter(Boolean);
     }
 
     // The deployment's bounty on the objective tracker, with live progress.

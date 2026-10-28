@@ -1996,6 +1996,7 @@
         "bio_predator": "Build: Biopredador ativou {count}×, restaurando {o2}% de O₂ e {hearts} corações",
         "subzero_necrosis": "Build: Necrose Subzero ativou {count}× e causou {damage} de dano",
         "equipped": "Build: {drops} (nenhuma sinergia ativou)",
+        "loadout": "Build: {list} instalado (nenhuma sinergia ativada)",
         "none": "Build: nenhuma melhoria de campo nesta missão"
       },
       "field": {

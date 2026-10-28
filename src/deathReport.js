@@ -77,6 +77,7 @@ export const BUILD_LINE_KEYS = Object.freeze({
     bio_predator: 'ui.death.build.bio_predator',
     subzero_necrosis: 'ui.death.build.subzero_necrosis',
     equipped: 'ui.death.build.equipped',
+    loadout: 'ui.death.build.loadout',
     none: 'ui.death.build.none'
 });
 
@@ -85,7 +86,7 @@ export const BUILD_LINE_KEYS = Object.freeze({
  * headline (the one that fired most); otherwise the equipped components are
  * listed; otherwise the report says there were none.
  */
-export function summarizeBuild({ equippedDropIds = [], telemetry = {} } = {}) {
+export function summarizeBuild({ equippedDropIds = [], telemetry = {}, suitModules = [] } = {}) {
     const shatter = telemetry.cryo_shatter ?? {};
     const predator = telemetry.bio_predator ?? {};
     const necrosis = telemetry.subzero_necrosis ?? {};
@@ -106,6 +107,10 @@ export function summarizeBuild({ equippedDropIds = [], telemetry = {} } = {}) {
     if (fired.length) return fired[0].line;
     const ids = [...new Set(equippedDropIds.filter(Boolean))];
     if (ids.length) return { key: BUILD_LINE_KEYS.equipped, params: { dropKeys: ids.map((id) => `ui.relics.${id}.name`), dropIds: ids } };
+    // No field drops, but the suit carried installed modules: name them, so
+    // "no field upgrades" never hides a Pressure Seal the player built for.
+    const modules = suitModules.filter(Boolean);
+    if (modules.length) return { key: BUILD_LINE_KEYS.loadout, params: { list: modules.join(' · ') } };
     return { key: BUILD_LINE_KEYS.none };
 }
 

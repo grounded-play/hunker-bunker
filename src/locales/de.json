@@ -1996,6 +1996,7 @@
         "bio_predator": "Build: Bio-Räuber {count}× ausgelöst, {o2}% O₂ und {hearts} Herzen wiederhergestellt",
         "subzero_necrosis": "Build: Sub-Zero-Nekrose {count}× ausgelöst, {damage} Schaden",
         "equipped": "Build: {drops} (keine Synergie ausgelöst)",
+        "loadout": "Build: {list} installiert (keine Synergie ausgelöst)",
         "none": "Build: keine Feld-Upgrades in diesem Einsatz"
       },
       "field": {

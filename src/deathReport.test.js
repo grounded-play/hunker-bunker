@@ -51,6 +51,13 @@ describe('the build line', () => {
             .toEqual({ key: BUILD_LINE_KEYS.equipped, params: { dropKeys: ['ui.relics.cryo_rime.name'], dropIds: ['cryo_rime'] } });
         expect(summarizeBuild()).toEqual({ key: BUILD_LINE_KEYS.none });
     });
+
+    it('names installed suit modules instead of claiming there were no upgrades', () => {
+        expect(summarizeBuild({ suitModules: ['Pressure Seal', 'Bio-Hazard Filter Vent'] }))
+            .toEqual({ key: BUILD_LINE_KEYS.loadout, params: { list: 'Pressure Seal · Bio-Hazard Filter Vent' } });
+        // Field drops still lead: they are what this deployment found.
+        expect(summarizeBuild({ equippedDropIds: ['cryo_rime'], suitModules: ['Pressure Seal'] }).key).toBe(BUILD_LINE_KEYS.equipped);
+    });
 });
 
 describe('what was left in the field', () => {

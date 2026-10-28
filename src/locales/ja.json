@@ -1996,6 +1996,7 @@
         "bio_predator": "ビルド：バイオプレデターが{count}回発動、O₂を{o2}%とハート{hearts}個回復",
         "subzero_necrosis": "ビルド：サブゼロ・ネクローシスが{count}回発動し、{damage}ダメージ",
         "equipped": "ビルド：{drops}（シナジー未発動）",
+        "loadout": "ビルド：{list}を装着（シナジー未発動）",
         "none": "ビルド：今回の出撃ではフィールド強化なし"
       },
       "field": {

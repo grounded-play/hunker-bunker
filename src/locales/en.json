@@ -1996,6 +1996,7 @@
         "bio_predator": "Build: Bio Predator fired {count}×, restoring {o2}% O₂ and {hearts} hearts",
         "subzero_necrosis": "Build: Sub-Zero Necrosis fired {count}× for {damage} damage",
         "equipped": "Build: {drops} (no synergy fired)",
+        "loadout": "Build: {list} installed (no synergy fired)",
         "none": "Build: no field upgrades this deployment"
       },
       "field": {
