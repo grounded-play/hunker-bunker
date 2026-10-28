@@ -1,4 +1,19 @@
 {
+  "recalibration_feedback": {
+    "action_label": "NEXT FIGHT:",
+    "tradeoff_label": "TRADEOFF:",
+    "installed": "{name} installed. Calibration verified.",
+    "next_fight": "{name} READY — {action}",
+    "mods": {
+      "cryo_rime": { "action": "Keep hitting one enemy to freeze it, then reposition.", "tradeoff": "5% less direct damage; freezing takes repeated hits." },
+      "caustic_payload": { "action": "Infect an enemy, then take cover while corrosion continues.", "tradeoff": "10% less direct damage; corrosion needs time." },
+      "subzero_necrosis": { "action": "Freeze and corrode a target; kill it near others to trigger a nova.", "tradeoff": "The nova requires a frozen, corroded target to die." },
+      "kinetic_hollow_point": { "action": "Fire from cover for 25% more direct damage.", "tradeoff": "You take 15% more damage." },
+      "hyper_split_core": { "action": "Catch a group in your three-projectile spread.", "tradeoff": "Each projectile deals 25% less damage; spread weakens precision." },
+      "corrupted_overcharge": { "action": "Use cover between bursts for 80% more direct damage.", "tradeoff": "You take 35% more damage." },
+      "o2_siphon_chamber": { "action": "Below 50% oxygen, damage rises as oxygen falls. Keep an exit ready.", "tradeoff": "No bonus above 50% oxygen. Suffocation still kills." }
+    }
+  },
   "common": {
     "ok": "OK",
     "cancel": "Cancel",
@@ -1204,6 +1219,20 @@
     },
     "interstitial": {
       "track": "TRACK {id}"
+    },
+    "current_manifest": {
+      "title": "LAUNCH MANIFEST",
+      "known_title": "KNOWN SEAT CLAIMS",
+      "claimed": "{used}/{max} CLAIMED",
+      "operator": "YOU 1",
+      "survivors": "SURVIVORS {count}",
+      "allies": "ALLIES {count}",
+      "queen": "QUEEN 2",
+      "egg": "EGG 1",
+      "free": "OPEN {count}",
+      "over_capacity": "OVER CAPACITY BY {count} — REVISE CLAIMS BEFORE BOARDING.",
+      "egg_requires_nahl": "EGG NEEDS NAHL ABOARD.",
+      "egg_unstable": "EGG NEEDS THE QUEEN OR NAHL ABOARD."
     },
     "manifest": {
       "title": "RETURN MANIFEST",

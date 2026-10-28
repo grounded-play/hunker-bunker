@@ -1,4 +1,19 @@
 {
+  "recalibration_feedback": {
+    "action_label": "NÄCHSTER KAMPF:",
+    "tradeoff_label": "NACHTEIL:",
+    "installed": "{name} installiert. Kalibrierung bestätigt.",
+    "next_fight": "{name} BEREIT — {action}",
+    "mods": {
+      "cryo_rime": { "action": "Triff denselben Gegner mehrfach, um ihn einzufrieren. Wechsle dann die Position.", "tradeoff": "5% weniger direkter Schaden; Einfrieren braucht mehrere Treffer." },
+      "caustic_payload": { "action": "Infiziere einen Gegner und suche Deckung, während die Korrosion wirkt.", "tradeoff": "10% weniger direkter Schaden; Korrosion braucht Zeit." },
+      "subzero_necrosis": { "action": "Friere ein korrodiertes Ziel ein und töte es neben anderen für eine Nova.", "tradeoff": "Die Nova erfordert den Tod eines eingefrorenen, korrodierten Ziels." },
+      "kinetic_hollow_point": { "action": "Schieße aus der Deckung für 25% mehr direkten Schaden.", "tradeoff": "Du erleidest 15% mehr Schaden." },
+      "hyper_split_core": { "action": "Triff Gruppen mit deinem Drei-Projektil-Fächer.", "tradeoff": "Jedes Projektil verursacht 25% weniger Schaden; Streuung kostet Präzision." },
+      "corrupted_overcharge": { "action": "Nutze Deckung zwischen Salven für 80% mehr direkten Schaden.", "tradeoff": "Du erleidest 35% mehr Schaden." },
+      "o2_siphon_chamber": { "action": "Unter 50% Sauerstoff steigt der Schaden bei sinkendem Vorrat. Halte einen Fluchtweg frei.", "tradeoff": "Kein Bonus über 50% Sauerstoff. Ersticken bleibt tödlich." }
+    }
+  },
   "common": {
     "ok": "OK",
     "cancel": "Abbrechen",
@@ -1204,6 +1219,20 @@
     },
     "interstitial": {
       "track": "TITEL {id}"
+    },
+    "current_manifest": {
+      "title": "STARTMANIFEST",
+      "known_title": "BEKANNTE PLATZANSPRÜCHE",
+      "claimed": "{used}/{max} BEANSPRUCHT",
+      "operator": "DU 1",
+      "survivors": "ÜBERLEBENDE {count}",
+      "allies": "VERBÜNDETE {count}",
+      "queen": "KÖNIGIN 2",
+      "egg": "EI 1",
+      "free": "FREI {count}",
+      "over_capacity": "{count} PLÄTZE ZU VIEL — ANSPRÜCHE VOR DEM EINSTIEG ÄNDERN.",
+      "egg_requires_nahl": "DAS EI BRAUCHT NAHL AN BORD.",
+      "egg_unstable": "DAS EI BRAUCHT DIE KÖNIGIN ODER NAHL AN BORD."
     },
     "manifest": {
       "title": "RÜCKKEHR-MANIFEST",

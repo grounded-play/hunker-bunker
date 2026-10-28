@@ -1,4 +1,19 @@
 {
+  "recalibration_feedback": {
+    "action_label": "次の戦闘：",
+    "tradeoff_label": "代償：",
+    "installed": "{name}を装着。校正を確認。",
+    "next_fight": "{name} 作動可能 — {action}",
+    "mods": {
+      "cryo_rime": { "action": "同じ敵に連続で命中させて凍結させ、その隙に位置を変える。", "tradeoff": "直接ダメージが5%減少。凍結には複数の命中が必要。" },
+      "caustic_payload": { "action": "敵を感染させ、腐食が続く間に遮蔽物へ移動する。", "tradeoff": "直接ダメージが10%減少。腐食には時間が必要。" },
+      "subzero_necrosis": { "action": "敵を凍結・腐食させ、他の敵の近くで倒してノヴァを起こす。", "tradeoff": "凍結と腐食が同時にかかった敵を倒す必要がある。" },
+      "kinetic_hollow_point": { "action": "遮蔽物から射撃。直接ダメージが25%増加。", "tradeoff": "被ダメージが15%増加。" },
+      "hyper_split_core": { "action": "3発の拡散弾で敵の集団を捉える。", "tradeoff": "各弾のダメージが25%減少。拡散により精度が低下。" },
+      "corrupted_overcharge": { "action": "射撃の合間に身を隠す。直接ダメージが80%増加。", "tradeoff": "被ダメージが35%増加。" },
+      "o2_siphon_chamber": { "action": "酸素が50%未満になると、残量の低下に応じてダメージが増す。退路を確保。", "tradeoff": "酸素50%以上では効果なし。窒息は防げない。" }
+    }
+  },
   "common": {
     "ok": "OK",
     "cancel": "キャンセル",
@@ -1204,6 +1219,20 @@
     },
     "interstitial": {
       "track": "トラック {id}"
+    },
+    "current_manifest": {
+      "title": "出航者名簿",
+      "known_title": "判明している搭乗枠",
+      "claimed": "確保済み {used}/{max}",
+      "operator": "あなた 1",
+      "survivors": "生存者 {count}",
+      "allies": "協力者 {count}",
+      "queen": "女王 2",
+      "egg": "卵 1",
+      "free": "空き {count}",
+      "over_capacity": "定員を{count}枠超過 — 搭乗前に割り当てを見直してください。",
+      "egg_requires_nahl": "卵の輸送にはナールの搭乗が必要です。",
+      "egg_unstable": "卵の輸送には女王かナールの搭乗が必要です。"
     },
     "manifest": {
       "title": "帰還目録",

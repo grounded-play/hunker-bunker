@@ -25,6 +25,7 @@ import { ObjectiveRegistry } from './src/objectiveRegistry.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { ExpeditionReceipt } from './src/economyReceipt.js';
 import { renderReturnManifest } from './src/returnManifest.js';
+import { renderCurrentManifestReadout } from './src/currentManifestReadout.js';
 import { loadoutCardViews, loadoutEffectSummaryHtml, renderLoadoutStrip } from './src/itemCard.js';
 import { FabricatorManager, FAB_RECIPES, getFabricatedOutputIds } from './src/fabricator.js';
 import { createFabricationBay, fabMissingResourceText as fabMissingResourceTextFor } from './src/fabricationBay.js';
@@ -14712,13 +14713,11 @@ function renderCampChoice(detail = {}) {
     if (campChoiceTitle) {
         campChoiceTitle.textContent = detail.campLabel ?? t('ui.camp.decision');
     }
-    const ending = detail.endingVector?.ending;
     if (campChoiceStatus) {
         const stats = [
             ['status', formatStoryToken(camp.status)],
             ['level', `LVL ${camp.level ?? 0}`],
-            ['bond', `${camp.bond ?? 0}/5`],
-            ['vector', ACT2_ENDING_TITLES[ending] ?? formatStoryToken(ending)]
+            ['bond', `${camp.bond ?? 0}/5`]
         ];
         campChoiceStatus.innerHTML = stats.map(([label, value]) => `
             <div class="camp-choice-stat">
@@ -14726,6 +14725,10 @@ function renderCampChoice(detail = {}) {
                 <span class="camp-choice-stat__value">${value}</span>
             </div>
         `).join('');
+        const manifestStat = document.createElement('div');
+        manifestStat.className = 'camp-choice-stat current-manifest';
+        renderCurrentManifestReadout(manifestStat, act2Manager?.getState?.(), getActiveRunManifestOptions());
+        campChoiceStatus.append(manifestStat);
     }
     if (campChoiceCopy) {
         const title = detail.leaderTitle ? `${detail.leaderTitle}. ` : '';

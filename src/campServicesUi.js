@@ -1,4 +1,5 @@
 import './styles/campServices.css';
+import { renderCurrentManifestReadout } from './currentManifestReadout.js';
 
 // CAMP SERVICES menu (owner, 2026-10-08: "too many options are showing on
 // one"). The camp prompt offers at most three actions (src/campActionMenu.js);
@@ -14,6 +15,7 @@ export function createCampServicesUi({
     const title = doc.getElementById('camp-services-title');
     const list = doc.getElementById('camp-services-list');
     const closeButton = doc.getElementById('close-camp-services');
+    const manifest = doc.getElementById('camp-services-manifest');
     if (!modal || !list) return null;
     let isOpen = false;
     // Hides the HUD layers that draw over modals (main.js setCampDialogOpen).
@@ -34,6 +36,10 @@ export function createCampServicesUi({
         if (!actions.length) return;
         isOpen = true;
         if (title) title.textContent = detail.campLabel ?? '';
+        const game = getGame();
+        renderCurrentManifestReadout(manifest, game?.act2?.getState?.(), {
+            eggSeatRequiresNahl: Boolean(game?.getRunCardEffects?.()?.manifest?.eggSeatRequiresNahl)
+        });
         list.textContent = '';
         for (const entry of actions) {
             const button = doc.createElement('button');

@@ -1,4 +1,19 @@
 {
+  "recalibration_feedback": {
+    "action_label": "下次战斗：",
+    "tradeoff_label": "代价：",
+    "installed": "{name}已安装。校准完成。",
+    "next_fight": "{name} 就绪 — {action}",
+    "mods": {
+      "cryo_rime": { "action": "连续命中同一个敌人将其冻结，然后转移位置。", "tradeoff": "直接伤害降低5%；冻结需要多次命中。" },
+      "caustic_payload": { "action": "感染敌人后寻找掩体，让腐蚀持续造成伤害。", "tradeoff": "直接伤害降低10%；腐蚀需要时间。" },
+      "subzero_necrosis": { "action": "冻结并腐蚀目标，在其他敌人附近击杀它以触发新星。", "tradeoff": "必须击杀同时处于冻结和腐蚀状态的目标。" },
+      "kinetic_hollow_point": { "action": "从掩体后射击，直接伤害提高25%。", "tradeoff": "受到的伤害增加15%。" },
+      "hyper_split_core": { "action": "用三发散射弹覆盖一群敌人。", "tradeoff": "每发伤害降低25%；散射会降低精准度。" },
+      "corrupted_overcharge": { "action": "连射间隙寻找掩体，直接伤害提高80%。", "tradeoff": "受到的伤害增加35%。" },
+      "o2_siphon_chamber": { "action": "氧气低于50%时，氧气越少伤害越高。提前留好退路。", "tradeoff": "氧气高于50%时无加成。窒息仍会致命。" }
+    }
+  },
   "common": {
     "ok": "确定",
     "cancel": "取消",
@@ -1204,6 +1219,20 @@
     },
     "interstitial": {
       "track": "曲目 {id}"
+    },
+    "current_manifest": {
+      "title": "起航名单",
+      "known_title": "已知席位申请",
+      "claimed": "已申请 {used}/{max}",
+      "operator": "你 1",
+      "survivors": "幸存者 {count}",
+      "allies": "盟友 {count}",
+      "queen": "女王 2",
+      "egg": "卵 1",
+      "free": "空余 {count}",
+      "over_capacity": "超出容量 {count} 席 — 登船前请调整席位申请。",
+      "egg_requires_nahl": "运输卵需要纳尔在船上。",
+      "egg_unstable": "运输卵需要女王或纳尔在船上。"
     },
     "manifest": {
       "title": "归还清单",

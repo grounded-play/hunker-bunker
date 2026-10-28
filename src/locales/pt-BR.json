@@ -1,4 +1,19 @@
 {
+  "recalibration_feedback": {
+    "action_label": "PRÓXIMO COMBATE:",
+    "tradeoff_label": "DESVANTAGEM:",
+    "installed": "{name} instalado. Calibração verificada.",
+    "next_fight": "{name} PRONTO — {action}",
+    "mods": {
+      "cryo_rime": { "action": "Acerte o mesmo inimigo até congelá-lo e mude de posição.", "tradeoff": "5% menos dano direto; congelar exige vários acertos." },
+      "caustic_payload": { "action": "Infecte um inimigo e busque cobertura enquanto a corrosão continua.", "tradeoff": "10% menos dano direto; a corrosão precisa de tempo." },
+      "subzero_necrosis": { "action": "Congele e corroa um alvo; mate-o perto de outros para provocar uma nova.", "tradeoff": "A nova exige a morte de um alvo congelado e corroído." },
+      "kinetic_hollow_point": { "action": "Atire da cobertura para causar 25% mais dano direto.", "tradeoff": "Você recebe 15% mais dano." },
+      "hyper_split_core": { "action": "Acerte um grupo com sua dispersão de três projéteis.", "tradeoff": "Cada projétil causa 25% menos dano; a dispersão reduz a precisão." },
+      "corrupted_overcharge": { "action": "Use cobertura entre rajadas para causar 80% mais dano direto.", "tradeoff": "Você recebe 35% mais dano." },
+      "o2_siphon_chamber": { "action": "Abaixo de 50% de oxigênio, o dano aumenta conforme o oxigênio cai. Prepare uma saída.", "tradeoff": "Sem bônus acima de 50% de oxigênio. A asfixia ainda mata." }
+    }
+  },
   "common": {
     "ok": "OK",
     "cancel": "Cancelar",
@@ -1204,6 +1219,20 @@
     },
     "interstitial": {
       "track": "FAIXA {id}"
+    },
+    "current_manifest": {
+      "title": "MANIFESTO DE DECOLAGEM",
+      "known_title": "LUGARES REIVINDICADOS CONHECIDOS",
+      "claimed": "{used}/{max} REIVINDICADOS",
+      "operator": "VOCÊ 1",
+      "survivors": "SOBREVIVENTES {count}",
+      "allies": "ALIADOS {count}",
+      "queen": "RAINHA 2",
+      "egg": "OVO 1",
+      "free": "LIVRES {count}",
+      "over_capacity": "{count} LUGARES ACIMA DA CAPACIDADE — REVISE ANTES DE EMBARCAR.",
+      "egg_requires_nahl": "O OVO PRECISA DE NAHL A BORDO.",
+      "egg_unstable": "O OVO PRECISA DA RAINHA OU DE NAHL A BORDO."
     },
     "manifest": {
       "title": "MANIFESTO DE RETORNO",

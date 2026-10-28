@@ -1,4 +1,19 @@
 {
+  "recalibration_feedback": {
+    "action_label": "PRÓXIMO COMBATE:",
+    "tradeoff_label": "DESVENTAJA:",
+    "installed": "{name} instalado. Calibración verificada.",
+    "next_fight": "{name} LISTO — {action}",
+    "mods": {
+      "cryo_rime": { "action": "Golpea al mismo enemigo hasta congelarlo y cambia de posición.", "tradeoff": "5% menos daño directo; congelar requiere varios impactos." },
+      "caustic_payload": { "action": "Infecta a un enemigo y cúbrete mientras la corrosión sigue actuando.", "tradeoff": "10% menos daño directo; la corrosión necesita tiempo." },
+      "subzero_necrosis": { "action": "Congela y corroe un objetivo; mátalo junto a otros para provocar una nova.", "tradeoff": "La nova requiere que muera un objetivo congelado y corroído." },
+      "kinetic_hollow_point": { "action": "Dispara desde cobertura para causar 25% más daño directo.", "tradeoff": "Recibes 15% más daño." },
+      "hyper_split_core": { "action": "Atrapa a un grupo con tu abanico de tres proyectiles.", "tradeoff": "Cada proyectil causa 25% menos daño; la dispersión reduce la precisión." },
+      "corrupted_overcharge": { "action": "Busca cobertura entre ráfagas para causar 80% más daño directo.", "tradeoff": "Recibes 35% más daño." },
+      "o2_siphon_chamber": { "action": "Con menos de 50% de oxígeno, el daño aumenta al bajar el oxígeno. Prepara una salida.", "tradeoff": "Sin bonificación por encima de 50% de oxígeno. La asfixia sigue siendo mortal." }
+    }
+  },
   "common": {
     "ok": "Aceptar",
     "cancel": "Cancelar",
@@ -1204,6 +1219,20 @@
     },
     "interstitial": {
       "track": "PISTA {id}"
+    },
+    "current_manifest": {
+      "title": "MANIFIESTO DE DESPEGUE",
+      "known_title": "PLAZAS COMPROMETIDAS CONOCIDAS",
+      "claimed": "{used}/{max} COMPROMETIDAS",
+      "operator": "TÚ 1",
+      "survivors": "SUPERVIVIENTES {count}",
+      "allies": "ALIADOS {count}",
+      "queen": "REINA 2",
+      "egg": "HUEVO 1",
+      "free": "LIBRES {count}",
+      "over_capacity": "{count} PLAZAS DE MÁS — REVISA LOS COMPROMISOS ANTES DE ABORDAR.",
+      "egg_requires_nahl": "EL HUEVO NECESITA A NAHL A BORDO.",
+      "egg_unstable": "EL HUEVO NECESITA A LA REINA O A NAHL A BORDO."
     },
     "manifest": {
       "title": "MANIFIESTO DE REGRESO",
