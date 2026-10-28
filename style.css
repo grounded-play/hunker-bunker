@@ -7797,6 +7797,7 @@ body.player-cold-exposed #game-viewport::before {
   align-items: center;
   gap: 9px;
   min-width: clamp(250px,22vw,390px);
+  max-width: clamp(300px,34vw,520px);
   padding: 8px 11px;
   border: 1px solid rgba(135,220,255,.58);
   border-left: 4px solid #87dcff;
@@ -7806,10 +7807,12 @@ body.player-cold-exposed #game-viewport::before {
 }
 .hazard-status-panel.hidden { display: none; }
 .hazard-status-panel[data-hazard="toxin"] { border-color: rgba(126,255,102,.6); border-left-color: #7eff66; color: #dcffd6; }
+.hazard-status-panel[data-hazard="emitter"] { border-color: rgba(255,179,71,.6); border-left-color: #ffb347; color: #fff0d6; }
 .hazard-status-panel__icon { font: 900 18px 'Space Mono',monospace; }
 .hazard-status-panel__copy { display: flex; flex-direction: column; min-width: 0; }
 .hazard-status-panel__copy strong { font: 900 12px 'Outfit',sans-serif; letter-spacing: .1em; }
-.hazard-status-panel__copy span { font: 700 9px 'Space Mono',monospace; opacity: .78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Two lines: the immediate action and the durable answer must both read. */
+.hazard-status-panel__copy span { font: 700 9px 'Space Mono',monospace; opacity: .78; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
 .hazard-status-panel__time { font: 900 15px 'Space Mono',monospace; }
 @keyframes cold-edge-breathe { 0%,100% { opacity:.42; } 50% { opacity:.9; } }
 @media (prefers-reduced-motion: reduce) { body.player-cold-exposed #game-viewport::before { animation: none; opacity: .65; } }

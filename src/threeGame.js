@@ -21321,7 +21321,13 @@ export class ThreeGame {
     updateHazardZoneDamage(delta) {
         if (!this.isAct2Active() || !this.player || this.isPlayerDead) return;
         if (this.hasCampQuestReward('substation_keycard')) return;
-        if (!this.isPlayerNearHazardWall(this.player.position.x, this.player.position.z)) {
+        const near = this.isPlayerNearHazardWall(this.player.position.x, this.player.position.z);
+        // Tell the HUD on the way in and out, so the damage has a named cause.
+        if (near !== Boolean(this._inHazardZone)) {
+            this._inHazardZone = near;
+            window.dispatchEvent(new CustomEvent('player-hazard-zone', { detail: { active: near } }));
+        }
+        if (!near) {
             this._hazardZoneDamageAcc = 0;
             return;
         }

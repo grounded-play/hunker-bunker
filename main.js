@@ -29,6 +29,7 @@ import { loadoutCardViews, loadoutEffectSummaryHtml, renderLoadoutStrip } from '
 import { FabricatorManager, FAB_RECIPES, getFabricatedOutputIds } from './src/fabricator.js';
 import { createFabricationBay, fabMissingResourceText as fabMissingResourceTextFor } from './src/fabricationBay.js';
 import { BIO_HAZARD_FILTER_RECIPE_ID, toxinProtectionGuidance } from './src/toxinProtectionGuidance.js';
+import { hazardWallGuidance, vitalHazardGuidance } from './src/hazardGuidance.js';
 import { ProfileManager, exportSaveCode, importSaveCode, resetAllDataFactory, shouldAutoStartSectorZero, startNewCampaign } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { getHeldWeaponLabel } from './src/heldWeaponLabel.js';
@@ -7824,7 +7825,7 @@ function renderHazardStatus({ kind = null, label = '', detail = '', timeLeft = n
     const visible = Boolean(kind) && isGameplayHudActive();
     panel.classList.toggle('hidden', !visible);
     panel.dataset.hazard = kind ?? '';
-    document.getElementById('hazard-status-icon').textContent = kind === 'toxin' ? '☣' : kind === 'oxygen' ? 'O₂' : '❄';
+    document.getElementById('hazard-status-icon').textContent = kind === 'toxin' ? '☣' : kind === 'oxygen' ? 'O₂' : kind === 'emitter' ? '⚡' : '❄';
     document.getElementById('hazard-status-label').textContent = label;
     document.getElementById('hazard-status-detail').textContent = detail;
     document.getElementById('hazard-status-time').textContent = Number.isFinite(timeLeft)
@@ -7833,6 +7834,24 @@ function renderHazardStatus({ kind = null, label = '', detail = '', timeLeft = n
     document.body.classList.toggle('player-cold-exposed', visible && kind === 'cold');
 }
 
+// What fixes it for good, said once per 45 s per hazard (src/hazardGuidance.js).
+const _lastVitalGuidanceAt = {};
+let _hazardZoneActive = false;
+window.addEventListener('player-hazard-zone', (event) => {
+    _hazardZoneActive = Boolean(event?.detail?.active);
+    if (document.body.classList.contains('player-poisoned')) return;
+    if (!_hazardZoneActive) {
+        renderHazardStatus();
+        return;
+    }
+    const guidance = hazardWallGuidance();
+    renderHazardStatus({ kind: 'emitter', label: 'HAZARD WALL DISCHARGE', detail: guidance.detail });
+    const now = Date.now();
+    if (now - (_lastVitalGuidanceAt.emitter ?? -Infinity) >= 45_000) {
+        _lastVitalGuidanceAt.emitter = now;
+        showBiomePrompt(guidance.prompt);
+    }
+});
 window.addEventListener('player-o2-changed', (event) => {
     const o2 = event?.detail?.o2 ?? 100;
     const hp = window.game?.playerVitals?.hp ?? 99;
@@ -7850,16 +7869,33 @@ window.addEventListener('player-o2-changed', (event) => {
     }
     updateDistressMode(o2, hp);
     updateMusicTension();
-    if (!document.body.classList.contains('player-poisoned')) {
+    // Toxin and hazard walls cost HP, so they outrank a draining reserve.
+    if (!document.body.classList.contains('player-poisoned') && !_hazardZoneActive) {
         const drainRate = Number(event?.detail?.drainRate ?? 0);
         const biome = String(event?.detail?.biome ?? 'active');
         if (!event?.detail?.safe && drainRate > 0 && (o2 < 60 || biome === 'cryo')) {
+            const kind = biome === 'cryo' ? 'cold' : 'oxygen';
+            const generator = window.game?.getO2GeneratorState?.() ?? {};
+            const guidance = vitalHazardGuidance({
+                kind,
+                safeDirection: event?.detail?.safeDirection,
+                generatorLevel: generator.level ?? 0,
+                generatorMaxed: Boolean(generator.maxed),
+                nextCost: generator.nextUpgrade?.cost ? (window.game?.getEffectiveCost?.(generator.nextUpgrade.cost) ?? generator.nextUpgrade.cost) : null,
+                drainMultiplier: window.game?.loadoutMods?.oxygenDrainMultiplier ?? 1,
+                warmthPerk: Boolean(window.npcDialogueTreeManager?.activePerks?.has?.('tallows_seductive_warmth'))
+            });
             renderHazardStatus({
-                kind: biome === 'cryo' ? 'cold' : 'oxygen',
-                label: biome === 'cryo' ? 'COLD EXPOSURE' : 'OXYGEN RESERVE DRAINING',
-                detail: event?.detail?.safeDirection || 'RETURN TO THE PRESSURIZED SHIP FIELD',
+                kind,
+                label: kind === 'cold' ? 'COLD EXPOSURE' : 'OXYGEN RESERVE DRAINING',
+                detail: guidance.detail,
                 timeLeft: o2 / drainRate
             });
+            const now = Date.now();
+            if (now - (_lastVitalGuidanceAt[kind] ?? -Infinity) >= 45_000) {
+                _lastVitalGuidanceAt[kind] = now;
+                showBiomePrompt(guidance.prompt);
+            }
         } else {
             renderHazardStatus();
         }
