@@ -537,6 +537,7 @@ window.addEventListener('field-weapon-equipped', (event) => {
 function notifyGameplayReady() {
     if (typeof window === 'undefined') return;
     window.game?.notifyPvpGameplayReady?.();
+    window.game?.equipDeploymentLoadoutWeapon?.();
     window.dispatchEvent(new CustomEvent('gameplay-ready', {
         detail: {
             timestamp: Date.now(),
@@ -6193,12 +6194,12 @@ window.addEventListener('goal-milestone-presentation-requested', (event) => {
     };
     const videoBase = videoByBoss[detail.bossType];
     if (!videoBase) return;
-    detail.promise = playCutsceneVideo(videoBase, {
+    detail.promise = playCutsceneBehindDoors(videoBase, {
         kicker: 'SYSTEM CONSTRUCTION COMPLETE',
         title: String(detail.goalKey ?? 'BASE MODULE').replace(/([a-z])([A-Z])/g, '$1 $2').toUpperCase(),
         body: 'STRUCTURE READY // HOSTILE RESPONSE DETECTED',
         tone: 'danger'
-    });
+    }, 'alien');
 });
 
 window.addEventListener('o2-generator-upgraded', (event) => {
@@ -9303,6 +9304,34 @@ function playCutsceneVideo(base, options = {}) {
 }
 window.playCutsceneVideo = playCutsceneVideo;
 
+function playCutsceneBehindDoors(base, options = {}, doorKey = undefined) {
+    return new Promise((resolve) => {
+        let settled = false;
+        let closedStarted = false;
+        let result = null;
+        const finish = () => {
+            if (settled) return;
+            settled = true;
+            resolve(result);
+        };
+        triggerDoorTransition(
+            async () => {
+                closedStarted = true;
+                try {
+                    result = await playCutsceneVideo(base, options);
+                } catch (err) {
+                    console.error('Cutscene behind doors error:', err);
+                }
+            },
+            finish,
+            doorKey,
+            { waitForClosedWork: true, openingHoldMs: 300 }
+        );
+        window.setTimeout(() => { if (!closedStarted) finish(); }, 5000);
+    });
+}
+window.playCutsceneBehindDoors = playCutsceneBehindDoors;
+
 function playCinematicStills(rawSpec = {}) {
     const spec = normalizeCinematicStillSpec(rawSpec);
     if (!spec.images.length && !spec.title && !spec.body) {
@@ -9452,10 +9481,16 @@ async function playCinematicBeat(options = {}) {
     const {
         videoBase = null,
         fallback = null,
-        playSequence = false
+        playSequence = false,
+        behindDoors = false,
+        doorKey = undefined
     } = options;
     const spec = fallback ? normalizeCinematicStillSpec(fallback) : null;
     const targetVideo = videoBase || spec?.id || null;
+
+    if (behindDoors && targetVideo) {
+        return playCutsceneBehindDoors(targetVideo, { ...spec, fallback: spec }, doorKey);
+    }
 
     // When playSequence is true, play the still first, then play the video right after!
     if (playSequence && spec && targetVideo) {
@@ -9497,19 +9532,20 @@ window.addEventListener('cinematic-event', (event) => {
     });
 });
 
-function playAuthoredEventOnce(eventId, { videoBase = null, eventDetail = {} } = {}) {
+function playAuthoredEventOnce(eventId, { videoBase = null, eventDetail = {}, behindDoors = false, doorKey = undefined } = {}) {
     if (!shouldPlayAuthoredEventCinematic({ appPhase, ...eventDetail })) return;
     if (seenSessionCinematicEvents.has(eventId)) return;
     const fallback = getEventCinematicSpec(eventId);
     if (!fallback) return;
     seenSessionCinematicEvents.add(eventId);
-    void queueCinematicEvent({ videoBase, fallback });
+    void queueCinematicEvent({ videoBase, fallback, behindDoors, doorKey });
 }
 
 window.addEventListener('foundry-discovered', (event) => {
     playAuthoredEventOnce('foundry_discovered', {
         videoBase: 'event-foundry-discovered',
-        eventDetail: event?.detail ?? {}
+        eventDetail: event?.detail ?? {},
+        behindDoors: true
     });
 });
 // Black box recovery is one cinematic: song card 32 (beat `black_box_first`,
@@ -9517,7 +9553,11 @@ window.addEventListener('foundry-discovered', (event) => {
 // legacy event-black-box-recovered film used to play first, then the card.
 window.addEventListener('queen-fight-started', () => {
     window.AudioManager?.playOST?.(31, { volume: 0.65, loop: true });
-    playAuthoredEventOnce('queen_encounter', { videoBase: 'event-queen-encounter' });
+    playAuthoredEventOnce('queen_encounter', {
+        videoBase: 'event-queen-encounter',
+        behindDoors: true,
+        doorKey: 'alien'
+    });
 });
 window.addEventListener('enemy-first-spotted', (event) => {
     const trackNum = event?.detail?.trackNum;
@@ -10167,11 +10207,11 @@ function beginDailyOpsRun() {
             }
             document.body.classList.add('mission-intro-active');
             const deploymentHold = suspendGameForFullscreenVideo();
+            setAppPhase('deployment');
             triggerDoorTransition(
                 () => {
                     showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
                     if (menu) menu.classList.add('hidden');
-                    setAppPhase('gameplay');
                     window.game?.setPerformanceProfile?.('gameplay');
                     window.game?.updatePlayerType?.(getSelectedHeroType(), { poof: false, emitWorldEvents: false });
                     resetRunToStartingState({
@@ -10195,12 +10235,17 @@ function beginDailyOpsRun() {
                     // runs, with the progress readout mounted over the door face.
                     return prepareGameplayForDialogue({ loaderOverDoor: true });
                 },
-                () => {},
+                () => {
+                    window.game?.setInputEnabled?.(true);
+                    notifyGameplayReady();
+                    updateMusicTension();
+                },
                 undefined,
                 {
                     waitForClosedWork: true,
                     openingHoldMs: 160,
                     onOpeningStart: () => {
+                        setAppPhase('gameplay');
                         void runMissionIntroSequence({ deploymentHold });
                     }
                 }
@@ -16423,6 +16468,13 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
         if (onOpened) onOpened();
     };
     if (!overlay) {
+        if (waitForClosedWork && onClosed) {
+            Promise.resolve(onClosed()).finally(() => {
+                if (onOpeningStart) onOpeningStart();
+                finishOpened();
+            });
+            return;
+        }
         if (onClosed) void onClosed();
         if (onOpeningStart) onOpeningStart();
         finishOpened();

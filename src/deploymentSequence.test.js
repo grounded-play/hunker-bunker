@@ -46,6 +46,38 @@ describe('fresh deployment transaction', () => {
         expect(launch.slice(0, prepare)).not.toContain("setAppPhase('gameplay')");
     });
 
+    it('keeps daily ops deployment out of live gameplay until prepared doors begin opening', () => {
+        const dailyStart = main.indexOf('function beginDailyOpsRun(');
+        const dailyEnd = main.indexOf('\n// Compatibility for saves', dailyStart);
+        const daily = main.slice(dailyStart, dailyEnd);
+        const deploymentPhase = daily.indexOf("setAppPhase('deployment')");
+        const prepare = daily.indexOf('prepareGameplayForDialogue({');
+        const gameplayPhase = daily.indexOf("setAppPhase('gameplay')");
+
+        expect(deploymentPhase).toBeGreaterThan(-1);
+        expect(prepare).toBeGreaterThan(deploymentPhase);
+        expect(gameplayPhase).toBeGreaterThan(prepare);
+        expect(daily.slice(0, prepare)).not.toContain("setAppPhase('gameplay')");
+    });
+
+    it('plays foundry discovery, queen encounter, and snail boss videos behind blast doors', () => {
+        expect(main).toContain('function playCutsceneBehindDoors(');
+        const milestoneStart = main.indexOf("window.addEventListener('goal-milestone-presentation-requested'");
+        const milestoneEnd = main.indexOf("window.addEventListener('o2-generator-upgraded'", milestoneStart);
+        const milestone = main.slice(milestoneStart, milestoneEnd);
+        expect(milestone).toContain('playCutsceneBehindDoors(videoBase');
+
+        const foundryStart = main.indexOf("window.addEventListener('foundry-discovered'");
+        const foundryEnd = main.indexOf("window.addEventListener('queen-fight-started'", foundryStart);
+        const foundry = main.slice(foundryStart, foundryEnd);
+        expect(foundry).toContain('behindDoors: true');
+
+        const queenStart = main.indexOf("window.addEventListener('queen-fight-started'");
+        const queenEnd = main.indexOf("window.addEventListener('enemy-first-spotted'", queenStart);
+        const queen = main.slice(queenStart, queenEnd);
+        expect(queen).toContain('behindDoors: true');
+    });
+
     it('plays every song card behind the one stage-door system', () => {
         const start = main.indexOf('let stageCardQueue');
         const end = main.indexOf('\n// The camp', start);

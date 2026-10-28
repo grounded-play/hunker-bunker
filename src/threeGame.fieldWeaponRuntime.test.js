@@ -91,6 +91,21 @@ describe('physical field weapon runtime', () => {
             expect(ThreeGame.prototype.equipPvpLoadoutWeapon.call(game)).toBe(false);
             expect(game.fieldWeaponRunState.equipped).toBeNull();
         }
+
+        const coop = makeGame('coop');
+        expect(ThreeGame.prototype.equipDeploymentLoadoutWeapon.call(coop)).toBe(true);
+        expect(coop.fieldWeaponRunState.equipped).toMatchObject({ profileId: 'mk1_sidearm', ammoInWeapon: 12 });
+        expect(ThreeGame.prototype.equipDeploymentLoadoutWeapon.call(coop)).toBe(false);
+
+        const soloNoTutorial = makeGame(undefined);
+        soloNoTutorial._sectorZeroTutorialActive = false;
+        expect(ThreeGame.prototype.equipDeploymentLoadoutWeapon.call(soloNoTutorial)).toBe(true);
+        expect(soloNoTutorial.fieldWeaponRunState.equipped).toMatchObject({ profileId: 'mk1_sidearm', ammoInWeapon: 12 });
+
+        const soloTutorial = makeGame(undefined);
+        soloTutorial._sectorZeroTutorialActive = true;
+        expect(ThreeGame.prototype.equipDeploymentLoadoutWeapon.call(soloTutorial)).toBe(false);
+        expect(soloTutorial.fieldWeaponRunState.equipped).toBeNull();
     });
 
     it('reloads from the equipped gun reserve without consuming the shared ammo cache', () => {

@@ -7272,6 +7272,19 @@ export class ThreeGame {
         }
     }
 
+    // In multiplayer (PvP or Co-op) or whenever starting an expedition without
+    // the Sector Zero tutorial active, place the operator's loadout gun
+    // directly in hand at deployment so they never enter combat unarmed (QA 2026-10-27 #3).
+    equipDeploymentLoadoutWeapon() {
+        if (this.fieldWeaponRunState?.equipped) return false;
+        if (this.isMultiplayer || this.multiplayerMode === 'pvp' || this.multiplayerMode === 'coop' || !this._sectorZeroTutorialActive) {
+            const drop = this.stageSectorZeroLoadoutWeapon?.();
+            if (!drop?.instanceId) return false;
+            return Boolean(this.interactWithFieldWeaponDrop?.(drop.instanceId));
+        }
+        return false;
+    }
+
     // A PvP round starts armed: the class gun goes straight to hand instead of
     // waiting on the Sector Zero rack, where a rival could kill an unarmed
     // player who never found it (QA 2026-10-27 #3).

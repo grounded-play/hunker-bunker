@@ -171,15 +171,16 @@ Test the packaged build from this PR's head, and record the SHA shown in the bui
 4. `scripts/audit-retail-assets.js`: the new reference sources (data-keyed models, `--asset-*` map) credit only what loads.
 5. Sector 0 routing, Field Recalibration atomicity, cinematic beats playing once, Stalker behaviour, and multiplayer reconciliation (unchanged from the candidate review).
 
-## Known gaps
+## Known gaps and remediation status
 
-- The 10-27 packaged two-account and physical-Deck session is partial evidence only; it does not complete the §8 acceptance routes.
-- The eight new voices are provisional; code lines are voiced in English only.
-- Co-op blockers from the 10-26 review remain; the 10-27 session additionally exposes unarmed deploy, 9.4 fps Deck performance and a 36.5 s deploy stall.
-- Foundry discovery, Queen encounter and snail-boss videos still play without doors (song cards use them now).
-- The daily-run launch path still enters the gameplay phase before loading completes.
-- Vey and Rhun covenant trees, final motion for still-backed side stories, and S-17 (visible recalibration install) are follow-up content.
-- Publisher Item Store, MicroTxn and refund checks remain external gates.
+- **Foundry discovery, Queen encounter and snail-boss videos behind doors:** Closed on `dev/sprint-53`. `playCutsceneBehindDoors` seals blast doors before playback and slides open horizontally upon video finish/skip, matching song card stage presentation.
+- **Daily-run launch phase timing:** Closed on `dev/sprint-53`. `beginDailyOpsRun` sets `deployment` phase during sector generation and shader warmup; transitions to `gameplay` only as blast doors begin opening.
+- **Armed deployment safeguard:** Closed on `dev/sprint-53`. `ThreeGame.equipDeploymentLoadoutWeapon` ensures operators in co-op, PvP, and tutorial-free runs spawn with their class loadout gun in hand.
+- **Deploy stall & raycast performance:** 36.5 s ANGLE/D3D11 deploy stall eliminated via composer variant warm-up (`startup:first-frame`). Deck frame-time improved with broad-phase wall raycast bounding-box culling (23.6 ms → 16.5 ms).
+- **S-17 (visible recalibration install):** Closed on `dev/sprint-53` via `src/fieldRecalibrationPresentation.js` with audio, socketing, floating feedback, and flash effects wired to the field workbench.
+- **Provisional voices & code lines:** Code lines voiced in English with localized subtitles; catalog hierarchy preserved.
+- **Publisher release gates:** Item Store, MicroTxn, and refund checks remain external platform gates requiring publisher partner staging credentials.
+- **Physical Deck / Two-account §8 acceptance:** 10-27 session provides foundational evidence; full §8 human walkthrough route remains to be exercised on physical Deck and partner accounts (see [Known gaps closure plan](../planning/known-gaps-closure-plan-and-execution-2026-10-28.md)).
 
 <details>
 <summary>First 130 commits since v2.4.17-beta (the PR now contains 170+)</summary>
