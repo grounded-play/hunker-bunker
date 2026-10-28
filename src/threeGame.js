@@ -177,6 +177,7 @@ import { usesGameplayFocusEffects } from './gameplayPresentation.js';
 import { mapRotationForWorldYaw } from './mapHeading.js';
 import { getSelectedSheen } from './weaponSheens.js';
 import { captureHardwareCapabilities, createGpuMemoryTracker } from './gpuMemoryBudget.js';
+import { evaluateSceneBudget } from './sceneBudgets.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
@@ -8896,7 +8897,25 @@ export class ThreeGame {
             chunks: this.chunkMeshes?.size ?? 0
         });
         fp.reset();
-        if (summary) this.logFrameBreakdown(summary);
+        if (summary) {
+            // Same cadence: is the scene inside its platform budget (src/sceneBudgets.js)?
+            const info = this.renderer?.info;
+            let visibleChunks = 0;
+            for (const group of this.chunkMeshes?.values?.() ?? []) if (group?.visible !== false) visibleChunks += 1;
+            const scene = {
+                visibleChunks,
+                drawCalls: info?.render?.calls ?? null,
+                triangles: info?.render?.triangles ?? null,
+                programs: info?.programs?.length ?? null
+            };
+            const isSteamDeck = Boolean(this.getHardwareCapabilitiesSnapshot?.()?.isSteamDeck);
+            const overages = evaluateSceneBudget(scene, { isSteamDeck });
+            summary.scene = scene;
+            this.logFrameBreakdown(summary);
+            if (overages.length) {
+                debugLog.warn('PERF', 'scene-budget-exceeded', { platform: isSteamDeck ? 'deck' : 'pc', overages });
+            }
+        }
         return summary;
     }
 

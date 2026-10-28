@@ -1,0 +1,143 @@
+{
+  "public/3d/runtime/community/eng_abg.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/eng_afro_crash.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/eng_apex.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/eng_corpo_shadow_runner.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/eng_foxhole_shadow.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/eng_neural_weaver.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/eng_sil.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/eng_soft_manic_architect_gf.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/eng_swim.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/eng_toxic_apex_chrysalis.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/scount_sil.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/scout_abg.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/scout_apex.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/scout_corpo_shadow_runner.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/scout_foxhole_shadow.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/scout_soft_manic_infiltrator_gf.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/scout_swim.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/scout_tank_crash.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/scout_toxic_apex_chrysalis.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/scout_xeno_stalker.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/tank_abg.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/tank_afro_crash.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/tank_apex.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/tank_brood_matron.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/tank_chubby_protective_hacker_gf.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/tank_corpo_shadow_runner.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/tank_foxhole_shadow.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/tank_sil.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/tank_swim.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/community/tank_toxic_apex_chrysalis.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/new3ds/chassis_bio_synthesizer_medic.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/new3ds/chassis_cyber_spectre_infiltrator.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/new3ds/chassis_dreadnought_exo_juggernaut.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/new3ds/chassis_engineer_chen_undying.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/new3ds/chassis_engineer_exodus_vanguard.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/new3ds/chassis_hive_lord_symbiote.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/new3ds/chassis_scout_cartographer.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/new3ds/chassis_scout_pioneer_courier.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/new3ds/chassis_tank_colossus_hive.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/new3ds/chassis_tank_gentle_titan.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/new3ds/chassis_tank_old_iron.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/new3ds/chassis_void_commando_recon.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/new3ds/prop_camp_cookfire.glb": {
+    "textures": 13
+  },
+  "public/3d/runtime/new3ds/skin_queen_carapace_carbine.glb": {
+    "triangles": 320518
+  },
+  "public/3d/runtime/new3ds/skin_rust_bone_trench.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/new3ds/skin_solar_flare_antimatter.glb": {
+    "maxTextureSize": 4096
+  },
+  "public/3d/runtime/new3ds/skin_void_walker_beam.glb": {
+    "triangles": 371606
+  }
+}

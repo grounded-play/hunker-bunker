@@ -101,4 +101,17 @@ for (const filename of files) {
         console.log(`  worst timeline frame: p95=${worstTimelineSample.frame.p95Ms}ms at=${worstTimelineSample.at ?? '?'} elapsed=${worstTimelineSample.elapsedMs ?? '?'}ms position=(${place.x ?? '?'},${place.z ?? '?'}) chunk=(${place.chunkX ?? '?'},${place.chunkZ ?? '?'}) reason=${worstTimelineSample.reason ?? '?'}`);
     }
     console.log(`  longTasks: count=${longTaskCount} windows>=100ms=${longTaskWindows.filter((task) => task.maxMs >= 100).length} max=${longTaskWindows.length ? Math.max(...longTaskWindows.map((task) => task.maxMs)) : 0}ms errors=${errors.length}`);
+    // Telemetry added 2026-10-28 (first-expedition program): scene budgets,
+    // when the player was armed, and lost GPU contexts.
+    const budgetEntries = entries.filter((entry) => String(entry?.message ?? '').startsWith('scene-budget-exceeded'));
+    const worstOver = {};
+    for (const entry of budgetEntries) {
+        for (const match of String(entry.message).matchAll(/"key":\s*"(\w+)",\s*"value":\s*(\d+)/g)) {
+            worstOver[match[1]] = Math.max(worstOver[match[1]] ?? 0, Number(match[2]));
+        }
+    }
+    const armed = entries.find((entry) => String(entry?.message ?? '').startsWith('field-weapon-equipped'));
+    const contextLosses = entries.filter((entry) => /^webgl-context-lost/.test(String(entry?.message ?? ''))).length;
+    console.log(`  sceneBudget: overWindows=${budgetEntries.length} worst=${JSON.stringify(worstOver)}`);
+    console.log(`  armed: firstEquip=${armed?.timestamp ?? 'never'} gpuContextLost=${contextLosses}`);
 }
