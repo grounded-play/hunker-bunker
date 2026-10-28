@@ -268,3 +268,12 @@ then 5 s (warm caches). The 5.5 s first-frame task on D3D11 is still there.
   `9a0594a6` (Fab Bay pad/keys/scroll). vitest 786 files / 6 687 tests pass; eslint clean;
   `i18n:audit` unchanged. Relay candidate `candidate-9a0594a6` built and smoke-run. Not pushed;
   relay not deployed.
+- 2026-10-28 12:00: relay `candidate-9a0594a6` deployed (rollback `rollback-02710831`).
+- 2026-10-28 12:07 replay (Deck host + PC guest, co-op, build `321a85c5`): `relay-features` "missing": [] on
+  both, and the relay logged 10 `ENEMY_CONTACT_HIT`. The PC refused all 10: 2 Tank blocks, 1 shield, and 7
+  silent early refusals, most likely its own containment check against unsynced doors. The Deck's avatar
+  check ran during the intro hold (1 draw call) and swapped the Tank for its sprite (false `not-drawn`). The PC
+  stalled under the intro video. Fixed in `62761a45`: the host judges containment and the guest takes routed bites
+  (`hostDecided`), refusals are logged (`refused`), the avatar check waits on the local body as a control,
+  guest enemy copies are deferred under the intro, and `intro:*` perf phases were added. Microtxn report
+  stall fixed in `2d9e8621` (relay `candidate-2d9e8621`, not deployed).
