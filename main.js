@@ -518,6 +518,20 @@ function isGameplayReady() {
 }
 window.isGameplayReady = isGameplayReady;
 
+// When the operator was armed, for the session log: picking up the rack gun
+// left no trace before, so "when was the player armed" had to be inferred
+// from the last no_weapon block (QA 2026-10-27 #6).
+window.addEventListener('field-weapon-equipped', (event) => {
+    const { profileId, ammoInWeapon, reserveAmmo, sourceEncounterId } = event.detail ?? {};
+    debugLog.info('WEAPON', 'field-weapon-equipped', {
+        profileId,
+        ammoInWeapon,
+        reserveAmmo,
+        source: sourceEncounterId ?? null,
+        mode: window.game?.isMultiplayer ? window.game.multiplayerMode : 'solo'
+    });
+});
+
 function notifyGameplayReady() {
     if (typeof window === 'undefined') return;
     window.game?.notifyPvpGameplayReady?.();
@@ -9626,7 +9640,10 @@ async function runMissionIntroSequence({ deploymentHold = null, forceSectorZero 
         // Fresh profiles enter Sector 0 regardless of whether they skip the
         // cinematic/dialogue layer. Returning operators retain the explicit
         // Mothership tutorial choice.
-        const startTutorial = forceSectorZero || (choice === 'tutorial' && !window.skipAllIntro);
+        // Never in PvP: the tutorial's unarmed rack start hands the round to
+        // whoever is already armed.
+        const isPvp = window.game?.isMultiplayer && window.game?.multiplayerMode === 'pvp';
+        const startTutorial = !isPvp && (forceSectorZero || (choice === 'tutorial' && !window.skipAllIntro));
         if (!isSkippingWithDoor) {
             document.body.classList.add('hud-hidden');
             await new Promise((resolve) => {
@@ -12104,6 +12121,14 @@ document.addEventListener('click', (event) => {
 if (abortBtn) {
     abortBtn.addEventListener('click', () => {
         const confirmModal = document.getElementById('confirm-modal');
+        // Say whose run this ends before they confirm: in co-op only the
+        // local operator leaves; in PvP the relay awards the round.
+        const scope = document.getElementById('confirm-scope');
+        const mode = window.game?.isMultiplayer ? window.game.multiplayerMode : null;
+        if (scope) {
+            scope.textContent = mode === 'pvp' ? t('ui.confirm.scope_pvp') : (mode ? t('ui.confirm.scope_coop') : '');
+            scope.classList.toggle('hidden', !mode);
+        }
         if (confirmModal) confirmModal.classList.remove('hidden');
     });
 }

@@ -298,10 +298,10 @@ export function createFieldWorkbenchUi({
             btn.setAttribute('data-choice-id', choice.id);
 
             if (isRecalibrated) {
-                btn.disabled = true;
+                markUnavailable(btn);
                 btn.textContent = t('ui.workbench.calibration_used', {}, 'CAMP CALIBRATION USED');
             } else if (!affordable) {
-                btn.disabled = true;
+                markUnavailable(btn);
                 btn.textContent = missing[0]
                     ? t('ui.workbench.need_resource', { need: missing[0].need, resource: missing[0].resource.toUpperCase() })
                     : (t('ui.workbench.deficit') || 'DEFICIT');
@@ -325,6 +325,15 @@ export function createFieldWorkbenchUi({
             actionsDiv.appendChild(btn);
             recalibrationGridEl.appendChild(card);
         }
+    }
+
+    // A choice the player can't take yet stays reachable by the pad so its
+    // "NEED 15 TECH" label can be read; a disabled button drops out of focus
+    // (main.js focus filter honours data-controller-focusable).
+    function markUnavailable(btn) {
+        btn.setAttribute('aria-disabled', 'true');
+        btn.setAttribute('data-controller-focusable', '');
+        btn.classList.add('is-unavailable');
     }
 
     function renderRecipes(recipes = FIELD_WORKBENCH_RECIPES) {
@@ -373,7 +382,7 @@ export function createFieldWorkbenchUi({
             btn.className = 'field-workbench-craft-btn';
             btn.setAttribute('data-recipe-id', recipe.id);
             if (!affordable) {
-                btn.disabled = true;
+                markUnavailable(btn);
             }
             btn.textContent = buttonLabel;
 

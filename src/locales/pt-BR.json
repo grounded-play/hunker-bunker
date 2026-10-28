@@ -985,7 +985,9 @@
       "abort_mission": "ABORTAR MISSÃO",
       "cancel": "CANCELAR",
       "terminate_question": "ENCERRAR ESTE CONTRATO AQUI MESMO?",
-      "terminate_detail": "A manutenção recolherá o traje e preparará uma caixa-preta para a próxima descida."
+      "terminate_detail": "A manutenção recolherá o traje e preparará uma caixa-preta para a próxima descida.",
+      "scope_coop": "Só você sai. Seu esquadrão continua a expedição.",
+      "scope_pvp": "Você desiste da rodada. Seu rival vence."
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "A NOITE FECHARÁ AS PORTAS",

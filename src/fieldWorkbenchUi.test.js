@@ -395,7 +395,7 @@ describe('Field Workbench UI & Affordability (S49-13)', () => {
             expect(statsStripEl.innerHTML).toContain('25'); // updated tech
         });
 
-        it('disables craft button when resources are insufficient', () => {
+        it('marks craft buttons unavailable but focusable when resources are insufficient', () => {
             mockGame.bank.state = { tech: 0, med: 0, coin: 0, shells: 0 };
             const ui = createFieldWorkbenchUi({
                 document: mockDoc,
@@ -406,8 +406,14 @@ describe('Field Workbench UI & Affordability (S49-13)', () => {
 
             for (const card of recipesGridEl.children) {
                 const btn = card.querySelector('.field-workbench-craft-btn');
-                expect(btn.disabled).toBe(true);
+                // Unavailable, but still reachable by the controller.
+                expect(btn.disabled).toBe(false);
+                expect(btn.getAttribute('aria-disabled')).toBe('true');
+                expect(btn.getAttribute('data-controller-focusable')).toBe('');
             }
+            mockGame.craftFieldRecipe = vi.fn(() => true);
+            recipesGridEl.children[0].querySelector('.field-workbench-craft-btn').click();
+            expect(mockGame.craftFieldRecipe).not.toHaveBeenCalled();
         });
 
         it('cleans up window listeners on destroy()', () => {
@@ -464,7 +470,7 @@ describe('Field Workbench UI & Affordability (S49-13)', () => {
             const recalibrationGrid = mockDoc.getElementById('field-workbench-recalibration-grid');
             for (const card of recalibrationGrid.children) {
                 const btn = card.querySelector('.field-workbench-recalibrate-btn');
-                expect(btn.disabled).toBe(true);
+                expect(btn.getAttribute('aria-disabled')).toBe('true');
             }
         });
     });

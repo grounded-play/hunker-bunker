@@ -1,6 +1,6 @@
 # QA 2026-10-27: PvE and PvP playthrough (server logs)
 
-Status: findings, fixes not started | Owner: QA | Updated: 2026-10-27 | Review: after the next two-machine session
+Status: findings; #3, #5 and #6 addressed 2026-10-27 | Owner: QA | Updated: 2026-10-27 | Review: after the next two-machine session
 
 Three session logs uploaded from the in-game console on 2026-10-27, fetched with `npm run logs:fetch -- --latest 3` and read with `npm run logs:analyze`. **All three are the same build, `2.4.18-beta` at `7c19a7f88a62`** (today's clean build, which includes the kiosks and the Armory departure), so nothing below is version skew.
 
@@ -14,7 +14,7 @@ The PvE guest (TITAN-2, ENGINEER) has no log: the Deck's capture restarts at 14:
 
 ## The setups
 
-**PvE.** The PC hosted room `STEAM-…046750`; TITAN-2 joined (roster 2), both readied within three seconds, and the PC deployed at 14:15:14. Gameplay began at 14:16:38. The players broke props and walls, killed two bosses (two `+500 XP boss` awards, boss shells), and the run ended at 14:22:52 when the guest chose **Abort Mission**, which also ended the host's run (`player-death reason: mission-abort`). Both returned to the Armory.
+**PvE.** The PC hosted room `STEAM-…046750`; TITAN-2 joined (roster 2), both readied within three seconds, and the PC deployed at 14:15:14. Gameplay began at 14:16:38. The players broke props and walls, killed two bosses (two `+500 XP boss` awards, boss shells), and the guest chose **Abort Mission** at 14:22:52 and the host aborted too at 14:22:57. Both returned to the Armory.
 
 **PvP.** The PC first opened its own room (the PvE room code), left it after 18 s (`io client disconnect`), and joined the Deck's room `STEAM-…841777`. Both readied, deployed at 14:26:03 and reached gameplay at 14:26:38. One round: the PC's Tank won at 14:27:18, the results screen showed on both, and both went back through the Armory to the menu. No rematch was tried.
 
@@ -33,7 +33,7 @@ The PvE guest (TITAN-2, ENGINEER) has no log: the Deck's capture restarts at 14:
 | 2 | **P0** | **Deploy stall.** One 36.5-second main-thread block during PvE deployment (84 s from deploy to gameplay); 3.4 s (Deck) and 5.0 s (PC) in PvP. All of it falls in the `startup:ready` stage, the first live frames after the loading screen, right after the world models (dead boss bodies last) are cloned in. On Windows/D3D11 that is the signature of shader programs compiling on first render; `compileAsync` pre-warm exists (`src/threeGame.js` ~46879), so either something escapes it or a light/material change after it forces a recompile. | `Long task window … max 36523ms, lastPhase startup:ready` |
 | 3 | **P1** | **PvP players can deploy unarmed.** A run starts with the class gun on the Sector Zero weapon rack. The Deck Scout never picked it up and punched for 22 s (`shot-blocked: no_weapon`) until the armed Tank killed them in one second. In PvP the gun should be in hand at deploy, or the rack must be impossible to miss (prompt + marker, especially on controller). The PvE host was also unarmed for the first minutes. | `WEAPON shot-blocked no_weapon`, Deck 14:26:50–14:27:12 |
 | 4 | **P1** | **Spawned into crawlers.** 1.2 s after PvE gameplay began, the host took two crawler hits 0.13 s apart (3 → 1 heart) at the spawn point. | `player-damaged reason crawler` 14:16:50.085 and .220 |
-| 5 | **P2** | **One player's Abort Mission ends the other's run.** The guest aborted; the host died with `reason: mission-abort`. Decide whether abort should be per-player (leave the squad) or squad-wide, and make the button say which. | `remote-player-died mission-abort` then `player-death mission-abort` |
+| 5 | **P2** | ~~One player's Abort Mission ends the other's run.~~ **Corrected:** abort is per-player. The host log shows the host pressing ABORT MISSION themselves at 14:22:55, five seconds after the guest's abort marked the guest down. The confirm dialog now says so: in co-op only you leave and the squad keeps the expedition; in PvP the relay awards the round to the rival. | `remote-player-died mission-abort` 14:22:52, then the host's own `Click -> #abort-mission` 14:22:55 and `#confirm-yes` 14:22:57 |
 | 6 | **P2** | **No telemetry for picking up the rack gun**, so "when was the player armed" has to be inferred from the first `no_weapon` block ending. Log `field-weapon-equipped`. | absence in all three logs |
 | 7 | **P3** | Deck flagged a possibly stale remote avatar after the round (roster 1, avatar 1). | analyzer `possibleStaleAvatars=yes` |
 

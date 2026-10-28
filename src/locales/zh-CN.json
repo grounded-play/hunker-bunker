@@ -985,7 +985,9 @@
       "abort_mission": "中止任务",
       "cancel": "取消",
       "terminate_question": "就地终止这份合约？",
-      "terminate_detail": "后勤将回收战服，并为下次下潜配备黑匣子。"
+      "terminate_detail": "后勤将回收战服，并为下次下潜配备黑匣子。",
+      "scope_coop": "只有你撤离。你的小队继续远征。",
+      "scope_pvp": "你将放弃本回合，对手获胜。"
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "夜幕将关闭大门",

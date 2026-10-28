@@ -985,7 +985,9 @@
       "abort_mission": "ABORT MISSION",
       "cancel": "CANCEL",
       "terminate_question": "TERMINATE THIS CONTRACT IN PLACE?",
-      "terminate_detail": "FACILITIES WILL BAG THE SUIT AND ARM A BLACK BOX FOR NEXT DESCENT."
+      "terminate_detail": "FACILITIES WILL BAG THE SUIT AND ARM A BLACK BOX FOR NEXT DESCENT.",
+      "scope_coop": "ONLY YOU LEAVE. YOUR SQUAD KEEPS THE EXPEDITION.",
+      "scope_pvp": "YOU FORFEIT THE ROUND. YOUR RIVAL WINS."
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "THE NIGHT WILL CLOSE DOORS",

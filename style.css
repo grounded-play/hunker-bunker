@@ -5672,6 +5672,13 @@ input:checked+.slider:before {
   text-wrap: pretty;
 }
 
+/* Whose run the abort ends, read before the buttons. */
+.confirm-scope {
+  margin-top: calc(var(--vu) * -2);
+  color: #ffb347;
+  font-weight: 700;
+}
+
 .confirm-actions {
   display: flex;
   justify-content: center;

@@ -985,7 +985,9 @@
       "abort_mission": "任務中止",
       "cancel": "キャンセル",
       "terminate_question": "この契約をこの場で打ち切るか？",
-      "terminate_detail": "施設がスーツを回収し、次の降下用にブラックボックスを用意する。"
+      "terminate_detail": "施設がスーツを回収し、次の降下用にブラックボックスを用意する。",
+      "scope_coop": "離脱するのは自分だけ。分隊は遠征を続ける。",
+      "scope_pvp": "このラウンドを放棄する。ライバルの勝利となる。"
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "夜が扉を閉ざす",

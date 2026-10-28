@@ -985,7 +985,9 @@
       "abort_mission": "MISSION ABBRECHEN",
       "cancel": "ABBRECHEN",
       "terminate_question": "DIESEN VERTRAG AUF DER STELLE BEENDEN?",
-      "terminate_detail": "Die Anlagen bergen den Anzug und rüsten eine Blackbox für den nächsten Abstieg."
+      "terminate_detail": "Die Anlagen bergen den Anzug und rüsten eine Blackbox für den nächsten Abstieg.",
+      "scope_coop": "Nur du steigst aus. Dein Trupp setzt die Expedition fort.",
+      "scope_pvp": "Du gibst die Runde auf. Dein Rivale gewinnt."
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "DIE NACHT WIRD TÜREN SCHLIESSEN",

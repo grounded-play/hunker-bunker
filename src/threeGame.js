@@ -7255,9 +7255,20 @@ export class ThreeGame {
 
     notifyPvpGameplayReady() {
         this._pvpGameplayReady = true;
+        this.equipPvpLoadoutWeapon();
         if (this.multiplayerMode === 'pvp' && this.pvpRoundId && this.netSocket?.connected) {
             this.netSocket.emit('pvpGameplayReady', { roundId: this.pvpRoundId });
         }
+    }
+
+    // A PvP round starts armed: the class gun goes straight to hand instead of
+    // waiting on the Sector Zero rack, where a rival could kill an unarmed
+    // player who never found it (QA 2026-10-27 #3).
+    equipPvpLoadoutWeapon() {
+        if (this.multiplayerMode !== 'pvp' || this.fieldWeaponRunState?.equipped) return false;
+        const drop = this.stageSectorZeroLoadoutWeapon?.();
+        if (!drop?.instanceId) return false;
+        return Boolean(this.interactWithFieldWeaponDrop?.(drop.instanceId));
     }
 
     reconcileMultiplayerRoster(players) {

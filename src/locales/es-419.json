@@ -985,7 +985,9 @@
       "abort_mission": "ABORTAR MISIÓN",
       "cancel": "CANCELAR",
       "terminate_question": "¿TERMINAR ESTE CONTRATO AQUÍ MISMO?",
-      "terminate_detail": "Mantenimiento embolsará el traje y preparará una caja negra para el próximo descenso."
+      "terminate_detail": "Mantenimiento embolsará el traje y preparará una caja negra para el próximo descenso.",
+      "scope_coop": "Solo sales tú. Tu escuadra sigue con la expedición.",
+      "scope_pvp": "Abandonas la ronda. Tu rival gana."
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "LA NOCHE CERRARÁ LAS PUERTAS",
