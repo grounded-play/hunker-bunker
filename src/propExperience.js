@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createPropArticulation } from './propArticulation.js';
+import { WORLD_EXPANSION_80_SPECS } from './data/worldExpansion80.js';
 
 const freezeProfile = (value) => Object.freeze({
     ...value,
@@ -20,17 +21,51 @@ const terminal = (color, options = {}) => freezeProfile({
 
 // Props with cut-out moving parts (scripts/blender/articulation_recipes.py):
 // E opens/closes their doors or starts/stops their rotors.
-const mechanism = (color, behaviors = ['use', 'damage']) => freezeProfile({
+const mechanism = (color, behaviors = ['use', 'damage'], options = {}) => freezeProfile({
     behaviors,
     dynamic: true,
     updateDistance: 18,
     articulated: true,
-    presentation: { acknowledgeColor: color, acknowledgeDuration: 0.45, acknowledgeIntensity: 1.2 }
+    presentation: {
+        acknowledgeColor: color,
+        acknowledgeDuration: options.duration ?? 0.45,
+        acknowledgeIntensity: options.intensity ?? 1.2,
+        ...(options.flicker != null ? {
+            flicker: options.flicker,
+            flickerSpeed: options.flickerSpeed ?? 1.0,
+            dropout: options.dropout ?? false
+        } : {})
+    }
+});
+
+const flickering = (color, options = {}) => freezeProfile({
+    behaviors: ['use', 'ambient', 'damage'],
+    dynamic: true,
+    updateDistance: 18,
+    presentation: {
+        acknowledgeColor: color,
+        acknowledgeDuration: options.duration ?? 0.45,
+        acknowledgeIntensity: options.intensity ?? 1.8,
+        flicker: options.flicker ?? 0.28,
+        flickerSpeed: options.flickerSpeed ?? 1.0,
+        dropout: options.dropout ?? false
+    }
 });
 
 const passive = (behaviors) => freezeProfile({ behaviors });
 
+const WORLD_EXPANSION_80_EXPERIENCE = Object.freeze(Object.fromEntries(
+    WORLD_EXPANSION_80_SPECS.map((spec) => {
+        const color = spec.fx === 'organic' ? 0x84cc16
+            : spec.fx === 'thermal' ? 0xf59e0b
+                : spec.fx === 'liquid' ? 0x22d3ee
+                    : 0x38bdf8;
+        return [spec.id, mechanism(color, ['use', 'ambient', 'damage'])];
+    })
+));
+
 export const PROP_EXPERIENCE_PROFILES = Object.freeze({
+    ...WORLD_EXPANSION_80_EXPERIENCE,
     life_arcade_cabinet: terminal(0x55d9ff, { intensity: 2.1 }),
     life_surgical_lamp: terminal(0xe9fff4, { duration: 0.35, intensity: 1.5 }),
     cryo_heater_station: terminal(0xff7a24, { duration: 0.4, intensity: 1.7 }),
@@ -48,6 +83,7 @@ export const PROP_EXPERIENCE_PROFILES = Object.freeze({
     bay_c_pod_312_rupture: terminal(0x4deeea, { duration: 0.45, intensity: 1.8 }),
     chen_sealed_confession_console: terminal(0xffa834, { duration: 0.5, intensity: 2.0 }),
     decon_exosuit_scrubber_station: mechanism(0xd8f8ff, ['use', 'ambient', 'damage']),
+    prop_exosuit_docking_gantry: mechanism(0xffcc00, ['use', 'ambient', 'damage']),
     engineer_wave_relay_dynamo: mechanism(0x38bdf8, ['use', 'ambient', 'damage']),
     evac_four_seat_cockpit_module: terminal(0xff7830, { duration: 0.5, intensity: 1.9 }),
     tank_orbital_siege_cannon: mechanism(0xff4433, ['use', 'damage']),
@@ -133,7 +169,7 @@ export const PROP_EXPERIENCE_PROFILES = Object.freeze({
     salvage_tagged_heap: mechanism(0xf59e0b, ['use', 'damage']),
     camp_canvas_tent: mechanism(0xfbbf24, ['use']),
     camp_water_barrel: mechanism(0x38bdf8),
-    life_ribcage_rescue_cabinet: mechanism(0xef4444),
+    life_ribcage_rescue_cabinet: mechanism(0xef4444, ['use', 'ambient', 'damage'], { flicker: 0.28, flickerSpeed: 0.9 }),
     life_confessional: mechanism(0xffb84d),
     life_seismic_drill: mechanism(0xffa648, ['use', 'ambient', 'damage']),
     life_ice_bore_winch: mechanism(0x5fe3ff, ['use', 'ambient', 'damage']),
@@ -143,12 +179,15 @@ export const PROP_EXPERIENCE_PROFILES = Object.freeze({
     prop_diagnostic_console: terminal(0x52ff9a),
     prop_fabricator_workstation: terminal(0x55d9ff),
     prop_liturgical_terminal_lectern: terminal(0xffb84d),
-    prop_terminal_ruptured: terminal(0xef4444, { duration: 0.42, intensity: 1.8 }),
+    prop_terminal_ruptured: flickering(0xef4444, { duration: 0.42, intensity: 1.8, flicker: 0.35, dropout: true }),
     prop_camp_meridian_radio: terminal(0xf59e0b, { intensity: 1.9 }),
+    prop_light_cluster_dripping: flickering(0x9ec8ba, { duration: 0.4, intensity: 1.6, flicker: 0.30, dropout: true }),
+    prop_overhead_cage_fluorescent: flickering(0xf59e0b, { duration: 0.35, intensity: 1.5, flicker: 0.25 }),
     life_route_map_table: terminal(0x55d9ff),
     life_tactile_console: terminal(0x76d95c),
     life_assimilated_desk: terminal(0x76d95c),
-    life_cochlear_intercom: terminal(0xf59e0b, { duration: 0.4, intensity: 1.8 }),
+    life_cochlear_intercom: flickering(0xf59e0b, { duration: 0.4, intensity: 1.8, flicker: 0.22, flickerSpeed: 1.0 }),
+    life_fuse_bypass_panel: flickering(0xff3b2f, { duration: 0.4, intensity: 2.0, flicker: 0.38, dropout: true }),
 
     // 2026-10-12 Rebuild cohort: Doors, base modules, ship salvage, weapons & barriers
     base_door_sealable_bulkhead: mechanism(0x38bdf8, ['use', 'ambient', 'damage']),
@@ -232,7 +271,49 @@ export const PROP_EXPERIENCE_PROFILES = Object.freeze({
     evac_cabin_co2_scrubber: terminal(0xf59e0b, { duration: 0.45, intensity: 1.8 }),
     evac_manual_abort_detonator: terminal(0xef4444, { duration: 0.4, intensity: 2.2 }),
     evac_cargo_ballast_scale: terminal(0xf59e0b, { duration: 0.35, intensity: 1.7 }),
-    mothership_docking_umbilical_collar: mechanism(0xeab308, ['use', 'ambient', 'damage'])
+    mothership_docking_umbilical_collar: mechanism(0xeab308, ['use', 'ambient', 'damage']),
+
+    // 2026-10-27 Missing World Story Cohort (Quest, Camp, Alien/Hive, Scatter, Evac)
+    quest_reactor_valves: mechanism(0xef4444, ['use', 'ambient', 'damage']),
+    quest_lost_probe: terminal(0x22d3ee, { duration: 0.5, intensity: 2.2 }),
+    quest_hive_archive_node: terminal(0x10b981, { duration: 0.55, intensity: 2.0 }),
+    quest_red_mould_bloom: mechanism(0xef4444, ['use', 'ambient', 'damage']),
+    quest_cultist_shrine: terminal(0xf59e0b, { duration: 0.45, intensity: 1.8 }),
+    quest_kaelen_ledger_desk: terminal(0x22d3ee, { duration: 0.5, intensity: 2.1 }),
+    quest_martha_warm_pipe_junction: mechanism(0xf97316, ['use', 'ambient', 'damage']),
+    quest_infested_armory_cabinet: mechanism(0x84cc16, ['use', 'damage']),
+    quest_holdout_barricade: mechanism(0xef4444, ['use', 'damage']),
+    quest_briggs_memorial_wall: terminal(0xf59e0b, { duration: 0.45, intensity: 1.9 }),
+
+    prop_camp_meridian_battery_bank: mechanism(0x38bdf8, ['use', 'ambient', 'damage']),
+    prop_camp_meridian_repair_rig: mechanism(0x06b6d4, ['use', 'ambient', 'damage']),
+    prop_camp_tallow_still: mechanism(0xf59e0b, ['use', 'ambient', 'damage']),
+    prop_camp_tallow_spore_trays: mechanism(0x84cc16, ['use', 'ambient', 'damage']),
+    prop_camp_tallow_resin_urn: terminal(0xf59e0b, { duration: 0.45, intensity: 1.8 }),
+    prop_camp_vesper_turret: mechanism(0xef4444, ['use', 'damage']),
+    prop_camp_vesper_ammo_press: mechanism(0xf59e0b, ['use', 'damage']),
+    prop_camp_vesper_shield_rack: mechanism(0xfde047, ['use', 'damage']),
+    prop_camp_grave_fresh: terminal(0x94a3b8, { duration: 0.35, intensity: 1.4 }),
+    prop_camp_grave_old: terminal(0x7dd3fc, { duration: 0.35, intensity: 1.4 }),
+
+    prop_alien_feeding_basin: mechanism(0x84cc16, ['use', 'ambient', 'damage']),
+    prop_alien_respiratory_vent: mechanism(0xf43f5e, ['use', 'ambient', 'damage']),
+    prop_hive_chitin_hatchery: mechanism(0x10b981, ['use', 'ambient', 'damage']),
+    prop_hive_relay_antenna: mechanism(0x22d3ee, ['use', 'ambient', 'damage']),
+    prop_hive_suture_organ: mechanism(0xf43f5e, ['use', 'ambient', 'damage']),
+    prop_hive_synaptic_web: mechanism(0xa855f7, ['use', 'damage']),
+    prop_hive_wound_cauterizer: mechanism(0x38bdf8, ['use', 'damage']),
+    door_biomechanical_iris: mechanism(0x84cc16, ['use', 'ambient', 'damage']),
+
+    scatter_broken_drone: terminal(0x38bdf8, { duration: 0.4, intensity: 1.6 }),
+    scatter_cryo_icicle: mechanism(0xa5f3fc, ['damage']),
+    scatter_ice_stalagmite: mechanism(0x7dd3fc, ['damage']),
+    scatter_cryo_shards: mechanism(0xbae6fd, ['damage']),
+
+    prop_ruptured_coolant_pump: mechanism(0x22d3ee, ['use', 'ambient', 'damage']),
+    evac_empty_cockpit_quad: terminal(0xf59e0b, { duration: 0.45, intensity: 1.9 }),
+    evac_mixed_crew_divider: mechanism(0x38bdf8, ['use', 'damage']),
+    evac_hidden_egg_coolant_rack: mechanism(0x84cc16, ['use', 'damage'])
 });
 
 const BASE_ENVIRONMENT_TYPES = new Set([
@@ -326,6 +407,10 @@ export function createPropExperience(root, model, type) {
 
     const pulseColor = new THREE.Color(presentation?.acknowledgeColor ?? 0xffffff);
     const duration = presentation?.acknowledgeDuration ?? 0;
+    const flickerAmount = presentation?.flicker ?? 0;
+    const flickerSpeed = presentation?.flickerSpeed ?? 1.0;
+    const hasDropout = Boolean(presentation?.dropout);
+    let elapsed = ((type.length * 79 + 31) % 4096) * 0.1;
     let remaining = 0;
     let declaredState = 'ready';
     let disposed = false;
@@ -352,7 +437,7 @@ export function createPropExperience(root, model, type) {
             declaredState = String(next || 'ready');
             if (articulation?.set) {
                 articulation.set({
-                    open: declaredState === 'open',
+                    open: declaredState === 'open' || declaredState === 'spent' || declaredState === 'unlocked',
                     working: declaredState === 'working' || declaredState === 'on'
                 });
             }
@@ -361,6 +446,16 @@ export function createPropExperience(root, model, type) {
         acknowledge({ toggleArticulation = true } = {}) {
             if (disposed) return false;
             if (toggleArticulation) articulation?.toggle();
+            if (root?.userData?.mixer && Array.isArray(root?.userData?.animations)) {
+                const interactClip = root.userData.animations.find((c) => /interact|activate|open|use/i.test(c.name));
+                if (interactClip) {
+                    const action = root.userData.mixer.clipAction(interactClip);
+                    action.reset();
+                    action.setLoop(THREE.LoopOnce, 1);
+                    action.clampWhenFinished = false;
+                    action.play();
+                }
+            }
             if (duration > 0) {
                 remaining = duration;
                 applyStrength(0.12);
@@ -370,15 +465,30 @@ export function createPropExperience(root, model, type) {
         update(delta = 0) {
             if (disposed) return;
             articulation?.update(delta);
-            if (remaining <= 0) return;
-            remaining = Math.max(0, remaining - Math.min(Math.max(Number(delta) || 0, 0), 0.1));
-            const progress = 1 - remaining / duration;
-            applyStrength(Math.sin(progress * Math.PI));
-            if (remaining === 0) applyStrength(0);
+            if (remaining > 0) {
+                remaining = Math.max(0, remaining - Math.min(Math.max(Number(delta) || 0, 0), 0.1));
+                const progress = 1 - remaining / duration;
+                applyStrength(Math.sin(progress * Math.PI));
+                if (remaining === 0) applyStrength(0);
+            } else if (flickerAmount > 0 && targets.length > 0) {
+                const dt = Math.min(Math.max(Number(delta) || 0, 0), 0.1);
+                elapsed += dt;
+                const smoothFlicker = Math.sin(elapsed * 11.7 * flickerSpeed) * 0.58
+                    + Math.sin(elapsed * 17.3 * flickerSpeed + 1.2) * 0.42;
+                let factor = 1 + smoothFlicker * flickerAmount;
+                if (hasDropout) {
+                    const drop = Math.sin(elapsed * 2.3 * flickerSpeed + 2.1);
+                    if (drop > 0.84) factor *= 0.12;
+                }
+                for (const target of targets) {
+                    target.material.emissiveIntensity = target.baseIntensity * Math.max(0.04, factor);
+                }
+            }
         },
         dispose() {
             if (disposed) return;
             disposed = true;
+            for (const target of targets) target.material.emissiveIntensity = target.baseIntensity;
             for (const assignment of assignments) assignment.object.material = assignment.original;
             for (const material of clones.values()) material.dispose();
             clones.clear();

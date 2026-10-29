@@ -41,16 +41,26 @@ export function animateRelicPickup(root, delta) {
     }
 }
 
-export function createImpactBurst(random = Math.random) {
+export function createImpactBurst(options = {}) {
+    const opts = typeof options === 'function' ? { random: options } : options;
+    const { normalX = null, normalZ = null, random = Math.random } = opts;
     const root = new THREE.Group();
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.055, 0.07, 20),
         new THREE.MeshBasicMaterial({ color: 0xffda8c, transparent: true, opacity: 0.65, depthWrite: false, side: THREE.DoubleSide }));
-    ring.rotation.x = -Math.PI / 2;
+    if (normalX != null && normalZ != null && (normalX !== 0 || normalZ !== 0)) {
+        const norm = new THREE.Vector3(normalX, 0, normalZ).normalize();
+        ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), norm);
+    } else {
+        ring.rotation.x = -Math.PI / 2;
+    }
     ring.position.y = 0.025;
     ring.userData = { growth: 4 };
     root.add(ring);
+    const baseAngle = (normalX != null && normalZ != null && (normalX !== 0 || normalZ !== 0))
+        ? Math.atan2(normalZ, normalX)
+        : null;
     for (let i = 0; i < 6; i++) {
-        const angle = random() * Math.PI * 2;
+        const angle = baseAngle != null ? (baseAngle + (random() - 0.5) * 1.5) : (random() * Math.PI * 2);
         const speed = 0.7 + random() * 1.1;
         const shard = new THREE.Mesh(new THREE.OctahedronGeometry(0.025, 0),
             new THREE.MeshBasicMaterial({ color: i % 2 ? 0xffa64b : 0xffefca, transparent: true, opacity: 0.95, depthWrite: false }));

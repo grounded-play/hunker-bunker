@@ -46,6 +46,8 @@ test('the menu opens one Foundry window with its tabs, resources and borrowed pa
 
     await page.evaluate(() => { window.bankManager.setFoundryActivated(true); window.foundryHub.select('fabricate'); });
     await expect(tab(page, 'fabricate')).not.toHaveClass(/is-locked/);
+    expect(await insideHub(page, 'fab-aisle-nav')).toBe(true);
+    await page.locator('#foundry-hub-panel #fab-aisle-btn-weapons').click();
     await expect(page.locator('#foundry-hub-panel .fab-card')).toHaveCount(13);
 
     await tab(page, 'tradeup').click();

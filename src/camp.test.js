@@ -117,16 +117,22 @@ describe('SurvivorCamp', () => {
         expect(camp.wasFortified).toBe(true);
     });
 
-    it('assigns the final camp to the player class mirror with living workers', () => {
+    // Each camp keeps its own leader (D-1, 2026-10-16); the camp of the
+    // player's own discipline holds the inverted mirror.
+    it("makes the player's own discipline's camp the mirror, with living workers", () => {
         const camp = new SurvivorCamp(new THREE.Scene(), {
-            id: 'camp_vesper',
-            label: 'CAMP VESPER',
+            id: 'camp_tallow',
+            label: 'CAMP TALLOW',
             playerType: 'SCOUT'
         });
         camp.reveal(4, 4);
         expect(camp.leaderClass).toBe('Scout');
         expect(camp.leaderName).toBe('Sister Martha');
         expect(camp.leaderIsBoss).toBe(true);
+        const vesper = new SurvivorCamp(new THREE.Scene(), { id: 'camp_vesper', label: 'CAMP VESPER', playerType: 'SCOUT' });
+        vesper.reveal(0, 0);
+        expect(vesper.leaderName).toBe('Commander Briggs');
+        expect(vesper.leaderIsBoss).toBe(false);
         expect(camp.campWorkers).toHaveLength(2);
         expect(camp.campWorkers.every((worker) => worker.mesh.visible)).toBe(true);
 

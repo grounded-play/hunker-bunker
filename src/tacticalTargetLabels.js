@@ -9,6 +9,7 @@ const AUTHORED_TARGET_NAMES = Object.freeze({
     spore_mortar: 'SPORE MORTAR',
     mycelium_stalker: 'MYCELIUM STALKER',
     bio_charger: 'BIO CHARGER',
+    chitin_scuttler: 'CHITIN SCUTTLER',
     prop_specimen_tank: 'SPECIMEN TANK',
     prop_broken_specimen_tank: 'RUPTURED SPECIMEN TANK',
     prop_bunker_supplies: 'BUNKER SUPPLY CACHE',

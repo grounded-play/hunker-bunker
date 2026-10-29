@@ -65,6 +65,34 @@ describe('campaign deadline bindings', () => {
         expect(game.showBunkerLine).not.toHaveBeenCalled();
     });
 
+    it("still plays Meridian's first-contact card when the window was missed", () => {
+        const events = [];
+        window.dispatchEvent = (event) => events.push(event);
+        const camp = { id: 'camp_meridian', label: 'MERIDIAN' };
+        const game = deadlineResolver({
+            dayState: createDayState(),
+            isGameplayInputActive: () => true,
+            player: { position: { x: 0, z: 0 } },
+            act2: {},
+            getActionableCampAt: () => ({ camp, action: 'talk' }),
+            getSelectedCampAction: () => ({ camp, action: 'talk' }),
+            getCampRecord: () => ({ status: 'alive', bond: 0 }),
+            talkToLeader: vi.fn(() => true),
+            showBunkerLine: vi.fn()
+        });
+        game.resolveDayDeadline = vi.fn(() => ({ resolved: false, reason: 'expired' }));
+
+        ThreeGame.prototype.interactWithAct2Camp.call(game);
+
+        expect(game.showBunkerLine).toHaveBeenCalledWith('MERIDIAN GRID CLOSED // FIRST-CONTACT WINDOW MISSED');
+        const contact = events.find((event) => event.type === 'camp-first-contact');
+        expect(contact?.detail.campId).toBe('camp_meridian');
+        // The conversation opens behind the card, not instead of it.
+        expect(game.talkToLeader).not.toHaveBeenCalled();
+        contact.detail.onComplete();
+        expect(game.talkToLeader).toHaveBeenCalledWith('camp', camp);
+    });
+
     it('resolves Vesper last shelter only when the bunker holdout completes', () => {
         const game = deadlineResolver({
             dayState: createDayState(),

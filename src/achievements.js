@@ -197,8 +197,22 @@ export const ACHIEVEMENT_DEFS = freezeDeep([
         blurb: 'Defeat the Queen in single combat.',
         icon: 'slay_the_queen',
         secret: true,
-        comingSoon: true,
         check: (state) => Boolean(state.stats.queenDefeated)
+    },
+    {
+        key: 'arcade_wizard',
+        title: 'ARCADE WIZARD',
+        blurb: 'Score 65,000 or higher on the camp arcade cabinet.',
+        icon: 'arcade_wizard',
+        check: (state) => (state.stats.arcadeBestScore ?? 0) >= 65000
+    },
+    {
+        key: 'tinas_challenger',
+        title: "TINA'S CHALLENGER",
+        blurb: "Beat Mayor Tina's arcade record of 104,200.",
+        icon: 'tinas_challenger',
+        secret: true,
+        check: (state) => (state.stats.arcadeBestScore ?? 0) > 104200
     }
 ]);
 
@@ -256,7 +270,8 @@ export function createDefaultAchievementState() {
             deathlessReveal: false,
             hiveHarmFreeReveal: false,
             reyesLetterDelivered: false,
-            queenDefeated: false
+            queenDefeated: false,
+            arcadeBestScore: 0
         },
         currentRun: createDefaultRunState(),
         unlocked: {}
@@ -409,6 +424,11 @@ function updateStatsForEvent(state, name, detail = {}) {
         }
         case 'reyes-letter-delivered': {
             state.stats.reyesLetterDelivered = true;
+            break;
+        }
+        case 'arcade-score-recorded': {
+            const score = Math.max(0, Math.floor(Number(detail.score) || 0));
+            state.stats.arcadeBestScore = Math.max(Number(state.stats.arcadeBestScore) || 0, score);
             break;
         }
         case 'reveal-reached': {
@@ -583,3 +603,4 @@ export class AchievementEngine {
         return this.state;
     }
 }
+

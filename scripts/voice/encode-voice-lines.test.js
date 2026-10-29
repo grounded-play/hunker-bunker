@@ -30,6 +30,25 @@ describe('voice line encoding', () => {
         fs.writeFileSync(path.join(dir, 'en', 'narrative.a.0.mp3'), '');
         fs.writeFileSync(path.join(dir, 'en', 'narrative.b.0.mp3'), '');
         fs.writeFileSync(path.join(dir, 'en', 'notes.txt'), '');
-        expect(buildManifest(dir).locales).toEqual({ en: ['narrative.a.0', 'narrative.b.0'] });
+        expect(buildManifest(dir, []).locales).toEqual({ en: ['narrative.a.0', 'narrative.b.0'] });
+    });
+
+    it('carries the displayed text of recorded code lines, which have no i18n key', () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hb-voice-'));
+        fs.mkdirSync(path.join(dir, 'en'));
+        fs.writeFileSync(path.join(dir, 'en', 'code.tina.abc.mp3'), '');
+        fs.writeFileSync(path.join(dir, 'en', 'narrative.a.0.mp3'), '');
+        const manifest = buildManifest(dir, [
+            { key: 'code.tina.abc', locale: 'en', role: 'tina', source: 'code', display: 'MAYOR TINA: PUT THAT DOWN.' },
+            { key: 'code.tina.unrecorded', locale: 'en', role: 'tina', source: 'code', display: 'MAYOR TINA: LATER.' },
+            { key: 'narrative.a.0', locale: 'en', role: 'system', display: 'Catalog line' }
+        ]);
+        expect(manifest.texts).toEqual({ 'code.tina.abc': 'MAYOR TINA: PUT THAT DOWN.' });
+    });
+
+    it('gives the supporting cast their own chains and wanderers the human-cast cleanup', () => {
+        expect(filterChainFor('aria')).toContain('chorus');
+        expect(filterChainFor('tina')).not.toMatch(/asetrate|rubberband|chorus/);
+        expect(filterChainFor('wanderer_hacker')).toBe(filterChainFor('briggs'));
     });
 });

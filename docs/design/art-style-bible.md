@@ -164,6 +164,49 @@ French Art Nouveau excess (Mucha florals, whiplash everywhere), Viking clichés 
 helmets, longships), literal runes or real scripts, gold-leaf opulence, extra hues
 outside the palette.
 
+## 5b. Production style: biomech corporate hardware, the explicit cut
+
+> Owner, 2026-10-27: the key art had drifted; the style is redefined to match the
+> ~160 world props generated most recently (World Expansion 80, the 59-model
+> interactive set, world-story pass 2; renders in `art/source/style-refs/props/`,
+> the six-prop reference `art/source/style-refs/biomech_props_style.png`), and
+> pushed as graphic and sexual as the Adults Only rating allows.
+
+This block drives every cinematic frame and every new prop. Section 5 remains the
+architecture and UI language; where they disagree on a cutscene or a prop, this
+block wins.
+
+```
+Hunker Bunker graphic-novel horror: a hand-inked, painted illustration in the style of
+the game's cutscene art (heavy black ink linework, charcoal and gouache shading, hard
+chiaroscuro, grindhouse print grain) of biomechanical corporate hardware: chrome and
+gunmetal machinery, white enamel and bone-ivory panels, ribs and vertebrae fused into
+the mechanisms, glossy black latex, wet maroon tissue swelling through every seam.
+Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps,
+vulvic hatches and sphincter valves, breast-like pressure domes, pulsing ribbed tubes,
+glistening fluids and mucous strands. Near-black deep-space corporate interiors lit by
+amber lamps, small teal screens and acid-green fluids.
+```
+
+> Owner, 2026-10-27 (later): the photoreal pass read "soap opera". The materials stay
+> the props'; the rendering is the game's inked cutscene art (style reference
+> `art/source/style-refs/game_cutscene_style.png`, six of the shipped cutscene posters).
+
+**Graphic:** gore is shown, not implied: torn flesh, viscera, blood and ichor spray,
+bodies of monsters ruptured by the machinery. **Sexual:** nudity and explicit sex
+between characters, and the machines themselves sexual, as above.
+
+**Hard limits, always:** every person depicted is a consenting adult over
+twenty-five, with an age in the prompt and `child, minor, teenager, youthful face`
+in the negative. Nobody asleep, unconscious, restrained or coerced is the subject of
+a sexual act. Gore is done to monsters and hardware, never to a sexual partner, and
+is never sexualised. The player operator keeps their identity sheet's look.
+
+**Avoid (negative prompts):** photograph, photoreal, 3D render, glossy TV drama look,
+soap opera lighting, plastic skin, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs,
+deformed anatomy, duplicated subject, identity drift, child, minor, teenager,
+youthful face.
+
 ## 6. Applying it across the game
 
 | Surface | Treatment |

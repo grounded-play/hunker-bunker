@@ -146,12 +146,19 @@ describe('LEADER_DEATH_BEATS', () => {
         }
     });
 
-    it('has no stray lowercase mid-caps-line typos in the human leaders (all-caps register throughout)', () => {
-        for (const key of ['kaelen', 'martha', 'briggs']) {
-            for (const line of LEADER_DEATH_BEATS[key]) {
-                const spoken = line.split(':').slice(1).join(':');
-                expect(spoken).toBe(spoken.toUpperCase());
-            }
+    // One conversation grammar (camp audit 2026-10-16 §6): every leader line
+    // reads in sentence case, after a title-case speaker name; no shouting.
+    it('speaks in sentence case after a title-case speaker name, never shouting', () => {
+        const lines = [
+            ...Object.values(LEADER_DEATH_BEATS).flat(),
+            ...Object.values(LEADER_DIALOGUE).flatMap(({ stages }) => stages.flatMap((stage) => [...stage.beats.flat(), stage.loop]))
+        ];
+        expect(lines.length).toBeGreaterThan(100);
+        for (const line of lines) {
+            expect(line, line).toMatch(/^(Dr\. )?[A-Z][a-z]+(-[A-Z][a-z]+)?: /);
+            const words = line.split(': ').slice(1).join(': ').match(/[A-Za-z]{4,}/g) ?? [];
+            const shouted = words.filter((word) => word === word.toUpperCase() && word !== 'BunkerDirector');
+            expect(shouted, line).toEqual([]);
         }
     });
 

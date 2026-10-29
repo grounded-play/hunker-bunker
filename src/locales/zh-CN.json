@@ -1,4 +1,19 @@
 {
+  "recalibration_feedback": {
+    "action_label": "下次战斗：",
+    "tradeoff_label": "代价：",
+    "installed": "{name}已安装。校准完成。",
+    "next_fight": "{name} 就绪 — {action}",
+    "mods": {
+      "cryo_rime": { "action": "连续命中同一个敌人将其冻结，然后转移位置。", "tradeoff": "直接伤害降低5%；冻结需要多次命中。" },
+      "caustic_payload": { "action": "感染敌人后寻找掩体，让腐蚀持续造成伤害。", "tradeoff": "直接伤害降低10%；腐蚀需要时间。" },
+      "subzero_necrosis": { "action": "冻结并腐蚀目标，在其他敌人附近击杀它以触发新星。", "tradeoff": "必须击杀同时处于冻结和腐蚀状态的目标。" },
+      "kinetic_hollow_point": { "action": "从掩体后射击，直接伤害提高25%。", "tradeoff": "受到的伤害增加15%。" },
+      "hyper_split_core": { "action": "用三发散射弹覆盖一群敌人。", "tradeoff": "每发伤害降低25%；散射会降低精准度。" },
+      "corrupted_overcharge": { "action": "连射间隙寻找掩体，直接伤害提高80%。", "tradeoff": "受到的伤害增加35%。" },
+      "o2_siphon_chamber": { "action": "氧气低于50%时，氧气越少伤害越高。提前留好退路。", "tradeoff": "氧气高于50%时无加成。窒息仍会致命。" }
+    }
+  },
   "common": {
     "ok": "确定",
     "cancel": "取消",
@@ -53,6 +68,26 @@
       "copy": "使用储存物资合成野外补给。效果将立即应用于当前远征。",
       "craft": "制造",
       "close": "退出工作台",
+      "tab_supplies": "补给制造",
+      "tab_recalibration": "战地校准（每营地1次）",
+      "recalibration_consumed": "校准已使用（1/1）",
+      "recalibration_ready": "校准协议就绪（每营地1次）",
+      "reroll_matrix": "重选矩阵（{cost} 技术）",
+      "fusion_tag": "冰冻 + 生物融合",
+      "element_overclock": "{element} 超频",
+      "weapon_overclock": "武器超频",
+      "calibration_used": "营地校准已使用",
+      "synthesize_fusion": "合成融合",
+      "install_recalibration": "安装校准",
+      "stat_tech": "技术 / 废料",
+      "stat_med": "医疗物资",
+      "stat_coin": "硬币",
+      "stat_shells": "弹壳",
+      "stat_health": "生命",
+      "stat_shield": "护盾",
+      "stat_ammo": "弹药",
+      "need_resource": "需要 {need} {resource}",
+      "deficit": "资源不足",
       "ammo_pack_name": "标准弹药包",
       "ammo_pack_desc": "补充30发动能弹药并装填当前弹匣。",
       "med_patch_name": "应急生物缝合剂",
@@ -247,8 +282,11 @@
       "accessibility": "无障碍",
       "profile_saves": "档案与存档",
       "session_display": "会话与显示",
+      "steam_overlay": "STEAM 界面 (SHIFT+TAB)",
       "return_to_game": "返回游戏",
       "resume": "继续",
+      "skip_onboarding": "跳过教学",
+      "skip_onboarding_desc": "使用标准野战装备开启1号区域",
       "abort_current_mission": "中止当前任务",
       "abort_mission": "中止任务",
       "title_active_crosshair_color": "当前准星颜色",
@@ -434,9 +472,12 @@
     },
     "loading": {
       "aria_label_build_and_developer": "版本与开发者信息",
+      "aria_label_deployment_progress": "部署进度",
       "system_build": "系统版本",
       "dev_console": "开发者控制台",
       "initializing_systems": "正在初始化系统",
+      "squad_waiting": "小队同步中 — {loaded} / {total} 名队员就绪",
+      "squad_ready": "小队就绪 — 正在开启防爆门",
       "msg_biometric_airlock": "正在校准生物识别气闸通道",
       "msg_reactor_bulkhead": "正在屏蔽反应堆冷却隔舱",
       "msg_thermal_shield": "正在稳定热超导护盾",
@@ -681,13 +722,6 @@
     "close_player_trade": {
       "aria_label_close_trade_link": "关闭交易链接"
     },
-    "npc_dialogue": {
-      "affection_bond": "好感 // 羁绊",
-      "press_1_4_or_click": "按 [1-4] 或点击选项卡片 • [ESC] 退出"
-    },
-    "close_npc_dialogue": {
-      "title_exit_dialogue": "退出对话"
-    },
     "demo_end": {
       "transmission_terminated": "◈ 传输已终止",
       "you_belong_to_the_deep": "“你现在属于深渊了，小机器。虫群记得你的呼唤。”",
@@ -832,9 +866,34 @@
       "press_e": "按 E",
       "defense_turret_controls": "防御炮塔控制"
     },
+    "coop": {
+      "revive_prompt": "复活 {callsign}",
+      "reviving_toast": "正在复活 {callsign}...",
+      "downed_toast": "你已倒地 — 队友可以复活你",
+      "squadmate_down_toast": "队友倒地：{callsign} — 站到其身旁按互动键复活"
+    },
     "foundry_hud_prompt": {
       "press_e": "按 E",
-      "open_fab_bay": "打开制造舱"
+      "open_fab_bay": "打开制造舱",
+      "grow_signal_dish": "扩建信号天线",
+      "install_power_core": "安装能量核心",
+      "offline_missing_power_core": "离线 · 缺少能量核心",
+      "recover_power_core": "回收铸造能量核心",
+      "locked_line": "铸造所断电 — 寻找地图上标记的能量核心。",
+      "offline_title": "铸造所离线 // 无电力",
+      "offline_status": "> 制造舱电力耦合器失效<br>> 前往 {location}{distance} 回收能量核心（已在地图标记）",
+      "offline_toast_title": "铸造所离线",
+      "offline_toast_status": "无电力。前往 {location}{distance} 回收能量核心，已在地图标记。",
+      "core_title": "铸造核心已取得",
+      "core_status": "> 能量核心已回收<br>> 返回铸造所以恢复制造电力",
+      "core_toast_title": "已获得能量核心",
+      "core_toast_status": "返回铸造所以恢复制造电力。",
+      "online_title": "铸造所上线",
+      "online_status": "> 能量核心已安装 // 制造舱上线",
+      "map_offline": "铸造所（离线）",
+      "map_core": "铸造核心",
+      "unknown_location": "扇区异常",
+      "speaker": "工程师干员"
     },
     "scientist_hud_prompt": {
       "press_e": "按 E",
@@ -968,7 +1027,9 @@
       "abort_mission": "中止任务",
       "cancel": "取消",
       "terminate_question": "就地终止这份合约？",
-      "terminate_detail": "后勤将回收战服，并为下次下潜配备黑匣子。"
+      "terminate_detail": "后勤将回收战服，并为下次下潜配备黑匣子。",
+      "scope_coop": "只有你撤离。你的小队继续远征。",
+      "scope_pvp": "你将放弃本回合，对手获胜。"
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "夜幕将关闭大门",
@@ -1157,8 +1218,48 @@
       "no_ranks": "暂无排名",
       "anonymous_agent": "特工"
     },
+    "arcade": {
+      "thrust": "[W/A/D · 摇杆] 推进/转向",
+      "fire": "[空格 · A] 开火",
+      "exit": "[ESC · B] 离开街机",
+      "reflexes": "街机反应：本次远征剩余时间内装弹速度加快10%。",
+      "sheen_unlocked": "武器涂装已解锁：{name}",
+      "decal_unlocked": "贴花已解锁：{name}",
+      "tina_radio": "蒂娜镇长：哟，高手……终于有人破了我的纪录。来漂流前哨站吧，酒我请。",
+      "blackjack_title": "BLACK-ICE 21",
+      "blackjack_prompt": "[E] 游玩 BLACK-ICE 21（二十一点）",
+      "blackjack_built": "娱乐区已上线 // BLACK-ICE 21 街机建造完成",
+      "blackjack_wager": "当前下注：{amount} 硬币",
+      "blackjack_win": "干员获胜：+{amount} 硬币",
+      "blackjack_tier_clear": "第 {tier} 层已完成：奖励硬币 +{bonus}",
+      "blackjack_module": "基地娱乐模块",
+      "blackjack_module_desc": "Roguelike 二十一点终端 · 坠毁点永久设施",
+      "blackjack_installed": "已安装于坠毁点",
+      "blackjack_build": "建造 BLACK-ICE 21 街机",
+      "blackjack_controls_wager": "[↑/↓] 下注",
+      "blackjack_controls_deal": "[空格] 发牌/停牌",
+      "blackjack_controls_hit": "[1] 要牌",
+      "blackjack_controls_stand": "[2] 停牌",
+      "blackjack_controls_double": "[3] 加倍",
+      "blackjack_controls_chips": "[4/5/6] 冷冻 / 热能 / EMP",
+      "blackjack_controls_exit": "[ESC] 退出"
+    },
     "interstitial": {
       "track": "曲目 {id}"
+    },
+    "current_manifest": {
+      "title": "起航名单",
+      "known_title": "已知席位申请",
+      "claimed": "已申请 {used}/{max}",
+      "operator": "你 1",
+      "survivors": "幸存者 {count}",
+      "allies": "盟友 {count}",
+      "queen": "女王 2",
+      "egg": "卵 1",
+      "free": "空余 {count}",
+      "over_capacity": "超出容量 {count} 席 — 登船前请调整席位申请。",
+      "egg_requires_nahl": "运输卵需要纳尔在船上。",
+      "egg_unstable": "运输卵需要女王或纳尔在船上。"
     },
     "manifest": {
       "title": "归还清单",
@@ -1307,7 +1408,10 @@
       "no_tracked_objectives": "无追踪目标",
       "surface": "地表",
       "story_prelude": "第一幕 // 人类序章",
-      "build_mismatch": "主机版本为 {host}，你的版本为 {client} — 请更新或切换 Steam 测试分支以保持一致"
+      "build_mismatch": "主机版本为 {host}，你的版本为 {client} — 请更新或切换 Steam 测试分支以保持一致",
+      "lobby_build_tag": "v{build}",
+      "lobby_build_mismatch": "版本不一致 — 主机 v{host}，你 v{client}",
+      "squad_build_mismatch": "有队友使用不同的游戏版本 — 所有人版本一致后才能部署"
     },
     "dossier": {
       "title": "战术档案",
@@ -1579,12 +1683,6 @@
       "self_class": "{class} // 特工",
       "peer_class": "{class} // 远程"
     },
-    "bond": {
-      "enamored": "倾心 / 忠诚",
-      "warm": "热情 / 好感",
-      "attentive": "关注",
-      "badge": "{label}（{score} 分）"
-    },
     "fab": {
       "scatter_repeater": "散射连发枪",
       "equipped_next_run": "已为下次征程装备 ✓",
@@ -1610,7 +1708,23 @@
       "stat_rate": "射速 ×{value}",
       "stat_range": "射程 ×{value}",
       "stat_shots": "{count} 发",
-      "odds": "概率"
+      "odds": "概率",
+      "welder_kicker": "营地破口应对",
+      "welder_title": "战地舱壁焊接机",
+      "welder_desc": "在战场上重建被首领破坏的墙壁并修复受损的营地组件。",
+      "welder_installed": "战地焊接机已建造",
+      "welder_build": "建造战地焊接机",
+      "welder_ready": "战地舱壁焊接机就绪",
+      "close_automart": "关闭自动商店",
+      "ledger_balance": "回收账本 / 硬币余额:",
+      "aisles_aria": "自动商店货架",
+      "aisle_hardware": "基地建造与设施",
+      "aisle_weapons": "武器与弹药",
+      "aisle_lotto": "彩票打印",
+      "aisle_all": "全部货架",
+      "slot_marquee": "地平线投机彩票打印 // 拉动拉杆",
+      "lotto_window_title": "投机打印窗口已开启",
+      "lotto_window_hint": "查看公开的概率，投入回收物资，然后拉动上方的制造拉杆。"
     },
     "camp": {
       "sleep_warning": "在 {camp} 休息将推进到第 {day} 天。以下未解决的信号将关闭。",
@@ -1629,7 +1743,6 @@
       "field_conversation": "野外对话",
       "callsign": "呼号 {callsign}",
       "listen_hint": "先倾听，再决定你想如何帮忙。",
-      "quote": "“{text}”",
       "next_action": "你的下一步行动将改变发射清单与结局走向。",
       "scar_gained": "昨夜留下了印记: {scar}",
       "services": "营地服务（{count}）",
@@ -1919,6 +2032,7 @@
         "sporesnail": "孢子蜗牛",
         "sentinel": "哨兵",
         "crawler": "裂隙爬行者",
+        "chitin_scuttler": "甲壳疾行者",
         "alien_proto_crawler": "原型爬行者",
         "alien_proto_spitter": "原型喷吐者",
         "mycelium_stalker": "菌丝潜猎者",
@@ -1936,7 +2050,9 @@
       "build": {
         "cryo_shatter": "构建：冰霜碎裂触发{count}次，造成{damage}点伤害",
         "bio_predator": "构建：生化掠食者触发{count}次，恢复{o2}%氧气和{hearts}颗心",
+        "subzero_necrosis": "构建：零下坏死触发{count}次，造成{damage}点伤害",
         "equipped": "构建：{drops}（未触发协同）",
+        "loadout": "配装：已安装 {list}（未触发协同）",
         "none": "构建：本次部署没有战地升级"
       },
       "field": {
@@ -2143,6 +2259,7 @@
       "slay_the_queen": "击败女王后获得",
       "archivist": "完成“档案员”成就后获得",
       "reach_depth": "到达深度 {depth} 后获得",
+      "arcade_score": "在街机中获得 {score} 分后解锁",
       "class_runs": "以 {cls} 完成 {runs} 次出击后获得",
       "achievement": "完成成就后获得",
       "confirm_buy": "再次点击以购买",
@@ -2204,7 +2321,6 @@
         "map_zoom": "[LB / RB] 缩放",
         "map_operator": "[A] 操作员",
         "map_close": "[B] / [VIEW] 关闭",
-        "dialogue_choose": "方向键选择 • [A] 确认 • [B] 撤退",
         "compass_map": "[VIEW]",
         "radar_scan": "雷达扫描 [LB]",
         "armory_cycle": "[LB / RB 切换]",
@@ -2216,6 +2332,7 @@
       "night_body": "操作员睡着了。外面的某些东西没有。",
       "morning_title": "第 {day} 天 · 06:00",
       "morning_status": "{site} // 新的一天开始了",
+      "morning_objective": "目标: {objective}",
       "skip": "按任意键醒来"
     },
     "mystery": {
@@ -2278,6 +2395,15 @@
       "area_bio": "生物区",
       "area_unknown": "野外",
       "notice": "显示：为保持流畅，{setting}已降至{to}。见 设置 › 图形。"
+    },
+    "kiosk": {
+      "exit": "退出",
+      "deal": "发牌",
+      "hit": "要牌",
+      "stand": "停牌",
+      "double": "加倍",
+      "pull_lever": "拉动拉杆开始转动",
+      "scroll_more": "▼ 下方还有 · 滚动 · W / S · ↑ / ↓ · 方向键"
     }
   },
   "narrative": {
@@ -3776,6 +3902,10 @@
       "4167": {
         "desc": "下潜之锚，去过它本不该去的深度。",
         "name": "深渊之锚"
+      },
+      "4168": {
+        "desc": "在《SUB-CRUST PROTOCOL: 1984》中获得65,000分即可解锁。",
+        "name": "复古像素蜗牛贴花"
       },
       "4200": {
         "desc": "采用深霜风格的完整操作员底盘涂装。",

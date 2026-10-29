@@ -21,4 +21,11 @@ describe('leader conversation identity', () => {
         preloadLeaderMedia(resolveLeaderIdentity({ leaderName: 'Sister Martha' }), ImageCtor);
         expect(image.src).toContain('tallow_martha');
     });
+
+    it('resolves Aria with title Specimen 0047-B instead of generic SCOUT', () => {
+        const identity = resolveLeaderIdentity({ id: 'aria', leaderName: 'Aria' });
+        expect(identity.id).toBe('aria');
+        expect(identity.title).toBe('Specimen 0047-B');
+        expect(identity.classId).toBe('HIVE MIMIC');
+    });
 });

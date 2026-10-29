@@ -116,6 +116,30 @@ describe('crash-site wreckage varies each landing', () => {
         }
     });
 
+    // 2026-10-15 playtest: wreckage landed under the installed cot.
+    it('keeps every deployment\'s wreckage off the sleep bay and the first-night cargo', () => {
+        const g = game();
+        Object.assign(g, {
+            crashedShips: [{ tileX: 9, tileZ: 9 }],
+            getActiveShip: () => ({ tileX: 9, tileZ: 9 }),
+            getFirstNightBasePlan: ThreeGame.prototype.getFirstNightBasePlan
+        });
+        g.player.position = { x: 7.4, z: 11.8 };
+        const plan = g.getFirstNightBasePlan();
+        const spots = [plan.installSocket.transform, ...plan.recoveryCargo.map(({ worldPosition }) => worldPosition)];
+        for (let seed = 1; seed <= 200; seed += 1) {
+            g.setActiveExpedition({ ...gale(2), expeditionSeed: seed });
+            g.updateArrivalIncident(0.01);
+            const placed = debris(g);
+            expect(placed, `seed ${seed}`).toHaveLength(3);
+            for (const piece of placed) {
+                for (const spot of spots) {
+                    expect(Math.hypot(piece.position.x - spot.x, piece.position.z - spot.z), `seed ${seed}`).toBeGreaterThan(2.5);
+                }
+            }
+        }
+    });
+
     it('changes with the deployment and never piles up across deployments', () => {
         const g = game();
         g.setActiveExpedition(gale(2));

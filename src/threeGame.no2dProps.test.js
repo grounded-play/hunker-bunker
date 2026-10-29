@@ -61,6 +61,25 @@ describe('no 2D stand-ins for props with 3D models', () => {
         }
     });
 
+    it('places registered hanging fixtures at their wall-mount elevation', () => {
+        const anchor = ThreeGame.prototype.createScatterInstance.call({
+            scatterMaterials: {},
+            deferWorld3dReplacement: vi.fn()
+        }, {
+            type: 'prop_overhead_cage_fluorescent',
+            x: 2,
+            z: 3,
+            scale: 1,
+            tiltX: 0,
+            elevation: 0.08,
+            wallNormal: { x: 0, z: 1 },
+            scatterKey: 'wall-fixture'
+        });
+
+        expect(anchor.position.y).toBeCloseTo(1.95, 5);
+        expect(anchor.userData.baseY).toBeCloseTo(1.95, 5);
+    });
+
     // The spawn paths gate on "has a model" before deferring. They used to ask
     // with the raw 2D name, so an alias never reached the game: the deferral
     // tests above passed while every aliased prop still drew its billboard.
@@ -80,22 +99,29 @@ describe('no 2D stand-ins for props with 3D models', () => {
     it.each([
         ['prop_fusion_generator', 'fusion_generator'],
         ['prop_camp_cookfire_doused', 'prop_camp_cookfire'],
-        ['prop_camp_vesper_turret', 'prop_base_defense_turret'],
         ['bunker_junk_legendary', 'bunker_junk_rare'],
         // Session 2026-10-06: still flat in rooms on PC and Deck.
         ['prop_cyber_junction', 'prop_diagnostic_console'],
         ['prop_biomech_pillar_left', 'prop_biomech_arch'],
         ['prop_biomech_pillar_right', 'prop_biomech_arch'],
         ['prop_cryo_sleep_pod', 'prop_flesh_steel_coffin'],
-        ['prop_camp_meridian_repair_rig', 'prop_maintenance_tool_cart'],
         ['prop_engineering_bench', 'prop_fabricator_workstation'],
-        ['prop_ruptured_coolant_pump', 'prop_icey_frost_manifold'],
         ['lore_terminal', 'prop_terminal_ruptured'],
         ['scatter_horizon_black_box', 'prop_camp_meridian_radio'],
         ['prop_hydraulic_piston_actuator', 'prop_exosuit_docking_gantry']
     ])('a spawned %s prop renders as %s, not its billboard', (type, model) => {
         const sprite = spawn(type);
         expect(sprite.userData.world3dModelType).toBe(model);
+        expect(sprite.material.visible).toBe(false);
+    });
+
+    it.each([
+        'prop_camp_vesper_turret',
+        'prop_camp_meridian_repair_rig',
+        'prop_ruptured_coolant_pump'
+    ])('a spawned %s prop renders with its own dedicated model, hiding its billboard', (type) => {
+        const sprite = spawn(type);
+        expect(sprite.userData.world3dModelType).toBe(type);
         expect(sprite.material.visible).toBe(false);
     });
 

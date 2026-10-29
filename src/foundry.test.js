@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import * as THREE from 'three';
 import { FabricationFoundry, foundryWorldPosition, INTERACT_RADIUS } from './foundry.js';
 
@@ -50,5 +50,49 @@ describe('FabricationFoundry', () => {
         expect(f.isRevealed).toBe(true);
         expect(f.light.intensity).toBeGreaterThan(0.5);
         expect(f.panelMat.opacity).toBeGreaterThan(0.5);
+    });
+
+    it('stays powered off when revealed with powered: false', () => {
+        const scene = new THREE.Scene();
+        const f = new FabricationFoundry(scene);
+        f.reveal(0, 0, { powered: false });
+        expect(f.isRevealed).toBe(true);
+        expect(f.isPowered()).toBe(false);
+        f.update(2.0);
+        // Offline is the same light as a red fault pulse: a second light would
+        // change the light count and recompile every lit shader.
+        expect(f.light.color.getHex()).toBe(0xff4422);
+        expect(f.light.intensity).toBeGreaterThan(0);
+        expect(f.panelMat.opacity).toBe(0);
+        let lights = 0;
+        scene.traverse((object) => { if (object.isLight) lights += 1; });
+        expect(lights).toBe(1);
+
+        f.setPowered(true);
+        expect(f.isPowered()).toBe(true);
+        f.update(2.0);
+        expect(f.light.color.getHex()).toBe(0x8ef0ff);
+        expect(f.light.intensity).toBeGreaterThan(0.4);
+    });
+
+    it('swaps in the 3D model and hides the blocky placeholder', async () => {
+        const scene = new THREE.Scene();
+        const mockModel = new THREE.Group();
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+        mockModel.add(mesh);
+        const loadModel = vi.fn(async (type) => {
+            expect(type).toBe('prop_fabricator_workstation');
+            return mockModel;
+        });
+
+        const f = new FabricationFoundry(scene, { loadModel });
+        f.build(0, 0);
+
+        // Placeholder is initially visible before async load resolves
+        expect(f.placeholderGroup.visible).toBe(true);
+
+        await vi.waitFor(() => expect(f.model3d).toBe(mockModel));
+        expect(f.placeholderGroup.visible).toBe(false);
+        expect(f.group.children).toContain(mockModel);
     });
 });

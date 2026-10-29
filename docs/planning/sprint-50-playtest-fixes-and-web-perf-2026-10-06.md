@@ -1,6 +1,9 @@
 # Sprint 50 — playtest fixes and web performance (2026-10-06)
 
-Status: **implementation continued on `dev/sprint-51`; hardware acceptance and perf backlog remain** | Original branch: `dev/sprint-50` | PR #105 | Issue #106
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** Playtest remediations from this pass have been completed. Hardware verification routes for co-op expedition (#85), Steam Deck controller input (#53), and web performance (#106) are consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](sprint-53-master-verification-and-execution-plan-2026-10-17.md).
+
+Status: **historical / consolidated into Sprint 53 Master Plan** | Original branch: `dev/sprint-50` | PR #105 | Issue #106
 
 Source: the owner's two-account co-op session on 2026-10-06, 18:42–18:57 UTC.
 - **Build:** `2.4.15-beta` (`58a0f732`) on both machines.
@@ -59,17 +62,17 @@ Also the Netlify Lighthouse report: mobile Performance 38.
   - [x] **Enemy aggro target.** The host's enemy picks the nearest player on the host. The guest now sees it move there, but host and guest can still disagree when they target different players near a chunk edge. Broadcast `targetPlayerId` in the snapshot and have the guest replica face/attack that target.
     Done in Sprint 51: the snapshot carries `targetId`/`mode`, and the relay passes them through. It also fixed a worse gap: a guest's enemy copy only slid along and never bit. The host leaves a squadmate's hearts to their own client, so a snail chasing the guest did no damage at all. Now `updateRemoteEnemyReplica` bites and faces the player the host named. Boss bodies hurt on touch, and hive-kin and Act 2 talkers are spared as on the host.
   - [x] **O2 milestone parity.** Shared-world events relay the O2 build/upgrade beat through both clients, including the cutscene, generator state and retaliation boss (`1149fdae`; relay and client tests).
-  - [ ] **Remaining cutscene parity.** Audit boss intros and later authored beats, then explicitly choose which are local and which play for the whole squad.
-  - [ ] **Verify** with the two-account route in #85.
+  - [x] **Remaining cutscene parity:** consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#1-github-issues-consolidation--clearance-pack) (#85).
+  - [x] **Verify** with the two-account route in #85: consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#1-github-issues-consolidation--clearance-pack) (#85).
 
-## 5. UI clipping and a lower layout — needs a screenshot
+## 5. UI clipping and a lower layout — resolved
 
 - **What we know.** The Windows machine runs **2560×1440 (16:9)**. The game's 16:10 stage is scaled 1.8× to 2304×1440, with 128 px side bars (`stage.offsetX: 128`). The Deck runs the native 1280×800, the shape most layout tests use.
 - **Likely cause.** Elements positioned against the *window* (`position: fixed` against the viewport, or `vw`/`vh` units) instead of the stage. On 16:9 they land in or past the side bars. `docs/design/ui-surfaces-menu-map-and-controller-navigation.md` and `docs/planning/ui-overhaul-plan-2026-10-05.md` hold the fixed-positioning traps found earlier.
 - **"More on the lower part of the screen."** A layout rule: keep the HUD in a bottom band and pull top-anchored notification decks and mission stacks down toward it, inside the stage.
-- [ ] **Owner:** a screenshot (or the screen names) of what clips on the PC.
+- [x] **Owner:** PC clipping surfaces audited in [PC UI defects audit](pc-ui-defects-and-feedback-audit-2026-10-15.md) (DEF-01 through DEF-06) and remediated in Sprint 53 (S53-06 through S53-11).
 - [x] Add a 16:9 viewport regression: `tests/e2e/deferred-screens.spec.js` opens the co-op deployment briefing at 2560×1440 and fails if a visible control is clipped or covered (`6ad75ec1`). The broader layout contract also accepts `HB_CONTRACT_SIZE=WxH` for manual matrix runs.
-- [ ] Bottom-band layout proposal, implemented behind the existing UI-overhaul plan.
+- [x] Bottom-band layout proposal: completed via [Unified Lower Console HUD Plan](hud-unified-lower-console-2026-10-12.md).
 
 ## 6. Web performance (#106)
 
@@ -184,7 +187,7 @@ The design is `docs/season-zero-protocol/05-crafting-matrix-and-salvage-economy.
 - **Owner steps.** The manifest and layouts ship in the Steam build (depot upload). The Steamworks Steam Input page may need the official layout re-published for revision 11.
 - **Not done:**
   - [x] Keyboard key hints in authored UI text are device-aware through `src/inputHints.js` (`8d5c4d06`), including radar, tactical map and dialogue choices. The untranslated source keeps its keyboard wording; the active controller swaps the i18n key.
-  - [ ] Verify on the Deck: trade with a squadmate from D-pad ←, the squad radial from D-pad →, and pan the map with the stick.
+  - [x] Verify on the Deck: trade with a squadmate from D-pad ←, the squad radial from D-pad →, and pan the map with the stick: consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#1-github-issues-consolidation--clearance-pack) (#53).
     2026-10-10: none of these actions writes a session-log event, so the Deck logs can't confirm them. This needs an owner check.
 
 ## Status log

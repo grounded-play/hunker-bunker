@@ -59,6 +59,7 @@ function makeGame({ destroyed = false, capScale, cutawayFrom = 'nw' } = {}) {
     };
     return {
         game: {
+            cameraMode: 'isometric',
             cameraAzimuth: (-Math.PI * 3) / 4,
             _roomCutawayQuadrant: 'se',
             wallHeight: 2.8,
@@ -70,6 +71,23 @@ function makeGame({ destroyed = false, capScale, cutawayFrom = 'nw' } = {}) {
 }
 
 describe('ThreeGame room cutaway rotation', () => {
+    it('hides elevated wall fixtures with their foreground support and restores them', () => {
+        const fixture = {
+            layer: 'wallProp',
+            mountY: 1.45,
+            supportCell: { x: 4, y: 2 },
+            dynamicRoot: { visible: true }
+        };
+        const group = new THREE.Group();
+        group.userData.roomDressingItems = [fixture];
+        const game = { getWallKey: (x, z) => `${x},${z}` };
+
+        expect(ThreeGame.prototype.syncRoomDressingCutaways.call(game, group, new Set(['4,2']))).toBe(1);
+        expect(fixture.dynamicRoot.visible).toBe(false);
+        expect(ThreeGame.prototype.syncRoomDressingCutaways.call(game, group, new Set())).toBe(1);
+        expect(fixture.dynamicRoot.visible).toBe(true);
+    });
+
     it('restores the old foreground wall without remounting its instance pool', () => {
         const { game, wallPool, capPool } = makeGame();
         const changed = ThreeGame.prototype.updateRoomCutawaysForCamera.call(game);
@@ -82,6 +100,19 @@ describe('ThreeGame room cutaway rotation', () => {
         expect(wall.position.y).toBeCloseTo(1.4, 5);
         expect([cap.matrix.elements[0], cap.matrix.elements[5], cap.matrix.elements[10]])
             .toEqual([0, 0, 0]);
+    });
+
+    it('keeps collision-bearing room walls full height in third-person', () => {
+        const { game, wallPool, capPool } = makeGame({ cutawayFrom: 'se' });
+        game.cameraMode = 'third-person';
+
+        ThreeGame.prototype.updateRoomCutawaysForCamera.call(game, { force: true });
+
+        const wall = matrixScaleAndPosition(wallPool);
+        const cap = matrixScaleAndPosition(capPool).matrix.elements;
+        expect(wall.scale.y).toBeCloseTo(1, 5);
+        expect(wall.position.y).toBeCloseTo(1.4, 5);
+        expect([cap[0], cap[5], cap[10]]).toEqual([0, 0, 0]);
     });
 
     it('never resurrects a destroyed room wall or its cap during rotation', () => {

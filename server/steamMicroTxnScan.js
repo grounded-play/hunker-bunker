@@ -14,7 +14,7 @@ function orderKey(order) {
 
 /** Enumerate by Steam's update time, not row count or creation time. */
 export async function scanMicroTxnReport({
-    fetchPage, time, orders = [], onPage = async () => {}, maxPages = 100, maxOrders = 100_000
+    fetchPage, time, orders = [], onPage = async () => {}, maxPages = 100, maxOrders = 100_000, pageSize = null
 }) {
     const pages = [];
     let cursor = time;
@@ -61,7 +61,14 @@ export async function scanMicroTxnReport({
                 changed = true;
             }
         }
-        stalled = !changed && Date.parse(latest) === Date.parse(cursor) ? stalled + 1 : 0;
+        const repeat = !changed && Date.parse(latest) === Date.parse(cursor);
+        // Steam's window includes its start time, so once every order is in,
+        // the newest ones come back at the cursor until a later order exists.
+        // A short batch of nothing new is that caught-up state; only a full
+        // batch at one timestamp can hide orders (prod sat "stalled" at its
+        // last order from 2026-10-21 to 10-28).
+        if (repeat && Number.isSafeInteger(pageSize) && page.orders.length < pageSize) return result(true);
+        stalled = repeat ? stalled + 1 : 0;
         // Never add a second to an ambiguous boundary: that could skip paid
         // orders with the same timestamp. A repeated non-progressing API batch
         // is visibly unhealthy and will be retried from this exact cursor.

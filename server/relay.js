@@ -65,6 +65,16 @@ const PVE_HIT_RANGE = PVP_WEAPON_RANGE;
 // false-rejecting real simultaneous hits.
 const PVE_MIN_HIT_INTERVAL_MS = MIN_FIRE_INTERVAL_MS;
 const PVE_STATE_MIN_INTERVAL_MS = 75;
+const PVE_CONTACT_HIT_MIN_INTERVAL_MS = 120;
+// Routes a client may depend on, sent with matchStarted. A client built ahead
+// of the deployed relay checks this list and keeps its older behaviour for a
+// route the relay lacks (QA 2026-10-28: a 10-07 relay silently dropped the
+// host's contact bites, so co-op guests took no enemy damage at all).
+export const RELAY_FEATURES = Object.freeze(['enemyContactHit', 'pvpEnemyState', 'missionState', 'deployGate']);
+// The squad's doors open together: each client loads its world behind closed
+// doors, says so, and waits until every operator who deployed has (owner ask
+// 2026-10-28). A client that never reports cannot hold the rest past this.
+export const DEPLOY_GATE_TIMEOUT_MS = 90_000;
 // A world beat is a rare, deliberate event (a goal built, a boss staged), so a
 // low ceiling is generous while still bounding a misbehaving client.
 // A Tank slam can break several walls at once, each its own event.
@@ -73,7 +83,7 @@ const WORLD_EVENT_MAX_PER_SECOND = 20;
 // their own budget, so a busy fight cannot spend the state budget and make the
 // relay silently drop a death, a drop or a destroyed wall.
 const WORLD_EVENT_STREAM_MAX_PER_SECOND = 40;
-const STREAM_WORLD_EVENTS = new Set(['enemy-projectile-spawned', 'bunker-line']);
+const STREAM_WORLD_EVENTS = new Set(['enemy-projectile-spawned', 'bunker-line', 'prop-moved']);
 const WORLD_EVENT_MAX_DETAIL_BYTES = 4096;
 // Cap on a friendly-fire shove so a rapid-fire weapon cannot fling a squadmate.
 const PLAYER_NUDGE_MAX_FORCE = 4;
@@ -273,6 +283,46 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
     // launching solo the instant they click deploy.
     const roomCountdowns = new Map();
     const MATCH_COUNTDOWN_MS = 3000;
+    // Map: roomCode -> { gateId, expected: Set<socketId>, loaded: Set<socketId>, timeout }.
+    const deployGates = new Map();
+    const deployGateRoster = (gate) => [...gate.expected].map((id) => ({
+        id, callsign: players.get(id)?.callsign ?? 'OPERATIVE', loaded: gate.loaded.has(id)
+    }));
+    const closeDeployGate = (roomCode, reason) => {
+        const gate = deployGates.get(roomCode);
+        if (!gate) return;
+        clearTimeout(gate.timeout);
+        deployGates.delete(roomCode);
+        io.to(roomCode).emit('deployGateOpen', {
+            gateId: gate.gateId, reason, loaded: gate.loaded.size, total: gate.expected.size
+        });
+        logRelayEvent('DEPLOY_GATE_OPEN', { roomCode, gateId: gate.gateId, reason, loaded: gate.loaded.size, total: gate.expected.size });
+    };
+    const reportDeployGate = (roomCode) => {
+        const gate = deployGates.get(roomCode);
+        if (!gate) return;
+        if (gate.expected.size === 0 || [...gate.expected].every((id) => gate.loaded.has(id))) {
+            closeDeployGate(roomCode, 'all_loaded');
+            return;
+        }
+        io.to(roomCode).emit('deployGateProgress', {
+            gateId: gate.gateId, loaded: gate.loaded.size, total: gate.expected.size, players: deployGateRoster(gate)
+        });
+    };
+    const openDeployGateFor = (roomCode) => {
+        const previous = deployGates.get(roomCode);
+        if (previous) clearTimeout(previous.timeout);
+        const gate = {
+            gateId: randomUUID(),
+            expected: new Set(rooms.get(roomCode) ?? []),
+            loaded: new Set(),
+            timeout: null
+        };
+        gate.timeout = setTimeout(() => closeDeployGate(roomCode, 'timeout'), DEPLOY_GATE_TIMEOUT_MS);
+        gate.timeout.unref?.();
+        deployGates.set(roomCode, gate);
+        return gate.gateId;
+    };
     // Map: roomCode -> stable identity key (steamId64 when real, otherwise
     // the client's persisted localStorage profileId -- see
     // src/profile.js's ProfileManager) of whoever should be that room's
@@ -391,6 +441,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
             lastWeaponHitAt: 0,
             lastEnemyHitAt: 0,
             lastEnemyStateAt: 0,
+            lastEnemyContactHits: new Map(),
             // Ready-up gate (see matchDeploy below): previously nonexistent --
             // any single socket emitting matchDeploy instantly launched the
             // whole room for everyone, with no wait for other players.
@@ -675,10 +726,29 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                 logRelayEvent('MATCH_DEPLOY', { roomCode, mode, seed, startedBy });
 
                 dressingAuthority.clear(roomCode);
-                io.to(roomCode).emit('matchStarted', { seed, mode, crashPlan, startedBy, timestamp: Date.now(), roundId });
+                const deployGateId = openDeployGateFor(roomCode);
+                io.to(roomCode).emit('matchStarted', { seed, mode, crashPlan, startedBy, timestamp: Date.now(), roundId, relayFeatures: RELAY_FEATURES, deployGateId });
             }, MATCH_COUNTDOWN_MS);
 
             roomCountdowns.set(roomCode, { timeout });
+        });
+
+        // This client's world is built and warmed behind its closed doors.
+        socket.on('deployLoaded', (data = {}) => {
+            const roomCode = player.roomCode;
+            const gate = roomCode ? deployGates.get(roomCode) : null;
+            if (!gate || data?.gateId !== gate.gateId) {
+                // A late or stale report: tell this client the gate is not
+                // holding anyone, so it never waits on a gate that closed.
+                socket.emit('deployGateOpen', { gateId: data?.gateId ?? null, reason: 'not_waiting' });
+                return;
+            }
+            if (gate.loaded.has(socket.id)) return;
+            // A socket that reconnected during deployment has a new id; the
+            // old one already left the gate, so this one counts in its place.
+            gate.expected.add(socket.id);
+            gate.loaded.add(socket.id);
+            reportDeployGate(roomCode);
         });
 
         socket.on('pvpGameplayReady', (data = {}) => {
@@ -780,6 +850,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
             if (!player.roomCode || !payload || typeof payload !== 'object') return;
             const eventName = sanitizeString(payload.event, 64, '');
             if (!eventName) return;
+            if (eventName === 'mission-state' && !player.isHost) return;
             if (eventName === 'dressing-protocol') return;
             if (eventName === 'dressing-protocol-request') {
                 socket.emit('worldEventBroadcast', { event: 'dressing-protocol', originId: 'relay', detail: {
@@ -992,7 +1063,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
         // enemy IDs. Generation seed sync alone cannot keep AI positions in
         // lockstep because each client targets a different local operator.
         socket.on('enemyState', (data = {}) => {
-            if (!player.roomCode || !player.isHost || player.mode === 'pvp') return;
+            if (!player.roomCode || !player.isHost) return;
             if (!Array.isArray(data.enemies)) return;
             const now = Date.now();
             if (now - player.lastEnemyStateAt < PVE_STATE_MIN_INTERVAL_MS) return;
@@ -1009,6 +1080,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                     enemyType,
                     x,
                     z,
+                    rotY: Number.isFinite(state.rotY) ? Number(state.rotY) : null,
                     hp: Number.isFinite(state.hp) ? Math.max(0, Math.min(10000, state.hp)) : null,
                     burstTriggered: Boolean(state.burstTriggered),
                     // A peer can only update enemies it already has locally, so a
@@ -1041,7 +1113,70 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
             }) : undefined;
             const payload = { enemies, timestamp: now };
             if (companions && companions.length > 0) payload.companions = companions;
+            if (data.missionState && typeof data.missionState === 'object') {
+                const revision = Number(data.missionState.revision);
+                const type = sanitizeString(data.missionState.type, 24, '');
+                const status = sanitizeString(data.missionState.status, 32, '');
+                if (Number.isSafeInteger(revision) && revision >= 0 && type && status) {
+                    payload.missionState = {
+                        revision,
+                        type,
+                        status,
+                        killCount: Number.isFinite(data.missionState.killCount)
+                            ? Math.max(0, Math.min(10000, Math.round(data.missionState.killCount))) : 0,
+                        targetKills: Number.isFinite(data.missionState.targetKills)
+                            ? Math.max(0, Math.min(10000, Math.round(data.missionState.targetKills))) : 0
+                    };
+                }
+            }
             socket.to(player.roomCode).emit('enemyStateSnapshot', payload);
+        });
+
+        // Enemy AI and contact cooldowns are host-owned. Route the host's
+        // explicit bite to exactly one squadmate instead of asking a guest's
+        // interpolated render replica to rediscover the collision locally.
+        socket.on('enemyContactHit', (data = {}) => {
+            if (!player.roomCode || !player.isHost || player.mode === 'pvp') return;
+            const targetId = sanitizeString(data.targetId, 64, '');
+            const eventId = sanitizeString(data.eventId, 96, '');
+            const enemyType = sanitizeString(data.enemyType, 32, 'unknown');
+            const scatterKey = sanitizeString(data.scatterKey, 64, '') || null;
+            const x = sanitizeCoord(data.x);
+            const z = sanitizeCoord(data.z);
+            const damage = Number.isFinite(data.damage) ? Math.max(1, Math.min(8, Math.round(data.damage))) : 0;
+            const target = players.get(targetId);
+            const now = Date.now();
+            if (!targetId || !eventId || x === null || z === null || damage <= 0) return;
+            if (!target || target.roomCode !== player.roomCode || targetId === socket.id) return;
+            const contactKey = `${targetId}:${scatterKey ?? enemyType}`;
+            const lastContactAt = player.lastEnemyContactHits.get(contactKey) ?? 0;
+            if (now - lastContactAt < PVE_CONTACT_HIT_MIN_INTERVAL_MS) return;
+            player.lastEnemyContactHits.set(contactKey, now);
+            if (player.lastEnemyContactHits.size > 512) {
+                player.lastEnemyContactHits.delete(player.lastEnemyContactHits.keys().next().value);
+            }
+            io.to(targetId).emit('enemyContactHit', {
+                eventId, targetId, enemyType, scatterKey, x, z, damage,
+                hostId: socket.id, timestamp: now
+            });
+            logRelayEvent('ENEMY_CONTACT_HIT', {
+                roomCode: player.roomCode, eventId, hostId: socket.id, targetId,
+                enemyType, damage
+            });
+        });
+
+        socket.on('enemyContactHitAck', (data = {}) => {
+            if (!player.roomCode || player.mode === 'pvp') return;
+            const eventId = sanitizeString(data.eventId, 96, '');
+            const hostId = sanitizeString(data.hostId, 64, '');
+            const host = players.get(hostId);
+            if (!eventId || !host?.isHost || host.roomCode !== player.roomCode) return;
+            io.to(hostId).emit('enemyContactHitConfirmed', {
+                eventId,
+                targetId: socket.id,
+                applied: Boolean(data.applied),
+                timestamp: Date.now()
+            });
         });
 
         // Sprint 24 Milestone A item 5: a non-host client's candidate enemy
@@ -1258,7 +1393,9 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                     mode: 'pvp',
                     startedBy: socket.id,
                     timestamp: Date.now(),
-                    roundId: nextRoundId
+                    roundId: nextRoundId,
+                    relayFeatures: RELAY_FEATURES,
+                    deployGateId: openDeployGateFor(roomCode)
                 });
             }
         });
@@ -1283,7 +1420,15 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                     roomCountdowns.delete(roomCode);
                     io.to(roomCode).emit('matchCountdownCancelled', { reason: 'player_disconnected', playerId: socket.id });
                 }
+                // Whoever left cannot hold the squad's doors shut.
+                const gate = deployGates.get(roomCode);
+                if (gate?.expected.delete(socket.id)) {
+                    gate.loaded.delete(socket.id);
+                    reportDeployGate(roomCode);
+                }
                 if (roomSet.size === 0) {
+                    clearTimeout(deployGates.get(roomCode)?.timeout);
+                    deployGates.delete(roomCode);
                     rooms.delete(roomCode);
                     roomModes.delete(roomCode);
                     pvpRounds.delete(roomCode);

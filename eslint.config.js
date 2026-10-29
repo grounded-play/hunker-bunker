@@ -3,7 +3,7 @@ import globals from 'globals';
 
 export default [
   {
-    ignores: ['dist/**', 'coverage/**', 'node_modules/**', '.agents/**', 'chrome/**', 'scratch/**', 'scripts/**', 'dist_soundtrack/**', 'playwright-report/**', 'test-results/**', 'public/basis/**', 'trailer/**'],
+    ignores: ['dist/**', 'coverage/**', 'node_modules/**', '.agents/**', 'chrome/**', 'scratch/**', 'scripts/**', '!scripts/generate-world-expansion-80-prompts.mjs', 'dist_soundtrack/**', 'playwright-report/**', 'test-results/**', 'public/basis/**', 'trailer/**'],
   },
   js.configs.recommended,
   {
@@ -17,6 +17,21 @@ export default [
     },
     rules: {
       'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'no-useless-assignment': 'error',
+    },
+  },
+  {
+    files: ['scripts/generate-world-expansion-80-prompts.mjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+      },
+    },
+    rules: {
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'no-useless-assignment': 'error',
     },
   },
   {

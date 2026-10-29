@@ -7,7 +7,8 @@ export const VISIBLE_INSTALLED_BASE_MODULES = Object.freeze(new Set([
     'ship_navigation_core',
     'ship_comms_array',
     'ship_engine_manifold',
-    'ship_life_support_core'
+    'ship_life_support_core',
+    'arcade_blackjack_cabinet'
 ]));
 export const FIRST_NIGHT_VISIBLE_MODULES = VISIBLE_INSTALLED_BASE_MODULES;
 

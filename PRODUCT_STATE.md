@@ -1,102 +1,89 @@
-# Product State
+# Hunker Bunker — Product State
 
-This is the canonical answer to “what is true today?” Detailed plans, audits,
-and worklogs are evidence or history; they do not override this file. Update a
-row when its implementation or acceptance state changes and link to evidence
-instead of duplicating it here.
+Updated: 2026-10-27
 
-Current implementation branch: `dev/sprint-52`, package `2.4.17-beta` (Sprint 52), from `v2.4.16-beta`
-(`920f2406`) on `mothership`. [Sprint 52](docs/planning/sprint-52-playthrough-2026-10-07.md) owns current work;
-release notes: [`v2.4.17-beta`](docs/releases/v2.4.17-beta.md).
+Active branch: `dev/sprint-53`
 
-Last release reconciliation: 2026-10-06 · `v2.4.14-beta` is released on `mothership` (`1030cbc5`, PR #100, [release](https://github.com/grounded-play/hunker-bunker/releases/tag/v2.4.14-beta)) and runs on the Steam `beta` branch. The trusted backend runs `970f17af` (deployed 2026-10-06). `2.4.15-beta` is dependency maintenance on `deps/2026-10-06-security-and-minor`.
+Package: `2.4.18-beta`
 
-The older subsystem rows below retain their stated evidence dates. Current audit
-corrections: field crafting is **partially integrated** (event with no UI consumer),
-controller pings need routing, companion assist effects and Queen communion need
-contract repairs, and the dock is already the default. See the
-[code-backed audit](docs/reports/documentation-audit-2026-09-30.md) for precise gaps.
+Plan of record for the docs audit: [Sprint 49](docs/planning/sprint-49.md) (`dev/sprint-49`), consolidated into the [Sprint 53 master verification plan](docs/planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md).
 
-Released in `v2.4.4-beta` and already on `mothership` (`e017b06`): the first deep localization sweep (7 languages, 0 unlocalized runtime strings), Alternate Radio Voice Banks (104 cue slots / 208 takes), all 10 rendered motion ending cinematics, Phase A AgX tone mapping & IBL reflections, and 52 playtest stability tickets (DP-01 through DP-52).
+Active milestone: **The Definitive First Expedition**
 
-Delivered in `v2.4.14-beta` on `dev/sprint-49` and **active in verification** (release notes: [`docs/releases/v2.4.14-beta.md`](docs/releases/v2.4.14-beta.md)):
-- **Filtered player chat (S49-02/03/04):** authenticated room chat through the relay, a seven-language baseline filter, chat UI with mute/block/report and controller text entry. Human language review and moderation staffing remain open.
-- **Steam review follow-through (S49-06/10/11):** commentary rewritten as real development history in seven languages; a pad-only journey probe and the focus fixes it found; Content Guide under Settings → Accessibility, with scene stills and working packaged cinematics.
-- **Purchases (S49-07/08):** authoritative store catalog; `GetReport` reconciliation that pages completely, resumes after restarts and refuses false success; Inventory grant contract fixes and idempotent paid-grant retries. Unattended paid recovery and reversal handling remain open.
-- **Co-op (QA 2026-09-30):** enemies on a squadmate no longer damage you; the relay locks a room to its host's build.
+This is the canonical answer to “what is true today?” Plans, audits, release
+notes, and worklogs are supporting evidence or history; they do not override
+this file. A feature is not release-proven merely because its automated tests
+pass.
 
-Released in `v2.4.13-beta` (now on `mothership`, `95ff7285`) (release notes: [`docs/releases/v2.4.13-beta.md`](docs/releases/v2.4.13-beta.md)):
-- **Steam review 25475189 remediation (code):** MULTIPLAYER title entry; developer commentary visible in menus with a READ ALL list; focusable achievement and Vault cards with D-pad scrolling; Settings → Content Guide with read-only dialogue transcripts; Vault store through the Steam Item Store and Microtransactions; `GetReport` reconciliation. Steamworks steps, production purchase flags and hardware checks are open in [Sprint 49](docs/planning/sprint-49.md).
-- **Unified Foundry:** one item catalog across the Armory, Foundry, hero screen and Vault; the Foundry hub (Stash / Loadout / Fabricate / Trade-up / Store) on by default; server-authoritative trade-ups and redemptions; fair Foundry odds shown before rolling.
-- **Co-op and companions:** host-authoritative companions and Ring 1 events, tactical pings, companion camp settlement and assist abilities.
-- **World and HUD:** lit, dressed and cut-away procedural rooms; the dock HUD is the default layout (classic toggle kept); objective drawer and alert queue.
-- **Gameplay:** partial field-workbench runtime at safe camps (UI/currency integration remains open), phased corrupted-operator bosses, infection load from hazards, and an expanded debrief.
+## Verification marks
 
-Released in `v2.4.12-beta` (now on `mothership`):
-Delivered in `v2.4.12-beta` on `release/v2.4.12-beta-invisible-essentials` and **active in verification**:
-- **The Invisible Essentials (Phases 1–4)**:
-  - Phase 1 Solo Continuation: atomic mid-expedition suspend/resume (`src/expeditionSuspend.js`, claim store, `#title-continue-btn` becomes `RESUME EXPEDITION`).
-  - Phase 2 Comfort & Pressure Controls: player-facing camera shake scale (0–1.0×), twin-stick controller aim assistance (magnetism/friction cone), and reduced pressure pacing toggle (`src/accessibilitySettings.js`).
-  - Phase 3 Legible Death & Continuation: localized damage cause attribution (18 hostiles + hazards), build synergy highlight, field loss vs banked salvage accounting, and next actionable step (`src/deathReport.js`).
-  - Phase 4 Navigation Friction & Return Network: pneumatic transit terminals at cleared boss arenas routing directly to Crashed Ship Sanctuary; candidate interaction cycling (`[TAB] / [D-PAD DOWN]`); tactical map floor breadcrumbs (`src/pneumaticTransit.js`).
-- **Co-op Parity & Networking (2026-09-24 Deck + PC Session Fixes)**:
-  - Spawn cliff guard: lethal edges within 24 tiles of spawn block movement instead of causing instant-death pit-falls (`7480bd9`).
-  - Relayed deaths: every non-downed death broadcasts `player-died`; remote partner sees body down with owner-attributed Black Box marker; `TRY AGAIN` announces `player-redeployed` (`39a7375`).
-  - Host-authoritative power-up drops (`loot-drop-spawned` / `loot-drop-collected`), prop destruction syncing (`prop-broken`), separate 40/s effect vs 20/s state network budgets (`39a7375`, `42c4bbc`).
-  - Map & Story Persistence Rules: `TRY AGAIN` keeps run map with broken walls/props; `MAIN MENU` ends run and generates new map; `NEW CAMPAIGN` resets story/world changes; co-op/PvP play a fresh story (`caf5816`, `42c4bbc`, `de61860`, `d3ec634`, `fcce193`).
-- **Performance & Quality Restoration**:
-  - Full visual quality restored on all hardware: reverted the emergency cuts (post-processing bypass, frozen shadows, 3D→sprite enemies, halted 3D prop loads, 10 Hz player animation) and the Sprint 28 cuts (render budget back to 1.35× / 3.6 MP, suit-light shadows, 2048 sun shadow map); adaptive quality lowers resolution only when GPU-bound (`cfbfaff`, `3a22c64`). AgX tone mapping and PMREM reflections were never cut (Phase A render work).
-  - Frame time won back purely on CPU: wall raycast spatial index for light/fog/projectiles, A* edge pre-check, single-pass flat decals eliminating ~60 program re-resolves per frame, menu 30 fps cap (headless logic 42.0ms → 13.3ms).
-- **Steam Deck Controls & Camera**:
-  - Single press gate (`src/controllerPressGate.js`): stops Chromium Gamepad API + native Steam Input double-presses, prevents `[B]` closing map from opening pause settings (`c0b5ab0`, `f1c6faa`).
-  - Right-stick camera orbit inversion fixed (`0bbb438`).
-- **Minimap & Tactical Terminal Presentation**:
-  - Progressive radar scan wavefront reveal with 400ms quadratic fade-off tail, CRT fog-of-war grid, and minimap bezel mask (`05c4300`).
-  - Live Bunker Tactical Terminal day-cycle clock, 'CYCLE HOLD — TERMINAL ACTIVE' header, 24h progress bar, and localized `ADVANCE DAY` card (`0a3caf6`).
-- **HUD Lower Dock (Phase 1–2 Skeleton & Housings)**:
-  - Nordic Cathedral Biomech art direction (Order, Decay, Synthesis).
-  - Three-panel lower band (map left, health/status centre, gun/ammo right) behind the `hb_hud_layout` flag. The 2026-09-28 review found the live painted housings are 150 u tall with per-class windows and Deck text down to 7.2 px; readability recovery (R0–R2) is Sprint 48 work and `classic` stays the default (`docs/planning/hud-overlay-review-and-recovery-plan-2026-09-28.md`).
-  - Painted suit dock housings and dark glass cutouts integrated in `public/ui/dock/` for Scout, Tank, Engineer behind `hb_hud_layout` debug flag (`manifest.json`, `hudDockHousings.css`, `fb538ce`, `65bb816`).
+| Mark | Meaning |
+| --- | --- |
+| `[x]` | Implemented and covered by repeatable automated verification. |
+| `[o]` | Exercised by a human in the desktop game. |
+| `[D]` | Verified on a physical Steam Deck using a packaged build. |
+| `[2P]` | Verified with two real Steam accounts/devices. |
+| `[EXT]` | Requires publisher, platform, art, legal, or another external dependency. |
+| `[DEF]` | Deliberately deferred beyond the current milestone. |
 
-Status vocabulary:
+Marks are cumulative. For example, `[x][o]` means the implementation has both
+automated and desktop play evidence; it does not imply Deck or two-account
+acceptance.
 
-- **Automated:** implemented and covered by a repeatable repository check.
-- **Human-verified:** exercised in the stated real browser, package, service,
-  account, or hardware environment.
-- **Open acceptance:** implementation exists, but the named real-world proof is
-  still required. This is not safe evidence for an unqualified store claim.
+## Current release truth
 
-| Area | Current truth | Remaining acceptance or constraint |
-| --- | --- | --- |
-| Core expedition | Act 1 & 2 playable; seeded expedition system, multi-room camp/hive compounds, physical world transformations (canyon bridge, camp turrets, bio-conduits), 10 motion endings, faction state, and Depth Contract wired end to end. Map rule verified: TRY AGAIN keeps map and changes; MAIN MENU generates new map. | A recorded 35–45 minute new-player Proof Run remains open. Every ship goal (O₂, hull, radar, reactor) has three campaign-rolled optional packages routed through its own ring, with lasting consequences (`src/objectivePackages.js`). Crossings are proven walkable on the stamped grid across 12 seeds (`src/crossingNavigation.test.js`). |
-| Depth Contract | Ring pressure, O₂ deltas, salvage multipliers, crossing ritual, and director aggression are implemented and tested. | Elite promotion is connected through `eliteEnemies.js`; loot distinguishes promoted elites from wounded enrage. Human comprehension, elite audio and balance remain open. |
-| Relics & Synergies | All 8 transformative relics and initial foundational synergy chains (Cryo Shatter, Bio Predator) are runtime-wired and tested. | In-expedition build decisions (Field Recalibration Workbench, mod refactoring, Core Shard tuning; Phase 6), broader synergy chains, and playtest balance remain open. |
-| Co-op | Two-account packaged session (Deck host + PC guest, 2026-09-24) proved lobby join, ready, deploy, 3D avatars, and redeploy. All QA networking gaps (relayed non-downed deaths, host-authoritative drops, prop destruction sync, spawn cliff guards, per-deploy map entropy) implemented and covered by unit/relay tests. | A two-real-account packaged **co-op PvE** verification confirming the new networked drops, death markers, and TRY AGAIN persistence on hardware remains open. Networked companions and converting Sprint 46/47 solo events to co-op remain open. |
-| PvP | One physical Deck capture shows Steam lobby/ready/deploy, remote-avatar readiness, inbound `pvp-rival` damage, one death, and respawn. Current source aligns local, relay, and remote replica PvP vitals at 4 hearts, adds 3.0s spawn protection, blocks Black Box death exploitation, adds client skip/server validation rejection for PvP leaderboards, establishes debounced monotonic door sequencing, adds outgoing hit telemetry, and bypasses PvE missions/cards; `server/relayPvPAuthority.test.js` and the full automated suite pass. | Paired bidirectional hit/result/reconnect, deployed-backend, and physical Deck evidence remain open. |
-| Localization | Complete across all 7 supported languages (English, German, Latin American Spanish, Japanese, Brazilian Portuguese, Russian, Simplified Chinese). **0 unannotated markup strings and 0 unlocalized runtime strings**; 1,898 keys per locale at exact parity; narrative catalog 100% translated; live in-session switching with `<html lang>` synced. Guarded by a per-screen and per-module coverage ratchet (`npm run i18n:audit`, `scripts/audit-i18n.test.js`) that fails when any count rises. | Human linguistic review by native speakers across non-English locales remains open — every non-English string is machine-authored. Two Steamworks item descriptions still carry developer notes in their English source (see the release notes). |
-| Voice packs & comms | Soviet Sub-Commander (`4148`) and AURA (`4149`) registered with 52 cue slots each (104 slots / 208 takes); custom intro cutscene persona cards and opening crash dialogue wired. | Optional physical actor replacement pass remains open; current takes are production-mixed ElevenLabs Wave 2 assets. StarCraft-style 2D talking portraits in arched stone frames planned for HUD dock Phase 3. |
-| Ending cinematics | All 10 endings rendered as full-motion video sequences with dedicated mixed audio beds. | Player telemetry on ending distribution and pacing acceptance remain open. |
-| Steam lobbies | Create, browse, join, invite, Friends/Join Game, Rich Presence, and cold-start handling are code-complete. | Two-account acceptance is open; cross-region public discovery is constrained by the current native binding. |
-| Steam backend | Production TLS service and Steam session path have been verified previously at `steam.tuesdaycinema.club`; trusted leaderboard/store/inventory paths are implemented. | Re-run production smoke tests before release; commerce remains disabled pending approval/configuration. |
-| Steam Cloud and stats | Save bridge and all 8 stat definitions are wired and automated. | A real two-machine Cloud conflict/offline round-trip remains open. |
-| Steam Deck and input | Twin-stick aiming and 7 Steam Input configurations are bundled. Controller press gate (`src/controllerPressGate.js`) resolves double-press/carry-over; inverted right-stick camera orbit fixed (`0bbb438`). | Controller-only hardware sign-off: active action-set transitions, in-game glyph consistency, suspend/resume mid-expedition, haptics, and HUD readability at 1280×800 remain open. |
-| 3D runtime and Armory | Full-stage Armory layout with closer camera, 720p non-scrolling fit, 79 model previews, 3D chest patches with front-face culling, transparent decals, voice auditioning, independent weapon sheen, and HUD layout debug toggle. | The Unified Foundry Hub (merging Armory, in-game Fab Bay, hero screen, and Steam Vault into one 5-tab hub with one shared item catalog and 1:1 model icons) is planned for Sprint 48 to resolve QA item mismatches and smelter trade-up defects. |
-| Wanderers & Companions | Six archetype families, companion following, buffs, and milestone gates are active with persistent contracts and completion-aware dialogue. Solo companion stripped from co-op start. | Bounded A* pathfinding around walls, stuck re-pathing and a steady basic shot landed in `05c4300` (`src/companionPath.js`); not yet seen on hardware. Escort-to-camp, an assist ability on its own cooldown, and networked companions in co-op remain open (Sprint 48). |
-| Save recovery & Suspend | `src/expeditionSuspend.js` implements full solo expedition continuation (vitals, coordinates, killed enemies, resident enemies, items, claim store); `src/runCheckpoint.js` provides Black Box fallback. | Packaged crash/restart and Steam Deck hardware sleep/wake mid-expedition acceptance remain open. |
-| Performance diagnostics | GPU queries reset cleanly; CPU frame time recovered via wall raycast index, A* edge pre-check, single-pass flat decals, and 30fps menu cap (logic 42ms → 13.3ms). Full visual quality restored without lowering render scale or disabling shadows/shaders. | Physical Steam Deck frame pacing re-benchmark on packaged build (median render time ≤ 16ms, no task ≥ 500ms) remains open to prove CPU wins on hardware. |
-| Mayor Tina | Hostile lifecycle wired with warning hit, cup removal, grounded actor chase with attack cooldown, and clean reset. | Packaged visual sign-off and Hive Queen communion encounter (`GAP-ST-01`) remain open. |
-| Retail asset budget | Budget raised to 2725 MiB in Sprint 40 to accommodate Wave 2 radio takes, persona art, and ending cinematics; presubmit check and CodeQL audits pass cleanly. | Web/source audit does not certify Steam packaging or clear external actor rights. |
-| Presentation & HUD | Phase A visual overhaul active (AgX tone mapping, PMREM deep space reflections on 94 PBR materials, selective bloom, dynamic shadows, 3D tracers). Minimap radar scan wavefront reveal with 400ms fade-off tail active. HUD Lower Dock Phase 1–2 skeleton and painted suit housings landed behind `hb_hud_layout`. | HUD dock Phase 3 (living reactive wear layer, drying blood, frost, cracks, 2D talking portraits, promoting dock to default) and Phase B surface depth remain open. |
-| Automated suite | `npm test` passes **4,285 tests across 483 files** as of 2026-09-28; Playwright E2E browser probes pass; lint (0 errors), presubmit, and production build pass cleanly. | Hardware-only behavior and a full expedition are not covered by this count. |
+| Status | Area | What is true now | Next acceptance gate |
+| --- | --- | --- | --- |
+| `[x]` | Core expedition | Act 1 and Act 2, seeded campaign runs, camps, hives, world transformations, ten motion endings, faction state, objective packages, Depth Contract crossings, extraction, TRY AGAIN map persistence, and MAIN MENU map renewal are implemented. | Record the defined 35–45 minute run with a player who has not seen the game. They must understand the objective, O₂, build, crossing risk, extraction, and retained/lost progress without coaching. |
+| `[x]` | Sector 0 onboarding | The five-phase authored tutorial drives movement, weapon acquisition, salvage banking, combat, and departure through real world actions. Fresh solo profiles automatically enter Sector 0. Completion persists on the profile; established legacy saves are migrated without being forced back through it. The pause menu offers an explicit skip that opens Sector 1 and grants a standard sidearm plus 25 tech. | Run the fresh-profile route on desktop and Deck. Confirm that death/retry restarts onboarding, completion does not replay it, and the transition into Ring 1 feels continuous. |
+| `[x][o]` | Combat feel | Unified hit-stop, directional damage feedback, heavy-weapon FOV punch, oriented sparks, surface-aware footsteps, pitch variation, low-O₂ filtering, and synthesized heartbeat are live. | Balance in the Proof Run and capture packaged frame-time evidence during dense combat. |
+| `[x][o]` | Enemy grammar | The tactical enemy triangle is complete: Chitin Scuttler swarms force rapid aim and pack clearing; Spore Mortars provide biological artillery that displaces the player from cover; and the Mycelium Stalker executes raycast-driven shadow flanking, breaks line-of-sight around walls, telegraphs high-speed pounces with mandible glow and predatory audio hisses, and flinches into retreat when illuminated by the suit flashlight or shot. | Prove all three enemy roles under live combat pressure during the 35–45 minute human Proof Run; verify that players naturally use flashlight aim and cover to counter the Stalker. |
+| `[x]` | Relics and build expression | Eight transformative relics and the Cryo Shatter, Bio Predator, and Sub-Zero Necrosis synergy chains are live. Each safe-camp Field Workbench offers one deterministic three-choice recalibration draft, a 10-tech reroll, before/after comparison, meaningful upside/downside modifiers, localized UI, suspend-safe equipped mods, and a network-visible selection event alongside resupply recipes. | Prove in the First Expedition run that the choice changes how the player fights and is legible to a co-op peer. Component sacrifice and richer peer VFX are follow-up depth, not blockers for this bounded draft. |
+| `[x][o]` | Arcade | SUB-CRUST PROTOCOL: 1984 and Black-Ice 21 are playable. Arcade Reflexes, CHROMA VECTOR 84, Tina radio payoff, score persistence, fixed-step simulation, and published arcade achievements are integrated. | Keep stable during controller and Deck journey testing; do not add another arcade mode during this milestone. |
+| `[x]` | Co-op PvE | Lobby, authentication, ready/deploy, synchronized operators, authoritative enemies and drops, prop breakage/movement, death markers, Black Boxes, redeploy, reconnect reconciliation, chat, pings, and shared world events are automated. | `[2P]` Run a packaged Deck-host/PC-guest expedition through combat, workbench use, one death, TRY AGAIN, extraction, and reconnect. Networked companions and remaining solo-only events are still open. |
+| `[x]` | PvP | Four-heart authority, spawn protection, healing, hit telemetry, round lifecycle, leaderboard exclusion, deterministic world seed, dynamic prop authority, and hostile snapshots are implemented and tested across PvE/PvP modes. | `[2P]` Verify bidirectional damage, death/result, rematch, prop movement, and reconnect against the deployed relay on two devices. Do not reopen the completed parity architecture without a reproduced failure. |
+| `[x]` | Controller and input | Twin-stick control, Steam Input configurations, action-set routing, D-pad tactical ping, focus navigation, glyphs, double-press suppression, and browser-gamepad fallback are implemented. | `[D]` Complete Title → Armory → Sector 0 → camp/workbench → extraction → debrief without keyboard, touch, focus traps, or incorrect prompts. |
+| `[x]` | Save, recovery, and Cloud | Solo expedition suspend/resume, Black Box fallback, portable save codes, Steam Cloud bridge, and stat definitions exist. | `[D]` Sleep/wake mid-expedition with no corrupt state or audio lock. `[EXT]` Complete a real Machine A → Cloud → Machine B conflict/offline round trip. |
+| `[x]` | Performance | CPU hot paths, light pool stability, mixer culling, cliff batching, layout caching, adaptive resolution, KTX2 runtime textures, boot deferral, and the mobile Lighthouse 93 CI gate are implemented. | `[D]` Capture a fixed 25-minute Deck route at presented p95 ≤ 33.3 ms. Capture the Windows RTX 2070 route at p95 ≤ 16.7 ms and confirm no unexplained shader stall above 250 ms. Per-cell wall/door trim batching remains contingent on profiling. |
+| `[x]` | Localization | Seven locales have key parity, runtime switching, localized narrative/UI catalogs, and automated DOM/runtime audits. | `[EXT]` Native-speaker linguistic review remains required. Machine-authored parity is not linguistic acceptance. |
+| `[x]` | Presentation | AgX tone mapping, reflections, bloom, dynamic shadows, 3D tracers, radar wavefront, default lower dock, cinematics, and voice banks are integrated. | Verify 1080p, 1440p, 4K, and 1280×800 readability. Reactive visor wear and animated radio portraits remain optional polish after the Proof Run. |
+| `[x]` | Steam backend and commerce code | Steam authentication, lobbies, leaderboards, inventory/store paths, trusted submissions, purchase reconciliation, and retry contracts are implemented. | `[EXT]` Re-run production smoke tests, enable approved production commerce flags, confirm live Item Store definitions, and execute a real purchase/settlement/reversal drill. |
+| `[x]` | Retail assets | Automated media, model, chroma-key, soundtrack, and catalog audits exist. The chroma report currently has zero unallowlisted findings; known generated sprites still use an allowlisted CPU keying path. | Pre-bake the highest-cost keyed sprites to RGBA/KTX2 when profiling justifies it. `[EXT]` Confirm external actor/art rights and receive/register Prop 80 Hull Shard. |
+| `[DEF]` | Expansion breadth | Additional operator classes, multiple new biomes, broad black-market economy, another arcade game, and achievement-count expansion are outside the current milestone. | Reconsider only after the Proof Run, Deck journey, and two-account expedition pass. |
 
-## Current milestone
+## Definitive First Expedition contract
 
-v2.4.12-beta release hardening is complete on `release/v2.4.12-beta-invisible-essentials`, ready for merge to `mothership`. The upcoming sprint milestone is **Sprint 48: The Unified Foundry Hub, Companion AI, Co-op Tactical Pings, and Hardware Acceptance**.
+The current milestone is complete only when all of the following are true:
 
-Key executable planning documents:
-- [Sprint 48 Plan](docs/planning/sprint-48-plan.md) (The active next sprint plan)
-- [The Invisible Essentials](docs/planning/invisible-essentials-2026-09-24.md)
-- [HUD Lower Dock Layout Plan](docs/planning/hud-lower-dock-plan-2026-09-25.md)
-- [QA Deck + PC Session Game Plan](docs/planning/qa-2026-09-24-deck-pc-coop-game-plan.md)
-- [Release PR Body v2.4.12-beta](docs/releases/pr-body-v2.4.12-beta.md)
-- [Master Roadmap](docs/planning/repository-roadmap.md)
+1. A fresh solo profile enters Sector 0 automatically and can explicitly skip
+   it without becoming under-equipped or trapped.
+2. The player receives a clear objective in the first minute and learns
+   movement, firing, interaction, salvage banking, O₂ pressure, and departure
+   through play.
+3. One safe camp produces a meaningful build decision, not only resupply.
+4. At least three enemy roles create visibly different tactical responses.
+5. A ring crossing clearly communicates both increased reward and increased
+   danger.
+6. Extraction or death explains what was gained, lost, retained, and worth
+   pursuing next.
+7. The complete route passes as a packaged desktop run, a controller-only
+   Steam Deck run, and a two-account co-op run.
+
+The executable player-facing shape is defined in
+[`docs/design/game-outline-and-proof-run.md`](docs/design/game-outline-and-proof-run.md).
+The research-backed execution sequence for improving that shape is defined in
+the
+[`Definitive First Expedition improvement program`](docs/planning/definitive-first-expedition-improvement-program-2026-10-27.md).
+The active hardware, multiplayer, performance, visual, Cloud, and publisher
+gates live in
+[`docs/planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md`](docs/planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md).
+Implementation status for the recent arcade, combat-juice, audio, Sector 0,
+and enemy work is recorded in
+[`docs/planning/aaa-gameplay-juice-story-tutorial-and-arcade-expansion-plan-2026-10-16.md`](docs/planning/aaa-gameplay-juice-story-tutorial-and-arcade-expansion-plan-2026-10-16.md#11-implementation-status-verified-2026-10-17).
+
+## Update rule
+
+Change a mark only when its named evidence exists. Automated test counts do
+not replace human comprehension, physical hardware, real accounts, production
+services, or publisher approval. When a plan conflicts with this file, either
+update this file with new evidence or treat the plan as historical.

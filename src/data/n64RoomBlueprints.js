@@ -45,13 +45,13 @@ export const N64_ROOM_BLUEPRINTS = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['objective', 'defense'],
         structuralAnchors: [
-            { id: 'fusion_turbine_hub', type: 'prop_conduit_hub', x: 9, y: 5 },
+            { id: 'fusion_turbine_hub', type: 'engineer_wave_relay_dynamo', x: 9, y: 5 },
             { id: 'coolant_pylon_west', type: 'prop_tesla_coil_node', x: 4, y: 5 },
             { id: 'coolant_pylon_east', type: 'prop_tesla_coil_node', x: 14, y: 5 }
         ],
         interactionAnchors: [
-            { id: 'turbine_control_console', type: 'base_console', x: 9, y: 8 },
-            { id: 'sump_drain_valve', type: 'prop_valve_wheel_fused', x: 9, y: 2 }
+            { id: 'turbine_control_console', type: 'life_tactile_console', x: 9, y: 8 },
+            { id: 'sump_drain_valve', type: 'prop_floor_drainage_sump_trough', x: 9, y: 2 }
         ],
         compassAnchors: { approach: 'approach', objective: 'turbine_control_console' },
         coverZones: [{ x: 4, y: 4, w: 2, h: 3 }, { x: 13, y: 4, w: 2, h: 3 }],
@@ -100,7 +100,7 @@ export const N64_ROOM_BLUEPRINTS = Object.freeze([
         ],
         interactionAnchors: [
             { id: 'cryo_stabilizer_terminal', type: 'prop_liturgical_terminal_lectern', x: 10, y: 8 },
-            { id: 'permafrost_survey_post', type: 'base_console', x: 10, y: 2 }
+            { id: 'permafrost_survey_post', type: 'chasm_geothermal_survey_transit', x: 10, y: 2 }
         ],
         compassAnchors: { approach: 'entry', objective: 'cryo_stabilizer_terminal' },
         coverZones: [{ x: 4, y: 4, w: 2, h: 3 }, { x: 15, y: 4, w: 2, h: 3 }],
@@ -145,7 +145,7 @@ export const N64_ROOM_BLUEPRINTS = Object.freeze([
         biomeEligibility: ['bio', 'active'],
         roles: ['ringCrossing', 'objective'],
         structuralAnchors: [
-            { id: 'spore_loom_hub', type: 'prop_conduit_hub', x: 10, y: 5 },
+            { id: 'spore_loom_hub', type: 'prop_fungal_mycelium_loom', x: 10, y: 5 },
             { id: 'ribcage_buttress_nw', type: 'prop_pipe_organ_heat_exchanger', x: 4, y: 2 },
             { id: 'ribcage_buttress_sw', type: 'prop_pipe_organ_heat_exchanger', x: 4, y: 7 },
             { id: 'ribcage_buttress_ne', type: 'prop_pipe_organ_heat_exchanger', x: 15, y: 2 },
@@ -153,7 +153,7 @@ export const N64_ROOM_BLUEPRINTS = Object.freeze([
         ],
         interactionAnchors: [
             { id: 'spore_well_lectern', type: 'prop_liturgical_terminal_lectern', x: 10, y: 8 },
-            { id: 'umbilical_valve_manifold', type: 'prop_valve_wheel_fused', x: 10, y: 2 }
+            { id: 'umbilical_valve_manifold', type: 'hive_pheromone_node', x: 10, y: 2 }
         ],
         compassAnchors: { approach: 'approach', objective: 'spore_well_lectern' },
         coverZones: [{ x: 4, y: 2, w: 2, h: 7 }, { x: 15, y: 2, w: 2, h: 7 }],
@@ -198,7 +198,7 @@ export const N64_ROOM_BLUEPRINTS = Object.freeze([
             { id: 'blast_door_jamb_east', type: 'prop_conduit_junction_box', x: 13, y: 5 }
         ],
         interactionAnchors: [
-            { id: 'decon_cycle_console', type: 'base_console', x: 8, y: 5 },
+            { id: 'decon_cycle_console', type: 'prop_diagnostic_console', x: 8, y: 5 },
             { id: 'eyewash_shower_station', type: 'prop_diagnostic_console', x: 8, y: 2 }
         ],
         compassAnchors: { approach: 'entry', objective: 'decon_cycle_console' },
@@ -246,7 +246,7 @@ export const N64_ROOM_BLUEPRINTS = Object.freeze([
             { id: 'runic_pillar_e', type: 'state_column_shattered', x: 13, y: 3 }
         ],
         interactionAnchors: [
-            { id: 'saint_reliquary_lectern', type: 'prop_liturgical_terminal_lectern', x: 9, y: 8 }
+            { id: 'saint_reliquary_lectern', type: 'prop_votive_candle_shrine', x: 9, y: 8 }
         ],
         compassAnchors: { approach: 'entry', objective: 'saint_reliquary_lectern' },
         coverZones: [{ x: 8, y: 4, w: 3, h: 3 }],
@@ -289,12 +289,12 @@ export const N64_ROOM_BLUEPRINTS = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['objective', 'defense'],
         structuralAnchors: [
-            { id: 'bore_drill_rig', type: 'prop_engineering_bench', x: 10, y: 5 },
-            { id: 'gantry_column_w', type: 'prop_conduit_hub', x: 4, y: 3 },
-            { id: 'gantry_column_e', type: 'prop_conduit_hub', x: 15, y: 3 }
+            { id: 'bore_drill_rig', type: 'life_seismic_drill', x: 10, y: 5 },
+            { id: 'gantry_column_w', type: 'life_scaffold_tower', x: 4, y: 3 },
+            { id: 'gantry_column_e', type: 'life_scaffold_tower', x: 15, y: 3 }
         ],
         interactionAnchors: [
-            { id: 'bore_winch_control', type: 'base_console', x: 10, y: 8 },
+            { id: 'bore_winch_control', type: 'life_ice_bore_winch', x: 10, y: 8 },
             { id: 'slurry_purge_valve', type: 'prop_valve_wheel_fused', x: 10, y: 2 }
         ],
         compassAnchors: { approach: 'entry', objective: 'bore_winch_control' },

@@ -1,0 +1,699 @@
+{
+  "_note": "Sound design per clip (scripts/cinematics/sound_layers.py). Each layer is an AudioGen prompt rendered for the clip's length, then placed at `start` (s) with fades and a gain in dB relative to -10 dB. In the final mix the job's music and the bed are each loudness-matched, then set by `musicGainDb` and `bedGainDb`: the song leads on cards and side stories, the bed leads on sleep clips. Keep prompts to concrete sounds: AudioGen renders what is named, not story.",
+  "defaults": {
+    "musicGainDb": 0,
+    "bedGainDb": -5,
+    "fadeIn": 0.4,
+    "fadeOut": 0.8
+  },
+  "jobs": {
+    "kaelen_diagnostic_cradle": {
+      "layers": [
+        {
+          "id": "room",
+          "prompt": "low electrical hum of a machine room with a faint ventilation drone",
+          "gainDb": -14
+        },
+        {
+          "id": "cradle",
+          "prompt": "small mechanical clicks and servo ticks of a calibrating machine",
+          "gainDb": -10,
+          "start": 0.5
+        },
+        {
+          "id": "surge",
+          "prompt": "rising electric whoosh of current flowing through a cable",
+          "gainDb": -12,
+          "start": 2.5
+        },
+        {
+          "id": "breath",
+          "prompt": "a man exhales slowly and shifts on a metal seat",
+          "gainDb": -12,
+          "start": 4.6
+        }
+      ]
+    },
+    "kaelen_frequency_overclock": {
+      "layers": [
+        {
+          "id": "room",
+          "prompt": "deep transformer hum in a large industrial switch room",
+          "gainDb": -13
+        },
+        {
+          "id": "arc",
+          "prompt": "loud electric arc crackling and buzzing",
+          "gainDb": -9,
+          "start": 1.0
+        },
+        {
+          "id": "switches",
+          "prompt": "heavy relays clacking one after another in sequence",
+          "gainDb": -11,
+          "start": 1.4
+        },
+        {
+          "id": "settle",
+          "prompt": "electrical hum settling to a steady low tone",
+          "gainDb": -12,
+          "start": 4.5
+        }
+      ]
+    },
+    "kaelen_supercharged_matrix": {
+      "layers": [
+        {
+          "id": "well",
+          "prompt": "cavernous reactor room ambience with coolant flowing far below",
+          "gainDb": -14
+        },
+        {
+          "id": "lever",
+          "prompt": "heavy metal lever pulled down and locking with a loud clunk",
+          "gainDb": -8,
+          "start": 1.6
+        },
+        {
+          "id": "pulse",
+          "prompt": "deep power-up whoom pulses echoing through tunnels",
+          "gainDb": -10,
+          "start": 2.4
+        },
+        {
+          "id": "hum",
+          "prompt": "powerful steady electrical hum swelling",
+          "gainDb": -14,
+          "start": 3.5
+        }
+      ]
+    },
+    "val_hearth_warmth": {
+      "layers": [
+        {
+          "id": "pipes",
+          "prompt": "warm steam pipes hissing softly with a crackling stove",
+          "gainDb": -13
+        },
+        {
+          "id": "ladle",
+          "prompt": "metal ladle scraping a pot of thick liquid",
+          "gainDb": -12,
+          "start": 0.6
+        },
+        {
+          "id": "breath",
+          "prompt": "a woman breathes out gently",
+          "gainDb": -13,
+          "start": 1.6
+        },
+        {
+          "id": "drip",
+          "prompt": "melting ice dripping onto metal",
+          "gainDb": -15,
+          "start": 4.0
+        }
+      ]
+    },
+    "val_spore_communion": {
+      "layers": [
+        {
+          "id": "cave",
+          "prompt": "damp cave ambience with soft organic gurgling",
+          "gainDb": -14
+        },
+        {
+          "id": "pulse",
+          "prompt": "low soft whooshing pulses like breathing",
+          "gainDb": -12,
+          "start": 1.0
+        },
+        {
+          "id": "cloth",
+          "prompt": "heavy woven fabric curtain dragged across a floor",
+          "gainDb": -10,
+          "start": 3.0
+        },
+        {
+          "id": "breath",
+          "prompt": "a woman exhales calmly",
+          "gainDb": -13,
+          "start": 5.4
+        }
+      ]
+    },
+    "val_eternal_hearth": {
+      "layers": [
+        {
+          "id": "vault",
+          "prompt": "cold empty industrial vault with wind",
+          "gainDb": -15
+        },
+        {
+          "id": "valve",
+          "prompt": "rusty valve wheel turning with metal squeal",
+          "gainDb": -9,
+          "start": 0.8
+        },
+        {
+          "id": "thud",
+          "prompt": "deep thud echoing through large pipes",
+          "gainDb": -8,
+          "start": 2.0
+        },
+        {
+          "id": "steam",
+          "prompt": "steam vents bursting open one after another with loud hissing",
+          "gainDb": -10,
+          "start": 2.6
+        }
+      ]
+    },
+    "briggs_scorched_rig": {
+      "layers": [
+        {
+          "id": "wind",
+          "prompt": "cold wind blowing through a rocky canyon",
+          "gainDb": -13
+        },
+        {
+          "id": "hiss",
+          "prompt": "pneumatic helmet latch releasing with a sharp hiss",
+          "gainDb": -9,
+          "start": 0.9
+        },
+        {
+          "id": "gear",
+          "prompt": "armor plates and leather gloves creaking",
+          "gainDb": -12,
+          "start": 1.6
+        },
+        {
+          "id": "breath",
+          "prompt": "a tired man exhales a long breath",
+          "gainDb": -11,
+          "start": 3.4
+        }
+      ]
+    },
+    "briggs_scar_tissue": {
+      "layers": [
+        {
+          "id": "room",
+          "prompt": "quiet bunker room with a buzzing light bulb",
+          "gainDb": -15
+        },
+        {
+          "id": "pins",
+          "prompt": "rifle parts snapped together and metal pins pushed in",
+          "gainDb": -9,
+          "start": 0.4
+        },
+        {
+          "id": "bolt",
+          "prompt": "rifle bolt racked once",
+          "gainDb": -7,
+          "start": 2.4
+        },
+        {
+          "id": "cloth",
+          "prompt": "rough canvas jacket rustling as a man turns",
+          "gainDb": -13,
+          "start": 4.2
+        }
+      ]
+    },
+    "briggs_vanguard_fire": {
+      "layers": [
+        {
+          "id": "rampart",
+          "prompt": "windy fortification with distant warning alarm",
+          "gainDb": -15
+        },
+        {
+          "id": "yoke",
+          "prompt": "heavy steel cables snapping taut with a twang",
+          "gainDb": -9,
+          "start": 0.8
+        },
+        {
+          "id": "guns",
+          "prompt": "massive artillery cannons firing a loud volley echoing in a canyon",
+          "gainDb": -6,
+          "start": 1.6
+        },
+        {
+          "id": "debris",
+          "prompt": "rumbling shockwave with rattling metal deck and falling debris",
+          "gainDb": -10,
+          "start": 2.0
+        }
+      ]
+    },
+    "nahl_mind_link": {
+      "layers": [
+        {
+          "id": "relays",
+          "prompt": "buzzing electronic relays and radio static",
+          "gainDb": -13
+        },
+        {
+          "id": "static",
+          "prompt": "harsh radio static fading into a clean steady tone",
+          "gainDb": -11,
+          "start": 1.0
+        },
+        {
+          "id": "hum",
+          "prompt": "soft low resonant hum",
+          "gainDb": -14,
+          "start": 3.5
+        }
+      ]
+    },
+    "nahl_co_evolution": {
+      "layers": [
+        {
+          "id": "chamber",
+          "prompt": "organic chamber ambience with soft wet breathing",
+          "gainDb": -14
+        },
+        {
+          "id": "thread",
+          "prompt": "taut threads stretching and creaking",
+          "gainDb": -11,
+          "start": 0.8
+        },
+        {
+          "id": "click",
+          "prompt": "a soft wet click",
+          "gainDb": -9,
+          "start": 2.8
+        },
+        {
+          "id": "glow",
+          "prompt": "gentle warm whooshing swell",
+          "gainDb": -13,
+          "start": 3.2
+        }
+      ]
+    },
+    "nahl_transcendence": {
+      "layers": [
+        {
+          "id": "dome",
+          "prompt": "eerie organic dome ambience with low throbbing",
+          "gainDb": -14
+        },
+        {
+          "id": "swell",
+          "prompt": "slowly rising warm harmonic drone",
+          "gainDb": -11,
+          "start": 1.2
+        },
+        {
+          "id": "recede",
+          "prompt": "squelching organic tissue retracting",
+          "gainDb": -12,
+          "start": 3.0
+        },
+        {
+          "id": "calm",
+          "prompt": "soft airy shimmer fading out",
+          "gainDb": -14,
+          "start": 5.8
+        }
+      ]
+    },
+    "aria_whispers_abyss": {
+      "layers": [
+        {
+          "id": "abyss",
+          "prompt": "dark cavern ambience with distant dripping and low wind",
+          "gainDb": -14
+        },
+        {
+          "id": "breath",
+          "prompt": "breathing inside a helmet",
+          "gainDb": -12
+        },
+        {
+          "id": "whisper",
+          "prompt": "faint ghostly whisper close to the ear",
+          "gainDb": -13,
+          "start": 3.0
+        },
+        {
+          "id": "flicker",
+          "prompt": "electric lamp flickering with a short buzz",
+          "gainDb": -11,
+          "start": 5.2
+        }
+      ]
+    },
+    "aria_silk_trance": {
+      "layers": [
+        {
+          "id": "web",
+          "prompt": "eerie low drone with soft rustling silk",
+          "gainDb": -14
+        },
+        {
+          "id": "pull",
+          "prompt": "taut silk threads creaking under tension",
+          "gainDb": -11,
+          "start": 0.8
+        },
+        {
+          "id": "tear",
+          "prompt": "threads snapping and fabric tearing",
+          "gainDb": -8,
+          "start": 3.2
+        },
+        {
+          "id": "fade",
+          "prompt": "ghostly whoosh fading away",
+          "gainDb": -13,
+          "start": 4.6
+        }
+      ]
+    },
+    "aria_queens_mark": {
+      "layers": [
+        {
+          "id": "nest",
+          "prompt": "quiet organic nest ambience with slow heartbeat",
+          "gainDb": -14
+        },
+        {
+          "id": "seep",
+          "prompt": "soft electric fizzing and tingling",
+          "gainDb": -12,
+          "start": 1.2
+        },
+        {
+          "id": "fade",
+          "prompt": "low drone fading to silence",
+          "gainDb": -14,
+          "start": 3.6
+        }
+      ]
+    },
+    "card_33": {
+      "layers": [
+        {
+          "id": "cave",
+          "prompt": "deep cave ambience with low wind",
+          "gainDb": -13
+        },
+        {
+          "id": "breath",
+          "prompt": "enormous slow breathing of a giant creature echoing in a cave",
+          "gainDb": -9
+        },
+        {
+          "id": "dust",
+          "prompt": "small pebbles and grit trickling down a rock wall",
+          "gainDb": -15,
+          "start": 2.0
+        }
+      ]
+    },
+    "card_34": {
+      "layers": [
+        {
+          "id": "cockpit",
+          "prompt": "quiet spaceship cockpit hum with beeping instruments",
+          "gainDb": -13
+        },
+        {
+          "id": "straps",
+          "prompt": "loose seat buckles clinking softly",
+          "gainDb": -14,
+          "start": 1.0
+        },
+        {
+          "id": "turn",
+          "prompt": "a person in a suit shifts in a seat and the seat creaks",
+          "gainDb": -12,
+          "start": 4.0
+        }
+      ]
+    },
+    "card_35": {
+      "layers": [
+        {
+          "id": "flight",
+          "prompt": "spacecraft engines roaring while climbing through wind",
+          "gainDb": -11
+        },
+        {
+          "id": "clear",
+          "prompt": "wind noise fading to calm engine hum",
+          "gainDb": -13,
+          "start": 3.0
+        },
+        {
+          "id": "pulse",
+          "prompt": "low organic throbbing pulse",
+          "gainDb": -13,
+          "start": 4.6
+        }
+      ]
+    },
+    "card_36": {
+      "layers": [
+        {
+          "id": "cabin",
+          "prompt": "crowded aircraft cabin hum with muffled engines",
+          "gainDb": -13
+        },
+        {
+          "id": "shudder",
+          "prompt": "aircraft cabin shaking with rattling metal and creaking",
+          "gainDb": -10,
+          "start": 2.0
+        },
+        {
+          "id": "shift",
+          "prompt": "people shifting in seats with straps and fabric rustling",
+          "gainDb": -14,
+          "start": 3.0
+        }
+      ]
+    },
+    "card_37": {
+      "layers": [
+        {
+          "id": "engine",
+          "prompt": "spaceship engines rumbling steadily",
+          "gainDb": -12
+        },
+        {
+          "id": "window",
+          "prompt": "cold wind whistling past a window",
+          "gainDb": -15
+        },
+        {
+          "id": "creak",
+          "prompt": "metal hull creaking softly",
+          "gainDb": -15,
+          "start": 3.0
+        }
+      ]
+    },
+    "card_38": {
+      "layers": [
+        {
+          "id": "space",
+          "prompt": "low spaceship engine hum in silence",
+          "gainDb": -13
+        },
+        {
+          "id": "beacons",
+          "prompt": "slow electronic docking beacons beeping",
+          "gainDb": -13,
+          "start": 1.5
+        },
+        {
+          "id": "thrusters",
+          "prompt": "short bursts of maneuvering thrusters",
+          "gainDb": -11,
+          "start": 3.5
+        }
+      ]
+    },
+    "sleep-camp": {
+      "musicGainDb": -6,
+      "layers": [
+        {
+          "id": "room",
+          "prompt": "quiet night room with radiator pipes ticking and people sleeping",
+          "gainDb": -12
+        },
+        {
+          "id": "lantern",
+          "prompt": "oil lantern flame flickering softly",
+          "gainDb": -14
+        },
+        {
+          "id": "blanket",
+          "prompt": "a heavy blanket laid down gently with soft rustling",
+          "gainDb": -11,
+          "start": 2.4
+        }
+      ],
+      "bedGainDb": 0
+    },
+    "sleep-cryo": {
+      "musicGainDb": -6,
+      "layers": [
+        {
+          "id": "vault",
+          "prompt": "cold machine room hum with nitrogen hissing",
+          "gainDb": -13
+        },
+        {
+          "id": "seal",
+          "prompt": "glass pod lid closing and sealing with a pneumatic hiss",
+          "gainDb": -8,
+          "start": 0.6
+        },
+        {
+          "id": "heart",
+          "prompt": "slow electronic heartbeat monitor beeping",
+          "gainDb": -13,
+          "start": 2.5
+        }
+      ],
+      "bedGainDb": 0
+    },
+    "sleep-hive": {
+      "musicGainDb": -6,
+      "layers": [
+        {
+          "id": "alcove",
+          "prompt": "warm organic chamber with slow soft breathing",
+          "gainDb": -12
+        },
+        {
+          "id": "fold",
+          "prompt": "soft wet organic tissue folding gently",
+          "gainDb": -12,
+          "start": 1.0
+        },
+        {
+          "id": "heart",
+          "prompt": "slow deep muffled heartbeat",
+          "gainDb": -13,
+          "start": 2.5
+        }
+      ],
+      "bedGainDb": 0
+    },
+    "sleep-squad": {
+      "musicGainDb": -6,
+      "layers": [
+        {
+          "id": "berth",
+          "prompt": "quiet bunker room with air regulator hum and people breathing in sleep",
+          "gainDb": -12
+        },
+        {
+          "id": "rifle",
+          "prompt": "a rifle set down carefully on a metal floor",
+          "gainDb": -10,
+          "start": 3.2
+        },
+        {
+          "id": "sigh",
+          "prompt": "a tired person sighs and leans back against a wall",
+          "gainDb": -12,
+          "start": 4.6
+        }
+      ],
+      "bedGainDb": 0
+    },
+    "opening-launch": {
+      "musicGainDb": 0,
+      "bedGainDb": 0,
+      "layers": [
+        {
+          "id": "hangar",
+          "prompt": "vast echoing metal hangar ambience with distant machinery and hissing steam vents",
+          "gainDb": -12
+        },
+        {
+          "id": "steps",
+          "prompt": "heavy armoured boots running on a steel deck",
+          "gainDb": -11,
+          "start": 0.3
+        },
+        {
+          "id": "canopy",
+          "prompt": "hydraulic cockpit canopy closing and locking with a heavy clunk",
+          "gainDb": -10,
+          "start": 3.0
+        },
+        {
+          "id": "launch",
+          "prompt": "jet engines spooling up and a spacecraft launching with a deep roaring blast",
+          "gainDb": -6,
+          "start": 4.5
+        }
+      ]
+    },
+    "opening-flight": {
+      "musicGainDb": 0,
+      "bedGainDb": 0,
+      "layers": [
+        {
+          "id": "cabin",
+          "prompt": "low rumbling spacecraft engine drone inside a cockpit",
+          "gainDb": -12
+        },
+        {
+          "id": "debris",
+          "prompt": "small metal debris and ice pinging and scraping against a ship hull",
+          "gainDb": -12,
+          "start": 0.8
+        },
+        {
+          "id": "pass",
+          "prompt": "a fast spacecraft whooshing past with a doppler roar",
+          "gainDb": -9,
+          "start": 2.0
+        }
+      ]
+    },
+    "opening-crash": {
+      "musicGainDb": 0,
+      "bedGainDb": 0,
+      "layers": [
+        {
+          "id": "reentry",
+          "prompt": "roaring wind and fire of a spacecraft re-entering the atmosphere",
+          "gainDb": -9
+        },
+        {
+          "id": "strike",
+          "prompt": "a supersonic missile streak followed by a huge metallic explosion",
+          "gainDb": -6,
+          "start": 1.2
+        },
+        {
+          "id": "alarm",
+          "prompt": "cockpit warning alarms blaring and electrical sparks",
+          "gainDb": -12,
+          "start": 1.6
+        },
+        {
+          "id": "impact",
+          "prompt": "a massive crash of metal smashing through ice and rock, debris tumbling",
+          "gainDb": -5,
+          "start": 3.6
+        }
+      ]
+    }
+  }
+}

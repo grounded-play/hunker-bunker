@@ -12,6 +12,9 @@ export const BASE_MODULE_CATEGORIES = Object.freeze({
     SHIP_PART: 'ship_part'
 });
 
+export const BASE_ARCADE_BANK_COST = Object.freeze({ tech: 25, coin: 30, med: 5 });
+export const WALL_REPAIR_TOOL_BANK_COST = Object.freeze({ tech: 12, coin: 4, med: 0 });
+
 export const BASE_MODULE_CATALOG = Object.freeze({
     // Structural panels
     floor_plate_1x1: Object.freeze({
@@ -120,12 +123,25 @@ export const BASE_MODULE_CATALOG = Object.freeze({
         category: BASE_MODULE_CATEGORIES.LIFE_SUPPORT,
         modelType: 'base_o2_atmospheric_regulator',
         footprint: { w: 0.8, d: 0.8, h: 1.6 },
-        socketTypes: ['machinery_mount'],
+        socketTypes: ['machinery_mount', 'camp_o2_generator'],
         o2OutputRate: 25.0, // cubic meters per second equivalent
         powerDraw: 10.0,
         buildCost: { scrap: 20, components: 3 },
         massClass: 'heavy',
-        buildTags: ['life_support', 'o2_producer']
+        buildTags: ['life_support', 'o2_producer', 'camp_utility']
+    }),
+    camp_o2_generator_core: Object.freeze({
+        id: 'camp_o2_generator_core',
+        label: 'CAMP O2 GENERATOR CORE',
+        category: BASE_MODULE_CATEGORIES.LIFE_SUPPORT,
+        // Reuse the proven machinery mesh until the camp-specific art pass.
+        modelType: 'ship_module_life_support_core',
+        carryModelType: 'ship_module_life_support_core',
+        footprint: { w: 1.2, d: 1.2, h: 1.8 },
+        socketTypes: ['camp_o2_generator'],
+        o2OutputRate: 50.0,
+        massClass: 'heavy',
+        buildTags: ['camp_utility', 'life_support', 'o2_producer']
     }),
     o2_duct: Object.freeze({
         id: 'o2_duct',
@@ -172,6 +188,28 @@ export const BASE_MODULE_CATALOG = Object.freeze({
         buildCost: { scrap: 8 },
         massClass: 'medium',
         buildTags: ['storage']
+    }),
+    arcade_blackjack_cabinet: Object.freeze({
+        id: 'arcade_blackjack_cabinet',
+        label: 'BLACK-ICE 21 CABINET',
+        category: BASE_MODULE_CATEGORIES.FURNITURE,
+        modelType: 'life_arcade_cabinet',
+        footprint: { w: 1.0, d: 1.0, h: 1.8 },
+        socketTypes: ['interior_floor_snap', 'recreation_socket', 'arcade'],
+        buildCost: { tech: 25, coin: 30, scrap: 15 },
+        bankBuildCost: BASE_ARCADE_BANK_COST,
+        massClass: 'heavy',
+        buildTags: ['furniture', 'arcade', 'minigame', 'blackjack']
+    }),
+    fabrication_station: Object.freeze({
+        id: 'fabrication_station',
+        label: 'MERIDIAN AUTO-MART FABRICATION TERMINAL',
+        category: BASE_MODULE_CATEGORIES.FURNITURE,
+        modelType: 'base_power_junction_box',
+        footprint: { w: 1.2, d: 0.8, h: 1.8 },
+        socketTypes: ['interior_floor_snap', 'fabrication'],
+        massClass: 'heavy',
+        buildTags: ['furniture', 'fabrication', 'utility', 'workbench']
     }),
 
     // Run-scoped objective cargo. These use the same two-hand reducer as base
@@ -233,6 +271,8 @@ export const BASE_MODULE_CATALOG = Object.freeze({
         massClass: 'heavy',
         buildTags: ['ship_part', 'engine']
     }),
+    // Legacy save/catalog definition. Runtime migration turns this into the
+    // camp-only generator core; it is no longer part of escape-craft progress.
     ship_life_support_core: Object.freeze({
         id: 'ship_life_support_core',
         label: 'SHIP LIFE-SUPPORT SYSTEM',

@@ -317,7 +317,21 @@ describe('runDrops', () => {
             { id: 'caustic_payload' },
             { id: 'bio_vampirism' }
         ]);
-        expect(both).toHaveLength(2);
+        expect(both).toHaveLength(3);
+        const synergyIds = both.map((s) => s.id);
+        expect(synergyIds).toContain('cryo_shatter');
+        expect(synergyIds).toContain('bio_predator');
+        expect(synergyIds).toContain('subzero_necrosis');
+    });
+
+    it('computes Sub-Zero Necrosis fusion synergy for cryo_rime + caustic_payload', () => {
+        const necrosis = computeActiveSynergies([
+            { id: 'cryo_rime' },
+            { id: 'caustic_payload' }
+        ]);
+        expect(necrosis).toHaveLength(1);
+        expect(necrosis[0].id).toBe('subzero_necrosis');
+        expect(necrosis[0].element).toBe('fusion');
     });
 
     it('resolves Cryo Shatter nova within radius and damages adjacent hostiles', () => {

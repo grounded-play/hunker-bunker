@@ -1,4 +1,19 @@
 {
+  "recalibration_feedback": {
+    "action_label": "次の戦闘：",
+    "tradeoff_label": "代償：",
+    "installed": "{name}を装着。校正を確認。",
+    "next_fight": "{name} 作動可能 — {action}",
+    "mods": {
+      "cryo_rime": { "action": "同じ敵に連続で命中させて凍結させ、その隙に位置を変える。", "tradeoff": "直接ダメージが5%減少。凍結には複数の命中が必要。" },
+      "caustic_payload": { "action": "敵を感染させ、腐食が続く間に遮蔽物へ移動する。", "tradeoff": "直接ダメージが10%減少。腐食には時間が必要。" },
+      "subzero_necrosis": { "action": "敵を凍結・腐食させ、他の敵の近くで倒してノヴァを起こす。", "tradeoff": "凍結と腐食が同時にかかった敵を倒す必要がある。" },
+      "kinetic_hollow_point": { "action": "遮蔽物から射撃。直接ダメージが25%増加。", "tradeoff": "被ダメージが15%増加。" },
+      "hyper_split_core": { "action": "3発の拡散弾で敵の集団を捉える。", "tradeoff": "各弾のダメージが25%減少。拡散により精度が低下。" },
+      "corrupted_overcharge": { "action": "射撃の合間に身を隠す。直接ダメージが80%増加。", "tradeoff": "被ダメージが35%増加。" },
+      "o2_siphon_chamber": { "action": "酸素が50%未満になると、残量の低下に応じてダメージが増す。退路を確保。", "tradeoff": "酸素50%以上では効果なし。窒息は防げない。" }
+    }
+  },
   "common": {
     "ok": "OK",
     "cancel": "キャンセル",
@@ -53,6 +68,26 @@
       "copy": "備蓄素材を使用して補給物資を製造します。効果は現在の遠征に即時適用されます。",
       "craft": "製造",
       "close": "作業台を離れる",
+      "tab_supplies": "補給品製造",
+      "tab_recalibration": "フィールド再調整（キャンプごとに1回）",
+      "recalibration_consumed": "再調整済み（1/1）",
+      "recalibration_ready": "再調整プロトコル準備完了（各キャンプ1回）",
+      "reroll_matrix": "候補を再生成（TECH {cost}）",
+      "fusion_tag": "クライオ＋バイオ融合",
+      "element_overclock": "{element} オーバークロック",
+      "weapon_overclock": "武器オーバークロック",
+      "calibration_used": "キャンプ調整済み",
+      "synthesize_fusion": "融合を合成",
+      "install_recalibration": "再調整を装着",
+      "stat_tech": "TECH / スクラップ",
+      "stat_med": "医療物資",
+      "stat_coin": "コイン",
+      "stat_shells": "シェル",
+      "stat_health": "体力",
+      "stat_shield": "シールド",
+      "stat_ammo": "弾薬",
+      "need_resource": "{resource} が {need} 必要",
+      "deficit": "不足",
       "ammo_pack_name": "標準弾薬パック",
       "ammo_pack_desc": "運動エネルギー弾を30発補充し、マガジンを満載にします。",
       "med_patch_name": "緊急バイオ縫合キット",
@@ -247,8 +282,11 @@
       "accessibility": "アクセシビリティ",
       "profile_saves": "プロフィールとセーブ",
       "session_display": "セッションと表示",
+      "steam_overlay": "STEAM オーバーレイ (Shift+Tab)",
       "return_to_game": "ゲームに戻る",
       "resume": "再開",
+      "skip_onboarding": "オンボーディングをスキップ",
+      "skip_onboarding_desc": "標準フィールド装備でセクター1を開放",
       "abort_current_mission": "現在の任務を中止",
       "abort_mission": "任務中止",
       "title_active_crosshair_color": "現在のクロスヘア色",
@@ -434,9 +472,12 @@
     },
     "loading": {
       "aria_label_build_and_developer": "ビルドと開発者情報",
+      "aria_label_deployment_progress": "展開の進行状況",
       "system_build": "システムビルド",
       "dev_console": "開発コンソール",
       "initializing_systems": "システム初期化中",
+      "squad_waiting": "分隊同期中 — {loaded} / {total} 名準備完了",
+      "squad_ready": "分隊準備完了 — 防爆扉を開放",
       "msg_biometric_airlock": "生体認証エアロック通路を校正中",
       "msg_reactor_bulkhead": "原子炉冷却隔壁を遮蔽中",
       "msg_thermal_shield": "熱超伝導シールドを安定化中",
@@ -681,13 +722,6 @@
     "close_player_trade": {
       "aria_label_close_trade_link": "取引リンクを閉じる"
     },
-    "npc_dialogue": {
-      "affection_bond": "好感度 // 絆",
-      "press_1_4_or_click": "[1-4] を押すか選択カードをクリック • [ESC] 離脱"
-    },
-    "close_npc_dialogue": {
-      "title_exit_dialogue": "会話を終了"
-    },
     "demo_end": {
       "transmission_terminated": "◈ 通信終了",
       "you_belong_to_the_deep": "「小さな機械よ、お前はもう深部のものだ。群れはお前の声を憶えている」",
@@ -832,9 +866,34 @@
       "press_e": "E を押す",
       "defense_turret_controls": "防衛タレット制御"
     },
+    "coop": {
+      "revive_prompt": "{callsign} を蘇生",
+      "reviving_toast": "{callsign} を蘇生中...",
+      "downed_toast": "ダウンしました — 仲間が蘇生できます",
+      "squadmate_down_toast": "仲間がダウン: {callsign} — 近くでインタラクトを押して蘇生"
+    },
     "foundry_hud_prompt": {
       "press_e": "E を押す",
-      "open_fab_bay": "製造ベイを開く"
+      "open_fab_bay": "製造ベイを開く",
+      "grow_signal_dish": "通信アンテナを拡張",
+      "install_power_core": "パワーコアを設置",
+      "offline_missing_power_core": "オフライン · パワーコア未装着",
+      "recover_power_core": "製造パワーコアを回収",
+      "locked_line": "製造所の電源停止 — マップに示されたパワーコアを探せ。",
+      "offline_title": "製造所オフライン // 電源なし",
+      "offline_status": "> 製造ベイの電源カプラー停止<br>> {location}{distance}のパワーコアを回収（マップに表示）",
+      "offline_toast_title": "製造所オフライン",
+      "offline_toast_status": "電源がない。{location}{distance}のパワーコアを回収せよ（マップに表示）。",
+      "core_title": "製造コア確保",
+      "core_status": "> パワーコア回収<br>> 製造所に戻り電源を復旧せよ",
+      "core_toast_title": "パワーコア入手",
+      "core_toast_status": "製造所に戻って電源を復旧せよ。",
+      "online_title": "製造所オンライン",
+      "online_status": "> パワーコア設置 // 製造ベイ稼働",
+      "map_offline": "製造所（オフライン）",
+      "map_core": "製造コア",
+      "unknown_location": "セクター異常",
+      "speaker": "エンジニア・オペレーター"
     },
     "scientist_hud_prompt": {
       "press_e": "E を押す",
@@ -968,7 +1027,9 @@
       "abort_mission": "任務中止",
       "cancel": "キャンセル",
       "terminate_question": "この契約をこの場で打ち切るか？",
-      "terminate_detail": "施設がスーツを回収し、次の降下用にブラックボックスを用意する。"
+      "terminate_detail": "施設がスーツを回収し、次の降下用にブラックボックスを用意する。",
+      "scope_coop": "離脱するのは自分だけ。分隊は遠征を続ける。",
+      "scope_pvp": "このラウンドを放棄する。ライバルの勝利となる。"
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "夜が扉を閉ざす",
@@ -1157,8 +1218,48 @@
       "no_ranks": "ランキングなし",
       "anonymous_agent": "エージェント"
     },
+    "arcade": {
+      "thrust": "[W/A/D・スティック] 推進/旋回",
+      "fire": "[スペース・A] 発射",
+      "exit": "[ESC・B] 筐体を離れる",
+      "reflexes": "アーケード反射神経：この遠征中、リロードが10%速くなる。",
+      "sheen_unlocked": "武器シーン解除：{name}",
+      "decal_unlocked": "デカール解除：{name}",
+      "tina_radio": "ティナ市長：へえ、やるじゃない……ついに誰かが私の記録を破ったわね。ドリフト前哨基地に寄りなさい。一杯おごるわ。",
+      "blackjack_title": "BLACK-ICE 21",
+      "blackjack_prompt": "[E] BLACK-ICE 21（ブラックジャック）をプレイ",
+      "blackjack_built": "レクリエーション区画オンライン // BLACK-ICE 21筐体建造完了",
+      "blackjack_wager": "現在のベット：{amount}コイン",
+      "blackjack_win": "オペレーター勝利：+{amount}コイン",
+      "blackjack_tier_clear": "ティア{tier}クリア：ボーナスコイン+{bonus}",
+      "blackjack_module": "基地レクリエーションモジュール",
+      "blackjack_module_desc": "ローグライク・ブラックジャック端末 · 墜落地点に常設",
+      "blackjack_installed": "墜落地点に設置済み",
+      "blackjack_build": "BLACK-ICE 21筐体を建造",
+      "blackjack_controls_wager": "[↑/↓] ベット",
+      "blackjack_controls_deal": "[SPACE] ディール/スタンド",
+      "blackjack_controls_hit": "[1] ヒット",
+      "blackjack_controls_stand": "[2] スタンド",
+      "blackjack_controls_double": "[3] ダブル",
+      "blackjack_controls_chips": "[4/5/6] クライオ / サーマル / EMP",
+      "blackjack_controls_exit": "[ESC] 終了"
+    },
     "interstitial": {
       "track": "トラック {id}"
+    },
+    "current_manifest": {
+      "title": "出航者名簿",
+      "known_title": "判明している搭乗枠",
+      "claimed": "確保済み {used}/{max}",
+      "operator": "あなた 1",
+      "survivors": "生存者 {count}",
+      "allies": "協力者 {count}",
+      "queen": "女王 2",
+      "egg": "卵 1",
+      "free": "空き {count}",
+      "over_capacity": "定員を{count}枠超過 — 搭乗前に割り当てを見直してください。",
+      "egg_requires_nahl": "卵の輸送にはナールの搭乗が必要です。",
+      "egg_unstable": "卵の輸送には女王かナールの搭乗が必要です。"
     },
     "manifest": {
       "title": "帰還目録",
@@ -1307,7 +1408,10 @@
       "no_tracked_objectives": "追跡中の目標なし",
       "surface": "地表",
       "story_prelude": "第I幕 // 人類の序章",
-      "build_mismatch": "ホストは {host}、あなたは {client} です — 一致させるには更新するか Steam のベータブランチを切り替えてください"
+      "build_mismatch": "ホストは {host}、あなたは {client} です — 一致させるには更新するか Steam のベータブランチを切り替えてください",
+      "lobby_build_tag": "v{build}",
+      "lobby_build_mismatch": "バージョン不一致 — ホスト v{host}、あなた v{client}",
+      "squad_build_mismatch": "分隊の誰かが別のゲームバージョンです — 出撃するには全員のバージョンを一致させてください"
     },
     "dossier": {
       "title": "戦術ドシエ",
@@ -1579,12 +1683,6 @@
       "self_class": "{class} // オペレーティブ",
       "peer_class": "{class} // リモート"
     },
-    "bond": {
-      "enamored": "心酔 / 献身",
-      "warm": "好意 / 惹かれる",
-      "attentive": "関心あり",
-      "badge": "{label}（{score} 点）"
-    },
     "fab": {
       "scatter_repeater": "スキャッター・リピーター",
       "equipped_next_run": "次のランに装備済み ✓",
@@ -1610,7 +1708,23 @@
       "stat_rate": "連射 ×{value}",
       "stat_range": "射程 ×{value}",
       "stat_shots": "{count}発",
-      "odds": "確率"
+      "odds": "確率",
+      "welder_kicker": "拠点突破対策",
+      "welder_title": "フィールド隔壁溶接機",
+      "welder_desc": "ボスに破壊された壁を再建し、損傷した拠点モジュールを現地で修復します。",
+      "welder_installed": "フィールド溶接機作成済み",
+      "welder_build": "フィールド溶接機を作成",
+      "welder_ready": "フィールド隔壁溶接機 準備完了",
+      "close_automart": "オートマートを閉じる",
+      "ledger_balance": "サルベージ台帳 / コイン残高:",
+      "aisles_aria": "オートマートの売り場",
+      "aisle_hardware": "基地建設・設備",
+      "aisle_weapons": "武器・弾薬",
+      "aisle_lotto": "ロトプリント",
+      "aisle_all": "全売り場",
+      "slot_marquee": "ホライズン投機ロトプリント // レバーを引け",
+      "lotto_window_title": "投機プリント窓口 稼働中",
+      "lotto_window_hint": "公開された確率を確認し、サルベージを投入して、上の製造レバーを引いてください。"
     },
     "camp": {
       "sleep_warning": "{camp} で眠ると {day} 日目へ進む。未解決の信号は閉ざされる。",
@@ -1629,7 +1743,6 @@
       "field_conversation": "フィールドでの会話",
       "callsign": "コールサイン {callsign}",
       "listen_hint": "話を聞いてから、どう助けるか決めよ。",
-      "quote": "「{text}」",
       "next_action": "次の行動が打ち上げ目録とエンディングの方向を変える。",
       "scar_gained": "昨夜の代償: {scar}",
       "services": "キャンプのサービス（{count}）",
@@ -1919,6 +2032,7 @@
         "sporesnail": "スポアスネイル",
         "sentinel": "セントリネル",
         "crawler": "ブリーチクローラー",
+        "chitin_scuttler": "キチン・スカトラー",
         "alien_proto_crawler": "プロトクローラー",
         "alien_proto_spitter": "プロトスピッター",
         "mycelium_stalker": "菌糸ストーカー",
@@ -1936,7 +2050,9 @@
       "build": {
         "cryo_shatter": "ビルド：クライオシャッターが{count}回発動、{damage}ダメージ",
         "bio_predator": "ビルド：バイオプレデターが{count}回発動、O₂を{o2}%とハート{hearts}個回復",
+        "subzero_necrosis": "ビルド：サブゼロ・ネクローシスが{count}回発動し、{damage}ダメージ",
         "equipped": "ビルド：{drops}（シナジー未発動）",
+        "loadout": "ビルド：{list}を装着（シナジー未発動）",
         "none": "ビルド：今回の出撃ではフィールド強化なし"
       },
       "field": {
@@ -2143,6 +2259,7 @@
       "slay_the_queen": "女王を倒すと入手",
       "archivist": "実績「アーキビスト」で入手",
       "reach_depth": "深度 {depth} に到達で入手",
+      "arcade_score": "アーケードで {score} 点を獲得すると解除",
       "class_runs": "{cls} で {runs} 回出撃すると入手",
       "achievement": "実績で入手",
       "confirm_buy": "もう一度クリックで購入",
@@ -2204,7 +2321,6 @@
         "map_zoom": "[LB / RB] ズーム",
         "map_operator": "[A] オペレーター",
         "map_close": "[B] / [VIEW] 閉じる",
-        "dialogue_choose": "十字キーで選択 • [A] 決定 • [B] 退く",
         "compass_map": "[VIEW]",
         "radar_scan": "レーダースキャン [LB]",
         "armory_cycle": "[LB / RB 切替]",
@@ -2216,6 +2332,7 @@
       "night_body": "オペレーターは眠る。外の何かは眠らない。",
       "morning_title": "{day}日目 · 06:00",
       "morning_status": "{site} // 新しい一日が始まる",
+      "morning_objective": "目標: {objective}",
       "skip": "いずれかのキーで目覚める"
     },
     "mystery": {
@@ -2278,6 +2395,15 @@
       "area_bio": "バイオ区画",
       "area_unknown": "フィールド",
       "notice": "表示：動作をなめらかに保つため{setting}を{to}に下げました。設定 › グラフィックを参照。"
+    },
+    "kiosk": {
+      "exit": "終了",
+      "deal": "配る",
+      "hit": "ヒット",
+      "stand": "スタンド",
+      "double": "ダブル",
+      "pull_lever": "レバーを引いて回す",
+      "scroll_more": "▼ 下に続きあり · スクロール · W / S · ↑ / ↓ · 十字キー"
     }
   },
   "narrative": {
@@ -3776,6 +3902,10 @@
       "4167": {
         "desc": "本来行くべきでない深さまで潜った降下用アンカー。",
         "name": "ディープ・アンカー"
+      },
+      "4168": {
+        "desc": "SUB-CRUST PROTOCOL: 1984 で65,000点を獲得すると解除。",
+        "name": "レトロ・ピクセルスネイル・デカール"
       },
       "4200": {
         "desc": "ディープフロスト のアイデンティティによるオペレーター・シャーシ全体の仕上げ。",

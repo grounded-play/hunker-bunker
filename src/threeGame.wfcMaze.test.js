@@ -56,7 +56,9 @@ function reachableFloorCount(grid) {
 
 describe('buildChunk — WFC MAZE generation', () => {
     it('reserves the north crash neighbor as the authored wide service approach', () => {
-        const game = makeFakeGame(42);
+        // The authored crash build uses the live 49-cell chunk coordinate
+        // system; a 19-cell maze fixture cannot represent its staging room.
+        const game = makeFakeGame(42, { chunkSize: 49, chunkCellCount: 24 });
         const grid = ThreeGame.prototype.buildChunk.call(game, 0, -1);
         const metadata = game.wfcMetadataCache.get('0,-1');
 

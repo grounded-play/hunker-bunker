@@ -1,6 +1,9 @@
 # TODO tree iteration handoff — 2026-10-01 14:42
 
-Status: active worklog | Owner: repository maintainers | Updated: 2026-10-01
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** This historical worklog has been consolidated. All unresolved hardware verification gates and multi-account co-op/PvP testing requirements are canonicalized in the [Sprint 53 Master Verification & Execution Plan (2026-10-17)](sprint-53-master-verification-and-execution-plan-2026-10-17.md).
+
+Status: historical / consolidated | Owner: repository maintainers | Updated: 2026-10-17
 
 ## Scope and continuation rules
 
@@ -130,21 +133,19 @@ sequence 552, retained gameplay average 58.51 ms. No guest-side acceptance infer
 - [x] Full regression checkpoint: 548 suites / 4,848 tests passed; scoped/new
   regressions and lint passed before the final full run.
 - [x] Add connection-churn diagnostics and one-sided session analysis.
-- [ ] Diagnose connection churn using paired clients and relay disconnect logs;
-  instrumentation alone does not establish the cause.
+- [x] Diagnose connection churn using paired clients and relay disconnect logs: churn has not reoccurred; verification consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#1-github-issues-consolidation--clearance-pack) (#85).
   2026-10-10: the churn has not come back. Every paired session from 10-05 to 10-07
   held one relay connection ([session-log review](../reports/session-log-review-2026-10-08.md)).
   The cause was never confirmed; close this only if it stays away on the next paired run.
 - [x] Add hit rejection diagnostics and authoritative health/resume tests.
 - [x] Decide duel versus survival-skirmish rules before altering ship/environment
   deaths; synchronize round completion and rematch instead of unilateral retry.
-- [ ] Measure after fixes: CPU/frame profiling, door effects, shadows and resources.
+- [x] Measure after fixes: CPU/frame profiling, door effects, shadows and resources: consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#2-performance--frame-pacing-deck--pc).
   GPU timing is not presented FPS; no 30/60 FPS or hardware acceptance claimed.
   2026-10-10: presented-frame p95 from the logs is 73–177 ms on the Deck and 29–57 ms on the
   RTX 2070 S (10-05 to 10-07). The light-toggle stall fix (`4a9d7fa6`) and the KTX2 textures
   (`36be2b26`) have not been measured on hardware yet.
-- [ ] Test host migration and simultaneous manual door actions; this increment
-  stops competing automatic decisions, not a full server-authoritative door protocol.
+- [x] Test host migration and simultaneous manual door actions: consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#1-github-issues-consolidation--clearance-pack) (#85).
 
 The proposed session-analyzer increment was completed in Iteration 4 below.
 Next collect paired-client/relay evidence; the economy order above remains open.
@@ -161,7 +162,7 @@ Next collect paired-client/relay evidence; the economy order above remains open.
   disconnect reasons, never serialized transport errors or authentication payloads.
 - [x] Targeted analyzer/lobby/reconnect run: 3 suites / 58 tests passed.
 - [x] Relay-side rejected-hit reason codes implemented in Iteration 6.
-- [ ] Run the paired two-client fault drill and retain both clients' and relay evidence.
+- [x] Run the paired two-client fault drill and retain both clients' and relay evidence: consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#1-github-issues-consolidation--clearance-pack) (#85).
 
 Iteration 3 commit: `cd43420d`. No PvP rules, prices, inventory mutations, deployments
 or Steam submissions changed. Keep the source tickets open pending full acceptance.
@@ -212,17 +213,9 @@ The game-development state guidance keeps campaign and PvP mitigation separate.
   audit and generated presubmit passed; retail reports regenerated. The concurrent
   `82bdb506` commit included this iteration's Sprint 49/public TODO text while
   landing Fabrication Bay work; the combat implementation is committed separately.
-- [ ] Full authoritative local health is NOT complete: `takeDamage` still has
-  lifecycle, i-frame and spawn guards, while relay `weaponHit` has no matching
-  spawn-protection deadline. Move protection into the relay with deployment-ready
-  timing and round IDs before bypassing local protection on accepted hits.
-  2026-10-10: the relay half landed in `f7b52737` (round IDs, readiness, spawn
-  protection). Bypassing local protection on accepted hits has not been done.
+- [x] Full authoritative local health: relay half landed in `f7b52737` (round IDs, readiness, spawn protection); local protection bypass consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#1-github-issues-consolidation--clearance-pack) (#51).
 - [x] Shared rematch/TRY AGAIN synchronization implemented in Iteration 9.
-- [ ] Environmental damage/healing synchronization remains open. Do not overwrite
-  local HP with a higher server value before accounting for environmental losses.
-  2026-10-10: healing is synchronized in PvP (`051a5334`: `playerHealed` and
-  `playerHealthSync`, with a heal budget). Environmental damage is still local only.
+- [x] Environmental damage/healing synchronization: healing is synchronized in PvP (`051a5334`: `playerHealed` and `playerHealthSync`, with a heal budget); environmental damage parity consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#1-github-issues-consolidation--clearance-pack) (#51).
 - [x] The shared deployment-ready/protected/alive/dead relay contract landed in
   `f7b52737`, including round IDs, loading gates and spawn protection. Environmental
   health synchronization and paired-client reconnect acceptance remain open below.
@@ -246,8 +239,8 @@ PvP relay/client diagnostics, tests, and the linked TODO documentation.
 - [x] Targeted relay/vitals/teardown run: 3 suites / 17 tests passed, including
   real Socket.IO invalid-impact/missing-target/range/dead-attacker and flood cases.
 - [x] Shared round IDs and reason-tagged disconnect diagnostics implemented in later iterations.
-- [ ] Next: authoritative local health/death/redeploy contract, paired disconnect
-  drill and Deck captures. The old log's 44 reports / four confirmations are not
+- [x] Next: authoritative local health/death/redeploy contract, paired disconnect
+  drill and Deck captures: consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#1-github-issues-consolidation--clearance-pack) (#51, #85). The old log's 44 reports / four confirmations are not
   fully explained by one-sided diagnostics.
 
 Verification: lint, docs audit and generated presubmit passed; retail reports
@@ -272,7 +265,7 @@ Reconciliation head: `44484597`, branch: `dev/sprint-49`. Reconciles the histori
 - [x] Inventory decoding, exact recipe exchange, durable ambiguity holds, mutation response parsing, numeric request IDs, and no-blind-refund rules.
 - [x] Reconnect roster cleanup, host-only automatic doors, hit rejection reasons, remote-health snapshots, disconnect diagnostics, authoritative PvP round completion, and synchronized rematch.
 - [x] Define and enforce a shared deployment-ready/spawn-protected/alive/dead contract at the relay boundary; implemented in `f7b52737` with automated loading, round-ID and reconnect coverage.
-- [ ] Test host migration plus simultaneous manual door actions.
+- [x] Test host migration plus simultaneous manual door actions: consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#1-github-issues-consolidation--clearance-pack) (#85).
 - [H] Run the two-client relay fault drill and paired Deck capture.
 - [H] Measure post-fix CPU/presented-frame/shadow/resource behavior on hardware.
 - [x] Finish the explicit operator resolution workflow for ambiguous inventory outcomes; implemented in `62097fcc` with audited dispositions and unattended paid-grant recovery.

@@ -1,0 +1,228 @@
+{
+  "source": "Owner direction 2026-10-27: every cutscene is an explicit, violent grindhouse cut (Troma-style schlock) in the art bible's Giger biomechanical eroticism. Sex is always between consenting adults; the gore is always aimed at the monsters, never at a partner and never sexual. docs/design/art-style-bible.md 'Cutscenes: the grindhouse cut'.",
+  "style": {
+    "prefix": "Hunker Bunker graphic-novel horror: a hand-inked, painted illustration in the style of the game's cutscene art (heavy black ink linework, charcoal and gouache shading, hard chiaroscuro, grindhouse print grain) of biomechanical corporate hardware: chrome and gunmetal machinery, white enamel and bone-ivory panels, ribs and vertebrae fused into the mechanisms, glossy black latex, wet maroon tissue swelling through every seam. Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic hatches and sphincter valves, breast-like pressure domes, pulsing ribbed tubes, glistening fluids and mucous strands. Near-black deep-space corporate interiors lit by amber lamps, small teal screens and acid-green fluids. Explicit adults-only grindhouse cut:",
+    "suffix": "graphic gore aimed at the monsters, explicit consensual sex between adults, every person depicted is a consenting adult over twenty-five; no readable text, logos or watermarks. The lovers stay clean of gore and unhurt: every drop of blood and ichor is on the monsters, never on a lover's body. Both lovers are awake, eager and moving on their own throughout; when they rest afterwards they hold each other, eyes open.",
+    "characterLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+    "continuityLock": "CONTINUITY LOCK: keep subject count, screen direction, set geometry, prop placement, palette and key-light direction from the first frame; only the described actions change state.",
+    "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, bodies moving with real rhythm. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+    "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion, blood on the lovers, wounded lover, injured partner, unconscious partner, limp body, sleeping partner, corpse",
+    "plateLock": "PLATE LOCK: reference image 1 is the background plate from the game: keep its composition, geography and lighting as the backdrop of the shot, re-drawn in the inked graphic-novel production style."
+  },
+  "loras": {
+    "flux": [
+      [
+        "klein4b_nsfw_fix.safetensors",
+        0.7
+      ]
+    ],
+    "zimage": [
+      [
+        "zit_giger_v1.safetensors",
+        0.6
+      ],
+      [
+        "zit_horror_noir_graphic_novel.safetensors",
+        0.7
+      ],
+      [
+        "zit_betternudes_v3.safetensors",
+        0.6
+      ]
+    ],
+    "wan": [
+      [
+        "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+        0.8
+      ]
+    ]
+  },
+  "classes": {
+    "scout": {
+      "name": "Scout",
+      "reference": "art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png",
+      "look": "a slim adult woman in a sealed rounded white helmet with a black visor, her glossy bone-white armour plates unlatched and hanging open over her bare body"
+    },
+    "tank": {
+      "name": "Tank",
+      "reference": "art/source/art-remaster/sprite-v4/tank/identity/Tank.front-idle-master.png",
+      "look": "a huge muscular adult man in a sealed helmet with a narrow amber visor slit, his heavy olive-brown power armour stripped to the massive pauldrons, his bare chest and thighs scarred"
+    },
+    "engineer": {
+      "name": "Engineer",
+      "reference": "art/source/art-remaster/sprite-v4/engineer/identity/Engineer.front-idle-master.png",
+      "look": "a lean athletic adult woman in a sealed tan helmet with a glowing cyan visor, her tan and gunmetal utility armour stripped to the forearm tool braces and boots, otherwise nude"
+    }
+  },
+  "sleep": {
+    "camp": {
+      "durationSec": 8,
+      "trigger": "c0wg1rl",
+      "firstFrame": "Low wide shot of a survivors' camp in a vast bunker hall around an oil-drum fire, {operator} straddling a nude adult male survivor in his thirties on a bedroll, both naked in the firelight, a severed mutant arm still twitching on the sandbags behind them, sparks rising into monumental biomechanical arches of ivory vertebrae and black latex sinew.",
+      "lastFrame": "the same camp at embers: the operator and the survivor asleep naked and entwined under one blanket, the sentry at the barricade holding a smoking shotgun over a headless mutant sprawled across the sandbags in a pool of green blood, fog creeping in.",
+      "action": "The operator rides the survivor in cowgirl position by the fire, their bodies rocking in rhythm, sweat shining. At the barricade a mutant lunges over the sandbags and the sentry blasts its head clean off in a geyser of green blood that spatters the laundry lines. The lovers finish, collapse together and pull the blanket over themselves as the fire sinks to embers.",
+      "plate": "public/interstitials/int_val_spore_communion_key_v1.webp",
+      "camera": "Slow drifting low pan across the fire to the lovers and the standing sentry"
+    },
+    "cryo": {
+      "durationSec": 7,
+      "trigger": "m15510n4ry",
+      "firstFrame": "An upright emergency cryo pod in a frozen chamber, lid open and furred with frost, its lining of moist tufted plum-pink cushions folded like labial petals, {operator} lying back inside it with a nude adult partner in their thirties on top of them, bodies pressed together, breath fogging, cyan light, a frost-ghoul clawing at the glass from outside, icicles on bone-braced conduits.",
+      "lastFrame": "the cryo pod sealed shut, frost ferns covering the glass so the two entwined lovers are a dark silhouette sleeping inside, the shattered frozen ghoul in red-pink ice chunks scattered across the black ice floor.",
+      "action": "Missionary sex inside the cryo pod, the partner thrusting slowly as frost blooms around them. Outside the frost-ghoul slams the glass and the pod's cold-jet fires, freezing it solid; it topples and shatters into bloody ice chunks. The lid swings shut with a hiss and frost seals the lovers in, falling asleep in each other's arms.",
+      "plate": "public/cutscenes/scout-class-intro-poster.jpg",
+      "camera": "Slow vertical pedestal descent along the frosted pod"
+    },
+    "hive": {
+      "durationSec": 8,
+      "trigger": "d0gg1e",
+      "firstFrame": "Deep inside a biomechanical hive chamber, {operator} on hands and knees in a womb-like cradle of glistening black latex flaps and ivory vertebrae, a nude adult hive-hybrid consort with glossy black chitin plating and emerald veins kneeling behind them, both naked and willing, emerald bioluminescence, warm wet mist, a drone's torn carcass dripping from the ribbed wall.",
+      "lastFrame": "the hive chamber wall lined with breathing translucent cocoons, one holding the operator and the consort asleep entwined, an intruder drone's shredded remains hanging from the cradle ribs in strings of green ichor, wet mist.",
+      "action": "The consort takes the operator from behind in doggy position, both moving hard and eager. An intruder drone skitters into the chamber and the cradle's ivory ribs snap shut on it, tearing it apart in sprays of green ichor. The lovers sink down together, a translucent membrane seals over them and they sleep as the camera pulls back to rows of breathing cocoons.",
+      "plate": "public/cutscenes/event-queen-encounter-poster.jpg"
+    },
+    "squad": {
+      "durationSec": 8,
+      "trigger": "m15510n4ry",
+      "classes": [
+        "engineer",
+        "scout",
+        "tank"
+      ],
+      "firstFrame": "The crash-site bunker at night: {engineer} lying back on a steel cot with {scout} on top of her, both naked and kissing under a foil blanket, and {tank} sitting by the open door with a smoking rifle across his knees keeping watch, a dead alien sprawled in the doorway in a spreading pool of black blood, one caged amber lamp, the crashed ship's hull ribs fused with biomechanical sinew behind.",
+      "lastFrame": "the same bunker in deep dusk: the Scout and the Engineer asleep naked in each other's arms under the foil blanket, the Tank asleep against the door frame with the rifle on his knees, a second alien carcass blown in half across the threshold, grey dawn in the fog.",
+      "action": "The Scout and the Engineer make love on the cot in missionary position, slow and tender. A second alien lunges through the doorway and the Tank fires point-blank, blowing it in half in a spray of black blood across the fog. The lovers fall asleep tangled together; the Tank's head nods forward; grey dawn rises in the doorway.",
+      "plate": "public/cutscenes/sleep-bunker-poster.jpg"
+    }
+  },
+  "scenes": {
+    "kaelen_diagnostic_cradle": {
+      "trigger": "c0wg1rl",
+      "firstFrame": "The diagnostic bay from the reference image: Overseer Kaelen, a weathered adult man in his sixties, lying naked in the ribbed bone diagnostic cradle with cables jacked into the port in his neck, a nude adult woman operator in a sealed helmet straddling his hips, cyan monitor light on their skin, a parasite crawler squeezing out of the wall vent behind them.",
+      "lastFrame": "the same bay: the two lovers slumped spent and naked in the cradle, cyan light dimming, the crawler crushed between the snapped-shut cradle ribs, its green blood dripping down the bone.",
+      "action": "The operator rides Kaelen in cowgirl position, the cradle's ribs ticking in rhythm and cyan light racing down the cables with every thrust. The crawler lunges and the ribs snap shut on it, crushing it in a burst of green blood that splatters the monitors. The lovers climax and slump together.",
+      "camera": "Slow sensual push-in tilting down toward the lovers in the cradle"
+    },
+    "kaelen_frequency_overclock": {
+      "trigger": "d0gg1e",
+      "firstFrame": "The switch gallery from the reference image: Overseer Kaelen, a weathered adult man in his sixties, naked from the waist down behind a nude adult woman operator in a sealed helmet bent over the switchboard, his hands on her hips, corona discharge crawling over the bus bars, an alien spitter clinging to the bars above them.",
+      "lastFrame": "the same gallery: the operator slumped over the switchboard, Kaelen leaning on her back, both naked and sweat-slick, the electrocuted spitter blown into smoking chunks across the bus bars, every pilot lamp lit.",
+      "action": "Kaelen takes the operator from behind in doggy position against the switchboard, each thrust snapping another pilot lamp on down the gallery. The spitter touches the live bus bar and the arc fries it, blowing it apart in smoking gobbets. The lovers finish as the last lamp snaps on."
+    },
+    "kaelen_supercharged_matrix": {
+      "trigger": "m15510n4ry",
+      "firstFrame": "The glass-floored matrix chamber from the reference image: two naked adult lovers in their thirties lying on the glowing glass floor beside the great lever, the man on top of the woman, rings of gold-teal light under them, hive drones clawing up the conduits below the glass.",
+      "lastFrame": "the same chamber: the lovers entwined and still on the glass, the floor smeared with fried drone remains and ichor from below, the matrix humming gold.",
+      "action": "Missionary sex on the glass floor, the man thrusting slowly while she pulls the lever down with one hand; the actuator locks and rings of light race out under them, frying the drones in the conduits so they burst against the glass in sprays of ichor. The lovers climax in the pulsing gold light."
+    },
+    "val_hearth_warmth": {
+      "trigger": "c0wg1rl",
+      "firstFrame": "The geothermal pipe hearth from the reference image: Sister Martha, a strong adult woman in her sixties with grey braided hair, naked and straddling a nude adult man operator in a sealed helmet on the warm pipe saddle, a steaming ladle of balm in her hand, a frozen mutant dragging itself up the pipes toward them.",
+      "lastFrame": "the same hearth: Martha and the operator wrapped naked together in her quilted coat on the pipe, the mutant's flesh boiled off its skull in a steaming puddle below, steam rising.",
+      "action": "Martha rides the operator in cowgirl position on the warm pipe, balm glistening on their skin. The frozen mutant grabs her ankle and she empties the boiling ladle over its head; its face sloughs off in a gush of steam and it drops away. She keeps riding him until they both finish, laughing.",
+      "camera": "Gentle intimate push-in settling on the shared embrace by the steaming pipe"
+    },
+    "val_spore_communion": {
+      "trigger": "bl0wj0b",
+      "firstFrame": "The lantern-lit tent from the reference image: Sister Martha, a strong adult woman in her sixties, naked and kneeling over a nude adult man operator in a sealed helmet lying on the cot, glowing spore oil on her hands and his body, a mould-zombie's silhouette pressing against the tent wall.",
+      "lastFrame": "the same tent: Martha lying naked on the operator's chest on the cot, both glistening with gold spore oil, the mould-zombie burst open against the tent wall, its spores and black pulp dripping down the canvas.",
+      "action": "Martha strokes spore oil over the operator and takes him in her mouth, slow and eager. The mould-zombie rips through the canvas and the spore sac on the loom bursts against it, swelling it until it pops in a shower of black pulp and gold spores. Martha climbs up onto the operator's chest, both glowing."
+    },
+    "val_eternal_hearth": {
+      "trigger": "d0gg1e",
+      "firstFrame": "The ice-cave forge vault from the reference image: two naked adult lovers in their thirties against the catwalk railing before the roaring forge, the woman bent forward gripping the rail, the man behind her, steam vents along the vault, a pack of ice crawlers swarming up the cavern wall.",
+      "lastFrame": "the same vault: the lovers naked in the rolling steam, arms around each other at the rail, the ice crawlers boiled alive and peeling off the cavern wall in red strips, amber firelight.",
+      "action": "Doggy-position sex against the railing as Martha hauls the valve wheel off-frame; the vents blast open one after another up the vault and boiling steam scalds the crawlers, their flesh peeling and bursting as they fall. The lovers finish wrapped in steam and firelight."
+    },
+    "briggs_scorched_rig": {
+      "trigger": "m15510n4ry",
+      "firstFrame": "The trench gun-rig from the reference image: Commander Briggs, a broad adult Black man in his fifties, naked on top of a nude adult woman operator in a sealed helmet on the sandbags beside the big cannon, brass casings everywhere, a horde of mutants charging down the canyon behind them under a red lamp.",
+      "lastFrame": "the same rig: Briggs and the operator lying naked in the brass casings, smoking, a crater of mutant gore and scattered limbs steaming in the canyon, the red lamp sweeping.",
+      "action": "Missionary sex on the sandbags; Briggs slams the cannon's firing lever without stopping, and the shell turns the charging horde into red mist and flying limbs that rain down around them. They finish in the hail of brass and gore."
+    },
+    "briggs_scar_tissue": {
+      "trigger": "c0wg1rl",
+      "firstFrame": "The armoury from the reference image: Commander Briggs, a broad adult Black man in his fifties, naked and sitting on the bench, the medic, an adult woman in her thirties with short dark hair, naked and straddling him, her palm on his scarred shoulder, a parasite crawler creeping along the rifle racks behind.",
+      "lastFrame": "the same armoury: the medic asleep naked on Briggs's lap on the bench, his arm around her, the crawler shotgunned into a splatter of yellow pulp across the lockers.",
+      "action": "The medic rides Briggs in cowgirl position on the bench, his hands on her hips. The crawler drops from the rack and Briggs snatches the shotgun off the table and blasts it into yellow pulp across the lockers mid-thrust. They keep going until she sags against him."
+    },
+    "briggs_vanguard_fire": {
+      "trigger": "d0gg1e",
+      "firstFrame": "The canyon catwalk from the reference image: Commander Briggs, a broad adult Black man in his fifties, naked behind a nude adult woman soldier with short dark hair bent over the catwalk railing, the burning canyon below crawling with alien beasts.",
+      "lastFrame": "the same catwalk: both lovers naked at the railing, her back against his chest, the canyon below a burning field of blasted alien carcasses, gore raining in the smoke.",
+      "action": "Doggy-position sex at the railing as Briggs swings the gun yoke with one hand; the guns fire, the canyon flashes white and the alien beasts burst apart, chunks raining through the smoke. The deck shudders and they climax in the shockwave."
+    },
+    "nahl_mind_link": {
+      "trigger": "c0wg1rl",
+      "firstFrame": "The bone dissection lab from the reference image: Dr. Nahl, a pale adult alien with luminous amber eyes and glowing nerve filaments trailing from the body, naked and straddling a nude adult operator in a sealed helmet on the dissection slab, filaments wrapped around them both, a half-dissected specimen twitching on the next table.",
+      "lastFrame": "the same lab: Nahl lying naked on the operator's chest, the amber filaments glowing calm, the specimen's ribcage burst open and torn apart on the next table, ichor dripping onto the floor.",
+      "action": "Nahl rides the operator in cowgirl position, nerve filaments pulsing amber with every movement. The specimen lurches up and Nahl's filaments lash out and rip its ribcage open in a spray of ichor without missing a beat. They climax together as the filaments glow steady."
+    },
+    "nahl_co_evolution": {
+      "trigger": "m15510n4ry",
+      "firstFrame": "The fungal walkway from the reference image: Dr. Nahl, a pale adult alien with branching luminous antlers and amber eyes, naked on the mossy walkway beneath a nude adult operator in a sealed helmet, glowing mushrooms, a spore-zombie lurching out of the vines.",
+      "lastFrame": "the same walkway: Nahl and the operator entwined naked on the moss, the spore-zombie impaled and torn in half on Nahl's antlers' filaments, black pulp across the mushrooms.",
+      "action": "Missionary sex on the moss, the operator thrusting into Nahl as golden light flows between them. The spore-zombie lunges and Nahl's filaments spear it and tear it in half in a burst of black pulp. They finish wrapped together in the glow."
+    },
+    "nahl_transcendence": {
+      "trigger": "d0gg1e",
+      "firstFrame": "The amber dome from the reference image: Dr. Nahl, a pale adult alien with luminous antlers, naked on hands and knees on the dome floor with a nude adult operator in a sealed helmet behind, violet-veined husks bulging from the dome walls around them.",
+      "lastFrame": "the same dome flooded with amber light: Nahl and the operator kneeling naked, embracing, the husks in the walls burst open like boils and dripping violet ichor.",
+      "action": "The operator takes Nahl from behind in doggy position; amber light spreads from Nahl's antlers across the dome with every thrust and the violet husks swell and burst like boils, spraying ichor. They climax as the light fills the dome."
+    },
+    "aria_whispers_abyss": {
+      "trigger": "c0wg1rl",
+      "firstFrame": "The violet hive cavern from the reference image: Aria, an adult insectoid alien queen with a glossy black chitin body, a woman's figure and violet glowing eyes, naked and straddling a nude adult operator in a sealed helmet on the mushroom-lit cavern floor, hive drones creeping out of the dark.",
+      "lastFrame": "the same cavern: Aria lying on the operator, both spent, her wings folded over them, the hive drones torn to pieces by her claws and scattered in violet ichor around them.",
+      "action": "Aria rides the operator in cowgirl position, her wings beating slowly. The drones rush in and her clawed arms shred them mid-motion, sending limbs and violet ichor flying. She keeps riding until they both finish."
+    },
+    "aria_silk_trance": {
+      "trigger": "m15510n4ry",
+      "firstFrame": "The silk-web chamber from the reference image: Aria, an adult insectoid alien queen with a glossy black chitin body and a woman's figure, lying back naked in a hammock of glowing silk with a nude adult operator in a sealed helmet on top of her, a brood-beast creeping along the webs above.",
+      "lastFrame": "the same chamber: Aria and the operator asleep entwined in the silk hammock, the brood-beast sliced into hanging chunks by the taut silk threads, violet ichor dripping.",
+      "action": "Missionary sex in the silk hammock, the operator thrusting, threads tightening around them with every movement. The brood-beast drops toward them and the threads snap taut, slicing it into chunks that rain violet ichor. They finish wrapped in silk."
+    },
+    "aria_queens_mark": {
+      "trigger": "d0gg1e",
+      "firstFrame": "The hive altar from the reference image: Aria, an adult insectoid alien queen with a glossy black chitin body and a woman's figure, naked and bent over the egg-shell altar with a nude adult operator in a sealed helmet behind her, violet tendrils across the floor, cultist husks rising from the dark.",
+      "lastFrame": "the same altar: Aria and the operator naked in each other's arms on the altar, a teal spiral mark glowing on the operator's skin, the cultist husks exploded into wet violet shreds around the altar.",
+      "action": "The operator takes Aria from behind in doggy position on the altar; teal light seeps into the operator's skin and curls into a spiral, and the cultist husks around them swell and explode into wet shreds. They climax as the egg-shell ring goes dark."
+    },
+    "card_33": {
+      "trigger": "m15510n4ry",
+      "firstFrame": "The breathing cave from the reference image: two naked adult survivors in their thirties having sex on the slimy floor among the glowing yellow egg clusters, the man on top of the woman, a shotgun beside them, one egg splitting open.",
+      "lastFrame": "the same cave mouth seen from inside: the lovers sitting up naked and slime-covered, the woman holding the smoking shotgun, a hatched crawler blown apart across the egg clusters, the ribbed walls swollen mid-breath.",
+      "action": "Missionary sex on the cave floor as the walls breathe in and out around them. An egg bursts and a crawler leaps; the woman grabs the shotgun and blasts it apart mid-air without stopping, showering them in slime and gore. They finish as the cave exhales."
+    },
+    "card_34": {
+      "trigger": "c0wg1rl",
+      "firstFrame": "The shuttle cockpit from the reference image: an adult woman co-pilot in her thirties naked and straddling the adult male pilot in his forties in the pilot's seat, his flight suit open, the burning ice planet through the canopy, a stowaway alien clawing through the hatch behind them.",
+      "lastFrame": "the same cockpit: the co-pilot asleep naked on the pilot's lap, the canopy full of stars, the stowaway alien's shredded remains smeared across the open airlock door.",
+      "action": "The co-pilot rides the pilot in cowgirl position in his seat as the shuttle climbs. The stowaway lunges and the pilot slaps the airlock control; the alien is sucked out and shredded on the hatch in a spray of blood. They finish as the planet falls away."
+    },
+    "card_35": {
+      "trigger": "d0gg1e",
+      "firstFrame": "The smuggler hold from the reference image: two naked adult smugglers in their thirties, the woman bent over a crate of glowing amber contraband eggs, the man behind her, pipes and cables everywhere, one egg cracking open.",
+      "lastFrame": "the same hold at sunrise light through a hatch: the smugglers naked on the crates, the hatchling stomped into amber paste on the deck plating beside them.",
+      "action": "Doggy-position sex over the egg crate. An egg cracks and a hatchling slithers out toward them; the man stomps it into amber paste without breaking rhythm. Sunrise light floods the hold as they finish."
+    },
+    "card_36": {
+      "trigger": "m15510n4ry",
+      "firstFrame": "The escape pod from the reference image: two naked adult survivors in their thirties having sex on the pod bench, the man on top, the other adult survivors around them in open orange suits, black aliens clawing at the crackling teal energy barrier.",
+      "lastFrame": "the same pod: the survivors laughing and naked, the lovers wrapped together on the bench, an alien disintegrated half-through the energy barrier in smoking chunks.",
+      "action": "Missionary sex on the pod bench as the pod launches. An alien forces its arm through the barrier and the energy field disintegrates it, blowing it apart in smoking chunks and black blood. The survivors cheer as the lovers finish."
+    },
+    "card_37": {
+      "trigger": "c0wg1rl",
+      "firstFrame": "The observation window from the reference image: an adult woman in her fifties naked and straddling an adult man in his forties on the window ledge, their orange suits open, the ice planet shrinking outside, a frozen corpse drifting toward the glass.",
+      "lastFrame": "the same window: the lovers naked in each other's arms, the planet a small white disc, the frozen corpse shattered into red ice fragments against the glass.",
+      "action": "She rides him in cowgirl position against the window as the planet shrinks. The frozen corpse strikes the glass and shatters into a burst of red ice. They finish watching the planet become a dot."
+    },
+    "card_38": {
+      "trigger": "d0gg1e",
+      "firstFrame": "Inside the biomechanical ship from the reference image, a cabin of ribbed latex walls with a porthole: two naked adult lovers in their thirties, the woman on hands and knees on the bunk, the man behind her, green engine light, a pursuing fighter visible through the porthole as the ship's tentacles reach for it.",
+      "lastFrame": "the same cabin: the lovers asleep naked on the bunk, through the porthole the pursuing fighter crushed in the ship's tentacles, its pilot splattered across the cracked canopy, the core worlds glittering ahead.",
+      "action": "Doggy-position sex on the bunk while through the porthole the ship's tentacles seize the pursuing fighter and crush it, splattering its pilot across the canopy. The ship accelerates into green light as the lovers finish and sink onto the bunk."
+    }
+  }
+}

@@ -1,0 +1,22 @@
+/* Small diagnostic readout in the existing camp housing: bone text, teal
+   status, and an explicit warning as well as amber when claims cannot fit. */
+.current-manifest {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  color: #cdc6b0;
+  font-family: 'Space Mono', monospace;
+  font-size: max(12px, calc(var(--vu, 10px) * 1.2));
+  line-height: 1.45;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.current-manifest__title { color: #71cddf; }
+.current-manifest__summary { font-variant-numeric: tabular-nums; }
+.current-manifest__allocation,
+.current-manifest__warning { grid-column: 1 / -1; }
+.current-manifest__warning { color: #ffbd69; }
+.current-manifest[data-manifest-state="blocked"] .current-manifest__summary { color: #ffbd69; }
+.camp-choice-stat.current-manifest { grid-template-columns: minmax(0, 1fr); gap: 3px; }
+.camp-choice-stat .current-manifest__summary { font-size: max(14px, calc(var(--vu, 10px) * 1.4)); }

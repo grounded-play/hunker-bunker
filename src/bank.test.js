@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { BankManager, FOUNDRY_ACTIVATION_COST, GOAL_COSTS, O2_GENERATOR_UPGRADES, shellPriceOf, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS } from './bank.js';
+import { BankManager, BASE_ARCADE_BUILD_COST, FOUNDRY_ACTIVATION_COST, GOAL_COSTS, O2_GENERATOR_UPGRADES, shellPriceOf, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WALL_REPAIR_TOOL_BUILD_COST } from './bank.js';
 
 function createMemoryStorage() {
     const memory = new Map();
@@ -23,7 +23,7 @@ describe('BankManager', () => {
         const bank = new BankManager({ storage });
 
         expect(bank.getState()).toEqual({
-            schemaVersion: 8,
+            schemaVersion: 9,
             claimedSurvivorRewards: [],
             seasonReceipts: [],
             fabricationOrders: {},
@@ -37,7 +37,9 @@ describe('BankManager', () => {
                 o2Bubble: false,
                 hullExpansion: false,
                 radarNode: false,
-                reactorCompressor: false
+                reactorCompressor: false,
+                baseArcadeBlackjack: false,
+                wallRepairTool: false
             },
             hullExpansionLevel: 0,
             radarNodeLevel: 0,
@@ -137,8 +139,23 @@ describe('BankManager', () => {
             o2Bubble: true,
             hullExpansion: true,
             radarNode: true,
-            reactorCompressor: true
+            reactorCompressor: true,
+            baseArcadeBlackjack: false,
+            wallRepairTool: false
         });
+    });
+
+    it('purchases the base arcade atomically and never charges twice', () => {
+        const storage = createMemoryStorage();
+        const bank = new BankManager({ storage });
+        bank.deposit(BASE_ARCADE_BUILD_COST);
+
+        expect(bank.purchaseBaseArcade()).toMatchObject({ ok: true, cost: BASE_ARCADE_BUILD_COST });
+        expect(bank.getState()).toMatchObject({ tech: 0, coin: 0, med: 0 });
+        expect(bank.isBaseArcadeUnlocked()).toBe(true);
+
+        expect(bank.purchaseBaseArcade()).toEqual({ ok: true, alreadyUnlocked: true });
+        expect(new BankManager({ storage }).isBaseArcadeUnlocked()).toBe(true);
     });
 
     it('loads persisted state from storage', () => {
@@ -156,7 +173,7 @@ describe('BankManager', () => {
         });
     });
 
-    it('migrates a v2 save to v8 without resetting and adds newer fields', () => {
+    it('migrates a v2 save to v9 without resetting and adds newer fields', () => {
         const storage = createMemoryStorage();
         storage.setItem('hb_bank', JSON.stringify({
             schemaVersion: 2,
@@ -168,7 +185,7 @@ describe('BankManager', () => {
 
         const bank = new BankManager({ storage });
         const state = bank.getState();
-        expect(state.schemaVersion).toBe(8);
+        expect(state.schemaVersion).toBe(9);
         expect(state.tech).toBe(40); // preserved, not reset
         expect(state.weaponUpgrades).toEqual({
             ammoCapacity: 0, ammoRefill: 0, shotSpeed: 0, shotDamage: 0, shotAmount: 0
@@ -200,6 +217,24 @@ describe('BankManager', () => {
         expect(bank.activateFoundry()).toBe(true);
         const reloaded = new BankManager({ storage });
         expect(reloaded.isFoundryActivated()).toBe(true);
+    });
+
+    it('builds the wall repair tool only after foundry activation and charges once', () => {
+        const storage = createMemoryStorage();
+        const bank = new BankManager({ storage });
+        bank.deposit({
+            tech: FOUNDRY_ACTIVATION_COST.tech + WALL_REPAIR_TOOL_BUILD_COST.tech,
+            coin: FOUNDRY_ACTIVATION_COST.coin + WALL_REPAIR_TOOL_BUILD_COST.coin,
+            med: FOUNDRY_ACTIVATION_COST.med
+        });
+        expect(bank.purchaseWallRepairTool()).toMatchObject({ ok: false, reason: 'foundry-required' });
+        expect(bank.activateFoundry()).toBe(true);
+        expect(bank.purchaseWallRepairTool()).toMatchObject({ ok: true });
+        expect(bank.hasWallRepairTool()).toBe(true);
+        const after = bank.getState();
+        expect(bank.purchaseWallRepairTool()).toMatchObject({ ok: true, alreadyUnlocked: true });
+        expect(bank.getState()).toEqual(after);
+        expect(new BankManager({ storage }).hasWallRepairTool()).toBe(true);
     });
 
     it('purchases weapon upgrades, enforces cost + max level, and persists', () => {

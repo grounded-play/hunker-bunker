@@ -137,3 +137,21 @@ describe('SideStoryManager & Multi-Path Story Progression', () => {
         delete globalThis.window;
     });
 });
+
+describe('SideStoryManager.grantPerk (interaction sequences, audit 2026-10-16 §13.4)', () => {
+    it('records a perk on the story that owns it, once, and saves', () => {
+        const storage = createMockStorage();
+        const manager = new SideStoryManager({ storage });
+        const granted = manager.grantPerk('meridian_neural_overclock');
+        expect(granted).toMatchObject({ storyId: 'overseer_kaelen', perk: { id: 'meridian_neural_overclock' } });
+        expect(manager.getStoryState('overseer_kaelen').perks).toEqual(['meridian_neural_overclock']);
+        expect(manager.grantPerk('meridian_neural_overclock')).toBeNull();
+        expect(new SideStoryManager({ storage }).getStoryState('overseer_kaelen').perks).toEqual(['meridian_neural_overclock']);
+    });
+
+    it('ignores a perk no story owns', () => {
+        const manager = new SideStoryManager({ storage: createMockStorage() });
+        expect(manager.grantPerk('no_such_perk')).toBeNull();
+    });
+});
+

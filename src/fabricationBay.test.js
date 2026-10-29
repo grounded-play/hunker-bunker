@@ -44,9 +44,10 @@ class FakeElement {
 
 const IDS = ['fab-recipe-grid', 'fab-roll-panel', 'fab-roll-btn', 'fab-odds', 'fab-summary', 'fabrication-modal',
     'fab-bank-tech', 'fab-bank-coin', 'fab-bank-med', 'fab-bank-shells', 'fab-reveal', 'fab-reveal-strip',
-    'fab-reveal-card', 'fab-reveal-strip-wrap'];
+    'fab-reveal-card', 'fab-reveal-strip-wrap', 'fab-aisle-btn-hardware', 'fab-aisle-btn-weapons',
+    'fab-aisle-btn-lotto', 'fab-aisle-btn-all'];
 
-function setup({ activated = true, canRoll = true, hub = false } = {}) {
+function setup({ activated = true, canRoll = true, hub = false, arcadeUnlocked = false, repairToolUnlocked = false } = {}) {
     vi.useFakeTimers();
     const els = new Map(IDS.map((id) => [id, new FakeElement('div', id)]));
     els.get('fabrication-modal').classList.add('hidden');
@@ -71,14 +72,29 @@ function setup({ activated = true, canRoll = true, hub = false } = {}) {
         getState: () => bank,
         canAfford: () => true,
         isFoundryActivated: () => activated,
+        isBaseArcadeUnlocked: () => arcadeUnlocked,
+        hasWallRepairTool: () => repairToolUnlocked,
         canActivateFoundry: () => true,
-        activateFoundry: vi.fn(() => { activated = true; return true; })
+        activateFoundry: vi.fn(() => { activated = true; return true; }),
+        purchaseWallRepairTool: vi.fn(() => { repairToolUnlocked = true; return { ok: true }; })
     };
+    const loadoutState = { archetypeId: 'talon', charmId: null, mod1Id: null, mod2Id: null };
     const loadout = {
         activeClassId: 'scout',
         getEquippedId: () => null,
-        getClassLoadout: () => ({ archetypeId: 'talon', charmId: null, mod1Id: null, mod2Id: null }),
-        equip: vi.fn()
+        getClassLoadout: () => loadoutState,
+        equip: vi.fn(),
+        equipRigModule: vi.fn((_classId, slot, id) => { loadoutState[`mod${slot}Id`] = String(id); }),
+        getActiveModifiers: vi.fn(() => ({ gasDamageReduction: [loadoutState.mod1Id, loadoutState.mod2Id].includes('4142') ? 0.12 : 0 }))
+    };
+    const finishCampRest = vi.fn();
+    const game = {
+        finishCampRest,
+        revealFoundry: vi.fn(),
+        purchaseBaseArcadeCabinet: vi.fn(() => {
+            arcadeUnlocked = true;
+            return { ok: true };
+        })
     };
     const deps = {
         doc,
@@ -86,7 +102,7 @@ function setup({ activated = true, canRoll = true, hub = false } = {}) {
         fabricator,
         bankManager,
         loadout,
-        getGame: () => ({ finishCampRest: finishCampRest, revealFoundry: vi.fn() }),
+        getGame: () => game,
         playSound: vi.fn(),
         log: vi.fn(),
         focus: vi.fn(),
@@ -102,9 +118,8 @@ function setup({ activated = true, canRoll = true, hub = false } = {}) {
         getComputedStyle: () => ({ gap: '0', paddingLeft: '0' }),
         eventTarget: new FakeElement('window')
     };
-    const finishCampRest = vi.fn();
     const bay = createFabricationBay(deps);
-    return { bay, els, deps, fabricator, bankManager, printing, finishCampRest };
+    return { bay, els, deps, fabricator, bankManager, loadout, fabricated, printing, finishCampRest, game };
 }
 
 afterEach(() => vi.useRealTimers());
@@ -137,15 +152,71 @@ describe('fabrication bay', () => {
         button.click();
         expect(bankManager.activateFoundry).toHaveBeenCalled();
         expect(deps.onFoundryActivated).toHaveBeenCalled();
-        expect(els.get('fab-roll-panel').classList.contains('hidden')).toBe(false);
+        expect(els.get('fab-roll-panel').classList.contains('hidden')).toBe(true);
+        expect(bay.getActiveAisle()).toBe('hardware');
     });
 
-    it('lists one card per recipe with the odds shown before spending once online', () => {
+    it('uses real department aisles instead of showing every build surface at once', () => {
         const { bay, els } = setup();
         bay.render();
+        expect(bay.getActiveAisle()).toBe('hardware');
+        expect(els.get('fab-recipe-grid').children.some((c) => c.className.includes('fab-card'))).toBe(false);
+        expect(els.get('fab-roll-panel').classList.contains('hidden')).toBe(true);
+
+        bay.selectAisle('weapons');
         expect(els.get('fab-recipe-grid').children.filter((c) => c.className.includes('fab-card'))).toHaveLength(FAB_RECIPES.length);
         expect(els.get('fab-odds').innerHTML).toContain('ui.fab.odds');
         expect(els.get('fab-bank-tech').textContent).toBe(50);
+
+        bay.selectAisle('lotto');
+        expect(els.get('fab-roll-panel').classList.contains('hidden')).toBe(false);
+        expect(els.get('fabrication-modal').dataset.activeAisle).toBe('lotto');
+    });
+
+    it('exposes the permanent BLACK-ICE cabinet build and installs it through the game', () => {
+        const { bay, els, game, deps } = setup();
+        bay.render();
+        const button = els.get('fab-recipe-grid').children
+            .flatMap((child) => child.children)
+            .find((child) => child.id === 'fab-build-blackjack-arcade');
+        expect(button.disabled).toBe(false);
+        button.click();
+        expect(game.purchaseBaseArcadeCabinet).toHaveBeenCalledTimes(1);
+        expect(deps.showPrompt).toHaveBeenCalledWith('ui.arcade.blackjack_built');
+        const installedButton = els.get('fab-recipe-grid').children
+            .flatMap((child) => child.children)
+            .find((child) => child.id === 'fab-build-blackjack-arcade');
+        expect(installedButton.disabled).toBe(true);
+    });
+
+    it('builds a persistent field welder from the online fabrication terminal', () => {
+        const { bay, els, bankManager, deps } = setup();
+        bay.render();
+        const button = els.get('fab-recipe-grid').children
+            .flatMap((child) => child.children)
+            .find((child) => child.id === 'fab-build-wall-repair-tool');
+        expect(button.disabled).toBe(false);
+        button.click();
+        expect(bankManager.purchaseWallRepairTool).toHaveBeenCalledOnce();
+        expect(deps.showPrompt).toHaveBeenCalledWith('ui.fab.welder_ready');
+    });
+
+    it('confirms toxin protection when the printed filter is installed', () => {
+        const { bay, els, deps, fabricated, loadout, game } = setup();
+        fabricated.add('brood_chitin_plating');
+        bay.selectAisle('weapons');
+        const filterCard = els.get('fab-recipe-grid').children.find((card) => (
+            card.children.some((child) => child.innerHTML.includes('Bio-Hazard Filter Vent'))
+        ));
+        const install = filterCard.children.find((child) => child.tagName === 'BUTTON');
+
+        install.click();
+
+        expect(loadout.equipRigModule).toHaveBeenCalledWith('scout', 1, 4142);
+        expect(game.loadoutMods).toEqual({ gasDamageReduction: 0.12 });
+        expect(deps.showPrompt).toHaveBeenCalledWith(
+            '> BIO-HAZARD FILTER VENT INSTALLED IN SUIT BAY A · CHEST · TOXIN DAMAGE 1.00 → 0.88'
+        );
     });
 
     it('ticks prints every half second and stops the ticker when nothing is printing', () => {
@@ -188,6 +259,14 @@ describe('fabrication bay', () => {
         vi.advanceTimersByTime(3300);
         expect(bay.isRolling()).toBe(false);
         expect(els.get('fab-reveal').dataset.state).toBe('revealed');
+    });
+
+    it('wires the numbered kiosk buttons to the matching department', () => {
+        const { bay, els } = setup();
+        bay.attach();
+        els.get('fab-aisle-btn-weapons').click();
+        expect(bay.getActiveAisle()).toBe('weapons');
+        expect(els.get('fab-aisle-btn-weapons').attributes['aria-selected']).toBe('true');
     });
 
     // S49-38: the bay owns its listeners and timers and releases them.

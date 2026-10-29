@@ -10,7 +10,7 @@ describe('later goal module presentation', () => {
         });
     });
 
-    it('raises the correct structure from below ground and resolves on completion', async () => {
+    it('does not raise duplicate escape systems from the crash wreck', async () => {
         const source = new THREE.Sprite();
         source.position.set(12, 0.09, 14);
         const shadowSource = new THREE.Object3D();
@@ -23,14 +23,10 @@ describe('later goal module presentation', () => {
         };
 
         const finished = ThreeGame.prototype.playGoalModuleWorldReveal.call(game, 'hullExpansion');
-        expect(source.position.y).toBeLessThan(0);
-        expect(game.focusCinematicCamera).toHaveBeenCalledWith({ x: 12, z: 14 }, { immediate: true });
-        ThreeGame.prototype.updateGoalModuleRise.call(game, 1.35);
-
-        await expect(finished).resolves.toBe(true);
+        await expect(finished).resolves.toBe(false);
         expect(source.position.y).toBeCloseTo(0.09);
-        expect(source.scale.x).toBeCloseTo(1.58);
-        expect(window.dispatchEvent).toHaveBeenCalledWith(expect.objectContaining({ type: 'goal-structure-rise-complete' }));
+        expect(game.focusCinematicCamera).not.toHaveBeenCalled();
+        expect(window.dispatchEvent).not.toHaveBeenCalled();
     });
 
     it('restores a completed visual and resolves safely when interrupted', async () => {

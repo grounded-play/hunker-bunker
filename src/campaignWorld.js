@@ -63,7 +63,7 @@ export function carryStoryToNewMap(mazeState) {
         discoveredCells: []
     };
     if (kept.authoredWorld && typeof kept.authoredWorld === 'object') {
-        kept.authoredWorld = { ...kept.authoredWorld, seed: null, version: null };
+        kept.authoredWorld = { ...kept.authoredWorld, enabled: true, seed: null, version: null };
     }
     return kept;
 }
@@ -151,7 +151,7 @@ export function createCampaignWorldStore({
         return clone(state);
     }
 
-    function getOrCreate({ seed, interiorVersion = 0 } = {}) {
+    function getOrCreate({ seed, interiorVersion = 1 } = {}) {
         const current = read();
         if (current) return current;
         if (![0, 1].includes(interiorVersion)) throw new Error('Unsupported interior version');
@@ -204,7 +204,11 @@ export function createCampaignWorldStore({
         // world's identity) does not.
         beginNewRun({ mapSeed = null, interiorVersion } = {}) {
             const current = getOrCreate();
-            const nextInteriorVersion = interiorVersion ?? current.interiorVersion;
+            // Starting a new map is the safe migration boundary for room
+            // geometry. Resumed attempts keep their pinned version, while a
+            // fresh run adopts the current authored room grammar unless a QA
+            // caller explicitly requests the legacy generator.
+            const nextInteriorVersion = interiorVersion ?? 1;
             if (![0, 1].includes(nextInteriorVersion)) throw new Error('Unsupported interior version');
             const next = isSeed(mapSeed) ? mapSeed : createSeed(current.mapSeed);
             return write({

@@ -19,19 +19,60 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
         themeColor: '#ff4f64',
         initialNode: 'val_greeting',
         nodes: {
-            val_greeting: {
-                id: 'val_greeting',
-                speaker: 'Sister Martha',
-                interstitial: 'val_hearth_warmth',
-                narration: 'She sets down a steaming bronze kettle of heated botanical resin. Her eyes, luminous and amber from spore exposure, linger on the ice crusted across your collarbone.',
-                dialogue: "You're shivering, contractor. That corporate suit is bleeding heat by the second. Step closer to the thermal hearth... let me unfasten your seals and see where the cold has bitten your skin.",
+            val_mold_pointer: {
+                id: 'val_mold_pointer',
+                speaker: "Sister Martha",
+                dialogue: "Hydro beds, west of the boiler. Seal the filter first, then burn what's past it. And don't breathe the red.",
                 choices: [
                     {
-                        id: 'val_warmth_touch',
-                        tone: '[INTIMATE TOUCH]',
-                        text: 'Your hands are surprisingly warm, Sister Martha. What are you putting on my skin?',
-                        nextNode: 'val_massage_response'
+                        id: 'val_mold_ok',
+                        tone: "[LEAVE]",
+                        text: "I'll be careful.",
+                        nextNode: null
+                    }
+                ]
+            },
+            val_trusted: {
+                id: 'val_trusted',
+                tier: 'trusted',
+                speaker: "Sister Martha",
+                interstitial: 'val_hearth_warmth',
+                narration: "She hands you a bowl of warm balm and a roll of clean gauze and doesn't explain. You learn by watching her hands.",
+                dialogue: "Thin layer. Wrap it loose; the skin needs to breathe. ...Good. You have patient hands for someone who carries a gun. Take some of the balm with you. It keeps the cold out of your joints.",
+                bondDelta: 20,
+                rewardPerk: {
+                    id: 'tallows_seductive_warmth',
+                    name: "Tallow's Warmth",
+                    description: "+15 Max HP & Freezing Resistance for the remainder of this expedition."
+                },
+                choices: [
+                    {
+                        id: 'val_ask_sister',
+                        tier: 'trusted',
+                        tone: "[TRUST]",
+                        text: "Why do they call you Sister?",
+                        nextNode: 'val_history'
                     },
+                    {
+                        id: 'val_tend_leave',
+                        tone: "[LEAVE]",
+                        text: "I'll come back and help again.",
+                        nextNode: null
+                    }
+                ]
+            },
+            val_history: {
+                id: 'val_history',
+                tier: 'trusted',
+                speaker: "Sister Martha",
+                dialogue: "I was a company medic. My squad went down the shaft in the first breach and I stayed up top because someone had to. They called me Sister afterward, half as a joke. I stopped correcting them. This camp is the squad now.",
+                bondDelta: 15,
+                rewardPerk: {
+                    id: 'flesh_communion_blessing',
+                    name: "Flesh Communion Blessing",
+                    description: "Health regen increased by +25% when near camp or safe zones."
+                },
+                choices: [
                     {
                         id: 'val_embrace',
                         tone: '[SENSUAL / EMBRACE]',
@@ -39,10 +80,37 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
                         nextNode: 'val_embrace_response'
                     },
                     {
+                        id: 'val_history_leave',
+                        tone: "[LEAVE]",
+                        text: "Then I'll help you keep it.",
+                        nextNode: null
+                    }
+                ]
+            },
+            val_greeting: {
+                id: 'val_greeting',
+                speaker: 'Sister Martha',
+                narration: "Martha looks up from a kettle of warm resin balm, takes in the frost on your suit, and points to a stool by the pipes.",
+                dialogue: "Sit before you fall. That suit is bleeding heat. We keep the steam running in Tallow and the moss keeps us fed, and lately something red has been eating the hydro beds. Warm your hands first. Questions after.",
+                choices: [
+                    {
                         id: 'val_lore_spores',
-                        tone: '[PRAGMATIC LORE]',
-                        text: 'Tell me about the biological spore mutations you cultivate in the alcove.',
+                        tone: '[ASK]',
+                        text: "What's eating the hydro beds?",
                         nextNode: 'val_spores_response'
+                    },
+                    {
+                        id: 'val_trust_tend',
+                        tier: 'trusted',
+                        tone: "[TRUST]",
+                        text: "Let me help you with the wounded.",
+                        nextNode: 'val_trusted'
+                    },
+                    {
+                        id: 'val_warmth_touch',
+                        tone: '[INTIMATE TOUCH]',
+                        text: 'Your hands are surprisingly warm, Sister Martha. What are you putting on my skin?',
+                        nextNode: 'val_massage_response'
                     },
                     {
                         id: 'val_leave',
@@ -54,16 +122,12 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             },
             val_massage_response: {
                 id: 'val_massage_response',
+                tier: 'close',
                 speaker: 'Sister Martha',
                 interstitial: 'val_spore_communion',
                 narration: 'Her fingertips are slick with warm, fragrant amber resin. She gently presses against the hollow of your throat, working down along the stiffened muscles of your shoulders. A shiver of intense, intoxicating heat cascades through your chest.',
                 dialogue: "Refined tallow-root and bioluminescent spore tallow. It sinks directly into your capillaries, melting away the frostbite. Feel how your skin warms under my palms? Out there, you're just corporate meat. In here... every breath between us is sacred.",
                 bondDelta: 25,
-                rewardPerk: {
-                    id: 'tallows_seductive_warmth',
-                    name: "Tallow's Seductive Warmth",
-                    description: '+15 Max HP & Freezing Resistance for the remainder of this expedition.'
-                },
                 choices: [
                     {
                         id: 'val_whisper_more',
@@ -81,16 +145,12 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             },
             val_embrace_response: {
                 id: 'val_embrace_response',
+                tier: 'close',
                 speaker: 'Sister Martha',
                 interstitial: 'val_hearth_warmth',
                 narration: 'She steps into your space without hesitation, the heavy scent of crushed crimson petals and body heat wrapping around your senses. Her hands rest on your chest plate, feeling your frantic heartbeat.',
                 dialogue: "We are all walking ghosts on this glacier, love. But tonight... our flesh is hot, alive, and unyielding. Lie with me beside the burner. Let the ice rage against the bulkhead while we burn together.",
                 bondDelta: 35,
-                rewardPerk: {
-                    id: 'flesh_communion_blessing',
-                    name: 'Flesh Communion Blessing',
-                    description: 'Health regen increased by +25% when near camp or safe zones.'
-                },
                 choices: [
                     {
                         id: 'val_lie_down',
@@ -109,10 +169,16 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             val_spores_response: {
                 id: 'val_spores_response',
                 speaker: 'Sister Martha',
-                narration: 'She smiles cryptically, trailing one delicate fingernail across a blooming scarlet fungal cluster that pulses with soft biological light.',
-                dialogue: "The Queen thinks she owns these spores, but life finds its own pleasure in symbiosis. When filtered properly, the resin heightens sensory nerve endings by tenfold. Pain becomes euphoria. Cold becomes anticipation.",
+                narration: "She lifts a clipped leaf from the rack. Its veins are threaded with something crimson.",
+                dialogue: "Red mold. It came up the drainage channels and it eats everything we plant. The filter cloth holds it back if we can get the channels purged. I can't leave the clinic long enough to do it.",
                 bondDelta: 15,
                 choices: [
+                    {
+                        id: 'val_assist_mold',
+                        tone: "[ASSIST]",
+                        text: "I'll purge the channels.",
+                        nextNode: 'val_mold_pointer'
+                    },
                     {
                         id: 'val_try_resin',
                         tone: '[TASTE SPORE OIL]',
@@ -129,6 +195,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             },
             val_intimate_climax: {
                 id: 'val_intimate_climax',
+                tier: 'close',
                 speaker: 'Sister Martha',
                 interstitial: 'val_eternal_hearth',
                 narration: 'Her lips brush against your jawline, whispered words of devotion mixing with the gentle crackle of the thermal burner. Her bare shoulder presses firmly against your chest, sharing an intense, quiet sanctuary of human passion in the dark.',
@@ -168,13 +235,40 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
         themeColor: '#ffaa00',
         initialNode: 'briggs_greeting',
         nodes: {
-            briggs_greeting: {
-                id: 'briggs_greeting',
-                speaker: 'Commander Briggs',
-                interstitial: 'briggs_scorched_rig',
-                narration: 'Briggs stands beside the weapon rack, his heavy titanium chest rig unbuckled, revealing a scarred, muscular torso glistening with sweat after repelling a swarm assault.',
-                dialogue: "You made it through the corridor gauntlet in one piece. Look at you... adrenaline still coursing through your veins, eyes dilated. Strip off that scorched harness before the shrapnel settles.",
+            briggs_armory_pointer: {
+                id: 'briggs_armory_pointer',
+                speaker: "Commander Briggs",
+                dialogue: "South bunker, behind the second blast door. Burn them out and don't shoot the crates. Report back when it's done.",
                 choices: [
+                    {
+                        id: 'briggs_armory_ok',
+                        tone: "[LEAVE]",
+                        text: "Understood.",
+                        nextNode: null
+                    }
+                ]
+            },
+            briggs_trusted: {
+                id: 'briggs_trusted',
+                tier: 'trusted',
+                speaker: "Commander Briggs",
+                interstitial: 'briggs_scorched_rig',
+                narration: "He lays two rifles on the oilcloth, stripped, and starts a timer.",
+                dialogue: "Strip, clean, assemble. Again. Faster. ...Not bad. You move like someone who's been shot at and decided to keep moving. Keep that. It'll carry you further than armor.",
+                bondDelta: 20,
+                rewardPerk: {
+                    id: 'vesper_vanguard_adrenaline',
+                    name: "Vesper Vanguard Adrenaline",
+                    description: "+10% Movement Speed and +15% Melee Knockback."
+                },
+                choices: [
+                    {
+                        id: 'briggs_ask_ledger',
+                        tier: 'trusted',
+                        tone: "[TRUST]",
+                        text: "Who's in the ledger, Commander?",
+                        nextNode: 'briggs_history'
+                    },
                     {
                         id: 'briggs_flirt_clasps',
                         tone: '[FLIRT / PROVOCATION]',
@@ -182,16 +276,52 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
                         nextNode: 'briggs_clasps_response'
                     },
                     {
+                        id: 'briggs_drill_leave',
+                        tone: "[LEAVE]",
+                        text: "Same time tomorrow.",
+                        nextNode: null
+                    }
+                ]
+            },
+            briggs_history: {
+                id: 'briggs_history',
+                tier: 'trusted',
+                speaker: "Commander Briggs",
+                dialogue: "Everyone I ordered through that door and didn't bring back. Chen called it acceptable loss. I called it mutiny, and we've been out here since. The blank leaf at the front is for the next name. I'd like it to stay blank.",
+                bondDelta: 15,
+                choices: [
+                    {
+                        id: 'briggs_history_vow',
+                        tone: "[PROMISE]",
+                        text: "Then let's keep it blank.",
+                        nextNode: null
+                    }
+                ]
+            },
+            briggs_greeting: {
+                id: 'briggs_greeting',
+                speaker: 'Commander Briggs',
+                narration: "Briggs looks you over from boots to visor without lowering his rifle, the way he would inspect a recruit.",
+                dialogue: "You walked the corridor gauntlet on your own. Either you're good or you're lucky. Vesper has a use for both. Ammunition is rationed, the barricade holds, and nobody sleeps on my watch without earning it.",
+                choices: [
+                    {
+                        id: 'briggs_tactics',
+                        tone: '[ASK]',
+                        text: "What does Vesper need most?",
+                        nextNode: 'briggs_tactics_response'
+                    },
+                    {
+                        id: 'briggs_trust_drill',
+                        tier: 'trusted',
+                        tone: "[TRUST]",
+                        text: "Run a drill with me, Commander.",
+                        nextNode: 'briggs_trusted'
+                    },
+                    {
                         id: 'briggs_inspect_scars',
                         tone: '[INTIMATE INQUIRY]',
                         text: 'That scar across your ribs looks fresh. Who got that close to you?',
                         nextNode: 'briggs_scars_response'
-                    },
-                    {
-                        id: 'briggs_tactics',
-                        tone: '[TACTICAL TALK]',
-                        text: 'We need more armor-piercing rounds for the outer perimeter.',
-                        nextNode: 'briggs_tactics_response'
                     },
                     {
                         id: 'briggs_leave',
@@ -203,16 +333,12 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             },
             briggs_clasps_response: {
                 id: 'briggs_clasps_response',
+                tier: 'close',
                 speaker: 'Commander Briggs',
                 interstitial: 'briggs_scar_tissue',
                 narration: 'He gives a low, raspy chuckle, stepping behind you. His calloused, heavy hands grasp the thermal buckles of your rig, fingers brushing against your nape as he unclips the armor plates with practiced ease.',
                 dialogue: "You always did like playing with live ordnance. There... let your shoulders breathe. You're tighter than a locked hydraulic valve. Feel that? That's what surviving feels like.",
                 bondDelta: 25,
-                rewardPerk: {
-                    id: 'vesper_vanguard_adrenaline',
-                    name: 'Vesper Vanguard Adrenaline',
-                    description: '+10% Movement Speed and +15% Melee Knockback.'
-                },
                 choices: [
                     {
                         id: 'briggs_turn_around',
@@ -230,6 +356,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             },
             briggs_scars_response: {
                 id: 'briggs_scars_response',
+                tier: 'close',
                 speaker: 'Commander Briggs',
                 interstitial: 'briggs_scar_tissue',
                 narration: 'Briggs looks down at his scarred chest, a faint, nostalgic smirk forming on his rugged face as he takes your hand and places it directly over the jagged mark.',
@@ -253,9 +380,15 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             briggs_tactics_response: {
                 id: 'briggs_tactics_response',
                 speaker: 'Commander Briggs',
-                dialogue: "I keep the heavy magazines stocked in the south bunker. But don't forget, soldier: the best weapon in this frozen hell is the person covering your back.",
+                dialogue: "Cyber-snails got into the weapons cabinet in the south bunker. Every round in there is a round we don't have when the patrols come. Clear them out and you'll have earned a place at the barricade.",
                 bondDelta: 10,
                 choices: [
+                    {
+                        id: 'briggs_assist_armory',
+                        tone: "[ASSIST]",
+                        text: "I'll clear the armory.",
+                        nextNode: 'briggs_armory_pointer'
+                    },
                     {
                         id: 'briggs_flirt_back',
                         tone: '[FLIRT]',
@@ -272,6 +405,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             },
             briggs_intimate_climax: {
                 id: 'briggs_intimate_climax',
+                tier: 'close',
                 speaker: 'Commander Briggs',
                 interstitial: 'briggs_vanguard_fire',
                 narration: 'His gaze locks onto yours with raw intensity. His strong arm pulls you firmly against him, the heat radiating off his broad chest cutting through the bitter subzero chill of the bunker.',
@@ -311,18 +445,39 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
         themeColor: '#00e5ff',
         initialNode: 'kaelen_greeting',
         nodes: {
-            kaelen_greeting: {
-                id: 'kaelen_greeting',
-                speaker: 'Overseer Kaelen',
-                interstitial: 'kaelen_diagnostic_cradle',
-                narration: 'Kaelen pushes his magnifying welding goggles onto his graying hair. The green glow of oscilloscope monitors highlights his sharp cheekbones and grease-smudged jaw.',
-                dialogue: "Your sensory telemetry is fluctuating wildly, contractor. Step into the diagnostic cradle. Let me jack into your suit's neural bio-link directly... try to hold still while the high-voltage diagnostic flows.",
+            kaelen_probe_pointer: {
+                id: 'kaelen_probe_pointer',
+                speaker: "Overseer Kaelen",
+                dialogue: "Frost biome, north of the substation. It'll be buried and screaming on the emergency band. Bring the core back intact and Meridian owes you.",
                 choices: [
                     {
-                        id: 'kaelen_bio_link',
-                        tone: '[BIO-LINK INTIMACY]',
-                        text: 'Your fingers are electric, Kaelen. Overclock my neural feed as deep as you want.',
-                        nextNode: 'kaelen_biolink_response'
+                        id: 'kaelen_probe_ok',
+                        tone: "[LEAVE]",
+                        text: "On my way.",
+                        nextNode: null
+                    }
+                ]
+            },
+            kaelen_trusted: {
+                id: 'kaelen_trusted',
+                tier: 'trusted',
+                speaker: "Overseer Kaelen",
+                interstitial: 'kaelen_diagnostic_cradle',
+                narration: "He hesitates, then lowers himself into the half-ring diagnostic cradle and hands you the calibration probe.",
+                dialogue: "Left port, behind the ear. Gently. The grid talks back through it, and lately it's been saying things I don't like. ...There. That's the first quiet I've had in a week. Take this tuning profile. Your radar will reach further.",
+                bondDelta: 20,
+                rewardPerk: {
+                    id: 'meridian_neural_overclock',
+                    name: "Meridian Neural Overclock",
+                    description: "+20m Tactical Radar Range and +10% Faster Sprint Recharge."
+                },
+                choices: [
+                    {
+                        id: 'kaelen_ask_voices',
+                        tier: 'trusted',
+                        tone: "[TRUST]",
+                        text: "What does the grid say to you?",
+                        nextNode: 'kaelen_history'
                     },
                     {
                         id: 'kaelen_tease',
@@ -331,10 +486,52 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
                         nextNode: 'kaelen_tease_response'
                     },
                     {
+                        id: 'kaelen_cradle_leave',
+                        tone: "[LEAVE]",
+                        text: "Get some sleep, Kaelen.",
+                        nextNode: null
+                    }
+                ]
+            },
+            kaelen_history: {
+                id: 'kaelen_history',
+                tier: 'trusted',
+                speaker: "Overseer Kaelen",
+                dialogue: "Numbers, mostly. Load curves. But under them there's a voice that says four seats, over and over. The machine under Sector Zero dreams, and I'm the one who has to listen. If I start sounding like it, you tell me.",
+                bondDelta: 15,
+                choices: [
+                    {
+                        id: 'kaelen_history_promise',
+                        tone: "[PROMISE]",
+                        text: "I'll tell you. I promise.",
+                        nextNode: null
+                    }
+                ]
+            },
+            kaelen_greeting: {
+                id: 'kaelen_greeting',
+                speaker: 'Overseer Kaelen',
+                narration: "Kaelen glances up from a gutted junction box, welding goggles pushed into his graying hair, and does not put the soldering iron down.",
+                dialogue: "Another suit from the surface. The grid is holding, barely, on jumper cables and stubbornness. If you're staying, make yourself useful. If you're not, mind the live cables on the way out.",
+                choices: [
+                    {
                         id: 'kaelen_grid_lore',
-                        tone: '[PRAGMATIC LORE]',
-                        text: 'How stable is the Ring 2 power distribution grid?',
+                        tone: '[ASK]',
+                        text: 'What keeps the grid alive down here?',
                         nextNode: 'kaelen_grid_response'
+                    },
+                    {
+                        id: 'kaelen_trust_cradle',
+                        tier: 'trusted',
+                        tone: "[TRUST]",
+                        text: "You look like you haven't slept in days. Let me help with the diagnostics.",
+                        nextNode: 'kaelen_trusted'
+                    },
+                    {
+                        id: 'kaelen_bio_link',
+                        tone: '[BIO-LINK INTIMACY]',
+                        text: 'Your fingers are electric, Kaelen. Overclock my neural feed as deep as you want.',
+                        nextNode: 'kaelen_biolink_response'
                     },
                     {
                         id: 'kaelen_leave',
@@ -346,16 +543,12 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             },
             kaelen_biolink_response: {
                 id: 'kaelen_biolink_response',
+                tier: 'close',
                 speaker: 'Overseer Kaelen',
                 interstitial: 'kaelen_frequency_overclock',
                 narration: 'He inserts a gleaming copper interface cable into the base of your helmet collar. A sharp, tingling surge of bio-electric current races down your spine, illuminating your HUD with brilliant cyan sparks.',
                 dialogue: "Fascinating... your synaptic conductance is extraordinary. Feel the signal pulse, contractor? It’s not just data. It’s synchronization. Every thought you have is echoing directly into my terminal.",
                 bondDelta: 25,
-                rewardPerk: {
-                    id: 'meridian_neural_overclock',
-                    name: 'Meridian Neural Overclock',
-                    description: '+20m Tactical Radar Range and +10% Faster Sprint Recharge.'
-                },
                 choices: [
                     {
                         id: 'kaelen_deep_sync',
@@ -373,6 +566,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             },
             kaelen_tease_response: {
                 id: 'kaelen_tease_response',
+                tier: 'close',
                 speaker: 'Overseer Kaelen',
                 narration: 'He pauses, soldering iron hovering mid-air. For a brief second, his composed, cynical engineer facade falters, his gaze traveling from your visor down the contours of your suit.',
                 dialogue: "You think you're clever, don't you? Out here, circuits are predictable. People are volatile, messy... and dangerously distracting. But maybe... a little volatility is what keeps us human.",
@@ -395,9 +589,15 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             kaelen_grid_response: {
                 id: 'kaelen_grid_response',
                 speaker: 'Overseer Kaelen',
-                dialogue: "It's barely holding together with jumper cables and stubbornness. But give me enough scrap, and I'll make this whole sector shine like neon.",
+                dialogue: "A reactor older than both of us, three substations, and whatever copper I can steal back from the ice. We lost a metric probe in the frost biome last week. Its memory core has the load map I need.",
                 bondDelta: 10,
                 choices: [
+                    {
+                        id: 'kaelen_assist_probe',
+                        tone: "[ASSIST]",
+                        text: "I'll find your probe.",
+                        nextNode: 'kaelen_probe_pointer'
+                    },
                     {
                         id: 'kaelen_flirt_again',
                         tone: '[FLIRT]',
@@ -414,6 +614,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             },
             kaelen_intimate_climax: {
                 id: 'kaelen_intimate_climax',
+                tier: 'close',
                 speaker: 'Overseer Kaelen',
                 interstitial: 'kaelen_supercharged_matrix',
                 narration: 'Kaelen exhales slowly, his warm breath fogging the edge of your visor as his gloved hand rests gently against your cheek. The hum of the generator fades into background static behind the intensity in his eyes.',
@@ -684,6 +885,32 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
     }
 });
 
+// Intimate choices wait until the relationship is real: camp trust (bond, of
+// 5) and the leader's story past its first stage. Every leader used to open
+// with two of them on first meeting (owner, 2026-10-16: "all the options to
+// seduce before I'd done anything").
+export const INTIMACY_REQUIREMENT = Object.freeze({ bond: 3, stage: 1 });
+const INTIMATE_TONE = /INTIMA|SENSUAL|SEDUC|EMBRACE|PASSION|FLIRT|SURRENDER|TOUCH|TASTE|CARESS/i;
+
+export function isIntimateChoice(choice) {
+    return choice?.intimate === true || INTIMATE_TONE.test(`${choice?.id ?? ''} ${choice?.tone ?? ''}`);
+}
+
+export function meetsIntimacyRequirement(context = {}, requirement = INTIMACY_REQUIREMENT) {
+    return (Number(context.bond) || 0) >= requirement.bond && (Number(context.stage) || 0) >= requirement.stage;
+}
+
+// Personal talk (a leader's history, working together, their perk) opens with
+// some trust OR some story: bond 2 of 5, or the leader's second stage.
+export const TRUSTED_REQUIREMENT = Object.freeze({ bond: 2, stage: 1 });
+
+export function meetsTrustedRequirement(context = {}, requirement = TRUSTED_REQUIREMENT) {
+    return (Number(context.bond) || 0) >= requirement.bond || (Number(context.stage) || 0) >= requirement.stage;
+}
+
+// At most this many choices on screen, ways out included.
+export const MAX_VISIBLE_CHOICES = 4;
+
 export class NpcDialogueTreeManager {
     constructor({ onStateChanged = null, stories = sideStoryManager } = {}) {
         this.onStateChanged = onStateChanged;
@@ -698,7 +925,103 @@ export class NpcDialogueTreeManager {
         };
         this.activePerks = new Set();
         this.history = [];
+        this.stories = stories;
+        this.context = {};
         this.restoreFromSideStories(stories);
+    }
+
+    // What this player has already said and earned with a leader, saved with
+    // the side stories so a choice is not offered again once everything
+    // behind it has been heard, and a node's bond or perk pays out once.
+    memoryFor(treeId) {
+        const stories = this.stories;
+        const story = stories?.getStoryState?.(treeId)
+            ?? (stories?.state ? (stories.state[treeId] ??= {}) : (this._memory ??= {})[treeId] ??= {});
+        story.takenChoices ??= [];
+        story.visitedNodes ??= [];
+        return story;
+    }
+
+    saveMemory() {
+        this.stories?.save?.();
+    }
+
+    // The side-story card to play behind doors before this choice's node
+    // (audit 2026-10-16 §13.3), or null. A card plays once per save and never
+    // on the opening node: first contact already played the camp's card.
+    cardForChoice(choiceId) {
+        const tree = this.activeTree;
+        const choice = (this.currentNode?.choices ?? []).find((c) => c.id === choiceId);
+        if (!tree || !choice?.nextNode || choice.nextNode === tree.initialNode) return null;
+        const card = tree.nodes[choice.nextNode]?.interstitial;
+        if (!card) return null;
+        return this.memoryFor(tree.id).playedCards?.includes(card) ? null : card;
+    }
+
+    markCardPlayed(card) {
+        if (!this.activeTree || !card) return;
+        const memory = this.memoryFor(this.activeTree.id);
+        memory.playedCards ??= [];
+        if (!memory.playedCards.includes(card)) memory.playedCards.push(card);
+        this.saveMemory();
+    }
+
+    // The side-story store this manager was given, when it is a full one
+    // (tests pass a plain { state } record); otherwise the shared manager.
+    get storyManager() {
+        return typeof this.stories?.getCurrentStage === 'function' ? this.stories : sideStoryManager;
+    }
+
+    isNodeExhausted(tree, nodeId, memory, seen = new Set()) {
+        if (!nodeId || seen.has(nodeId)) return true;
+        seen.add(nodeId);
+        const node = tree.nodes[nodeId];
+        if (!node || !memory.visitedNodes.includes(nodeId)) return false;
+        // Judged by what can be said now: a branch closes once every line the
+        // relationship allows has been heard, and reopens when it allows more.
+        return (node.choices ?? [])
+            .filter((choice) => this.isChoiceAvailable(choice))
+            .every((choice) => this.isChoiceSpent(tree, choice, memory, seen));
+    }
+
+    isChoiceAvailable(choice) {
+        if (isIntimateChoice(choice) && !meetsIntimacyRequirement(this.context)) return false;
+        if (choice?.tier === 'trusted' && !meetsTrustedRequirement(this.context)) return false;
+        return true;
+    }
+
+    // A conversation never opens on a node the relationship has not reached
+    // (side-story stages used to point straight at intimate nodes).
+    isNodeAllowed(node) {
+        if (!node) return false;
+        if (node.tier === 'close') return meetsIntimacyRequirement(this.context);
+        if (node.tier === 'trusted') return meetsTrustedRequirement(this.context);
+        return true;
+    }
+
+    isChoiceSpent(tree, choice, memory, seen = new Set()) {
+        // A way out carries no unheard lines: a node whose remaining choices
+        // only leave has been heard once it was shown.
+        if (!choice.nextNode) return true;
+        if (!memory.takenChoices.includes(choice.id)) return false;
+        return this.isNodeExhausted(tree, choice.nextNode, memory, seen);
+    }
+
+    // The choices to offer at a node: closing lines always (they are the way
+    // out), intimate ones only once the relationship allows, and nothing
+    // whose whole branch the player has already heard.
+    visibleChoices(tree, node, memory) {
+        const offered = (node.choices ?? []).filter((choice) => {
+            if (choice.isSkipAction) return true;
+            if (!this.isChoiceAvailable(choice)) return false;
+            if (!choice.nextNode) return true;
+            return !this.isChoiceSpent(tree, choice, memory);
+        });
+        if (offered.length <= MAX_VISIBLE_CHOICES) return offered;
+        // Keep the first way out; fill the rest in authored order.
+        const exit = offered.find((choice) => !choice.nextNode && !choice.isSkipAction);
+        const rest = offered.filter((choice) => choice !== exit).slice(0, MAX_VISIBLE_CHOICES - (exit ? 1 : 0));
+        return exit ? [...rest, exit] : rest;
     }
 
     // Perks and bond used to live only in memory, so everything earned here
@@ -711,14 +1034,19 @@ export class NpcDialogueTreeManager {
         }
     }
 
-    startDialogue(treeId, { bypassPrereq = false } = {}) {
+    // `context` is the leader's relationship where the conversation happens:
+    // { bond: camp trust 0-5, stage: leader story stage }. Returns null when
+    // there is nothing new to say, so the conversation ends after its staged
+    // lines instead of repeating the same choices every visit.
+    startDialogue(treeId, { bypassPrereq = false, context = {} } = {}) {
         const tree = NPC_DIALOGUE_TREES[treeId];
         if (!tree) return null;
 
+        this.context = context ?? {};
         this.activeTree = tree;
 
         // Check if side story has lockout
-        const lockout = sideStoryManager.isLockedOut(treeId);
+        const lockout = this.storyManager.isLockedOut(treeId);
         if (!bypassPrereq && lockout.locked) {
             this.currentNode = {
                 id: `${treeId}_lockout`,
@@ -734,18 +1062,34 @@ export class NpcDialogueTreeManager {
             return this.currentNode;
         }
 
-        const currentStage = sideStoryManager.getCurrentStage(treeId);
+        const currentStage = this.storyManager.getCurrentStage(treeId);
         let startNodeId = tree.initialNode;
 
         if (currentStage && tree.nodes[currentStage.dialogueNode]) {
             startNodeId = currentStage.dialogueNode;
         }
+        if (!this.isNodeAllowed(tree.nodes[startNodeId])) startNodeId = tree.initialNode;
 
         const baseNode = tree.nodes[startNodeId] || tree.nodes[tree.initialNode];
-        this.currentNode = { ...baseNode, choices: [...baseNode.choices] };
+        const memory = this.memoryFor(treeId);
+        const offered = this.visibleChoices(tree, baseNode, memory);
+        // Only a way out (and at most a quest bribe) left: say nothing rather
+        // than reopen the same window.
+        if (!offered.some((choice) => choice.nextNode)) {
+            this.activeTree = null;
+            this.currentNode = null;
+            return null;
+        }
+        if (!memory.visitedNodes.includes(baseNode.id)) {
+            memory.visitedNodes.push(baseNode.id);
+            this.saveMemory();
+        }
+        this.currentNode = { ...baseNode, choices: offered };
 
-        // Append Skip / Pause options if side story is in progress
-        if (currentStage && currentStage.skipCost) {
+        // Append the quest bribe if a side story is in progress, but never on
+        // a first meeting: a live player bought one before hearing who the
+        // leader was (2026-10-01 log).
+        if (currentStage && currentStage.skipCost && meetsTrustedRequirement(this.context)) {
             const hasSkip = this.currentNode.choices.some((c) => c.id.startsWith('skip_stage_'));
             if (!hasSkip) {
                 const costStr = Object.entries(currentStage.skipCost)
@@ -774,10 +1118,13 @@ export class NpcDialogueTreeManager {
 
         const choice = (this.currentNode.choices || []).find((c) => c.id === choiceId);
         if (!choice) return null;
+        const memory = this.memoryFor(this.activeTree.id);
+        if (!choice.isSkipAction && !memory.takenChoices.includes(choice.id)) memory.takenChoices.push(choice.id);
+        this.saveMemory();
 
         if (choice.isSkipAction) {
             const currentInv = inventory || (typeof window !== 'undefined' ? (window.game?.bank?.getBanked?.() || {}) : {});
-            const skipResult = sideStoryManager.skipCurrentStageWithCost(this.activeTree.id, currentInv);
+            const skipResult = this.storyManager.skipCurrentStageWithCost(this.activeTree.id, currentInv);
             const prevTree = this.activeTree;
             this.activeTree = null;
             this.currentNode = null;
@@ -786,7 +1133,7 @@ export class NpcDialogueTreeManager {
         }
 
         if (choice.isPauseAction) {
-            sideStoryManager.pauseStory(this.activeTree.id);
+            this.storyManager.pauseStory(this.activeTree.id);
             const prevTree = this.activeTree;
             this.activeTree = null;
             this.currentNode = null;
@@ -811,32 +1158,37 @@ export class NpcDialogueTreeManager {
             return { concluded: true };
         }
 
-        this.currentNode = { ...nextNode, choices: [...nextNode.choices] };
+        // Bond and perks pay out the first time a node is reached, not on
+        // every walk down the same branch.
+        const firstVisit = !memory.visitedNodes.includes(nextNode.id);
+        if (firstVisit) {
+            memory.visitedNodes.push(nextNode.id);
+            this.saveMemory();
+        }
+        this.currentNode = { ...nextNode, choices: this.visibleChoices(this.activeTree, nextNode, memory) };
         this.history.push(nextNode.id);
         // No music video per choice: a camp plays one title card, on first
         // contact only (owner, 2026-10-08). Nodes keep their `interstitial`
         // for the codex and side-story screens.
 
         // Apply bond delta if arriving at a node with bondDelta
-        if (nextNode.bondDelta && this.activeTree) {
+        if (firstVisit && nextNode.bondDelta && this.activeTree) {
             const treeId = this.activeTree.id;
             this.bondState[treeId] = (this.bondState[treeId] || 0) + nextNode.bondDelta;
-            const story = sideStoryManager.getStoryState(treeId);
+            const story = this.storyManager.getStoryState(treeId);
             if (story) story.bondScore = this.bondState[treeId];
         }
 
         // Apply reward perk if arriving at a node with rewardPerk
-        if (nextNode.rewardPerk) {
+        if (firstVisit && nextNode.rewardPerk) {
             this.activePerks.add(nextNode.rewardPerk.id);
-            if (typeof window !== 'undefined' && window.showSteamDropToast) {
-                window.showSteamDropToast({
-                    name: nextNode.rewardPerk.name,
-                    icon: '❤️',
-                    category: 'SENSUAL STORY PERK'
-                });
+            // showSteamDropToast takes a Steam itemdefid; given this object it
+            // found no catalog entry and showed nothing, so perks arrived silently.
+            if (typeof window !== 'undefined') {
+                window.showToastNotification?.(`${nextNode.rewardPerk.name} — ${nextNode.rewardPerk.description ?? ''}`.replace(/ — $/, ''), { tone: 'info', duration: 7000 });
             }
             // Mark stage completed in sideStoryManager
-            sideStoryManager.completeCurrentStage(this.activeTree.id);
+            this.storyManager.completeCurrentStage(this.activeTree.id);
         }
 
         this.notifyChange();
@@ -859,8 +1211,8 @@ export class NpcDialogueTreeManager {
 
     notifyChange() {
         if (typeof this.onStateChanged === 'function') {
-            const storyState = this.activeTree ? sideStoryManager.getStoryState(this.activeTree.id) : null;
-            const currentStage = this.activeTree ? sideStoryManager.getCurrentStage(this.activeTree.id) : null;
+            const storyState = this.activeTree ? this.storyManager.getStoryState(this.activeTree.id) : null;
+            const currentStage = this.activeTree ? this.storyManager.getCurrentStage(this.activeTree.id) : null;
             this.onStateChanged({
                 isOpen: Boolean(this.activeTree && this.currentNode),
                 tree: this.activeTree,

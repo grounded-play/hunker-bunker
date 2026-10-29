@@ -144,4 +144,70 @@ describe('world event budgets', () => {
         await new Promise((resolve) => setTimeout(resolve, 400));
         expect(seen).toHaveLength(20);
     });
+
+    it('streams prop-moved events through STREAM_WORLD_EVENTS without being choked by state budget', async () => {
+        const seen = [];
+        guest.on('worldEventBroadcast', (payload) => seen.push(payload.event));
+        for (let i = 0; i < 20; i += 1) {
+            host.emit('worldEvent', {
+                event: 'prop-moved',
+                detail: { key: 'prop_crate_1', x: i, z: 2, rotY: 0, seq: i }
+            });
+        }
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        expect(seen.filter((event) => event === 'prop-moved')).toHaveLength(20);
+    });
 });
+
+describe('PvP world event and hostile AI parity', () => {
+    let pvpServer;
+    let pvpHost;
+    let pvpGuest;
+
+    beforeEach(async () => {
+        pvpServer = await startTestServer();
+        pvpHost = await connectClient(pvpServer.url);
+        pvpGuest = await connectClient(pvpServer.url);
+        const joinPvp = (socket, roomCode, callsign) => new Promise((resolve) => {
+            socket.once('currentPlayers', resolve);
+            socket.emit('joinRoom', { roomCode, callsign, opClass: 'TANK', mode: 'pvp' });
+        });
+        await joinPvp(pvpHost, 'PVPWORLD1', 'PVPHOST');
+        await joinPvp(pvpGuest, 'PVPWORLD1', 'PVPGUEST');
+    });
+
+    afterEach(() => {
+        pvpHost?.close();
+        pvpGuest?.close();
+        pvpServer?.httpServer?.close();
+    });
+
+    it('relays prop-moved and prop-interacted events between players in PvP mode', async () => {
+        const received = waitForEvent(pvpGuest, 'worldEventBroadcast');
+        pvpHost.emit('worldEvent', {
+            event: 'prop-moved',
+            detail: { key: 'crate_pvp_1', x: 12.5, z: 8.5, rotY: 1.57, seq: 1 }
+        });
+        const payload = await received;
+        expect(payload).toBeTruthy();
+        expect(payload.event).toBe('prop-moved');
+        expect(payload.detail.key).toBe('crate_pvp_1');
+        expect(payload.detail.x).toBe(12.5);
+    });
+
+    it('relays host enemyState snapshots to peers in PvP mode for full enemy parity', async () => {
+        const received = waitForEvent(pvpGuest, 'enemyStateSnapshot');
+        pvpHost.emit('enemyState', {
+            enemies: [
+                { scatterKey: 'chunk:0,0:1:crawler', enemyType: 'crawler', x: 15, z: 20 }
+            ]
+        });
+        const payload = await received;
+        expect(payload).toBeTruthy();
+        expect(payload.enemies).toHaveLength(1);
+        expect(payload.enemies[0].scatterKey).toBe('chunk:0,0:1:crawler');
+        expect(payload.enemies[0].x).toBe(15);
+        expect(payload.enemies[0].z).toBe(20);
+    });
+});
+

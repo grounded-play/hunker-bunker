@@ -1,4 +1,19 @@
 {
+  "recalibration_feedback": {
+    "action_label": "СЛЕДУЮЩИЙ БОЙ:",
+    "tradeoff_label": "НЕДОСТАТОК:",
+    "installed": "{name}: установка завершена. Калибровка проверена.",
+    "next_fight": "{name} ГОТОВ — {action}",
+    "mods": {
+      "cryo_rime": { "action": "Бейте одного врага, пока он не замёрзнет, затем смените позицию.", "tradeoff": "Прямой урон снижен на 5%; заморозка требует нескольких попаданий." },
+      "caustic_payload": { "action": "Заразите врага и укройтесь, пока коррозия продолжает действовать.", "tradeoff": "Прямой урон снижен на 10%; коррозии нужно время." },
+      "subzero_necrosis": { "action": "Заморозьте заражённую цель и убейте её рядом с другими для взрыва новы.", "tradeoff": "Нова возникает при смерти замороженной цели с коррозией." },
+      "kinetic_hollow_point": { "action": "Стреляйте из укрытия: прямой урон выше на 25%.", "tradeoff": "Вы получаете на 15% больше урона." },
+      "hyper_split_core": { "action": "Накройте группу веером из трёх снарядов.", "tradeoff": "Урон каждого снаряда ниже на 25%; разброс снижает точность." },
+      "corrupted_overcharge": { "action": "Укрывайтесь между очередями: прямой урон выше на 80%.", "tradeoff": "Вы получаете на 35% больше урона." },
+      "o2_siphon_chamber": { "action": "При кислороде ниже 50% урон растёт по мере его убывания. Держите путь к выходу.", "tradeoff": "Выше 50% кислорода бонуса нет. Удушье по-прежнему смертельно." }
+    }
+  },
   "common": {
     "ok": "ОК",
     "cancel": "Отмена",
@@ -53,6 +68,26 @@
       "copy": "Создавайте припасы из сохраненных материалов. Эффекты сразу применяются в текущей экспедиции.",
       "craft": "СОЗДАТЬ",
       "close": "ВЫЙТИ ИЗ ВЕРСТАКА",
+      "tab_supplies": "ИЗГОТОВЛЕНИЕ ПРИПАСОВ",
+      "tab_recalibration": "ПОЛЕВАЯ КАЛИБРОВКА (1/ЛАГЕРЬ)",
+      "recalibration_consumed": "КАЛИБРОВКА ИСПОЛЬЗОВАНА (1/1)",
+      "recalibration_ready": "ПРОТОКОЛ ГОТОВ (1 НА ЛАГЕРЬ)",
+      "reroll_matrix": "ОБНОВИТЬ МАТРИЦУ ({cost} ТЕХ)",
+      "fusion_tag": "КРИО + БИО СИНТЕЗ",
+      "element_overclock": "РАЗГОН: {element}",
+      "weapon_overclock": "РАЗГОН ОРУЖИЯ",
+      "calibration_used": "КАЛИБРОВКА ЛАГЕРЯ ИСПОЛЬЗОВАНА",
+      "synthesize_fusion": "СИНТЕЗИРОВАТЬ",
+      "install_recalibration": "УСТАНОВИТЬ КАЛИБРОВКУ",
+      "stat_tech": "ТЕХ / ЛОМ",
+      "stat_med": "МЕДПРИПАСЫ",
+      "stat_coin": "МОНЕТЫ",
+      "stat_shells": "ГИЛЬЗЫ",
+      "stat_health": "ЗДОРОВЬЕ",
+      "stat_shield": "ЩИТ",
+      "stat_ammo": "БОЕПРИПАСЫ",
+      "need_resource": "НУЖНО {need} {resource}",
+      "deficit": "НЕХВАТКА",
       "ammo_pack_name": "Стандартный боекомплект",
       "ammo_pack_desc": "Пополняет 30 кинетических патронов и заряжает активный магазин.",
       "med_patch_name": "Аварийный биопластырь",
@@ -247,8 +282,11 @@
       "accessibility": "ДОСТУПНОСТЬ",
       "profile_saves": "ПРОФИЛЬ И СОХРАНЕНИЯ",
       "session_display": "СЕССИЯ И ЭКРАН",
+      "steam_overlay": "ОВЕРЛЕЙ STEAM (SHIFT+TAB)",
       "return_to_game": "ВЕРНУТЬСЯ В ИГРУ",
       "resume": "ПРОДОЛЖИТЬ",
+      "skip_onboarding": "ПРОПУСТИТЬ ОБУЧЕНИЕ",
+      "skip_onboarding_desc": "ОТКРЫТЬ СЕКТОР 1 СО СТАНДАРТНЫМ ПОЛЕВЫМ СНАРЯЖЕНИЕМ",
       "abort_current_mission": "ПРЕРВАТЬ ТЕКУЩУЮ МИССИЮ",
       "abort_mission": "ПРЕРВАТЬ МИССИЮ",
       "title_active_crosshair_color": "Текущий цвет прицела",
@@ -434,9 +472,12 @@
     },
     "loading": {
       "aria_label_build_and_developer": "Сведения о сборке и разработчике",
+      "aria_label_deployment_progress": "Ход развертывания",
       "system_build": "СБОРКА СИСТЕМЫ",
       "dev_console": "КОНСОЛЬ DEV",
       "initializing_systems": "ИНИЦИАЛИЗАЦИЯ СИСТЕМ",
+      "squad_waiting": "СИНХРОНИЗАЦИЯ ОТРЯДА — ГОТОВО {loaded} / {total}",
+      "squad_ready": "ОТРЯД ГОТОВ — ОТКРЫВАЕМ ГЕРМОДВЕРИ",
       "msg_biometric_airlock": "КАЛИБРОВКА БИОМЕТРИЧЕСКОГО ШЛЮЗА",
       "msg_reactor_bulkhead": "ЭКРАНИРОВАНИЕ ПЕРЕБОРКИ ОХЛАЖДЕНИЯ РЕАКТОРА",
       "msg_thermal_shield": "СТАБИЛИЗАЦИЯ ТЕРМОСВЕРХПРОВОДЯЩЕГО ЩИТА",
@@ -681,13 +722,6 @@
     "close_player_trade": {
       "aria_label_close_trade_link": "Закрыть торговую связь"
     },
-    "npc_dialogue": {
-      "affection_bond": "ПРИВЯЗАННОСТЬ // СВЯЗЬ",
-      "press_1_4_or_click": "НАЖМИТЕ [1-4] ИЛИ ВЫБЕРИТЕ КАРТУ • [ESC] ВЫЙТИ"
-    },
-    "close_npc_dialogue": {
-      "title_exit_dialogue": "Выйти из диалога"
-    },
     "demo_end": {
       "transmission_terminated": "◈ ПЕРЕДАЧА ПРЕРВАНА",
       "you_belong_to_the_deep": "«Теперь ты принадлежишь глубине, машинка. Рой помнит твой зов.»",
@@ -832,9 +866,34 @@
       "press_e": "НАЖМИТЕ E",
       "defense_turret_controls": "УПРАВЛЕНИЕ ТУРЕЛЬЮ"
     },
+    "coop": {
+      "revive_prompt": "ПОДНЯТЬ {callsign}",
+      "reviving_toast": "ПОДНИМАЕМ {callsign}...",
+      "downed_toast": "ВЫ ВЫВЕДЕНЫ ИЗ СТРОЯ — НАПАРНИК МОЖЕТ ВАС ПОДНЯТЬ",
+      "squadmate_down_toast": "НАПАРНИК ВЫВЕДЕН ИЗ СТРОЯ: {callsign} — ВСТАНЬТЕ РЯДОМ И НАЖМИТЕ «ВЗАИМОДЕЙСТВИЕ»"
+    },
     "foundry_hud_prompt": {
       "press_e": "НАЖМИТЕ E",
-      "open_fab_bay": "ОТКРЫТЬ ЦЕХ СБОРКИ"
+      "open_fab_bay": "ОТКРЫТЬ ЦЕХ СБОРКИ",
+      "grow_signal_dish": "РАСШИРИТЬ АНТЕННУ СВЯЗИ",
+      "install_power_core": "УСТАНОВИТЬ ЭНЕРГОЯДРО",
+      "offline_missing_power_core": "ОТКЛЮЧЕНО · НЕТ ЭНЕРГОЯДРА",
+      "recover_power_core": "ЗАБРАТЬ ЭНЕРГОЯДРО КУЗНИЦЫ",
+      "locked_line": "КУЗНИЦА ОБЕСТОЧЕНА — НАЙДИ ЭНЕРГОЯДРО, ОТМЕЧЕННОЕ НА КАРТЕ.",
+      "offline_title": "КУЗНИЦА ОТКЛЮЧЕНА // НЕТ ПИТАНИЯ",
+      "offline_status": "> СИЛОВАЯ МУФТА ОТСЕКА МЕРТВА<br>> ЗАБЕРИ ЭНЕРГОЯДРО В {location}{distance} (ОТМЕЧЕНО НА КАРТЕ)",
+      "offline_toast_title": "КУЗНИЦА ОТКЛЮЧЕНА",
+      "offline_toast_status": "Нет питания. Забери энергоядро в {location}{distance}, отмечено на карте.",
+      "core_title": "ЯДРО КУЗНИЦЫ ПОЛУЧЕНО",
+      "core_status": "> ЭНЕРГОЯДРО ДОБЫТО<br>> ВЕРНИСЬ К КУЗНИЦЕ, ЧТОБЫ ВОССТАНОВИТЬ ПИТАНИЕ",
+      "core_toast_title": "ЭНЕРГОЯДРО ПОЛУЧЕНО",
+      "core_toast_status": "Вернись к кузнице, чтобы восстановить питание.",
+      "online_title": "КУЗНИЦА В СЕТИ",
+      "online_status": "> ЭНЕРГОЯДРО УСТАНОВЛЕНО // ОТСЕК ИЗГОТОВЛЕНИЯ В СЕТИ",
+      "map_offline": "КУЗНИЦА (ОТКЛЮЧЕНА)",
+      "map_core": "ЯДРО КУЗНИЦЫ",
+      "unknown_location": "АНОМАЛИЯ СЕКТОРА",
+      "speaker": "ИНЖЕНЕР-ОПЕРАТОР"
     },
     "scientist_hud_prompt": {
       "press_e": "НАЖМИТЕ E",
@@ -968,7 +1027,9 @@
       "abort_mission": "ПРЕРВАТЬ МИССИЮ",
       "cancel": "ОТМЕНА",
       "terminate_question": "ПРЕРВАТЬ КОНТРАКТ ПРЯМО ЗДЕСЬ?",
-      "terminate_detail": "Служба обеспечения упакует костюм и подготовит чёрный ящик к следующему спуску."
+      "terminate_detail": "Служба обеспечения упакует костюм и подготовит чёрный ящик к следующему спуску.",
+      "scope_coop": "Уходишь только ты. Отряд продолжает экспедицию.",
+      "scope_pvp": "Ты сдаёшь раунд. Побеждает соперник."
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "НОЧЬ ЗАКРОЕТ ДВЕРИ",
@@ -1157,8 +1218,48 @@
       "no_ranks": "НЕТ РЕЗУЛЬТАТОВ",
       "anonymous_agent": "Агент"
     },
+    "arcade": {
+      "thrust": "[W/A/D · СТИК] ТЯГА/ПОВОРОТ",
+      "fire": "[ПРОБЕЛ · A] ОГОНЬ",
+      "exit": "[ESC · B] ВЫЙТИ ИЗ АВТОМАТА",
+      "reflexes": "АРКАДНЫЕ РЕФЛЕКСЫ: перезарядка на 10% быстрее до конца экспедиции.",
+      "sheen_unlocked": "ОТДЕЛКА ОРУЖИЯ ОТКРЫТА: {name}",
+      "decal_unlocked": "ДЕКАЛЬ ОТКРЫТА: {name}",
+      "tina_radio": "МЭР ТИНА: Ну-ну, герой... кто-то наконец побил мой рекорд. Загляни на дрейфовый аванпост — выпивка за мой счёт.",
+      "blackjack_title": "BLACK-ICE 21",
+      "blackjack_prompt": "[E] ИГРАТЬ В BLACK-ICE 21 (БЛЭКДЖЕК)",
+      "blackjack_built": "ЗОНА ОТДЫХА В СЕТИ // АВТОМАТ BLACK-ICE 21 ПОСТРОЕН",
+      "blackjack_wager": "ТЕКУЩАЯ СТАВКА: {amount} МОНЕТ",
+      "blackjack_win": "ОПЕРАТОР ПОБЕЖДАЕТ: +{amount} МОНЕТ",
+      "blackjack_tier_clear": "УРОВЕНЬ {tier} ПРОЙДЕН: +{bonus} БОНУСНЫХ МОНЕТ",
+      "blackjack_module": "МОДУЛЬ ОТДЫХА БАЗЫ",
+      "blackjack_module_desc": "ТЕРМИНАЛ РОГАЛИК-БЛЭКДЖЕКА · ПОСТОЯННАЯ УСТАНОВКА НА МЕСТЕ КРУШЕНИЯ",
+      "blackjack_installed": "УСТАНОВЛЕНО НА МЕСТЕ КРУШЕНИЯ",
+      "blackjack_build": "ПОСТРОИТЬ АВТОМАТ BLACK-ICE 21",
+      "blackjack_controls_wager": "[↑/↓] СТАВКА",
+      "blackjack_controls_deal": "[ПРОБЕЛ] РАЗДАЧА/СТОП",
+      "blackjack_controls_hit": "[1] ЕЩЁ",
+      "blackjack_controls_stand": "[2] СТОП",
+      "blackjack_controls_double": "[3] УДВОИТЬ",
+      "blackjack_controls_chips": "[4/5/6] КРИО / ТЕРМО / ЭМИ",
+      "blackjack_controls_exit": "[ESC] ВЫХОД"
+    },
     "interstitial": {
       "track": "ТРЕК {id}"
+    },
+    "current_manifest": {
+      "title": "МАНИФЕСТ ВЫЛЕТА",
+      "known_title": "ИЗВЕСТНЫЕ ЗАЯВКИ НА МЕСТА",
+      "claimed": "ЗАЯВЛЕНО {used}/{max}",
+      "operator": "ВЫ 1",
+      "survivors": "ВЫЖИВШИЕ {count}",
+      "allies": "СОЮЗНИКИ {count}",
+      "queen": "КОРОЛЕВА 2",
+      "egg": "ЯЙЦО 1",
+      "free": "СВОБОДНО {count}",
+      "over_capacity": "ЛИШНИХ МЕСТ: {count} — ПЕРЕСМОТРИТЕ ЗАЯВКИ ДО ПОСАДКИ.",
+      "egg_requires_nahl": "ЯЙЦУ НУЖЕН НАХЛ НА БОРТУ.",
+      "egg_unstable": "ЯЙЦУ НУЖНЫ КОРОЛЕВА ИЛИ НАХЛ НА БОРТУ."
     },
     "manifest": {
       "title": "МАНИФЕСТ ВОЗВРАТА",
@@ -1307,7 +1408,10 @@
       "no_tracked_objectives": "НЕТ ОТСЛЕЖИВАЕМЫХ ЦЕЛЕЙ",
       "surface": "ПОВЕРХНОСТЬ",
       "story_prelude": "АКТ I // ПРОЛОГ ЛЮДЕЙ",
-      "build_mismatch": "У ХОСТА {host}, У ВАС {client} — ОБНОВИТЕСЬ ИЛИ СМЕНИТЕ БЕТА-ВЕТКУ STEAM, ЧТОБЫ ВЕРСИИ СОВПАДАЛИ"
+      "build_mismatch": "У ХОСТА {host}, У ВАС {client} — ОБНОВИТЕСЬ ИЛИ СМЕНИТЕ БЕТА-ВЕТКУ STEAM, ЧТОБЫ ВЕРСИИ СОВПАДАЛИ",
+      "lobby_build_tag": "v{build}",
+      "lobby_build_mismatch": "ВЕРСИИ НЕ СОВПАДАЮТ — ХОСТ v{host}, ВЫ v{client}",
+      "squad_build_mismatch": "У ОДНОГО ИЗ ОТРЯДА ДРУГАЯ ВЕРСИЯ ИГРЫ — ДЛЯ ВЫСАДКИ ВЕРСИИ ДОЛЖНЫ СОВПАДАТЬ"
     },
     "dossier": {
       "title": "ТАКТИЧЕСКОЕ ДОСЬЕ",
@@ -1579,12 +1683,6 @@
       "self_class": "{class} // ОПЕРАТИВНИК",
       "peer_class": "{class} // УДАЛЁННЫЙ"
     },
-    "bond": {
-      "enamored": "ВЛЮБЛЁН / ПРЕДАН",
-      "warm": "ТЕПЛО / СИМПАТИЯ",
-      "attentive": "ВНИМАТЕЛЕН",
-      "badge": "{label} ({score} ОЧК)"
-    },
     "fab": {
       "scatter_repeater": "ДРОБОВОЙ РЕПИТЕР",
       "equipped_next_run": "ОСНАЩЕНО НА СЛЕДУЮЩИЙ ЗАБЕГ ✓",
@@ -1610,7 +1708,23 @@
       "stat_rate": "ТЕМП ×{value}",
       "stat_range": "ДАЛЬН ×{value}",
       "stat_shots": "{count} ВЫСТР.",
-      "odds": "ШАНСЫ"
+      "odds": "ШАНСЫ",
+      "welder_kicker": "РЕАКЦИЯ НА ПРОРЫВ ЛАГЕРЯ",
+      "welder_title": "ПОЛЕВОЙ СВАРОЧНЫЙ АППАРАТ ПЕРЕБОРОК",
+      "welder_desc": "Восстанавливайте пробитые боссом стены и чините поврежденные модули лагеря в полевых условиях.",
+      "welder_installed": "ПОЛЕВОЙ СВАРЩИК СОБРАН",
+      "welder_build": "СОБРАТЬ ПОЛЕВОЙ СВАРЩИК",
+      "welder_ready": "ПОЛЕВОЙ СВАРОЧНЫЙ АППАРАТ ПЕРЕБОРОК ГОТОВ",
+      "close_automart": "Закрыть Авто-Март",
+      "ledger_balance": "УЧЁТ ТРОФЕЕВ / БАЛАНС МОНЕТ:",
+      "aisles_aria": "Отделы Авто-Марта",
+      "aisle_hardware": "СТРОИТЕЛЬСТВО И ОБОРУДОВАНИЕ",
+      "aisle_weapons": "ОРУЖИЕ И БОЕПРИПАСЫ",
+      "aisle_lotto": "ЛОТО-ПЕЧАТЬ",
+      "aisle_all": "ВСЕ ОТДЕЛЫ",
+      "slot_marquee": "СПЕКУЛЯТИВНАЯ ЛОТО-ПЕЧАТЬ HORIZON // ДЁРНИ РЫЧАГ",
+      "lotto_window_title": "ОКНО СПЕКУЛЯТИВНОЙ ПЕЧАТИ АКТИВНО",
+      "lotto_window_hint": "Изучите шансы, вложите трофеи и дёрните рычаг изготовления выше."
     },
     "camp": {
       "sleep_warning": "Сон в {camp} переносит на день {day}. Эти нерешённые сигналы закроются.",
@@ -1629,7 +1743,6 @@
       "field_conversation": "ПОЛЕВОЙ РАЗГОВОР",
       "callsign": "ПОЗЫВНОЙ {callsign}",
       "listen_hint": "Выслушайте, затем решите, чем помочь.",
-      "quote": "«{text}»",
       "next_action": "Твой следующий шаг изменит манифест запуска и вектор финала.",
       "scar_gained": "ПРОШЛАЯ НОЧЬ ОСТАВИЛА СЛЕД: {scar}",
       "services": "УСЛУГИ ЛАГЕРЯ ({count})",
@@ -1919,6 +2032,7 @@
         "sporesnail": "споровая улитка",
         "sentinel": "страж",
         "crawler": "ползун прорыва",
+        "chitin_scuttler": "хитиновый шнырь",
         "alien_proto_crawler": "протоползун",
         "alien_proto_spitter": "протоплевун",
         "mycelium_stalker": "мицелиевый охотник",
@@ -1936,7 +2050,9 @@
       "build": {
         "cryo_shatter": "Сборка: Криораскол сработал {count}× — {damage} урона",
         "bio_predator": "Сборка: Биохищник сработал {count}×, восстановив {o2}% O₂ и {hearts} сердец",
+        "subzero_necrosis": "Сборка: Подлёдный некроз сработал {count}× и нанёс {damage} урона",
         "equipped": "Сборка: {drops} (синергия не сработала)",
+        "loadout": "Сборка: установлено {list} (синергия не сработала)",
         "none": "Сборка: нет полевых улучшений в этой высадке"
       },
       "field": {
@@ -2143,6 +2259,7 @@
       "slay_the_queen": "ЗА УБИЙСТВО КОРОЛЕВЫ",
       "archivist": "ЗА ДОСТИЖЕНИЕ «АРХИВАРИУС»",
       "reach_depth": "ЗА ДОСТИЖЕНИЕ ГЛУБИНЫ {depth}",
+      "arcade_score": "ЗА {score} ОЧКОВ В АРКАДЕ",
       "class_runs": "ПОСЛЕ {runs} ЗАБЕГОВ ЗА {cls}",
       "achievement": "ЗА ДОСТИЖЕНИЕ",
       "confirm_buy": "НАЖМИТЕ ЕЩЁ РАЗ, ЧТОБЫ КУПИТЬ",
@@ -2204,7 +2321,6 @@
         "map_zoom": "[LB / RB] МАСШТАБ",
         "map_operator": "[A] ОПЕРАТОР",
         "map_close": "[B] / [VIEW] ЗАКРЫТЬ",
-        "dialogue_choose": "КРЕСТОВИНА — ВЫБОР • [A] ПОДТВЕРДИТЬ • [B] ОТСТУПИТЬ",
         "compass_map": "[VIEW]",
         "radar_scan": "Сканирование радаром [LB]",
         "armory_cycle": "[LB / RB ПЕРЕКЛЮЧИТЬ]",
@@ -2216,6 +2332,7 @@
       "night_body": "Оператор спит. Что-то снаружи — нет.",
       "morning_title": "ДЕНЬ {day} · 06:00",
       "morning_status": "{site} // НАЧИНАЕТСЯ НОВЫЙ ДЕНЬ",
+      "morning_objective": "ЦЕЛЬ: {objective}",
       "skip": "Нажмите любую клавишу, чтобы проснуться"
     },
     "mystery": {
@@ -2278,6 +2395,15 @@
       "area_bio": "в биосекторе",
       "area_unknown": "на местности",
       "notice": "Экран: {setting} снижено до {to}, чтобы игра шла плавно. См. Настройки › Графика."
+    },
+    "kiosk": {
+      "exit": "ВЫХОД",
+      "deal": "РАЗДАТЬ",
+      "hit": "ЕЩЁ",
+      "stand": "ХВАТИТ",
+      "double": "УДВОИТЬ",
+      "pull_lever": "Потяните рычаг, чтобы крутить",
+      "scroll_more": "▼ НИЖЕ ЕСТЬ ЕЩЁ · ПРОКРУТКА · W / S · ↑ / ↓ · КРЕСТОВИНА"
     }
   },
   "narrative": {
@@ -3776,6 +3902,10 @@
       "4167": {
         "desc": "Спусковой якорь, побывавший глубже, чем следовало.",
         "name": "Глубинный якорь"
+      },
+      "4168": {
+        "desc": "Выдаётся за 65 000 очков в SUB-CRUST PROTOCOL: 1984.",
+        "name": "Декаль «Ретро-пиксельная улитка»"
       },
       "4200": {
         "desc": "Полная отделка шасси оператора в стиле «Глубокий Иней».",

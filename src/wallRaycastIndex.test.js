@@ -85,4 +85,33 @@ describe('wall raycasts through the index', () => {
         pillar.layers.set(3);
         compare(random, [walls, pillar], 200);
     });
+
+    it('keeps short rays originating inside a batch and boundary hits at far', () => {
+        const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshBasicMaterial(), 2);
+        walls.setMatrixAt(0, new THREE.Matrix4().makeTranslation(1, 0, 0));
+        walls.setMatrixAt(1, new THREE.Matrix4().makeTranslation(20, 0, 0));
+        walls.instanceMatrix.needsUpdate = true;
+        walls.updateMatrixWorld();
+        const ray = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(1, 0, 0), 0, 0.5);
+        expect(signature(intersectWallMeshes(ray, [walls]))).toEqual(signature(ray.intersectObject(walls)));
+        expect(intersectWallMeshes(ray, [walls]).length).toBeGreaterThan(0);
+    });
+
+    it('matches native rays across nine separated chunks, including vertical and axis-aligned rays', () => {
+        const random = rng(20261028);
+        const meshes = [];
+        for (let x = -1; x <= 1; x++) {
+            for (let z = -1; z <= 1; z++) {
+                const { walls } = wallField(random);
+                walls.position.set(x * 40, 0, z * 40);
+                walls.updateMatrixWorld(true);
+                meshes.push(walls);
+            }
+        }
+        expect(compare(random, meshes, 200)).toBeGreaterThan(0);
+        for (const direction of [[1, 0, 0], [0, 0, -1], [0, -1, 0]]) {
+            const ray = new THREE.Raycaster(new THREE.Vector3(0, 1.2, 0), new THREE.Vector3(...direction), 0, 5);
+            expect(signature(intersectWallMeshes(ray, meshes))).toEqual(signature(ray.intersectObjects(meshes, false)));
+        }
+    });
 });

@@ -8,7 +8,6 @@ export const PAD_HINT_KEYS = Object.freeze({
     'ui.tactical_map.scroll_lb_rb_zoom': 'ui.input_hint.pad.map_zoom',
     'ui.tactical_map.h_x_home_p_y': 'ui.input_hint.pad.map_operator',
     'ui.tactical_map.m_select_esc_close': 'ui.input_hint.pad.map_close',
-    'ui.npc_dialogue.press_1_4_or_click': 'ui.input_hint.pad.dialogue_choose',
     'ui.desktop_compass.map_m': 'ui.input_hint.pad.compass_map',
     'ui.radar_scan.title_radar_scan_q': 'ui.input_hint.pad.radar_scan',
     'ui.armory.cycle_hint': 'ui.input_hint.pad.armory_cycle',

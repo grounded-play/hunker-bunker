@@ -1,4 +1,6 @@
 import { DRESSING_KITS, ROLE_DRESSING } from './roomDressingKits.js';
+import { WORLD_EXPANSION_80_SPECS } from './data/worldExpansion80.js';
+import { MISSING_WORLD_STORY_50_SPECS } from './data/missingWorldStory50.js';
 
 export const SURFACE_ASSET_PLACEMENT = Object.freeze({
     FLOOR: 'floor',
@@ -7,7 +9,16 @@ export const SURFACE_ASSET_PLACEMENT = Object.freeze({
 
 // A rupture splash is authored to read on either side of the wall/floor seam.
 // Everything else must have one unambiguous support plane.
-const MULTI_SURFACE_DECALS = new Set(['decal_pod_312_rupture_splatter']);
+const world80WallDecals = new Set(WORLD_EXPANSION_80_SPECS
+    .filter((spec) => spec.placement === 'wall' || spec.placement === 'ceiling')
+    .map((spec) => spec.decal));
+const world80FloorDecals = new Set(WORLD_EXPANSION_80_SPECS
+    .filter((spec) => spec.placement !== 'wall' && spec.placement !== 'ceiling')
+    .map((spec) => spec.decal));
+const MULTI_SURFACE_DECALS = new Set([
+    'decal_pod_312_rupture_splatter',
+    ...[...world80WallDecals].filter((type) => world80FloorDecals.has(type))
+]);
 
 function collectLayerTypes(layer) {
     const types = new Set();
@@ -21,6 +32,11 @@ function collectLayerTypes(layer) {
 
 const wallTypes = collectLayerTypes('wallDecals');
 const floorTypes = collectLayerTypes('floorDecals');
+for (const type of world80WallDecals) wallTypes.add(type);
+for (const type of world80FloorDecals) floorTypes.add(type);
+for (const spec of MISSING_WORLD_STORY_50_SPECS) {
+    for (const type of spec.decals) (spec.decalPlane === 'wall' ? wallTypes : floorTypes).add(type);
+}
 const profiles = {};
 
 for (const type of new Set([...wallTypes, ...floorTypes])) {

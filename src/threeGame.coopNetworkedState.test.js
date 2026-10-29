@@ -9,7 +9,7 @@ import { ThreeGame } from './threeGame.js';
 afterEach(() => vi.unstubAllGlobals());
 
 const METHODS = ['broadcastSharedWorldEvent', 'handleSharedWorldEvent', 'applyRemotePlayerDeath',
-    'applyRemotePlayerRedeploy', 'applyRemoteLootDrop', 'removeLootDrop'];
+    'applyRemotePlayerRedeploy', 'applyRemoteLootDrop', 'removeLootDrop', 'resolveCoopSquadWipe'];
 
 function netGame({ id = 'me', host = false, remotes = [] } = {}) {
     const emit = vi.fn();
@@ -46,6 +46,32 @@ function netGame({ id = 'me', host = false, remotes = [] } = {}) {
 const remote = (id) => ({ id, callsign: 'HAWK-3', mesh: { visible: true, position: { x: 0, z: 0 } }, overlay: { setDowned: vi.fn() }, hp: 5, maxHp: 5 });
 
 describe('a squadmate death reaches the partner', () => {
+    it.each([true, false])('a remote abort does not kill a standing operator (host=%s)', (host) => {
+        const { game } = netGame({ host, remotes: [remote('hawk')] });
+        game.handleDeath = vi.fn();
+        game.isPlayerDowned = false;
+        game.handleSharedWorldEvent({ event: 'player-died', detail: { playerId: 'hawk', seq: 1, reason: 'mission-abort' }, originId: 'hawk' });
+        expect(game.handleDeath).not.toHaveBeenCalled();
+    });
+
+    it.each(['mission-abort', 'pit-fall'])('resolves a downed operator when their last rescuer dies from %s', (reason) => {
+        const { game } = netGame({ remotes: [remote('hawk')] });
+        game.isPlayerDowned = true;
+        game.handleDeath = vi.fn(() => { game.isPlayerDead = true; });
+        const event = { event: 'player-died', detail: { playerId: 'hawk', seq: 1, reason }, originId: 'hawk' };
+        game.handleSharedWorldEvent(event);
+        game.handleSharedWorldEvent(event);
+        expect(game.handleDeath).toHaveBeenCalledExactlyOnceWith('squad-wipe');
+    });
+
+    it('keeps a downed operator revivable while another squadmate is standing', () => {
+        const { game } = netGame({ remotes: [remote('hawk'), remote('viper')] });
+        game.isPlayerDowned = true;
+        game.handleDeath = vi.fn();
+        game.handleSharedWorldEvent({ event: 'player-died', detail: { playerId: 'hawk', seq: 1, reason: 'mission-abort' }, originId: 'hawk' });
+        expect(game.handleDeath).not.toHaveBeenCalled();
+    });
+
     it('shows the body down, where it fell, with its black box — not a standing operator', () => {
         const hawk = remote('hawk');
         const { game } = netGame({ remotes: [hawk] });
@@ -115,7 +141,7 @@ describe('power-up drops are the host’s, seen by both', () => {
     });
 });
 
-describe('every co-op death is announced', () => {
+describe('networked deaths reach the correct authority', () => {
     function dyingGame(overrides = {}) {
         const broadcast = vi.fn();
         vi.stubGlobal('window', { dispatchEvent: () => true, CustomEvent });
@@ -154,6 +180,22 @@ describe('every co-op death is announced', () => {
         const { game, broadcast } = dyingGame({ isMultiplayer: false, netSocket: null });
         ThreeGame.prototype.handleDeath.call(game, 'pit-fall');
         expect(broadcast).not.toHaveBeenCalledWith('player-died', expect.anything());
+    });
+
+    it.each(['mission-abort', 'pit-fall', 'poison'])('PvP %s reaches the relay once without carrying a co-op map', (reason) => {
+        const { game, broadcast } = dyingGame({ multiplayerMode: 'pvp', getMazePersistenceState: vi.fn() });
+        ThreeGame.prototype.handleDeath.call(game, reason);
+        ThreeGame.prototype.handleDeath.call(game, reason);
+        expect(broadcast).toHaveBeenCalledExactlyOnceWith('player-died', expect.objectContaining({ playerId: 'deck', reason }));
+        expect(game._coopRunCarry).toBeUndefined();
+        expect(game._blackBoxState).toBeUndefined();
+        expect(game.getMazePersistenceState).not.toHaveBeenCalled();
+    });
+
+    it('does not announce a second PvP result for a rival hit already settled by the relay', () => {
+        const { game, broadcast } = dyingGame({ multiplayerMode: 'pvp' });
+        ThreeGame.prototype.handleDeath.call(game, 'pvp-rival');
+        expect(broadcast).not.toHaveBeenCalled();
     });
 });
 

@@ -8,7 +8,11 @@ import { KIT_SCALE, applyKitMaterials } from './kitMaterials.js';
 import { createPropFx } from './propFx.js';
 import { createPropExperience } from './propExperience.js';
 import { applyClothFlutter } from './clothFlutter.js';
+import { applyCableSway } from './cableSway.js';
 import { createGltfLoader as createSharedGltfLoader } from './gltfLoaderFactory.js';
+import { getModelPresentationProfile, getWallModelDepth } from './modelPresentationRegistry.js';
+import { WORLD_EXPANSION_80_MODELS } from './data/worldExpansion80.js';
+import { MISSING_WORLD_STORY_50_MODELS } from './data/missingWorldStory50.js';
 
 // docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws without this registered first.
@@ -552,7 +556,14 @@ export const WORLD_3D_MODELS = Object.freeze({
     evac_cabin_co2_scrubber: { url: '/3d/runtime/new3ds/evac_cabin_co2_scrubber.glb', height: 1.7, span: 1.1, yaw: 0 },
     evac_manual_abort_detonator: { url: '/3d/runtime/new3ds/evac_manual_abort_detonator.glb', height: 1.4, span: 0.8, yaw: 0 },
     evac_cargo_ballast_scale: { url: '/3d/runtime/new3ds/evac_cargo_ballast_scale.glb', height: 0.4, span: 2.0, yaw: 0 },
-    mothership_docking_umbilical_collar: { url: '/3d/runtime/new3ds/mothership_docking_umbilical_collar.glb', height: 3.0, span: 2.8, yaw: 0 }
+    mothership_docking_umbilical_collar: { url: '/3d/runtime/new3ds/mothership_docking_umbilical_collar.glb', height: 3.0, span: 2.8, yaw: 0 },
+
+    // 2026-10-16 World Expansion 80. The shared manifest also owns each
+    // model's interaction, FX, surface, decal, and placement contract.
+    ...WORLD_EXPANSION_80_MODELS,
+
+    // 2026-10-27 Missing World Story 50 models (10 quest, 14 drops, 10 camp, 8 alien/hive, 4 scatter, 1 hazard, 3 evac)
+    ...MISSING_WORLD_STORY_50_MODELS
 });
 
 // Metric-scale set-piece shells are deliberately separate from prop models.
@@ -694,6 +705,7 @@ export function prepareWorld3dModel(model, type, config, animations = null) {
     });
     useSinglePassForFlatMaterials(model);
     applyClothFlutter(model);
+    applyCableSway(model, type);
 
     let mixer = null;
     if (animations && animations.length > 0) {
@@ -745,6 +757,7 @@ function prepareUniformScaleModel(model, type, config, animations = null) {
         object.frustumCulled = true;
     });
     useSinglePassForFlatMaterials(model);
+    applyCableSway(model, type);
     // After the flat-material pass: shared materials must not be mutated per piece.
     applyKitMaterials(model, type, null, {
         skinOverride: config.skin || config.theme,
@@ -814,7 +827,6 @@ export const WORLD_3D_MODEL_ALIASES = Object.freeze({
     // on a look live in src/data/world3dCandidates.js.
     prop_fusion_generator: 'fusion_generator',
     prop_camp_cookfire_doused: 'prop_camp_cookfire',
-    prop_camp_vesper_turret: 'prop_base_defense_turret',
     scatter_camp_supplies: 'prop_camp_crate',
     // Session 2026-10-06 (PC + Deck): still flat in rooms. Matches the debug
     // museum review verdicts in docs/reports/2d-to-3d-gap-audit-2026-10-05.md.
@@ -823,28 +835,15 @@ export const WORLD_3D_MODEL_ALIASES = Object.freeze({
     prop_biomech_pillar_right: 'prop_biomech_arch',
     prop_cryo_sleep_pod: 'prop_flesh_steel_coffin',
     scatter_bio_pod: 'prop_biomech_incubator',
-    prop_alien_respiratory_vent: 'prop_biomech_sphincter_hatch_vent',
     prop_engineering_bench: 'prop_fabricator_workstation',
-    prop_ruptured_coolant_pump: 'prop_icey_frost_manifold',
     // Authored interaction ids keep their gameplay meaning while reviewed
     // stand-ins remove the last flat/missing anchors from furnished rooms.
     lore_terminal: 'prop_terminal_ruptured',
     scatter_horizon_black_box: 'prop_camp_meridian_radio',
     prop_hydraulic_piston_actuator: 'prop_exosuit_docking_gantry',
-    // Camp and hive signature/service props: their sprites are placeholder
-    // tiles (dashed box + initials), so any fitting model is an upgrade.
-    prop_camp_meridian_repair_rig: 'prop_maintenance_tool_cart',
-    prop_camp_meridian_battery_bank: 'prop_oxygen_bottle_cascade_rack',
-    prop_camp_tallow_still: 'prop_pipe_organ_heat_exchanger',
-    prop_camp_tallow_spore_trays: 'prop_fungal_mycelium_loom',
-    prop_camp_tallow_resin_urn: 'prop_fungal_resin_basin',
-    prop_camp_vesper_ammo_press: 'prop_fabricator_workstation',
-    prop_camp_vesper_shield_rack: 'prop_security_barricade',
-    prop_hive_suture_organ: 'prop_flesh_steel_inhaler',
-    prop_hive_wound_cauterizer: 'prop_biomech_triage_cradle',
-    prop_hive_relay_antenna: 'prop_vertebral_cable_riser',
-    prop_hive_synaptic_web: 'prop_biomech_neural_synapse',
-    prop_hive_chitin_hatchery: 'prop_biomech_incubator'
+    // Camp and hive signature/service props used to borrow models here; since
+    // 2026-10-27 each has its own (src/data/missingWorldStory50.js). Never alias
+    // a type that has its own model: the borrowed one would hide it.
 });
 
 export function world3dModelTypeFor(type) {
@@ -937,8 +936,14 @@ export function syncWorld3dReplacement(source, { scale = 1, visible, delta } = {
             root.rotation.y = Math.atan2(wn.x, wn.z);
         }
         if (source.userData.isWallBackedProp) {
-            root.position.x -= wn.x * 0.22;
-            root.position.z -= wn.z * 0.22;
+            const modelType = source.userData.world3dModelType ?? source.userData.type;
+            const profile = getModelPresentationProfile(modelType);
+            const depth = getWallModelDepth(modelType) ?? profile?.depth;
+            const halfDepth = Number.isFinite(depth) ? Math.min(0.52, depth) / 2 : 0.26;
+            const inset = profile?.contact?.inset ?? 0.02;
+            const offset = Math.max(0.12, Math.min(0.38, 0.50 - halfDepth - inset));
+            root.position.x -= wn.x * offset;
+            root.position.z -= wn.z * offset;
         }
     } else if (Number.isFinite(source.userData?.yaw)) {
         root.rotation.y = source.userData.yaw;

@@ -16,6 +16,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanPerformanceText } from './build-voice-cast.mjs';
+import { extractCodeVoiceLines } from './extract-code-voice-lines.mjs';
+import { normalizeVoiceText } from '../../src/voiceLines.js';
 
 // Mixed-script numerals derail the TTS: a zh-CN commentary line with
 // "2026 年 6 月" rendered 35 s of babble on all three seeds (2026-10-05).
@@ -51,8 +53,8 @@ const LEADER_ROLE = { kaelen: 'kaelen', martha: 'martha', briggs: 'briggs', nahl
 
 // catalog: narrative.<catalog>; match(pathParts) -> { role, register? } | null.
 export const VOICE_LINE_RULES = Object.freeze([
-    { catalog: 'leaderDialogue', match: ([leader, part]) => (part === 'stages' && LEADER_ROLE[leader] ? { role: LEADER_ROLE[leader] } : null) },
-    { catalog: 'leaderDeathBeats', match: ([leader]) => (LEADER_ROLE[leader] ? { role: LEADER_ROLE[leader] } : null) },
+    { catalog: 'leaderDialogue', speaker: true, match: ([leader, part]) => (part === 'stages' && LEADER_ROLE[leader] ? { role: LEADER_ROLE[leader] } : null) },
+    { catalog: 'leaderDeathBeats', speaker: true, match: ([leader]) => (LEADER_ROLE[leader] ? { role: LEADER_ROLE[leader] } : null) },
     // The suit's own voice, in its three registers (corporate, glitched, reverent).
     { catalog: 'dialogue', match: ([register]) => ({ role: 'system', register }) },
     { catalog: 'mothershipReactive', match: (parts) => (parts.at(-1) === 'text' ? { role: 'mothership' } : null) },
@@ -91,8 +93,10 @@ export function extractVoiceLines(localesDir = path.join(ROOT, 'src/locales')) {
                 const assigned = rule.match(parts);
                 if (!assigned) continue;
                 const key = `narrative.${rule.catalog}.${parts.join('.')}`;
-                const prefixed = SPEAKER_PREFIX.test(englishText.get(key) ?? '');
-                const cleaned = cleanPerformanceText(text, { stripLocalizedPrefix: locale !== 'en' && prefixed });
+                // Leader lines always open with the speaker ("Kaelen: ..."),
+                // in whatever case the catalog writes it.
+                const prefixed = rule.speaker === true || SPEAKER_PREFIX.test(englishText.get(key) ?? '');
+                const cleaned = cleanPerformanceText(text, { stripLocalizedPrefix: prefixed });
                 const spoken = locale === 'zh-CN' ? speakChineseNumbers(cleaned) : cleaned;
                 if (!spoken) continue;
                 lines.push({ key, locale, ...assigned, display: text, spoken });
@@ -102,9 +106,16 @@ export function extractVoiceLines(localesDir = path.join(ROOT, 'src/locales')) {
     return lines;
 }
 
+/** Catalog lines in every language, then the English-only lines that live in code. */
+export function extractAllVoiceLines() {
+    const catalog = extractVoiceLines();
+    const recordedTexts = new Set(catalog.filter((l) => l.locale === 'en').map((l) => normalizeVoiceText(l.display)));
+    return [...catalog, ...extractCodeVoiceLines({ recordedTexts })];
+}
+
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-    const lines = extractVoiceLines();
-    fs.writeFileSync(OUT, `${JSON.stringify({ generatedFrom: 'src/locales/*.json', lines }, null, 1)}\n`);
+    const lines = extractAllVoiceLines();
+    fs.writeFileSync(OUT, `${JSON.stringify({ generatedFrom: ['src/locales/*.json', 'code: scripts/voice/extract-code-voice-lines.mjs'], lines }, null, 1)}\n`);
     const perRole = {};
     for (const line of lines.filter((l) => l.locale === 'en')) perRole[line.role] = (perRole[line.role] ?? 0) + 1;
     console.log(`[voice-lines] ${lines.length} lines across ${LOCALES.length} locales -> ${path.relative(ROOT, OUT)}`);

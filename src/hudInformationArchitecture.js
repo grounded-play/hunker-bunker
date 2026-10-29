@@ -1,8 +1,13 @@
+// One lane, one message (docs/planning/definitive-first-expedition-
+// improvement-program-2026-10-27.md §5): what you can press now, then the
+// required next step, then where you are, then the optional pursuit, then
+// general guidance.
 const PROMPT_PRIORITY = Object.freeze({
     interaction: 0,
     urgent: 1,
     context: 2,
-    guidance: 3
+    optional: 3,
+    guidance: 4
 });
 
 const INTERACTION_SELECTOR = '.hud-action-prompt, .black-box-hud-prompt, .hole-hud-prompt';
@@ -42,8 +47,10 @@ function elementIsRequestedVisible(element) {
         && element.getAttribute('aria-hidden') !== 'true';
 }
 
-function promptKind(element) {
+export function promptKind(element) {
     if (element.matches(INTERACTION_SELECTOR)) return 'interaction';
+    // Camp bonding quests share the mission HUD's look but are optional.
+    if (element.id === 'camp-quest-hud') return 'optional';
     if (element.id === 'tutorial-prompt' || element.classList.contains('mission-progress-hud')) return 'urgent';
     if (element.id === 'biome-hud-prompt') return 'context';
     return 'guidance';

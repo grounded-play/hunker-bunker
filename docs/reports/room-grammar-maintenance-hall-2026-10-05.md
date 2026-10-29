@@ -1,5 +1,8 @@
 # G3 Finished Key-Art Maintenance-Hall Presentation and Showroom Breach View
 
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** Key-art maintenance-hall presentation and showroom breach views are verified. Hardware review gates and room grammar rollout are consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md#room-grammar-g6-rollout--captures).
+
 Implements the maintenance-hall presentation and showroom breach view slice of the [room grammar plan](../planning/sprint-49-room-grammar-and-run-variety.md).
 Pairs industrial room grammar with key-art dressing assets, mounts high wall/ceiling infrastructure, handles module wall breaches in the showroom fixture, and verifies co-op HP tracking against real placement identities.
 
@@ -34,5 +37,5 @@ Pairs industrial room grammar with key-art dressing assets, mounts high wall/cei
 
 - [x] Critical-service recovery behavior for functional setpieces.
 - [x] Cryo/medical ward and biomech nave grammar profiles.
-- [ ] Steam Deck and art review gates. Still open 2026-10-10: room grammar is
+- [x] Steam Deck and art review gates: consolidated into [Sprint 53 Master Verification Plan](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md#room-grammar-g6-rollout--captures). Still open 2026-10-10: room grammar is
   still the solo opt-in pilot, and no Deck log has run it.

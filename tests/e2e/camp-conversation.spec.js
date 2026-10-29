@@ -21,19 +21,24 @@ test('a camp has one conversation and a short prompt', async ({ page }) => {
     const started = await page.evaluate(() => {
         const g = window.game;
         const camp = g.getCampById('camp_meridian');
+        // Meridian's first meeting (S-1) would play before the window; this
+        // spec is about the window itself.
+        g.interactionSequenceRunner?.markSequenceCompleted?.('meridian_first_meeting');
         return camp ? g.talkToLeader('camp', camp) : null;
     });
     expect(started).toBe(true);
     await page.waitForTimeout(800);
     expect(await visible('leader-conversation-modal')).toBe(true);
-    expect(await visible('npc-dialogue-modal')).toBe(false);
+    // The standalone tree modal is gone; trees only draw in this window.
+    expect(await page.locator('#npc-dialogue-modal').count()).toBe(0);
     expect(await visible('song-interstitial')).toBe(false);
     await page.screenshot({ path: 'playwright-report/screenshots/camp-conversation-staged.png' });
 
     // The staged lines, then the leader's choices in the same window.
     for (let i = 0; i < 12 && !(await visible('leader-conversation-choices')); i++) {
         await page.locator('#leader-conversation-continue').click();
-        await page.waitForTimeout(250);
+        // Continue holds for CONTINUE_HOLD_MS (600) after each line appears.
+        await page.waitForTimeout(700);
     }
     expect(await visible('leader-conversation-choices')).toBe(true);
     expect(await visible('leader-conversation-modal')).toBe(true);
@@ -117,7 +122,9 @@ test('first contact plays the title card once, then the conversation', async ({ 
     expect(await visible('leader-conversation-modal')).toBe(false);
     await page.screenshot({ path: 'playwright-report/screenshots/camp-first-contact-card.png' });
     await expect.poll(() => visible('leader-conversation-modal'), { timeout: 20000 }).toBe(true);
-    expect(await visible('song-interstitial')).toBe(false);
+    // The window mounts behind the exit doors (audit 2026-10-16 §13.1); the
+    // card clears once they have opened on it.
+    await expect.poll(() => visible('song-interstitial'), { timeout: 3000 }).toBe(false);
     expect(await page.locator('#leader-conversation-name').textContent()).toMatch(/Martha/i);
     await page.locator('#leader-conversation-leave').click();
     await page.waitForTimeout(300);

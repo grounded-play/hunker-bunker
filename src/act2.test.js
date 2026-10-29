@@ -446,41 +446,30 @@ describe('camp discovery', () => {
     });
 });
 
+// Owner decision D-1, 2026-10-16: each camp keeps its own leader, so a
+// camp's quests, props and cards always match the person standing there.
+// An Engineer used to meet Martha at Meridian, under Kaelen's quests.
 describe('getCampClassMapping', () => {
-    it('returns the correct RPS mapping for a Scout player', () => {
-        const mapping = getCampClassMapping('Scout');
-        expect(getClassCampOrder('Scout').map((c) => c.classId)).toEqual(['TANK', 'ENGINEER', 'SCOUT']);
-        expect(mapping.camp_meridian).toMatchObject({ class: 'Tank', leader: 'Commander Briggs', isBoss: false, order: 1 });
-        expect(mapping.camp_tallow).toMatchObject({ class: 'Engineer', leader: 'Overseer Kaelen', isBoss: false, order: 2 });
-        expect(mapping.camp_vesper).toMatchObject({ class: 'Scout', leader: 'Sister Martha', isBoss: true, order: 3 });
-        expect(getBoardingCampId('Scout')).toBe('camp_vesper');
+    const leaders = (cls) => Object.fromEntries(Object.entries(getCampClassMapping(cls)).map(([id, entry]) => [id, entry.leader]));
+
+    it('keeps every leader at their own camp, whatever the player class', () => {
+        for (const cls of ['Scout', 'Tank', 'Engineer', 'SpaceWhale']) {
+            expect(leaders(cls), cls).toEqual({
+                camp_meridian: 'Overseer Kaelen',
+                camp_tallow: 'Sister Martha',
+                camp_vesper: 'Commander Briggs'
+            });
+            expect(getClassCampOrder(cls).map((c) => c.id), cls).toEqual(['camp_meridian', 'camp_tallow', 'camp_vesper']);
+            expect(getBoardingCampId(cls), cls).toBe('camp_vesper');
+        }
     });
 
-    it('returns the correct RPS mapping for a Tank player', () => {
-        const mapping = getCampClassMapping('Tank');
-        expect(getClassCampOrder('Tank').map((c) => c.classId)).toEqual(['ENGINEER', 'SCOUT', 'TANK']);
-        expect(mapping.camp_meridian).toMatchObject({ class: 'Engineer', leader: 'Overseer Kaelen', isBoss: false, order: 1 });
-        expect(mapping.camp_tallow).toMatchObject({ class: 'Scout', leader: 'Sister Martha', isBoss: false, order: 2 });
-        expect(mapping.camp_vesper).toMatchObject({ class: 'Tank', leader: 'Commander Briggs', isBoss: true, order: 3 });
-        expect(getBoardingCampId('Tank')).toBe('camp_vesper');
-    });
-
-    it('returns the correct RPS mapping for an Engineer player', () => {
-        const mapping = getCampClassMapping('Engineer');
-        expect(getClassCampOrder('Engineer').map((c) => c.classId)).toEqual(['SCOUT', 'TANK', 'ENGINEER']);
-        expect(mapping.camp_meridian).toMatchObject({ class: 'Scout', leader: 'Sister Martha', isBoss: false, order: 1 });
-        expect(mapping.camp_tallow).toMatchObject({ class: 'Tank', leader: 'Commander Briggs', isBoss: false, order: 2 });
-        expect(mapping.camp_vesper).toMatchObject({ class: 'Engineer', leader: 'Overseer Kaelen', isBoss: true, order: 3 });
-        expect(getBoardingCampId('Engineer')).toBe('camp_vesper');
-    });
-
-    it('defaults to Engineer mapping for unknown classes', () => {
-        const mapping = getCampClassMapping('SpaceWhale');
-        expect(getClassCampOrder('SpaceWhale').map((c) => c.classId)).toEqual(['SCOUT', 'TANK', 'ENGINEER']);
-        expect(mapping.camp_meridian).toMatchObject({ class: 'Scout', leader: 'Sister Martha', isBoss: false, order: 1 });
-        expect(mapping.camp_tallow).toMatchObject({ class: 'Tank', leader: 'Commander Briggs', isBoss: false, order: 2 });
-        expect(mapping.camp_vesper).toMatchObject({ class: 'Engineer', leader: 'Overseer Kaelen', isBoss: true, order: 3 });
-        expect(getBoardingCampId('SpaceWhale')).toBe('camp_vesper');
+    it("makes the leader of the player's own discipline the inverted mirror", () => {
+        expect(getCampClassMapping('Engineer').camp_meridian).toMatchObject({ isBoss: true, order: 1 });
+        expect(getCampClassMapping('Scout').camp_tallow).toMatchObject({ isBoss: true, order: 2 });
+        expect(getCampClassMapping('Tank').camp_vesper).toMatchObject({ isBoss: true, order: 3 });
+        expect(Object.values(getCampClassMapping('Tank')).filter((entry) => entry.isBoss)).toHaveLength(1);
+        expect(getCampClassMapping('SpaceWhale').camp_meridian.isBoss).toBe(true);
     });
 });
 

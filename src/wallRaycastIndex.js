@@ -17,6 +17,8 @@ import * as THREE from 'three';
 const _instanceLocal = new THREE.Matrix4();
 const _instanceWorld = new THREE.Matrix4();
 const _sphere = new THREE.Sphere();
+const _boundsPoint = new THREE.Vector3();
+const _boundsHit = new THREE.Vector3();
 const _mesh = new THREE.Mesh();
 const _instanceHits = [];
 const spheresByMesh = new WeakMap();
@@ -41,6 +43,7 @@ function instanceSpheres(mesh) {
     const geometry = mesh.geometry;
     if (geometry.boundingSphere === null) geometry.computeBoundingSphere();
     const data = new Float64Array(count * 4);
+    const bounds = new THREE.Box3();
     for (let id = 0; id < count; id += 1) {
         mesh.getMatrixAt(id, _instanceLocal);
         _instanceWorld.multiplyMatrices(mesh.matrixWorld, _instanceLocal);
@@ -50,17 +53,31 @@ function instanceSpheres(mesh) {
         data[o + 1] = _sphere.center.y;
         data[o + 2] = _sphere.center.z;
         data[o + 3] = _sphere.radius;
+        // Enclose the same padded spheres used below, so rejecting a whole
+        // wall batch can never discard an individual wall the narrow phase
+        // would hit. Rebuilt on the same destruction/movement invalidations.
+        const radius = _sphere.radius * 1.0001 + 1e-6;
+        bounds.expandByPoint(_boundsPoint.copy(_sphere.center).addScalar(-radius));
+        bounds.expandByPoint(_boundsPoint.copy(_sphere.center).addScalar(radius));
     }
-    const entry = { version, count, geometry, world: Float64Array.from(world), data };
+    const entry = { version, count, geometry, world: Float64Array.from(world), data, bounds };
     spheresByMesh.set(mesh, entry);
     return entry;
 }
 
 function raycastInstanced(mesh, raycaster, intersects) {
     if (mesh.material === undefined) return;
-    const { data, count } = instanceSpheres(mesh);
+    const { data, count, bounds } = instanceSpheres(mesh);
     const { origin, direction } = raycaster.ray;
     const reach = raycaster.far;
+    // Most suit, projectile and audio rays cannot reach the other eight
+    // chunks in the visible neighborhood. Reject their batches once instead
+    // of testing every cached wall sphere for every ray. An origin inside
+    // the box must stay eligible even when its exit is beyond `far`.
+    if (!bounds.containsPoint(origin)) {
+        if (!raycaster.ray.intersectBox(bounds, _boundsHit)
+            || origin.distanceToSquared(_boundsHit) > reach * reach) return;
+    }
     for (let id = 0; id < count; id += 1) {
         const o = id * 4;
         // Padded so float rounding can only keep an instance, never drop one.

@@ -1,4 +1,10 @@
 import { t } from './i18n.js';
+import { getRecalibrationFeedback } from './fieldRecalibrationPresentation.js';
+import {
+    generateRecalibrationChoices,
+    checkRecalibrationAffordability,
+    RECALIBRATION_REROLL_COST
+} from './fieldRecalibration.js';
 import './styles/fieldWorkbench.css';
 
 export const FIELD_WORKBENCH_RECIPES = Object.freeze([
@@ -106,6 +112,47 @@ export function createFieldWorkbenchUi({
     const closeBtn = doc.getElementById('close-field-workbench');
     const footerCloseBtn = doc.getElementById('field-workbench-footer-close');
 
+    let activeTab = 'supplies';
+    const tabSuppliesBtn = doc.getElementById('workbench-tab-supplies');
+    const tabRecalibrationBtn = doc.getElementById('workbench-tab-recalibration');
+    const suppliesSection = doc.getElementById('field-workbench-supplies-section');
+    const recalibrationSection = doc.getElementById('field-workbench-recalibration-section');
+    const recalibrationHeaderEl = doc.getElementById('field-workbench-recalibration-header');
+    const recalibrationGridEl = doc.getElementById('field-workbench-recalibration-grid');
+
+    function setTab(tab) {
+        activeTab = tab;
+        if (tab === 'supplies') {
+            tabSuppliesBtn?.classList?.add('is-active');
+            tabRecalibrationBtn?.classList?.remove('is-active');
+            tabSuppliesBtn?.setAttribute('aria-selected', 'true');
+            tabRecalibrationBtn?.setAttribute('aria-selected', 'false');
+        } else {
+            tabSuppliesBtn?.classList?.remove('is-active');
+            tabRecalibrationBtn?.classList?.add('is-active');
+            tabSuppliesBtn?.setAttribute('aria-selected', 'false');
+            tabRecalibrationBtn?.setAttribute('aria-selected', 'true');
+        }
+        if (suppliesSection) {
+            if (tab === 'supplies') {
+                suppliesSection.classList.remove('hidden');
+            } else {
+                suppliesSection.classList.add('hidden');
+            }
+        }
+        if (recalibrationSection) {
+            if (tab === 'recalibration') {
+                recalibrationSection.classList.remove('hidden');
+                renderRecalibration();
+            } else {
+                recalibrationSection.classList.add('hidden');
+            }
+        }
+    }
+
+    tabSuppliesBtn?.addEventListener('click', () => setTab('supplies'));
+    tabRecalibrationBtn?.addEventListener('click', () => setTab('recalibration'));
+
     function renderStats() {
         if (!statsStripEl) return;
         const game = getGame();
@@ -155,6 +202,145 @@ export function createFieldWorkbenchUi({
         `;
     }
 
+    function renderRecalibration() {
+        if (!recalibrationGridEl) return;
+        const game = getGame();
+        const campId = currentCamp?.campId || 'camp-default';
+        const isRecalibrated = currentCamp?.recalibrated || game?.isCampRecalibrated?.(campId) || false;
+        const bank = (typeof getBank === 'function' ? getBank() : getBank) ?? game?.bank?.getState?.() ?? {};
+        const availableTech = Number(bank.tech ?? bank.scrap) || 0;
+
+        if (recalibrationHeaderEl) {
+            const statusBadgeText = isRecalibrated
+                ? t('ui.workbench.recalibration_consumed', {}, 'RECALIBRATION CONSUMED (1/1 USED)')
+                : t('ui.workbench.recalibration_ready', {}, 'RECALIBRATION PROTOCOL READY (1 PER CAMP)');
+            const canReroll = !isRecalibrated && availableTech >= RECALIBRATION_REROLL_COST.tech;
+
+            recalibrationHeaderEl.innerHTML = `
+                <div class="field-workbench-camp-badge ${isRecalibrated ? 'is-consumed' : ''}">
+                    ${statusBadgeText}
+                </div>
+                <button type="button" class="field-workbench-reroll-btn" id="workbench-reroll-btn" ${canReroll ? '' : 'disabled'}>
+                    ${t('ui.workbench.reroll_matrix', { cost: RECALIBRATION_REROLL_COST.tech }, `REROLL MATRIX (${RECALIBRATION_REROLL_COST.tech} TECH)`)}
+                </button>
+            `;
+
+            const rerollBtn = recalibrationHeaderEl.querySelector('#workbench-reroll-btn');
+            rerollBtn?.addEventListener('click', () => {
+                if (!canReroll) return;
+                const newChoices = game?.rerollFieldRecalibration?.(campId);
+                if (newChoices) {
+                    if (currentCamp) currentCamp.recalibrationChoices = newChoices;
+                    renderStats();
+                    renderRecalibration();
+                }
+            });
+        }
+
+        let choices = currentCamp?.recalibrationChoices;
+        if (!choices || !choices.length) {
+            choices = game?.getRecalibrationChoices?.(campId) || generateRecalibrationChoices({
+                campId,
+                equippedOverclocks: game?.equippedOverclocks || [],
+                equippedRelics: game?.equippedRelics || [],
+                rerollCount: 0,
+                runEntropy: game?.runEntropy || 0
+            });
+            if (currentCamp) currentCamp.recalibrationChoices = choices;
+        }
+
+        recalibrationGridEl.innerHTML = '';
+
+        for (const choice of choices) {
+            const { affordable, missing } = checkRecalibrationAffordability(choice.cost, bank);
+            const card = doc.createElement('div');
+            card.className = `field-workbench-card ${choice.isFusion ? 'field-workbench-card--fusion' : ''} ${affordable && !isRecalibrated ? '' : 'is-unaffordable'}`;
+
+            let costBadgesHtml = '';
+            for (const [res, amount] of Object.entries(choice.cost || {})) {
+                const available = Number(bank[res] ?? (res === 'tech' ? bank.scrap : 0)) || 0;
+                const met = available >= amount;
+                costBadgesHtml += `<span class="field-workbench-cost-tag ${met ? 'is-met' : 'is-missing'}">${amount} ${res.toUpperCase()}</span>`;
+            }
+
+            const fusionBadgeHtml = choice.isFusion
+                ? `<div class="field-workbench-fusion-tag">${t('ui.workbench.fusion_tag', {}, 'CRYO + BIO FUSION')}</div>`
+                : '';
+
+            const feedback = getRecalibrationFeedback(choice);
+            const diffRows = (choice.preview?.afterStats || []).map((row) => `
+                <div class="field-workbench-diff-row ${row.highlight ? 'is-highlight' : ''}">
+                    <span class="field-workbench-diff-label">${row.label}</span>
+                    <span class="field-workbench-diff-val ${Number.parseFloat(row.diff) > 0 ? 'diff--positive' : Number.parseFloat(row.diff) < 0 ? 'diff--negative' : ''}">${row.value}</span>
+                </div>
+            `).join('');
+
+            card.innerHTML = `
+                <div class="field-workbench-card__header">
+                    ${fusionBadgeHtml}
+                    <h3 class="field-workbench-card__title">${t(choice.nameKey, {}, choice.name)}</h3>
+                    <div class="field-workbench-card__effect">${choice.element
+                        ? t('ui.workbench.element_overclock', { element: choice.element.toUpperCase() }, `${choice.element.toUpperCase()} OVERCLOCK`)
+                        : t('ui.workbench.weapon_overclock', {}, 'WEAPON OVERCLOCK')}</div>
+                    <p class="field-workbench-card__desc"><strong>${t('recalibration_feedback.action_label')}</strong> ${feedback.action}</p>
+                    <p class="field-workbench-card__tradeoff"><strong>${t('recalibration_feedback.tradeoff_label')}</strong> ${feedback.tradeoff}</p>
+                    <div class="field-workbench-diff-box">
+                        ${diffRows}
+                    </div>
+                </div>
+                <div class="field-workbench-card__actions">
+                    <div class="field-workbench-card__cost-container">
+                        ${costBadgesHtml}
+                    </div>
+                </div>
+            `;
+
+            const btn = doc.createElement('button');
+            btn.type = 'button';
+            btn.className = 'field-workbench-craft-btn field-workbench-recalibrate-btn';
+            btn.setAttribute('data-choice-id', choice.id);
+
+            if (isRecalibrated) {
+                markUnavailable(btn);
+                btn.textContent = t('ui.workbench.calibration_used', {}, 'CAMP CALIBRATION USED');
+            } else if (!affordable) {
+                markUnavailable(btn);
+                btn.textContent = missing[0]
+                    ? t('ui.workbench.need_resource', { need: missing[0].need, resource: missing[0].resource.toUpperCase() })
+                    : (t('ui.workbench.deficit') || 'DEFICIT');
+            } else {
+                btn.textContent = choice.isFusion
+                    ? t('ui.workbench.synthesize_fusion', {}, 'SYNTHESIZE FUSION')
+                    : t('ui.workbench.install_recalibration', {}, 'INSTALL RECALIBRATION');
+            }
+
+            btn.addEventListener('click', () => {
+                if (!isOpen || !affordable || isRecalibrated || currentCamp?.recalibrated) return;
+                const result = game?.recalibrateFieldWeapon?.(choice.id, campId);
+                if (result) {
+                    if (currentCamp) currentCamp.recalibrated = true;
+                    // Close before staging: the runner waits for blocking
+                    // overlays, and currency/mod state has already committed.
+                    close();
+                    void game?.presentFieldRecalibration?.(choice.id, campId);
+                }
+            });
+
+            const actionsDiv = card.querySelector?.('.field-workbench-card__actions') || card;
+            actionsDiv.appendChild(btn);
+            recalibrationGridEl.appendChild(card);
+        }
+    }
+
+    // A choice the player can't take yet stays reachable by the pad so its
+    // "NEED 15 TECH" label can be read; a disabled button drops out of focus
+    // (main.js focus filter honours data-controller-focusable).
+    function markUnavailable(btn) {
+        btn.setAttribute('aria-disabled', 'true');
+        btn.setAttribute('data-controller-focusable', '');
+        btn.classList.add('is-unavailable');
+    }
+
     function renderRecipes(recipes = FIELD_WORKBENCH_RECIPES) {
         if (!recipesGridEl) return;
         const game = getGame();
@@ -201,7 +387,7 @@ export function createFieldWorkbenchUi({
             btn.className = 'field-workbench-craft-btn';
             btn.setAttribute('data-recipe-id', recipe.id);
             if (!affordable) {
-                btn.disabled = true;
+                markUnavailable(btn);
             }
             btn.textContent = buttonLabel;
 
@@ -246,6 +432,7 @@ export function createFieldWorkbenchUi({
         const game = getGame();
         game?.setInputEnabled?.(false);
 
+        setTab('supplies');
         renderStats();
         renderRecipes(detail.recipes || FIELD_WORKBENCH_RECIPES);
 
@@ -285,6 +472,14 @@ export function createFieldWorkbenchUi({
             e.preventDefault();
             e.stopPropagation();
             close();
+        } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight')
+            && (e.target === tabSuppliesBtn || e.target === tabRecalibrationBtn)) {
+            // Preserve normal Tab focus traversal; arrow keys switch an active tab.
+            if (e.target?.tagName !== 'INPUT') {
+                e.preventDefault();
+                setTab(activeTab === 'supplies' ? 'recalibration' : 'supplies');
+                (activeTab === 'supplies' ? tabSuppliesBtn : tabRecalibrationBtn)?.focus?.();
+            }
         }
     }
 
@@ -298,10 +493,16 @@ export function createFieldWorkbenchUi({
         close,
         isOpen: () => isOpen,
         getCurrentCamp: () => currentCamp,
+        getActiveTab: () => activeTab,
+        setTab,
         render: () => {
             if (isOpen) {
                 renderStats();
-                renderRecipes();
+                if (activeTab === 'supplies') {
+                    renderRecipes();
+                } else {
+                    renderRecalibration();
+                }
             }
         },
         destroy() {

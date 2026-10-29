@@ -20,55 +20,40 @@
 
 🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📚 **[Documentation Map](docs/README.md)**
 
-> **Status (2026-10-11):** Sprint 51 World Completion on `dev/sprint-51`.
+> **Status (2026-10-26):** `v2.4.18-beta` (Sprint 53) is in review as a PR from `dev/sprint-53` to `mothership`. Packaged PvE, PvP, Steam Deck, performance, cloud and operations acceptance is still open.
 >
-> **New in Sprint 51 (World Completion, 2026-10-11):**
-> - **39 High-Detail 3D Models (Zero-Loss 25k Triangles):**
->   - Ingested 39 game-ready models at the 25,000 triangle ceiling with `gltfpack` meshopt compression and Basis Universal KTX2 textures (`KHR_texture_basisu`).
->   - **Bunker Operations:** Pallet racking, server cabinets, transformer bank, fire station, conveyor line, water cistern, scaffold tower, forklift.
->   - **Daily Life:** Sink rows, shower stalls, laundry machines, weight bench, arcade cabinet, filing cabinets, overseer's desk, planning whiteboard, surgical lamp.
->   - **District Landmarks & Vistas:** Cryo crawler, frozen pipe cascade, snowbound crates, radiant heater, cut ice blocks; Hive resin pillar, cocooned crew, brood dome, pheromone node, tendril arch, assimilated generator; Crash site engine nacelle, hull panels, drag chute, tagged salvage heap; Chasm cable gondola, collapsed catwalk, rappel anchor, edge beacon post; Survivor canvas tent, water barrel.
->   - **Mandatory Pairing Rule:** `camp_water_barrel` is always paired with `life_cistern_tank` near sinks (`life_sink_row`) and showers (`life_shower_stall`).
-> - **48 Interchangeable PBR Floor & Path Surfaces:**
->   - 12 surface prompts across 4 variants (`_a`, `_b`, `_c`, `_d`) as dual-array BC7 KTX2 textures (sRGB albedo + metalness; linear normal + roughness + height).
->   - **Multi-Layer Blending:** 2x2m variant clustering within rooms and 4-tap height-map blending with noise breakup jitter break uniform repeating tiles.
->   - **Deterministic BFS Traffic Wear:** Shortest-path routing writes traffic weight into DataTexture channel B, polishing high-traffic centers and depositing shoulder grit.
-> - **32 Chroma-Keyed Route Strips & Landing Marks:**
->   - 8 prompts across 4 variants (`_a`, `_b`, `_c`, `_d`) chroma-keyed from magenta with despill.
->   - Route strips (cart ruts, drag marks, walkway borders, drain gutters, sled tracks, hive veins) and high-traffic door wear aprons and junction turn arcs.
+> **Sprint 53 highlights:**
 >
-> See [`docs/planning/world-completion-assets-and-path-layers-2026-10-11.md`](docs/planning/world-completion-assets-and-path-layers-2026-10-11.md).
+> - **The Definitive First Expedition:** fresh profiles enter Sector 0 directly, learn the survival loop through five authored phases, and cross the blast threshold continuously into Ring 1. Returning players retain an explicit onboarding skip.
+> - **Field Recalibration:** safe-camp workbenches now offer one curated build-defining recalibration per camp, including Cryo Overclock, Biometric Siphon, and Kinetic Spalling, with deterministic rerolls and squad replication.
+> - **Elemental and enemy grammar:** Sub-Zero Necrosis fuses cryo and bio-corrosion; Mycelium Stalkers flank, telegraph, pounce, react to light and gunfire, and retreat to darkness. Scuttler and Spore Mortar encounters received complementary combat passes.
+> - **Camps and cinematics:** interaction gating, dialogue telemetry, physical walk-to interactions, fallback staging, doors, and all 32 cinematic cards now form a clearer authored event chain.
+> - **Multiplayer parity:** moving and breakable props, items, enemy state, deaths, redeploys, and recalibration effects use host-authoritative replication paths.
+> - **Feel and performance:** hit-stop, footsteps, combat audio, arcade/achievement integration, bounded light pools, scene batching, mixer culling, deferred boot assets, and mobile Lighthouse 93/93 clearance.
 >
-> Prior releases (`v2.4.14-beta` / Sprint 49):
-> - **Filtered player chat** in co-op and PvP, with mute, block and report.
-> - **Steam store end-to-end sandbox purchases** with `GetReport` reconciliation.
-> - **Voiced narrative** in seven languages with developer commentary.
-> - **Modular lived-in rooms** with instanced destructible props and custom grammar.
->
-> `v2.4.13-beta` answered Steam build review 25475189 in code:
-> - **Multiplayer:** now on the title menu.
-> - **Developer commentary:** you can see it, and read all of it.
-> - **Controller:** the whole menu set works with a controller, Achievements included.
-> - **Content Guide:** in Settings.
-> - **Vault store:** sells through the Steam Item Store and Microtransactions, reconciled with `GetReport`.
->
-> It also ships:
-> - the unified Foundry (one item catalog, the Foundry hub, server-authoritative trade-ups);
-> - host-authoritative co-op companions, Ring 1 events and pings;
-> - lit, dressed and cut-away bunker rooms;
-> - the dock HUD as the default.
->
-> Hardware, two-account and Steamworks acceptance are tracked in [Sprint 49](docs/planning/sprint-49.md). See [`docs/releases/v2.4.13-beta.md`](docs/releases/v2.4.13-beta.md) and [Product State](PRODUCT_STATE.md).
+> Read the [release notes](docs/releases/v2.4.18-beta.md), [PR description](docs/releases/pr-body-v2.4.18-beta.md), and [master verification plan](docs/planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md). Acceptance remains open until the evidence gates in that plan pass.
 
 ---
 
-## 📸 Sector Zero Visual Showcase
+## 📸 Sprint 53 Candidate Showcase
 
-### 🎮 Recent Playthrough Captures
+### 🎮 Current Build and Cinematic Captures
 
-| Tactical Bunker Run (Isometric) | Hostile Sector Engagement (Perspective) | 3D Armory & Weapon Bench |
+| Cryo Expedition Route | Live Combat and Current HUD | Camp Narrative Cinematic |
 | :---: | :---: | :---: |
-| <img src="./docs/reports/assets/expedition-coherence-2026-09-09/gameplay-isometric.png" alt="Isometric Tactical Run with O2 Survival HUD" width="380"> | <img src="./docs/reports/assets/expedition-coherence-2026-09-09/gameplay-perspective.png" alt="Perspective Combat with Tilt-Shift Diorama" width="380"> | <img src="./docs/reports/assets/armory-stage-2026-09-09.png" alt="3D Tactical Armory Workbench" width="380"> |
+| <img src="./docs/reports/assets/sprint-53/cryo-route-working-tree-2026-10-18.jpg" alt="Sprint 53 deterministic gameplay capture of the repaired cryo expedition route, terrain materials, and wall-mounted fixtures" width="380"> | <img src="./docs/reports/assets/sprint-53/welcome-committee-working-tree-2026-10-18.jpg" alt="Sprint 53 live combat capture showing the repaired industrial floor and current lower-console survival HUD" width="380"> | <img src="./public/interstitials/int_kaelen_frequency_overclock_key_v2.webp" alt="Camp narrative cinematic key art for Kaelen's frequency overclock interaction" width="380"> |
+
+The cryo-route and combat frames were recaptured from the local validation working tree after the floor, prop-repetition, and wall-fixture finish fixes. Both use the deterministic trailer harness. They document the working visual state; packaged hardware acceptance is tracked separately in the [Sprint 53 master plan](docs/planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md).
+
+### 🏧 Terminals You Walk Up To
+
+Every terminal is a physical machine in the bunker: the Fabrication Auto-Mart, the Meridian service terminal and the Black-Ice 21 cabinet, with the live game blurred around them. Their keypads, bolts and coin returns work (try `0451`, or unscrew the four corner bolts). Captured in a real run on Steam Deck and PC:
+
+| Fabrication Auto-Mart | Meridian Service Terminal | Black-Ice 21 |
+| :---: | :---: | :---: |
+| <img src="./docs/screenshots/pc_fabrication_automart.jpg" alt="The Fabrication Auto-Mart kiosk in game: the bay's aisles and recipes inside a vending-machine screen, keypad and coin input below" width="380"> | <img src="./docs/screenshots/pc_console_kiosk.jpg" alt="The Meridian service terminal kiosk in game: base systems, class skills and the night log on its CRT" width="380"> | <img src="./docs/screenshots/pc_blackice_arcade.jpg" alt="The Black-Ice 21 arcade cabinet in game with DEAL, HIT, STAND and DOUBLE buttons" width="380"> |
+
+Deck beside PC for every machine: [`docs/screenshots/`](docs/screenshots/README.md).
 
 ### 🌌 Deep Crust Lore & Interstitials
 
@@ -94,6 +79,10 @@ All store and library art lives in [`steam/store/`](steam/store/) (English slots
 
 ## ⚡ Core Features
 
+- **Authored First Expedition**: New profiles deploy into Sector 0's Impact Zone instead of a random maze. Five guided phases teach movement, O₂, salvage, combat, and extraction before a continuous transition into Ring 1; returning operators can skip onboarding from pause.
+- **Safe-Camp Field Recalibration**: Once per camp, reshape the current build with a strong benefit and a meaningful cost. Deterministic card offers, scrap rerolls, and host-authoritative squad broadcasts keep the choice legible and synchronized.
+- **Reactive Combat Ecosystem**: Freeze plus bio-corrosion triggers Sub-Zero Necrosis novas, while Stalkers use cover, light sensitivity, flanking, readable pre-pounce cues, and retreat behavior instead of relying on raw health alone.
+- **Physical Camp Storytelling**: Camp progression connects item pickup, location, player and NPC movement, staged interaction, dialogue choice, cinematic first/last frames, and persistent consequences through explicit event gates and telemetry.
 - **Persistent Campaigns, Seeded Expeditions**: A campaign keeps one world — its rings, gates, camps and hives — while every deployment rolls its own condition (gale, spore bloom, resin surge, geothermal arc, stillness) with real gameplay effects, fresh corridor rubble and a briefing. New campaigns get their own route shape, gate challenges and an optional objective package for each ship goal, with a reward and a lasting consequence.
 - **A World That Remembers**: Bridge the canyon, fortify a camp's perimeter, bond with or harvest a hive — each choice changes the map for the rest of the campaign. Overnight, hive creep spreads and camps strain; radar scans lift the fog on the tactical map as they sweep.
 - **Deep Localization (7 Languages)**: Complete localization across **English (`en`)**, **German (`de`)**, **Latin American Spanish (`es-419`)**, **Japanese (`ja`)**, **Brazilian Portuguese (`pt-BR`)**, **Russian (`ru`)**, and **Simplified Chinese (`zh-CN`)** — 0 unannotated markup, 0 unlocalized runtime strings, 1,898 keys per locale at exact parity, live in-session switching, and a coverage ratchet (`npm run i18n:audit`) that fails CI if any of those regress.

@@ -1450,6 +1450,22 @@
       "tags": "rarity:epic;class:all;slot:rig_overclock;season:0"
     },
     {
+      "itemdefid": 4168,
+      "type": "item",
+      "name": "Retro Pixel Snail Decal",
+      "name_english": "Retro Pixel Snail Decal",
+      "description": "Earned by scoring 65,000 points in SUB-CRUST PROTOCOL: 1984.",
+      "description_english": "Earned by scoring 65,000 points in SUB-CRUST PROTOCOL: 1984.",
+      "icon_url": "https://hunkerbunker.netlify.app/economy/decal_retro_pixel_snail.png",
+      "icon_url_large": "https://hunkerbunker.netlify.app/economy/decal_retro_pixel_snail_large.png",
+      "background_color": "052e2b",
+      "name_color": "39ff88",
+      "tradable": false,
+      "marketable": false,
+      "item_slot": "CosmeticDecal",
+      "tags": "rarity:epic;class:all;slot:decal;season:0;source:arcade"
+    },
+    {
       "itemdefid": 4200,
       "type": "item",
       "name": "Deep Frost Operator Skin",

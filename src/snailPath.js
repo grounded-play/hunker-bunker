@@ -163,7 +163,7 @@ export function findTilePath({ startX, startZ, goalX, goalZ, nodeBudget, isWalka
             if (!canWalk(nx, nz)) continue;
             from.x = cx; from.z = cz;
             to.x = nx; to.z = nz;
-            if (blocksStep(from, to)) continue;
+            if (typeof blocksStep === 'function' && blocksStep(from, to)) continue;
             if (dir.diagonal && (!canWalk(cx + dir.dx, cz) || !canWalk(cx, cz + dir.dz))) continue;
 
             const neighborKey = keyOf(nx, nz);

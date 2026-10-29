@@ -172,6 +172,21 @@ describe('world 3D replacement catalog', () => {
         expect(root.position.z).toBeCloseTo(10 - 0.22);
     });
 
+    it('calibrates wall offset using modelPresentationRegistry depth when available', () => {
+        const source = new THREE.Sprite(new THREE.SpriteMaterial());
+        const root = new THREE.Group();
+        source.userData.world3dRoot = root;
+        source.userData.world3dDesiredVisible = true;
+        source.userData.wallNormal = { x: 0, z: 1 };
+        source.userData.isWallBackedProp = true;
+        source.userData.world3dModelType = 'fixture_clock_dead';
+        source.position.set(5, 0, 10);
+
+        expect(syncWorld3dReplacement(source)).toBe(true);
+        // depth: 0.06 -> halfDepth: 0.03, inset: 0.02 -> 0.50 - 0.03 - 0.02 = 0.45 -> clamped to 0.38
+        expect(root.position.z).toBeCloseTo(10 - 0.38);
+    });
+
     it('exposes preload list with valid model types and safely runs preload', async () => {
         const { COMMON_WORLD_3D_MODEL_TYPES, preloadWorld3dModels } = await import('./world3dOverlay.js');
         expect(COMMON_WORLD_3D_MODEL_TYPES.length).toBeGreaterThan(10);

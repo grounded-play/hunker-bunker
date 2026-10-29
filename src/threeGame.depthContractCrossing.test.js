@@ -101,7 +101,9 @@ describe('ThreeGame.updateDepthTierProgress menu guard', () => {
 
     it('still records real gameplay depth', () => {
         const fake = fakeGame('gameplay');
-        ThreeGame.prototype.updateDepthTierProgress.call(fake, 100, 100);
+        // A deep chunk in the world; the showcase chunk itself never counts
+        // (threeGame.depthShowcase.test.js).
+        ThreeGame.prototype.updateDepthTierProgress.call(fake, 40, 0);
         expect(fake.arcManager.recordSignal).toHaveBeenCalledWith({ deepestDepthTier: 3 });
         expect(fake.maxDepthTierReached).toBe(3);
     });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     classifyPublicAsset,
+    dataKeyedAssetReferences,
     extractAssetReferences,
     jsonReportMatches,
     normalizeTextAssetContent
@@ -29,6 +30,22 @@ describe('retail asset audit', () => {
             'sprites/player.png',
             'ui/frame.webp'
         ]);
+    });
+
+    it('credits index.html menu artwork installed as bare names in the --asset-* map', () => {
+        expect(extractAssetReferences(`
+            var menuArtwork = {
+              '--asset-gear-vault-main': 'gear_vault_main.webp',
+              '--asset-briefing-menu-bg': 'menu_bg_v3.webp'
+            };
+            const label = 'not-an-asset.webp';
+        `)).toEqual(['gear_vault_main.webp', 'menu_bg_v3.webp']);
+    });
+
+    it('credits the world-expansion models resolved from their data ids', () => {
+        const refs = dataKeyedAssetReferences();
+        expect(refs).toHaveLength(80);
+        for (const ref of refs) expect(ref).toMatch(/^3d\/runtime\/new3ds\/[a-z0-9_]+\.glb$/);
     });
 
     it('classifies explicit references as runtime required', () => {

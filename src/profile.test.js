@@ -6,6 +6,7 @@ import {
     importSaveCode,
     resetActiveAttempt,
     resetAllDataFactory,
+    shouldAutoStartSectorZero,
     startNewCampaign
 } from './profile.js';
 
@@ -43,6 +44,59 @@ describe('ProfileManager', () => {
     it('falls back to AGENT for empty callsign', () => {
         const p = new ProfileManager({ storage });
         expect(p.setCallsign('!!!')).toBe('AGENT');
+    });
+
+    it('starts a genuinely fresh profile in Sector 0 and persists completion', () => {
+        const p = new ProfileManager({ storage });
+        expect(p.getOnboardingState()).toEqual({
+            expeditionCount: 0,
+            hasCompletedSectorZero: false,
+            sectorZeroSkipped: false
+        });
+        expect(p.shouldStartSectorZero()).toBe(true);
+
+        p.recordExpeditionStarted();
+        p.markSectorZeroCompleted();
+
+        const reloaded = new ProfileManager({ storage });
+        expect(reloaded.getOnboardingState()).toEqual({
+            expeditionCount: 1,
+            hasCompletedSectorZero: true,
+            sectorZeroSkipped: false
+        });
+        expect(reloaded.shouldStartSectorZero()).toBe(false);
+    });
+
+    it('records an explicit onboarding skip as completed', () => {
+        const p = new ProfileManager({ storage });
+        p.markSectorZeroCompleted({ skipped: true });
+        expect(new ProfileManager({ storage }).getOnboardingState()).toMatchObject({
+            hasCompletedSectorZero: true,
+            sectorZeroSkipped: true
+        });
+    });
+
+    it('does not force established legacy campaigns through new onboarding', () => {
+        const legacy = makeStorage({
+            hb_profile_v1: JSON.stringify({ callsign: 'VETERAN', soloExpeditions: 3 }),
+            hb_campaign_world_v1: JSON.stringify({ version: 1, seed: 42 })
+        });
+        const p = new ProfileManager({ storage: legacy });
+        expect(p.getOnboardingState()).toEqual({
+            expeditionCount: 3,
+            hasCompletedSectorZero: true,
+            sectorZeroSkipped: false
+        });
+    });
+
+    it('auto-starts Sector 0 only for a fresh solo deployment', () => {
+        const p = new ProfileManager({ storage });
+        expect(shouldAutoStartSectorZero({ profile: p })).toBe(true);
+        expect(shouldAutoStartSectorZero({ profile: p, resumeSnapshot: {} })).toBe(false);
+        expect(shouldAutoStartSectorZero({ profile: p, isMultiplayer: true })).toBe(false);
+        expect(shouldAutoStartSectorZero({ profile: p, isAct2: true })).toBe(false);
+        p.markSectorZeroCompleted();
+        expect(shouldAutoStartSectorZero({ profile: p })).toBe(false);
     });
 
     it('tracks multiplayer runs and trades accurately in profile state', () => {

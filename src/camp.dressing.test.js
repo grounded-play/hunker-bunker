@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { CAMP_DRESSING_MODELS } from './camp.js';
 import { ENEMY_3D_MODELS } from './enemy3dOverlay.js';
+import { WORLD_EXPANSION_80_MODELS } from './data/worldExpansion80.js';
+import { MISSING_WORLD_STORY_50_MODELS } from './data/missingWorldStory50.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -18,7 +20,10 @@ describe('camp 3D dressing', () => {
         for (const [camp, specs] of Object.entries(CAMP_DRESSING_MODELS)) {
             for (const spec of specs) {
                 const registered = overlay.includes(`${spec.type}:`)
-                    || Object.prototype.hasOwnProperty.call(ENEMY_3D_MODELS, spec.type);
+                    || Object.prototype.hasOwnProperty.call(ENEMY_3D_MODELS, spec.type)
+                    // world3dOverlay spreads the expansion and story-50 registries in.
+                    || Object.prototype.hasOwnProperty.call(WORLD_EXPANSION_80_MODELS, spec.type)
+                    || Object.prototype.hasOwnProperty.call(MISSING_WORLD_STORY_50_MODELS, spec.type);
                 expect(registered, `${camp} references unregistered model ${spec.type}`).toBe(true);
             }
         }
@@ -39,7 +44,7 @@ describe('camp 3D dressing', () => {
         const intentionallyShared = new Set([
             'life_card_table', 'life_memorial_board', 'life_latrine_stall',
             'life_pipe_hammock', 'life_sanitation_bidet', 'life_vulval_drain_sump',
-            'life_barber_chair', 'life_devotion_tree'
+            'life_barber_chair', 'life_devotion_tree', 'prop_camp_grave_fresh'
         ]);
         const all = Object.values(CAMP_DRESSING_MODELS).flat().map((s) => s.type)
             .filter((type) => !intentionallyShared.has(type));

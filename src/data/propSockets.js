@@ -4,7 +4,24 @@
  * Positions are in local model space (meters) relative to prop origin.
  * Normals define the outward trajectory of the conduit exiting the socket.
  */
+import { WORLD_EXPANSION_80_SPECS } from './worldExpansion80.js';
+
+const WORLD_EXPANSION_80_SOCKETS = Object.fromEntries(
+    WORLD_EXPANSION_80_SPECS
+        .filter((spec) => spec.sockets.length > 0)
+        .map((spec) => {
+            const type = spec.fx === 'organic' ? 'trachea' : spec.fx === 'liquid' ? 'pipe' : 'cable';
+            const sides = type === 'cable' ? 4 : 6;
+            const vAtlasOffset = type === 'cable' ? 0.25 : type === 'trachea' ? 0.5 : 0.75;
+            return [spec.id, Object.freeze([
+                { id: 'socket_input_00', type, pos: [-0.55, 0.35, 0], normal: [-1, 0, 0], radius: 0.04, sides, vAtlasOffset },
+                { id: 'socket_output_00', type, pos: [0.55, 0.35, 0], normal: [1, 0, 0], radius: 0.04, sides, vAtlasOffset }
+            ])];
+        })
+);
+
 export const PROP_SOCKET_REGISTRY = Object.freeze({
+    ...WORLD_EXPANSION_80_SOCKETS,
     // Heavy power generator: power out, coolant return
     prop_fusion_generator: Object.freeze([
         { id: 'power_out', type: 'cable', pos: [0.55, 0.45, -0.2], normal: [1, 0, 0], radius: 0.035, sides: 4, vAtlasOffset: 0.25 },

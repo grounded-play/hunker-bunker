@@ -27,6 +27,24 @@ describe('single-pass flat decals', () => {
         expect(front.forceSinglePass).toBe(false);
     });
 
+    // 2026-10-16 profile: cargo beacons, light shafts and the bed-socket
+    // column (additive cylinders) were drawn in two passes every frame.
+    it('draws additive no-depth-write solids once, since draw order cannot change the sum', () => {
+        const beacon = new THREE.MeshBasicMaterial({ transparent: true, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
+        const additiveWithDepth = new THREE.MeshBasicMaterial({ transparent: true, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+        const normalGlass = new THREE.MeshBasicMaterial({ transparent: true, side: THREE.DoubleSide, depthWrite: false });
+        const root = new THREE.Group();
+        root.add(
+            new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 2.8), beacon),
+            new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 2), additiveWithDepth),
+            new THREE.Mesh(new THREE.SphereGeometry(1), normalGlass)
+        );
+        expect(useSinglePassForFlatMaterials(root)).toBe(1);
+        expect(beacon.forceSinglePass).toBe(true);
+        expect(additiveWithDepth.forceSinglePass).toBe(false);
+        expect(normalGlass.forceSinglePass).toBe(false);
+    });
+
     it('keeps two passes for a material shared with a solid mesh, even one seen later', () => {
         const shared = doubleSided();
         const a = new THREE.Group();

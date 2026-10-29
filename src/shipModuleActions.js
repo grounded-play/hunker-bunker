@@ -1,4 +1,7 @@
 export const SHIP_MODULE_ACTIONS = Object.freeze({
+    camp_o2_generator_core: Object.freeze({
+        id: 'oxygen-purge', label: 'PURGE CAMP O2', cooldownSeconds: 15, color: 0x38bdf8
+    }),
     ship_life_support_core: Object.freeze({
         id: 'oxygen-purge', label: 'PURGE LIFE-SUPPORT RESERVE', cooldownSeconds: 15, color: 0x38bdf8
     }),

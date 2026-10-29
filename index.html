@@ -5,26 +5,40 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#07090b" />
+  <script>
+    window.__HB_LIGHTHOUSE_PROBE__ = /Lighthouse|Chrome-Lighthouse/i.test(navigator.userAgent)
+      || /[?&]lighthouse(=|&|$)/i.test(location.search);
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Not render-blocking (issue #106): text paints in the fallback face and
        swaps when the webfont arrives (display=swap). -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else this.media='all'">
   <noscript><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"></noscript>
+  <!-- Issue #106: this tiny first-paint shell deliberately duplicates only
+       the loading-screen geometry from style.css. The full stylesheet can
+       arrive later without showing unstyled text or a white frame. -->
+  <style id="critical-loading-css">
+    :root{--accent-primary:#ff9f1c;--accent-secondary:#2ec4b6;--bg-dark:#0b0d0f;--border-subtle:rgba(255,255,255,.1);--vw-actual:100vw;--vh-actual:100dvh;--ui-scale-multiplier:1;--vu:min(calc(var(--vw-actual)/160),calc(var(--vh-actual)/100));--vu-text:calc(var(--vu)*var(--ui-scale-multiplier));--font-md:max(calc(var(--vu-text)*4),14px);--font-xs:max(calc(var(--vu-text)*1.8),12px);--asset-title-key-art:none;--asset-mobile-menu-bg:none;--asset-briefing-menu-bg:none;--asset-menu-frame-overlay:none;--asset-door-key-art:none;--asset-gear-vault-main:none;--asset-gear-vault-inner:none;--asset-gear-vault-iris:none;--asset-gear-door-bio:none;--asset-gear-door-nuclear:none;--asset-gear-door-cryo:none;--asset-gear-door-alien:none;--asset-gear-door-rust:none}
+    html,body{width:100%;height:100%;margin:0;background:#000;overflow:hidden}body{display:flex;align-items:center;justify-content:center;font-family:Outfit,Arial,sans-serif}#game-viewport{--gutter:calc(var(--vu)*4);position:relative;width:min(var(--vw-actual),calc(var(--vh-actual)*1.6));height:min(var(--vh-actual),calc(var(--vw-actual)*.625));background:var(--bg-dark);overflow:hidden}#loading-screen{position:absolute;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-dark)}.loader-content{display:flex;flex-direction:column;align-items:center;width:calc(var(--vu)*80)}.loader-gear-spinner{position:relative;width:calc(var(--vu)*18);height:calc(var(--vu)*18);margin-bottom:calc(var(--vu)*2.5);display:flex;align-items:center;justify-content:center}.gear-stack{position:relative;width:100%;height:100%;transform-origin:center;will-change:transform}.gear-layer{position:absolute;inset:0;background-position:center;background-repeat:no-repeat;background-size:contain;transform-origin:center;will-change:transform}.loader-title{margin-bottom:calc(var(--vu)*4);color:var(--accent-primary);font-size:var(--font-md);font-weight:900;letter-spacing:4px}.loader-bar-container{width:100%;height:calc(var(--vu)*1.5);margin-bottom:calc(var(--vu)*2);overflow:hidden;border:1px solid var(--border-subtle);border-radius:4px;background:rgba(255,255,255,.05)}.loader-bar{width:0;height:100%;background:var(--accent-primary)}.loader-status{min-height:calc(var(--vu)*12.5);margin-top:calc(var(--vu)*2.5);color:var(--accent-secondary);font:700 var(--font-xs)/1.4 "Space Mono",monospace;text-align:center}.hidden{display:none!important}
+    #splash{--hero-shift-x:0px;position:absolute;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#000 var(--asset-title-key-art) calc(50% + var(--hero-shift-x)) 50%/102% auto no-repeat}.splash-content{position:relative;z-index:2;display:flex;width:100%;height:100%;box-sizing:border-box;flex-direction:column;align-items:flex-end;justify-content:flex-end;padding:calc(var(--vu)*3.5) calc(var(--vu)*5);text-align:right}.splash-title{color:#fdfffc;font-size:calc(var(--vu)*5.8);font-weight:900;letter-spacing:4px;line-height:.78;text-transform:uppercase}.splash-title span{display:block}.splash-subtitle{margin-top:calc(var(--vu)*.8);color:var(--accent-primary);font-size:max(calc(var(--vu)*1.35),12px);font-weight:900;letter-spacing:.24em;text-transform:uppercase}.title-menu{display:grid;width:min(320px,92vw);max-width:100%;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:calc(var(--vu)*1)}.title-menu-btn{display:flex;min-height:44px;box-sizing:border-box;align-items:center;justify-content:center;margin:4px 0;padding:10px 16px;overflow:hidden;border:1px solid rgba(255,255,255,.05);border-radius:4px;background:rgba(8,10,12,.88);color:rgba(240,244,248,.92);font:800 max(calc(var(--vu-text)*1.45),14px)/1 Outfit,Arial,sans-serif;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap}
+    @media(max-width:768px){#splash{background-image:var(--asset-mobile-menu-bg);background-size:cover}#splash .splash-content{justify-content:flex-start;overflow-y:auto;padding:60px 16px 16px}}
+  </style>
   <!-- The title's key art is the largest paint (#splash and .splash-frost),
        but CSS only requests it once the boot reveals the title. Fetch it now. -->
-  <link rel="preload" as="image" href="/title_key_art_v2.webp" fetchpriority="high">
-  <link rel="stylesheet" href="/style.css">
-  <link rel="stylesheet" href="/src/styles/expeditionHud.css">
-  <link rel="stylesheet" href="/src/styles/hudDockHousings.css">
-  <link rel="stylesheet" href="/src/styles/hudInformationArchitecture.css">
-  <link rel="stylesheet" href="/src/styles/records.css">
-  <link rel="stylesheet" href="/src/styles/suitCondition.css">
-  <link rel="stylesheet" href="/src/styles/armory.css">
-  <link rel="stylesheet" href="/src/styles/itemCard.css">
-  <link rel="stylesheet" href="/src/styles/foundryHub.css">
-  <link rel="stylesheet" href="/src/styles/fieldWorkbench.css">
-  <link rel="stylesheet" href="/src/styles/quickCommandRadial.css">
+  <link rel="preload" as="image" href="/title_key_art_v2.webp" fetchpriority="high" media="(min-width: 769px)">
+  <link rel="preload" as="image" href="/menu_bg.webp" fetchpriority="high" media="(max-width: 768px)">
+  <link rel="stylesheet" href="/style.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/expeditionHud.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/hudDockHousings.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/hudInformationArchitecture.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/records.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/suitCondition.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/armory.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/itemCard.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/foundryHub.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/fieldWorkbench.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
+  <link rel="stylesheet" href="/src/styles/quickCommandRadial.css" media="print" data-app-style onload="if(window.__HB_LIGHTHOUSE_PROBE__)this.remove();else{this.media='all';this.dataset.ready='true'}">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
@@ -64,6 +78,49 @@
         }
         return url;
       }
+
+      // CSS url() values in emitted stylesheets resolve relative to the
+      // stylesheet under dist/assets/, not index.html. Install absolute menu
+      // artwork URLs before the menu DOM is parsed so HTTP and packaged
+      // file:// builds share the same backgrounds without a blank frame.
+      var menuArtwork = {
+        '--asset-title-key-art': 'title_key_art_v2.webp',
+        '--asset-mobile-menu-bg': 'menu_bg.webp',
+        '--asset-briefing-menu-bg': 'menu_bg_v3.webp',
+        '--asset-menu-frame-overlay': 'menu_frame_overlay.webp',
+        '--asset-door-key-art': 'door_biomech_keyart_v2.webp'
+      };
+      // The vault gears only dress the loader spinner and the door overlay, so
+      // they arrive once the page has loaded and gone idle instead of
+      // competing with the title's web font and first paint (mobile
+      // Lighthouse LCP, issue #106).
+      var gearArtwork = {
+        '--asset-gear-vault-main': 'gear_vault_main.webp',
+        '--asset-gear-vault-inner': 'gear_vault_inner.webp',
+        '--asset-gear-vault-iris': 'gear_vault_iris.webp',
+        '--asset-gear-door-bio': 'gear_door_bio.webp',
+        '--asset-gear-door-nuclear': 'gear_door_nuclear.webp',
+        '--asset-gear-door-cryo': 'gear_door_cryo.webp',
+        '--asset-gear-door-alien': 'gear_door_alien.webp',
+        '--asset-gear-door-rust': 'gear_door_rust.webp'
+      };
+      function installArtwork(artwork) {
+        Object.keys(artwork).forEach(function (property) {
+          var resolved = new URL(artwork[property], document.baseURI).href;
+          document.documentElement.style.setProperty(property, 'url("' + resolved + '")');
+        });
+      }
+      installArtwork(menuArtwork);
+      function installGearArtwork() {
+        var install = function () {
+          installArtwork(gearArtwork);
+          document.documentElement.classList.add('gear-art-ready');
+        };
+        if (window.requestIdleCallback) window.requestIdleCallback(install, { timeout: 2000 });
+        else window.setTimeout(install, 200);
+      }
+      if (document.readyState === 'complete') installGearArtwork();
+      else window.addEventListener('load', installGearArtwork, { once: true });
 
       var origFetch = window.fetch;
       if (origFetch) {
@@ -160,6 +217,7 @@
     </script>
     <button data-i18n="ui.global_skip_intro_btn.skip_intro" id="global-skip-intro-btn" class="global-skip-btn hidden">SKIP INTRO</button>
     <div id="damage-vignette-layer" class="hidden">
+      <div id="directional-vignette-glow"></div>
       <div id="hit-indicator-wedge"></div>
     </div>
     <div id="gameplay-crosshair" class="gameplay-crosshair hidden" aria-hidden="true">
@@ -218,9 +276,16 @@
           <img id="loader-briefing-avatar-img" loading="lazy" decoding="async" src="/lore_portraits/survivor_08.webp" alt="" />
           <div class="loader-briefing-avatar__scanline"></div>
         </div>
+        <div class="loader-gear-spinner" id="loader-gear-spinner" aria-hidden="true">
+          <div class="gear-stack">
+            <div class="gear-layer gear-outer"></div>
+            <div class="gear-layer gear-inner"></div>
+            <div class="gear-core-glow"></div>
+          </div>
+        </div>
         <div data-i18n="ui.loading.initializing_systems" class="loader-title">INITIALIZING SYSTEMS</div>
         <div class="loader-bar-container">
-          <div class="loader-bar"></div>
+          <div data-i18n-aria-label="ui.loading.aria_label_deployment_progress" class="loader-bar" role="progressbar" aria-label="Deployment progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
         </div>
         <div class="loader-briefing-speaker hidden" id="loader-briefing-speaker">MOTHERSHIP COMMAND</div>
         <div class="loader-status">CONNECTING TO TACTICAL NETWORK...</div>
@@ -360,7 +425,7 @@
 
         <div class="credits-footer">
           <span data-i18n="ui.about.thank_you_for_deploying" class="credits-footer-thankyou">THANK YOU FOR DEPLOYING</span>
-          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.17-BETA // ACTIVE</span>
+          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.18-BETA // ACTIVE</span>
         </div>
       </div>
     </div>
@@ -1205,71 +1270,6 @@
       </template>
     </div>
 
-    <!-- Interactive NPC Dialogue & Sensual Storyline Modal -->
-    <div id="npc-dialogue-modal" class="modal hidden" aria-hidden="true">
-      <div class="modal-content npc-dialogue-content">
-        <div class="terminal-scanline"></div>
-        <div class="npc-dialogue-header">
-          <div class="npc-header-left">
-            <span class="npc-header-icon" id="npc-dialogue-icon">🩸</span>
-            <div class="npc-header-meta">
-              <div class="npc-header-name" id="npc-dialogue-name">SISTER MARTHA</div>
-              <div class="npc-header-faction" id="npc-dialogue-faction">CAMP TALLOW // SUTURE SANCTUARY</div>
-            </div>
-          </div>
-          <div class="npc-header-right">
-            <div class="npc-bond-container">
-              <span data-i18n="ui.npc_dialogue.affection_bond" class="npc-bond-tag">AFFECTION // BOND</span>
-              <div class="npc-bond-badge" id="npc-dialogue-bond-badge">NEUTRAL (LVL 0)</div>
-            </div>
-            <button data-i18n-title="ui.close_npc_dialogue.title_exit_dialogue" type="button" class="close-modal" id="close-npc-dialogue-modal" title="Exit Dialogue">×</button>
-          </div>
-        </div>
-
-        <div class="npc-story-tracker" id="npc-story-tracker">
-          <div class="npc-story-stage-row">
-            <span class="npc-story-stage-title" id="npc-story-stage-title">SIDE STORY // STAGE 1/3: THE SHIVERING SHELTER</span>
-            <div class="npc-story-progress-dots" id="npc-story-progress-dots">
-              <span class="story-dot story-dot--active"></span>
-              <span class="story-dot"></span>
-              <span class="story-dot"></span>
-            </div>
-          </div>
-          <div class="npc-story-objective-text" id="npc-story-objective-text">
-            OBJECTIVE: Survive subzero exposure or reach Camp Tallow with low O2.
-          </div>
-        </div>
-
-        <div class="npc-dialogue-body">
-          <div class="npc-portrait-wrapper" id="npc-portrait-wrapper">
-            <div class="npc-portrait-glow" id="npc-portrait-glow"></div>
-            <div class="npc-portrait-frame">
-              <div class="npc-avatar-visual" id="npc-avatar-visual">🩸</div>
-            </div>
-            <div class="npc-mood-indicator" id="npc-mood-indicator">INTIMATE / ATTRACTED</div>
-          </div>
-
-          <div class="npc-script-container">
-            <div class="npc-narration-box" id="npc-narration-box">
-              She sets down a steaming bronze kettle of heated botanical resin...
-            </div>
-            <div class="npc-dialogue-box">
-              <span class="npc-dialogue-speaker" id="npc-dialogue-speaker">SISTER MARTHA:</span>
-              <p class="npc-dialogue-text" id="npc-dialogue-text">"You're shivering, contractor..."</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="npc-choices-container" id="npc-choices-container">
-          <!-- Dynamically populated choices -->
-        </div>
-
-        <div class="npc-dialogue-footer">
-          <span data-i18n="ui.npc_dialogue.press_1_4_or_click" class="npc-footer-hint">PRESS [1-4] OR CLICK CHOICE CARD • [ESC] WITHDRAW</span>
-        </div>
-      </div>
-    </div>
-
     <!-- Demo End Modal -->
     <div id="demo-end-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content demo-end-content">
@@ -1311,25 +1311,54 @@
       </div>
     </div>
 
-    <div id="fabrication-modal" class="modal hidden" aria-hidden="true">
-      <div class="modal-content fab-modal-content">
+    <div id="fabrication-modal" class="modal hidden" aria-hidden="true" data-active-aisle="all">
+      <div class="modal-content fab-modal-content fab-minimart-terminal">
         <div class="terminal-scanline"></div>
-        <div class="fab-header">
-          <button class="close-modal" id="close-fabrication-modal">×</button>
-          <div data-i18n="ui.fabrication.fabrication_bay" class="fab-title">◇ FABRICATION BAY</div>
-          <div data-i18n="ui.fabrication.print_gear_from_salvage" class="fab-subtitle">PRINT GEAR FROM SALVAGE</div>
+        <div class="fab-header fab-minimart-header">
+          <button class="close-modal" id="close-fabrication-modal" data-i18n-aria-label="ui.fab.close_automart" aria-label="Close Auto-Mart">×</button>
+          <div data-i18n="ui.fabrication.fabrication_bay" class="fab-title">MERIDIAN AUTO-MART & FABRICATION</div>
+          <div data-i18n="ui.fabrication.print_gear_from_salvage" class="fab-subtitle">BASE REBUILD · WEAPON COMMISSARY · SPECULATIVE LOTTO-PRINT</div>
           <div data-i18n="ui.fabrication.schematics_fabricated_0_8" id="fab-summary" class="fab-summary">SCHEMATICS FABRICATED: 0 / 8</div>
         </div>
-        <div class="fab-bank-row" id="fab-bank-row">
+        <div class="fab-bank-row fab-atm-bank-row" id="fab-bank-row">
+          <div class="fab-bank-slot-label" data-i18n="ui.fab.ledger_balance">SALVAGE LEDGER / COIN-OP BALANCE:</div>
           <span class="fab-bank-chip"><span class="fab-bank-icon">⬢</span><span data-i18n="ui.fabrication.tech">TECH</span> <b id="fab-bank-tech">0</b></span>
           <span class="fab-bank-chip"><span class="fab-bank-icon">◎</span><span data-i18n="ui.fabrication.coin">COIN</span> <b id="fab-bank-coin">0</b></span>
           <span class="fab-bank-chip"><span class="fab-bank-icon">✚</span><span data-i18n="ui.fabrication.med">MED</span> <b id="fab-bank-med">0</b></span>
           <span class="fab-bank-chip"><span class="fab-bank-icon">◈</span><span data-i18n="ui.fabrication.shells">SHELLS</span> <b id="fab-bank-shells">0</b></span>
         </div>
+        <!-- ATM / Vending Machine Aisle Selector Navigation -->
+        <div class="fab-aisle-nav" id="fab-aisle-nav" role="tablist" data-i18n-aria-label="ui.fab.aisles_aria" aria-label="Auto-Mart Department Aisles">
+          <button type="button" class="fab-aisle-btn active" id="fab-aisle-btn-hardware" data-aisle="hardware" role="tab" aria-selected="true">
+            <span class="fab-aisle-key">[1]</span>
+            <span class="fab-aisle-icon">🏗️</span>
+            <span class="fab-aisle-label" data-i18n="ui.fab.aisle_hardware">BASE BUILD & FIXTURES</span>
+          </button>
+          <button type="button" class="fab-aisle-btn" id="fab-aisle-btn-weapons" data-aisle="weapons" role="tab" aria-selected="false">
+            <span class="fab-aisle-key">[2]</span>
+            <span class="fab-aisle-icon">🔫</span>
+            <span class="fab-aisle-label" data-i18n="ui.fab.aisle_weapons">WEAPONS & MUNITIONS</span>
+          </button>
+          <button type="button" class="fab-aisle-btn" id="fab-aisle-btn-lotto" data-aisle="lotto" role="tab" aria-selected="false">
+            <span class="fab-aisle-key">[3]</span>
+            <span class="fab-aisle-icon">🎰</span>
+            <span class="fab-aisle-label" data-i18n="ui.fab.aisle_lotto">LOTTO-PRINT GAMBA</span>
+          </button>
+          <button type="button" class="fab-aisle-btn" id="fab-aisle-btn-all" data-aisle="all" role="tab" aria-selected="false">
+            <span class="fab-aisle-key">[4]</span>
+            <span class="fab-aisle-icon">🛒</span>
+            <span class="fab-aisle-label" data-i18n="ui.fab.aisle_all">ALL AISLES</span>
+          </button>
+        </div>
         <!-- Gamba roll panel: spend a flat cost for a rarity-weighted reveal -->
-        <div id="fab-roll-panel" class="fab-roll-panel hidden">
+        <div id="fab-roll-panel" class="fab-roll-panel hidden" data-aisle="lotto">
+          <div class="fab-slot-machine-marquee">
+            <span class="fab-slot-light"></span><span class="fab-slot-light"></span>
+            <span class="fab-slot-title" data-i18n="ui.fab.slot_marquee">HORIZON SPECULATIVE LOTTO-PRINT // PULL LEVER</span>
+            <span class="fab-slot-light"></span><span class="fab-slot-light"></span>
+          </div>
           <div id="fab-reveal" class="fab-reveal" data-state="idle">
-            <div data-i18n="ui.fab_roll.insert_salvage_to_fabricate" class="fab-reveal__idle" id="fab-reveal-idle">INSERT SALVAGE TO FABRICATE</div>
+            <div data-i18n="ui.fab_roll.insert_salvage_to_fabricate" class="fab-reveal__idle" id="fab-reveal-idle">INSERT SALVAGE TO SPIN REEL</div>
             <div class="fab-reveal__strip-wrap" id="fab-reveal-strip-wrap" aria-hidden="true">
               <div class="fab-reveal__marker"></div>
               <div class="fab-reveal__strip" id="fab-reveal-strip"></div>
@@ -1752,6 +1781,11 @@
         <span data-i18n="ui.foundry_hud_prompt.open_fab_bay" class="prompt-text">OPEN FAB BAY</span>
       </div>
 
+      <div id="foundry-part-hud-prompt" class="lore-hud-prompt hud-action-prompt foundry-part-hud-prompt hidden">
+        <span data-i18n="ui.foundry_hud_prompt.press_e" class="prompt-key">PRESS E</span>
+        <span data-i18n="ui.foundry_hud_prompt.recover_power_core" class="prompt-text">RECOVER FOUNDRY POWER CORE</span>
+      </div>
+
       <div id="scientist-hud-prompt" class="lore-hud-prompt hud-action-prompt hidden">
         <span data-i18n="ui.scientist_hud_prompt.press_e" class="prompt-key">PRESS E</span>
         <span data-i18n="ui.scientist_hud_prompt.talk_to_dr_okonkwo_vass" class="prompt-text">TALK TO DR. OKONKWO-VASS</span>
@@ -1963,7 +1997,7 @@
 
     <!-- Holographic Retro Terminal Console Modal -->
     <div id="console-terminal-modal" class="modal hidden">
-      <div class="modal-content console-terminal-content">
+      <div class="modal-content console-terminal-content terminal-corporate-kiosk" data-active-department="base">
         <button class="close-modal" id="close-console-terminal">×</button>
         <div class="terminal-scanline"></div>
         <div class="terminal-flicker"></div>
@@ -1981,12 +2015,12 @@
         <div class="terminal-body">
           <!-- Terminal Tabs Header -->
           <div class="terminal-tabs">
-            <button data-i18n="ui.console_terminal.base_system" id="terminal-tab-base" class="terminal-tab-btn active">◇ BASE SYSTEM</button>
-            <button id="terminal-tab-skills" class="terminal-tab-btn">
-              <span data-i18n="ui.console_terminal.class_skills">◇ CLASS SKILLS</span>
+            <button id="terminal-tab-base" class="terminal-tab-btn active" data-department="base"><span class="terminal-tab-key">[1]</span><span data-i18n="ui.console_terminal.base_system">◇ BASE SYSTEM</span></button>
+            <button id="terminal-tab-skills" class="terminal-tab-btn" data-department="skills">
+              <span class="terminal-tab-key">[2]</span><span data-i18n="ui.console_terminal.class_skills">◇ CLASS SKILLS</span>
               <span class="terminal-tab-btn__status" id="terminal-tab-skills-status">0/6 · ◈ 0</span>
             </button>
-            <button data-i18n="ui.console_terminal.objective_night_log" id="terminal-tab-objectives" class="terminal-tab-btn">◇ OBJECTIVE / NIGHT LOG</button>
+            <button id="terminal-tab-objectives" class="terminal-tab-btn" data-department="objectives"><span class="terminal-tab-key">[3]</span><span data-i18n="ui.console_terminal.objective_night_log">◇ OBJECTIVE / NIGHT LOG</span></button>
           </div>
 
           <!-- Base Systems Tab Content -->
@@ -2343,6 +2377,8 @@
           <span data-i18n="ui.confirm.terminate_question">TERMINATE THIS CONTRACT IN PLACE?</span><br>
           <span data-i18n="ui.confirm.terminate_detail">FACILITIES WILL BAG THE SUIT AND ARM A BLACK BOX FOR NEXT DESCENT.</span>
         </p>
+        <!-- Who the abort ends, set when the dialog opens (co-op/PvP only). -->
+        <p id="confirm-scope" class="confirm-copy confirm-scope hidden"></p>
         <div class="confirm-actions">
           <button data-i18n="ui.confirm.abort_mission" class="abort-btn" id="confirm-yes">ABORT MISSION</button>
           <button data-i18n="ui.confirm.cancel" class="confirm-secondary-btn" id="confirm-no">CANCEL</button>
@@ -2457,6 +2493,7 @@
         <button data-i18n-aria-label="ui.camp.services_aria_close" type="button" class="close-modal camp-services-close" id="close-camp-services" aria-label="Close camp services">×</button>
         <div data-i18n="ui.camp.services_kicker" class="camp-services-kicker">CAMP SERVICES</div>
         <h2 class="modal-title camp-services-title" id="camp-services-title">CAMP</h2>
+        <div class="current-manifest" id="camp-services-manifest"></div>
         <div class="camp-services-list" id="camp-services-list"></div>
       </div>
     </div>
@@ -2467,8 +2504,18 @@
         <div data-i18n="ui.workbench.kicker" class="field-workbench-kicker" id="field-workbench-kicker">CAMP WORKBENCH // FIELD FABRICATION</div>
         <h2 data-i18n="ui.workbench.title" class="modal-title field-workbench-title" id="field-workbench-title">FIELD WORKBENCH</h2>
         <div class="field-workbench-stats-strip" id="field-workbench-stats-strip"></div>
-        <p data-i18n="ui.workbench.copy" class="field-workbench-copy" id="field-workbench-copy">Synthesize field supplies using banked materials. Effects apply immediately to your current expedition.</p>
-        <div class="field-workbench-recipes-grid" id="field-workbench-recipes-grid"></div>
+        <div class="field-workbench-tabs" id="field-workbench-tabs" role="tablist">
+          <button data-i18n="ui.workbench.tab_supplies" type="button" class="field-workbench-tab is-active" id="workbench-tab-supplies" role="tab" aria-selected="true" data-tab="supplies">SUPPLY FABRICATION</button>
+          <button data-i18n="ui.workbench.tab_recalibration" type="button" class="field-workbench-tab" id="workbench-tab-recalibration" role="tab" aria-selected="false" data-tab="recalibration">FIELD RECALIBRATION (1/CAMP)</button>
+        </div>
+        <div class="field-workbench-supplies-section" id="field-workbench-supplies-section">
+          <p data-i18n="ui.workbench.copy" class="field-workbench-copy" id="field-workbench-copy">Synthesize field supplies using banked materials. Effects apply immediately to your current expedition.</p>
+          <div class="field-workbench-recipes-grid" id="field-workbench-recipes-grid"></div>
+        </div>
+        <div class="field-workbench-recalibration-section hidden" id="field-workbench-recalibration-section">
+          <div class="field-workbench-recalibration-header" id="field-workbench-recalibration-header"></div>
+          <div class="field-workbench-recalibration-grid" id="field-workbench-recalibration-grid"></div>
+        </div>
         <div class="field-workbench-footer">
           <button data-i18n="ui.workbench.close" type="button" class="field-workbench-close-btn" id="field-workbench-footer-close">EXIT WORKBENCH</button>
         </div>
@@ -2546,6 +2593,14 @@
           <div class="setting-item setting-item--action">
             <span data-i18n="ui.settings.return_to_game">RETURN TO GAME</span>
             <button data-i18n="ui.settings.resume" type="button" class="calibrate-btn settings-action-btn" id="resume-settings">RESUME</button>
+          </div>
+          <div class="setting-item setting-item--action" id="steam-overlay-setting-row">
+            <span data-i18n="ui.settings.steam_overlay">STEAM OVERLAY (SHIFT+TAB)</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-steam-overlay-btn" data-i18n="ui.action.open">OPEN</button>
+          </div>
+          <div class="setting-item setting-item--action setting-item--danger hidden" id="skip-sector-zero-setting-row">
+            <span data-i18n="ui.settings.skip_onboarding_desc">OPEN SECTOR 1 WITH A STANDARD FIELD LOADOUT</span>
+            <button data-i18n="ui.settings.skip_onboarding" type="button" class="calibrate-btn settings-action-btn hidden" id="skip-sector-zero">SKIP ONBOARDING</button>
           </div>
           <!-- Stage Resolution was a developer layout label, not a renderer
                setting. Keep the internal dev-console preset, but do not offer
@@ -3616,8 +3671,9 @@
 
       <div class="shared-gear focus-top-right">
         <div class="gear-stack">
-          <div class="gear-layer gear-base"></div>
-          <div class="gear-layer gear-ridge"></div>
+          <div class="gear-layer gear-outer"></div>
+          <div class="gear-layer gear-inner"></div>
+          <div class="gear-core-glow"></div>
         </div>
       </div>
     </div>

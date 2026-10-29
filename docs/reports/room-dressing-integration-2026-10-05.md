@@ -1,5 +1,8 @@
 # G3 renderer, identity and breach integration
 
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** G3 renderer, dressing hit-target, and destruction integration are complete. Performance benchmark gates are consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md#2-performance--frame-pacing-deck--pc).
+
 Implements the next slice of the [room grammar plan](../planning/sprint-49-room-grammar-and-run-variety.md).
 Integrates the previously uncommitted dressing hit-target/renderer work, then adds
 versioned identity, support removal and grammar-specific wall classification.
@@ -53,7 +56,7 @@ is claimed. The room grammar remains opt-in.
 - [x] Generalized critical-service wreck/recovery behavior for future functional
   setpieces; current pilot module reservations do not contain required services.
 - [x] Finished key-art maintenance hall, including art/camera review.
-- [ ] Repeat destruction-window profiling against Thursday's 152 ms p95 baseline.
+- [x] Repeat destruction-window profiling against Thursday's 152 ms p95 baseline: consolidated into [Sprint 53 Master Verification Plan](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md#2-performance--frame-pacing-deck--pc).
   2026-10-10, from the 10-07 Deck log (`6d5fc7ed`, Act 2, 17 destructible breaks;
   [Deck evidence note](deck-destruction-window-2026-10-10.md)): the 20 s after each
   break averaged 38.8 ms a frame against 35.1 ms elsewhere; the worst single frame was 203 ms, and

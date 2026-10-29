@@ -64,12 +64,17 @@ export const ACT2_CLASS_CAST = Object.freeze({
     })
 });
 
-export const ACT2_CLASS_RPS_ORDER = Object.freeze({
-    // The player always meets the two other disciplines first, then the
-    // inverted mirror of their own class at the final command camp.
-    SCOUT: Object.freeze(['TANK', 'ENGINEER', 'SCOUT']),
-    TANK: Object.freeze(['ENGINEER', 'SCOUT', 'TANK']),
-    ENGINEER: Object.freeze(['SCOUT', 'TANK', 'ENGINEER'])
+// Each camp keeps its own leader: Meridian is Kaelen's grid, Tallow is
+// Martha's hearth, Vesper is Briggs's line. Leaders used to rotate across
+// the camps by the player's class, so an Engineer met Martha at Meridian
+// while Meridian's quests, props and cards were Kaelen's (owner decision
+// D-1, 2026-10-16; docs/planning/camp-interaction-and-cinematics-audit-2026-10-16.md).
+// Camps are met in route order (ring 1-3, src/mazeExpedition.js), and the
+// leader of the player's own discipline is still the inverted mirror.
+export const ACT2_CAMP_HOME_CLASS = Object.freeze({
+    camp_meridian: 'ENGINEER',
+    camp_tallow: 'SCOUT',
+    camp_vesper: 'TANK'
 });
 
 export function normalizeClassId(playerType = 'ENGINEER') {
@@ -79,9 +84,10 @@ export function normalizeClassId(playerType = 'ENGINEER') {
 
 export function getClassCampOrder(playerType = 'ENGINEER') {
     const playerClass = normalizeClassId(playerType);
-    return ACT2_CLASS_RPS_ORDER[playerClass].map((classId, index) => {
+    return ACT2_CAMP_IDS.map((id, index) => {
+        const classId = ACT2_CAMP_HOME_CLASS[id];
         const cast = ACT2_CLASS_CAST[classId];
-        const id = ACT2_CAMP_IDS[index];
+        const mirror = classId === playerClass;
         return {
             id,
             order: index + 1,
@@ -93,8 +99,8 @@ export function getClassCampOrder(playerType = 'ENGINEER') {
             sprite: cast.sprite,
             bossSprite: cast.bossSprite,
             color: cast.color,
-            isBoss: index === ACT2_CAMP_IDS.length - 1,
-            role: index === ACT2_CAMP_IDS.length - 1 ? 'inverted_self' : 'ally'
+            isBoss: mirror,
+            role: mirror ? 'inverted_self' : 'ally'
         };
     });
 }

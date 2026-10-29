@@ -192,7 +192,7 @@ export class DebugLogger {
             'run-cards-drawn', 'player-damaged', 'player-death', 'player-respawned',
             'player-health-changed', 'player-blocked',
             'player-extracted', 'mission-objective-complete', 'biome-changed',
-            'black-box-recovered', 'foundry-discovered', 'cave-entrance-revealed',
+            'black-box-recovered', 'foundry-discovered', 'cave-entrance-revealed', 'expedition-resumed',
             'queen-fight-started', 'camp-choice-resolved', 'camp-choice-denied',
             'camp-supported', 'camp-bonded', 'camp-final-resolved',
             'hive-choice-resolved', 'hive-mined', 'act2-milestone', 'act2-departed',

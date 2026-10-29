@@ -1,4 +1,4 @@
-import { access, readdir, stat } from 'node:fs/promises';
+import { access, readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 const requiredMedia = [
@@ -10,6 +10,10 @@ const requiredMedia = [
     '3d/runtime/secrets/mayor-tina-rigged.glb',
     '3d/runtime/secrets/teacup-roach.glb',
     'door_biomech_keyart_v2.webp',
+    'title_key_art_v2.webp',
+    'menu_bg.webp',
+    'menu_bg_v3.webp',
+    'menu_frame_overlay.webp',
     'door_bio_keyart_v2.webp',
     'door_nuclear_keyart_v2.webp',
     'door_cryo_keyart_v2.webp',
@@ -119,6 +123,26 @@ for (const root of ['public', 'dist']) {
     } catch {
         failures.push(`${root}: build-boundary audit could not scan directory`);
     }
+}
+
+// Public-root CSS URLs work through Vite's HTTP server but resolve against the
+// filesystem root in a packaged Electron file:// renderer. Menu art is defined
+// document-relative in index.html and consumed through CSS variables instead.
+try {
+    for (const file of await walkFiles(path.resolve('dist'))) {
+        if (path.extname(file).toLowerCase() !== '.css') continue;
+        const css = await readFile(file, 'utf8');
+        const rootAbsoluteMenuAsset = css.match(
+            /url\(\s*(['"]?)\/(?:title_key_art_v2|menu_bg(?:_v3)?|menu_frame_overlay|door_biomech_keyart_v2)\.webp\1\s*\)/
+        );
+        if (rootAbsoluteMenuAsset) {
+            failures.push(
+                `${path.relative('.', file)}: root-absolute menu artwork URL breaks packaged file:// builds (${rootAbsoluteMenuAsset[0]})`
+            );
+        }
+    }
+} catch {
+    failures.push('dist: packaged menu-art URL audit could not scan stylesheets');
 }
 
 if (failures.length) {

@@ -37,4 +37,30 @@ describe('ThreeGame blocking gameplay overlay gate', () => {
         elements.set('cutscene-overlay', elementWithClasses('is-active'));
         expect(ThreeGame.prototype.hasBlockingGameplayOverlay()).toBe(true);
     });
+
+    // Audit 2026-10-16 §13.2: a song card in the field must not leave enemies
+    // simulating behind the doors and the video.
+    it('freezes play while a song card is on screen', () => {
+        const elements = new Map([['song-interstitial', elementWithClasses('song-interstitial', 'hidden')]]);
+        globalThis.document = {
+            body: elementWithClasses(),
+            getElementsByClassName: () => [],
+            getElementById: (id) => elements.get(id) ?? null
+        };
+        expect(ThreeGame.prototype.hasBlockingGameplayOverlay()).toBe(false);
+        elements.set('song-interstitial', elementWithClasses('song-interstitial', 'is-open'));
+        expect(ThreeGame.prototype.hasBlockingGameplayOverlay()).toBe(true);
+    });
+
+    it('freezes play while the arcade cabinet is open', () => {
+        const elements = new Map([['arcade-cabinet-overlay', elementWithClasses('arcade-cabinet-overlay', 'hidden')]]);
+        globalThis.document = {
+            body: elementWithClasses(),
+            getElementsByClassName: () => [],
+            getElementById: (id) => elements.get(id) ?? null
+        };
+        expect(ThreeGame.prototype.hasBlockingGameplayOverlay()).toBe(false);
+        elements.set('arcade-cabinet-overlay', elementWithClasses('arcade-cabinet-overlay'));
+        expect(ThreeGame.prototype.hasBlockingGameplayOverlay()).toBe(true);
+    });
 });

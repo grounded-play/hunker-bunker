@@ -4,6 +4,631 @@
   inherits: false;
   initial-value: rgba(255, 159, 28, 0.18);
 }
+
+/* ── Diegetic corporate kiosks: Fabrication Auto-Mart + main terminal ──────
+   These overlays preserve the existing systems while presenting them as the
+   glass, keypad and receipt tray of physical machines in the base. */
+.fab-modal-content.fab-minimart-terminal,
+.console-terminal-content.terminal-corporate-kiosk {
+  --kiosk-amber: #ffb52d;
+  --kiosk-cream: #fff3c4;
+  isolation: isolate;
+  border-radius: 18px 18px 8px 8px !important;
+  border: 5px solid #182129 !important;
+  outline: 2px solid rgba(255, 181, 45, 0.55);
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px) 0 0 / 12px 12px,
+    linear-gradient(180deg, #101a20 0%, #071116 100%) !important;
+  box-shadow:
+    0 0 0 3px #05080a,
+    0 16px 0 #05080a,
+    0 30px 80px rgba(0, 0, 0, .88),
+    inset 0 0 0 2px rgba(255,255,255,.045) !important;
+}
+
+/* Unlike pause/settings, these are physical consoles the operator is looking
+   into. The outside edges are transparent so the live 3D game background is
+   blurred and visible around the chassis, while the screen aperture frames the UI. */
+#fabrication-modal,
+#console-terminal-modal {
+  background: radial-gradient(circle at 50% 50%, rgba(2, 7, 9, .24), rgba(0, 0, 0, .58) 78%);
+  backdrop-filter: blur(12px) brightness(.7) saturate(.85);
+  -webkit-backdrop-filter: blur(12px) brightness(.7) saturate(.85);
+}
+
+.fab-minimart-terminal {
+  position: relative;
+  max-width: min(94vw, 1340px) !important;
+  width: min(94vw, 1340px) !important;
+  height: min(92vh, 880px) !important;
+}
+
+.fab-minimart-terminal::after {
+  content: "";
+  position: absolute;
+  inset: -8px -10px;
+  background: url('/ui/overlays/fab_automart_overlay.webp') no-repeat center / 100% 100%;
+  pointer-events: none;
+  z-index: 105;
+  filter: drop-shadow(0 20px 50px rgba(0, 0, 0, .85));
+}
+
+.terminal-corporate-kiosk {
+  position: relative;
+  max-width: min(94vw, 1340px) !important;
+  width: min(94vw, 1340px) !important;
+  height: min(92vh, 880px) !important;
+}
+
+.terminal-corporate-kiosk::after {
+  content: "";
+  position: absolute;
+  inset: -8px -10px;
+  background: url('/ui/overlays/console_kiosk_overlay.webp') no-repeat center / 100% 100%;
+  pointer-events: none;
+  z-index: 105;
+  filter: drop-shadow(0 20px 50px rgba(0, 0, 0, .85));
+}
+
+.fab-minimart-terminal::before,
+.terminal-corporate-kiosk::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(255, 181, 45, .17);
+  border-radius: 11px;
+  pointer-events: none;
+  z-index: 101;
+}
+
+/* ── CRT Screen Glass, Scanline Raster & Phosphor Bloom ─────────────────── */
+/* The glass is a layer over the screen hole, never the UI container itself
+   (.kiosk-screen holds the buttons; pointer-events: none there killed every
+   click on every kiosk screen). */
+.kiosk-slot--screen::before,
+.fab-modal-content .terminal-scanline {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 104;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, transparent 45%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.18) 0 1px, transparent 1px 3px);
+  border-radius: 12px;
+  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.65);
+}
+
+.crt-overclock-mode {
+  --fab-glow-rgb: 255, 181, 45 !important;
+  text-shadow: 0 0 8px #ffb52d, 0 0 20px rgba(255, 181, 45, 0.8) !important;
+}
+
+.crt-green-mode {
+  --fab-glow-rgb: 44, 255, 115 !important;
+  color: #a8ffca !important;
+  text-shadow: 0 0 8px #2cff73, 0 0 20px rgba(44, 255, 115, 0.8) !important;
+  filter: hue-rotate(65deg) saturate(1.4);
+}
+
+/* ── 3D Tactile Buttons: Physical Key Travel & Mechanical Depression ────── */
+.fab-aisle-btn,
+.fab-roll-btn,
+.fab-card .fab-btn,
+.bezel-keypad-btn,
+.dip-toggle {
+  position: relative;
+  transition: transform 0.07s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.07s cubic-bezier(0.2, 0, 0, 1) !important;
+  box-shadow:
+    0 4px 0 #090e12,
+    0 7px 14px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
+
+.fab-aisle-btn:hover,
+.fab-roll-btn:hover,
+.bezel-keypad-btn:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 5px 0 #090e12,
+    0 9px 18px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+.fab-aisle-btn:active,
+.fab-roll-btn:active,
+.fab-card .fab-btn:active,
+.bezel-keypad-btn:active,
+.dip-toggle:active {
+  transform: translateY(3px) !important;
+  box-shadow:
+    0 1px 0 #090e12,
+    0 2px 6px rgba(0, 0, 0, 0.9),
+    inset 0 2px 4px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* ── Bezel Hotspot Controls & Corner Hex Screws ─────────────────────────── */
+.bezel-interactive-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 106;
+}
+
+.bezel-hex-screw {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  pointer-events: auto;
+  cursor: grab;
+  background:
+    radial-gradient(circle at 35% 35%, #525f68, #182026 65%),
+    repeating-conic-gradient(from 0deg, #2b353d 0 60deg, #1c2328 60deg 120deg);
+  border: 2px solid #5a6772;
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 3px #11171c,
+    inset 0 1px 2px rgba(255, 255, 255, 0.4);
+  transition: transform 0.18s cubic-bezier(0.3, 1.5, 0.6, 1), box-shadow 0.18s ease;
+}
+
+.bezel-hex-screw::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: #0d1216;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.95);
+}
+
+.bezel-hex-screw:hover {
+  filter: brightness(1.25);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.6), 0 3px 6px rgba(0, 0, 0, 0.85);
+}
+
+.screw-tl { top: -4px; left: -4px; }
+.screw-tr { top: -4px; right: -4px; }
+.screw-bl { bottom: -4px; left: -4px; }
+.screw-br { bottom: -4px; right: -4px; }
+
+.screw-loose {
+  border-color: #2cff73 !important;
+  box-shadow: 0 0 12px #2cff73, 0 6px 12px rgba(0, 0, 0, 0.9) !important;
+}
+
+/* Bezel Deck Row (Numpad, Aux Readout, Coin Return, Gauge) */
+.bezel-hotspots-bar {
+  position: absolute;
+  bottom: -46px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 14px;
+  background: linear-gradient(180deg, #182128 0%, #0c1216 100%);
+  border: 2px solid #2f3e4a;
+  border-radius: 6px 6px 12px 12px;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.92);
+  pointer-events: auto;
+}
+
+.bezel-aux-display {
+  flex: 1 1 auto;
+  max-width: 320px;
+  padding: 5px 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 800;
+  color: #2cff73;
+  background: #03080b;
+  border: 1px inset rgba(44, 255, 115, 0.45);
+  box-shadow: inset 0 0 8px rgba(44, 255, 115, 0.25);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.08em;
+}
+
+.text-flash { animation: aux-flash 0.3s ease-out; }
+@keyframes aux-flash { 0% { background: rgba(44, 255, 115, 0.35); } }
+
+.bezel-keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 28px);
+  gap: 3px;
+}
+
+.bezel-keypad-btn {
+  height: 24px;
+  padding: 0;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 900;
+  color: #c9e4ff;
+  background: #141c22;
+  border: 1px solid #32434f;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.btn-clr { color: #ff5757; }
+.btn-ent { color: #2cff73; }
+
+/* Mechanical Coin Return */
+.bezel-coin-assembly {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bezel-coin-lever {
+  height: 28px;
+  padding: 3px 9px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  font-weight: 900;
+  color: #ffb52d;
+  background: #10161a;
+  border: 2px solid #5a4012;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.08s ease;
+}
+
+.lever-depressed { transform: translateY(4px) scale(0.96); }
+
+/* Analog Vacuum Gauge */
+.bezel-gauge-dial {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f3f3f0 55%, #a6a69c 100%);
+  border: 2px solid #3a4752;
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.6), 0 2px 5px rgba(0,0,0,0.8);
+  cursor: pointer;
+}
+
+.bezel-gauge-needle {
+  position: absolute;
+  top: 6px;
+  left: 15px;
+  width: 2px;
+  height: 12px;
+  background: #ff2a2a;
+  transform-origin: bottom center;
+  transform: rotate(38deg);
+  transition: transform 0.15s cubic-bezier(0.2, 1.8, 0.4, 1);
+}
+
+.needle-wobble { animation: gauge-wobble 0.35s ease-in-out; }
+@keyframes gauge-wobble {
+  0% { transform: rotate(38deg); }
+  25% { transform: rotate(75deg); }
+  50% { transform: rotate(20deg); }
+  75% { transform: rotate(50deg); }
+  100% { transform: rotate(38deg); }
+}
+
+/* ── Secret Maintenance Hatch ───────────────────────────────────────────── */
+.bezel-maintenance-hatch {
+  position: absolute;
+  bottom: -190px;
+  left: 8px;
+  right: 8px;
+  background: #090e12;
+  border: 3px solid #ffb52d;
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95);
+  pointer-events: auto;
+  z-index: 108;
+}
+
+.hatch-open-anim { animation: hatch-drop 0.4s cubic-bezier(0.18, 1.25, 0.4, 1); }
+@keyframes hatch-drop {
+  0% { transform: translateY(-40px) scaleY(0.4); opacity: 0; }
+  100% { transform: translateY(0) scaleY(1); opacity: 1; }
+}
+
+.maintenance-hatch-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px dashed rgba(255, 181, 45, 0.4);
+  font: 900 10px 'Space Mono', monospace;
+  color: #ffb52d;
+}
+
+.hatch-badge {
+  padding: 2px 6px;
+  background: #2cff73;
+  color: #03080b;
+  border-radius: 3px;
+  font-weight: 900;
+}
+
+.maintenance-hatch-content {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.dip-switch-bank {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  align-items: center;
+  font: 800 9px 'Space Mono', monospace;
+  color: #8da4b5;
+}
+
+.dip-toggle {
+  padding: 2px 8px;
+  font: 900 9px monospace;
+  background: #141b21;
+  color: #5d7180;
+  border: 1px solid #31424e;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.dip-active {
+  background: #ffb52d !important;
+  color: #070d11 !important;
+  box-shadow: 0 0 8px #ffb52d;
+}
+
+.maintenance-secrets {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.maintenance-fuse-btn {
+  padding: 6px 10px;
+  background: #121d26;
+  border: 1px solid #00e5ff;
+  border-radius: 4px;
+  color: #00e5ff;
+  font: 800 10px 'Space Mono', monospace;
+  cursor: pointer;
+  text-align: left;
+}
+
+.fuse-claimed {
+  opacity: 0.5;
+  border-color: #4b6270;
+  color: #6a8292;
+  cursor: default;
+}
+
+.maintenance-cassette {
+  padding: 4px 8px;
+  background: #1a160d;
+  border: 1px solid #7d5918;
+  border-radius: 4px;
+  color: #e5b058;
+  font: 800 9px 'Space Mono', monospace;
+  cursor: pointer;
+}
+
+.fab-minimart-bezel-top,
+.terminal-kiosk-bezel-top {
+  position: relative;
+  z-index: 102;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -8px -8px 10px;
+  padding: 7px 12px;
+  color: #1d1706;
+  background: repeating-linear-gradient(135deg, #f7b52c 0 12px, #ffc94c 12px 24px);
+  border: 2px solid #fff0a5;
+  border-radius: 9px 9px 2px 2px;
+  box-shadow: 0 4px 0 #7d4e0a, inset 0 0 18px rgba(255,255,255,.34);
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(8px, calc(var(--vu) * 1.04), 12px);
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.fab-minimart-live-status,
+.terminal-kiosk-online { white-space: nowrap; }
+.fab-status-dot,
+.terminal-kiosk-online i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: #2cff73;
+  box-shadow: 0 0 8px #2cff73;
+  animation: kiosk-live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes kiosk-live-pulse { 50% { opacity: .42; } }
+
+.fab-minimart-header {
+  margin: 0 0 8px;
+  padding: 9px 60px 8px 18px;
+  text-align: left;
+  background: linear-gradient(90deg, rgba(0,229,255,.13), rgba(255,181,45,.07));
+  border: 1px solid rgba(0,229,255,.28);
+  border-left: 5px solid var(--kiosk-amber);
+}
+.fab-minimart-header .fab-title { font-size: clamp(18px, calc(var(--vu) * 2.55), 30px); }
+.fab-atm-bank-row {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 8px;
+  padding: 6px 9px;
+  background: #03080b;
+  border: 1px inset rgba(255,181,45,.4);
+}
+.fab-bank-slot-label {
+  margin-right: auto;
+  color: #e8bd58;
+  font: 800 clamp(8px, calc(var(--vu) * 1.02), 11px) 'Space Mono', monospace;
+  letter-spacing: .08em;
+}
+
+.fab-aisle-nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  flex: 0 0 auto;
+  margin-bottom: 9px;
+}
+.fab-aisle-btn {
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  color: #a9bdc5;
+  background: linear-gradient(180deg, #26323a, #10171c);
+  border: 1px solid #465660;
+  border-bottom: 4px solid #070a0c;
+  border-radius: 5px;
+  font: 800 clamp(8px, calc(var(--vu) * 1.04), 12px) 'Space Mono', monospace;
+  text-align: left;
+  cursor: pointer;
+}
+.fab-aisle-btn:hover,
+.fab-aisle-btn:focus-visible { color: #fff; border-color: #72edff; outline: none; }
+.fab-aisle-btn.active {
+  color: #211500;
+  background: linear-gradient(180deg, #ffe272, #e59b18);
+  border-color: #fff0a5;
+  box-shadow: 0 0 14px rgba(255,181,45,.35);
+}
+.fab-aisle-key,
+.terminal-tab-key { font-weight: 900; opacity: .8; }
+.fab-aisle-icon { font-size: 18px; filter: saturate(.75); }
+.fab-slot-machine-marquee {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin: -4px -4px 7px;
+  padding: 6px 8px;
+  color: #271600;
+  background: linear-gradient(180deg, #ffd761, #dc8c13);
+  border: 2px solid #ffeaa0;
+  font: 900 clamp(8px, calc(var(--vu) * 1.1), 12px) 'Space Mono', monospace;
+  letter-spacing: .08em;
+}
+.fab-slot-light {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff6c9;
+  box-shadow: 0 0 7px #fff;
+}
+.fab-aisle-instructions {
+  grid-column: 1 / -1;
+  min-height: 66px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  padding: 12px 16px;
+  color: #a9c9d2;
+  background: rgba(3,8,11,.72);
+  border: 1px dashed rgba(255,181,45,.45);
+  font: 700 clamp(9px, calc(var(--vu) * 1.05), 12px) 'Space Mono', monospace;
+  text-align: center;
+}
+.fab-aisle-instructions strong { color: #ffd05a; letter-spacing: .1em; }
+.fab-minimart-footer-tray,
+.terminal-kiosk-footer {
+  position: relative;
+  z-index: 102;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 0 0 auto;
+  margin-top: 8px;
+  padding: 6px 10px;
+  color: #9ba9ac;
+  background: #05090b;
+  border-top: 2px solid #3f4b50;
+  box-shadow: inset 0 5px 12px rgba(0,0,0,.8);
+  font: 700 clamp(7px, calc(var(--vu) * .9), 10px) 'Space Mono', monospace;
+  letter-spacing: .04em;
+}
+.fab-tray-keys-hint,
+.terminal-kiosk-footer span:last-child { color: #f2bd43; white-space: nowrap; }
+
+.terminal-corporate-kiosk { padding: 14px 16px 10px !important; }
+.terminal-corporate-kiosk .terminal-kiosk-bezel-top { margin: 0 42px 9px 0; }
+.terminal-corporate-kiosk .terminal-header {
+  margin-bottom: 8px;
+  padding: 7px 12px;
+  background: linear-gradient(90deg, rgba(var(--terminal-glow-rgb),.12), rgba(255,181,45,.05));
+  border: 1px solid rgba(var(--terminal-glow-rgb),.28);
+  border-left: 5px solid var(--kiosk-amber);
+}
+.terminal-corporate-kiosk .terminal-title { font-size: clamp(18px, calc(var(--vu) * 2.6), 30px); }
+.terminal-corporate-kiosk .terminal-body {
+  padding: 9px 10px 9px;
+  background: radial-gradient(circle at 50% -20%, rgba(var(--terminal-glow-rgb),.1), transparent 48%), #03090b;
+  border: 2px inset #334148;
+  border-radius: 7px;
+  box-shadow: inset 0 0 22px rgba(0,0,0,.86);
+}
+.terminal-corporate-kiosk .terminal-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  padding: 2px 2px 8px;
+  background: #03090b;
+}
+.terminal-corporate-kiosk .terminal-tab-btn {
+  min-width: 0;
+  min-height: 43px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: linear-gradient(180deg, #27343a, #11191d);
+  border: 1px solid #4b5a61;
+  border-bottom: 4px solid #080b0d;
+  border-radius: 5px;
+}
+.terminal-corporate-kiosk .terminal-tab-btn.active {
+  color: #1e1604;
+  background: linear-gradient(180deg, #ffe47a, #e69c1e);
+  border-color: #fff1a9;
+  text-shadow: none;
+}
+.terminal-corporate-kiosk .terminal-tab-btn.active .terminal-tab-btn__status { color: #35240a; }
+.terminal-corporate-kiosk .terminal-kiosk-footer { margin-top: 7px; }
+
+@media (max-width: 820px), (max-height: 760px) {
+  .fab-minimart-live-status,
+  .terminal-kiosk-online,
+  .fab-tray-tag,
+  .terminal-kiosk-footer span:first-child { display: none; }
+  .fab-aisle-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fab-aisle-btn { min-height: 38px; }
+  .fab-aisle-label { white-space: normal; }
+  .fab-minimart-header .fab-subtitle { display: none; }
+  .fab-minimart-footer-tray,
+  .terminal-kiosk-footer { justify-content: flex-end; }
+}
 @property --preview-glow-bg {
   syntax: '<color>';
   inherits: false;
@@ -47,6 +672,8 @@
   --hb-safe-hud: calc(32 * var(--stage-px, 1px));
   --hb-safe-text: calc(48 * var(--stage-px, 1px));
   --hb-text-floor: calc(18 * var(--stage-px, 1px));
+  --font-floor-min: 11px;
+  --font-floor-btn: 12px;
   /* Width of the CHAT button in every corner settings slot. */
   --corner-chat-width: 72px;
 }
@@ -129,6 +756,8 @@ body {
 }
 
 #game-viewport {
+  --font-floor-min: 11px;
+  --font-floor-btn: 12px;
   --vu: min(calc(var(--vw-actual, 100vw) / 160), calc(var(--vh-actual, 100dvh) / 100));
   --vu-text: calc(var(--vu) * var(--ui-scale-multiplier, 1));
   --stage-px: calc(var(--vu) / 8);
@@ -517,7 +1146,28 @@ body {
   width: 0%;
   background: var(--accent-primary);
   box-shadow: 0 0 20px var(--accent-primary);
-  transition: width 0.3s ease;
+  transition: width 0.55s cubic-bezier(0.22, 0.72, 0.32, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.loader-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 32%;
+  transform: translateX(-140%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  animation: loader-progress-scan 1.1s linear infinite;
+}
+
+@keyframes loader-progress-scan {
+  to { transform: translateX(420%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader-bar { transition-duration: 0.01ms; }
+  .loader-bar::after { animation: none; }
 }
 
 .loader-briefing-speaker {
@@ -610,6 +1260,13 @@ body {
     inset 0 0 calc(var(--vu) * 1.2) rgba(111, 213, 214, 0.08);
 }
 
+/* A closed transition door already owns the themed gear at its lock point.
+   The loading panel is layered above that door, so drawing its normal spinner
+   as well produced two overlapping gears during world generation/restarts. */
+#loading-screen.over-door-loader .loader-gear-spinner {
+  display: none;
+}
+
 #loading-screen.over-door-loader .loader-system-info,
 #loading-screen.tactical-mode .loader-system-info {
   display: none;
@@ -679,7 +1336,7 @@ body {
 #transition-overlay {
   --gear-focus-x: calc(var(--vu) * 80);
   --gear-focus-y: calc(var(--vu) * 50);
-  --gear-focus-size: calc(var(--vu) * 12);
+  --gear-focus-size: calc(var(--vu) * 15);
   --door-plane-size: calc(var(--vu) * 160);
   /* Half the logical stage width, so the opening-h.active exit translate
      (translate(calc(-50% + var(--door-half-span)), -50%)) carries the
@@ -748,7 +1405,7 @@ body {
 
 .door {
   position: absolute;
-  background-image: var(--door-bg-image, url('/door_biomech_keyart_v2.webp'));
+  background-image: var(--door-bg-image, var(--asset-door-key-art));
   background-repeat: no-repeat;
   box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 0, 0, 0.7);
   z-index: 250001;
@@ -832,42 +1489,107 @@ body {
   display: block;
 }
 
+.loader-gear-spinner {
+  position: relative;
+  width: calc(var(--vu) * 18);
+  height: calc(var(--vu) * 18);
+  margin-bottom: calc(var(--vu) * 2.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+#loading-screen.briefing-mode .loader-gear-spinner {
+  width: calc(var(--vu) * 14);
+  height: calc(var(--vu) * 14);
+  margin-bottom: calc(var(--vu) * 1.8);
+}
+
 .gear-stack {
   position: relative;
   width: 100%;
   height: 100%;
   transform-origin: center;
   will-change: transform;
-  transform: rotate(var(--gear-rotation, 0deg));
 }
 
 .gear-layer {
-  --gear-icon: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%3E%3Cpath%20fill%3D'white'%20d%3D'M94.4%2043.2l-8.6-1.5a29.7%2029.7%200%200%200-2.6-5.8l5.2-7.1c.8-1.1.7-2.7-.3-3.7l-5.6-5.6c-1-1-2.6-1.1-3.7-.3l-7.1%205.2a29.7%2029.7%200%200%200-5.8-2.6l-1.5-8.6c-.2-1.4-1.4-2.4-2.8-2.4h-7.9c-1.4%200-2.6%201-2.8%202.4l-1.5%208.6a29.7%2029.7%200%200%200-5.8%202.6L28.3%2019c-1.1-.8-2.7-.7-3.7.3L19%2024.9c-1%201-1.1%202.6-.3%203.7l5.2%207.1a29.7%2029.7%200%200%200-2.6%205.8l-8.6%201.5c-1.4.2-2.4%201.4-2.4%202.8v7.9c0%201.4%201%202.6%202.4%202.8l8.6%201.5a29.7%2029.7%200%200%200%202.6%205.8l-5.2%207.1c-.8%201.1-.7%202.7.3%203.7l5.6%205.6c1%201%202.6%201.1%203.7.3l7.1-5.2a29.7%2029.7%200%200%200%205.8%202.6l1.5%208.6c.2%201.4%201.4%202.4%202.8%202.4h7.9c1.4%200%202.6-1%202.8-2.4l1.5-8.6a29.7%2029.7%200%200%200%205.8-2.6l7.1%205.2c1.1.8%202.7.7%203.7-.3l5.6-5.6c1-1%201.1-2.6.3-3.7l-5.2-7.1a29.7%2029.7%200%200%200%202.6-5.8l8.6-1.5c1.4-.2%202.4-1.4%202.4-2.8v-7.9c0-1.4-1-2.6-2.4-2.8zM50%2065c-8.3%200-15-6.7-15-15s6.7-15%2015-15%2015%206.7%2015%2015-6.7%2015-15%2015z'%2F%3E%3C%2Fsvg%3E");
   position: absolute;
   inset: 0;
   display: block;
-  -webkit-mask-image: var(--gear-icon);
-  mask-image: var(--gear-icon);
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-size: contain;
-  mask-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  transform-origin: center;
+  will-change: transform;
 }
 
+.gear-outer,
 .gear-base {
-  background: linear-gradient(145deg, #ffd27c 0%, #ffb347 35%, #ff9f1c 65%, #c86e0f 100%);
+  inset: 0;
+  background-image: var(--gear-outer-image, var(--asset-gear-vault-main));
   filter:
-    drop-shadow(0 0 calc(var(--vu) * 1.8) rgba(255, 159, 28, 0.6)) drop-shadow(0 0 calc(var(--vu) * 0.75) rgba(255, 225, 160, 0.8)) drop-shadow(0 calc(var(--vu) * 0.55) calc(var(--vu) * 0.6) rgba(0, 0, 0, 0.75));
+    drop-shadow(var(--gear-glow-shadow, 0 0 calc(var(--vu) * 1.8) rgba(255, 159, 28, 0.55)))
+    drop-shadow(0 0 calc(var(--vu) * 0.8) rgba(255, 210, 120, 0.7))
+    drop-shadow(0 calc(var(--vu) * 0.7) calc(var(--vu) * 1.2) rgba(0, 0, 0, 0.85));
+  animation: gear-spin-cw 16s linear infinite;
 }
 
+.gear-inner,
 .gear-ridge {
-  inset: 18%;
-  background: linear-gradient(155deg, #734514 0%, #4d2e0d 55%, #221305 100%);
-  opacity: 0.92;
-  transform: translate(calc(var(--vu) * -0.25), calc(var(--vu) * 0.35));
-  filter: drop-shadow(0 calc(var(--vu) * 0.2) calc(var(--vu) * 0.45) rgba(0, 0, 0, 0.65));
+  inset: 21%;
+  background-image: var(--gear-inner-image, var(--asset-gear-vault-inner));
+  filter:
+    drop-shadow(0 0 calc(var(--vu) * 1.2) rgba(255, 159, 28, 0.75))
+    drop-shadow(0 calc(var(--vu) * 0.3) calc(var(--vu) * 0.6) rgba(0, 0, 0, 0.75));
+  animation: gear-spin-ccw 10s linear infinite;
+}
+
+.gear-core-glow {
+  position: absolute;
+  inset: 38%;
+  border-radius: 50%;
+  background: var(--gear-core-glow-bg, radial-gradient(circle, rgba(255, 175, 40, 0.85) 0%, rgba(255, 120, 0, 0.4) 45%, transparent 70%));
+  filter: blur(calc(var(--vu) * 0.6));
+  pointer-events: none;
+  animation: gear-core-pulse 2.2s ease-in-out infinite alternate;
+}
+
+/* The door overlay sits in the DOM all session. Its gears only turn while it
+   is shown, and no gear turns before index.html installs the art after load
+   (html.gear-art-ready): idle, their filtered layers cost style work every
+   frame during boot (mobile Lighthouse LCP, issue #106). */
+#transition-overlay:not(.visible) .gear-layer,
+#transition-overlay:not(.visible) .gear-core-glow,
+html:not(.gear-art-ready) .gear-layer,
+html:not(.gear-art-ready) .gear-core-glow {
+  animation-play-state: paused;
+}
+
+@keyframes gear-spin-cw {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes gear-spin-ccw {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes gear-core-pulse {
+  0% { transform: scale(0.85); opacity: 0.5; }
+  100% { transform: scale(1.2); opacity: 0.95; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gear-outer,
+  .gear-base,
+  .gear-inner,
+  .gear-ridge,
+  .gear-core-glow {
+    animation: none;
+  }
 }
 
 #transition-overlay.visible .shared-gear {
@@ -949,7 +1671,7 @@ body {
   overflow: clip;
   isolation: isolate;
   background-color: #000;
-  background-image: url('/title_key_art_v2.webp');
+  background-image: var(--asset-title-key-art);
   background-position: calc(50% + var(--hero-shift-x)) calc(50% + var(--hero-shift-y));
   background-size: 102% auto;
   background-repeat: no-repeat;
@@ -958,6 +1680,15 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+
+/* Phone-width web clients use the existing compact menu plate instead of
+   transferring a 1280×800 desktop key-art image into a ~390px viewport. */
+@media (max-width: 768px) {
+  #splash {
+    background-image: var(--asset-mobile-menu-bg);
+    background-size: cover;
+  }
 }
 
 #splash::before {
@@ -1334,7 +2065,7 @@ body {
 .title-profile-hud__kicker {
   color: #00e5ff !important;
   font-family: 'Space Mono', monospace !important;
-  font-size: clamp(10px, calc(var(--vu) * 1.1), 12px) !important;
+  font-size: clamp(11px, calc(var(--vu) * 1.1), 12px) !important;
   font-weight: 900 !important;
   letter-spacing: 2px !important;
   text-transform: uppercase !important;
@@ -1386,7 +2117,7 @@ body {
 
 .title-profile-hud__stats > span {
   font-family: 'Space Mono', monospace !important;
-  font-size: clamp(10px, calc(var(--vu) * 1.1), 12px) !important;
+  font-size: clamp(11px, calc(var(--vu) * 1.1), 12px) !important;
   font-weight: 700 !important;
   color: #d1f4ff !important;
   letter-spacing: 0.5px !important;
@@ -1651,6 +2382,11 @@ body {
   font-family: 'Outfit', sans-serif;
   font-size: var(--font-sm);
   font-weight: 900;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   /* Extra right padding so the value never runs under the arrow. */
   padding: calc(var(--vu) * 0.8) calc(var(--vu) * 3.2) calc(var(--vu) * 0.8) calc(var(--vu) * 2);
   border-radius: 4px;
@@ -1742,6 +2478,23 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
   overflow: hidden;
 }
 
+#directional-vignette-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s ease-out;
+}
+
+#directional-vignette-glow.flash {
+  animation: directional-vignette-fade 0.65s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+}
+
+@keyframes directional-vignette-fade {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 #hit-indicator-wedge {
   width: 0;
   height: 0;
@@ -1776,7 +2529,7 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
   bottom: 0;
   width: 100%;
   height: 100%;
-  background: var(--bg-dark) url('/menu_bg_v3.webp') center / 100% 100% no-repeat;
+  background: var(--bg-dark) var(--asset-briefing-menu-bg) center / 100% 100% no-repeat;
   border: none;
   border-radius: 0;
   padding: 0;
@@ -2573,7 +3326,7 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
   left: 0;
   width: 100%;
   height: 200%;
-  background-image: var(--door-bg-image, url('/door_biomech_keyart_v2.webp'));
+  background-image: var(--door-bg-image, var(--asset-door-key-art));
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
@@ -2667,7 +3420,7 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
   left: 0;
   width: 100%;
   height: 200%;
-  background-image: var(--map-door-bg-image, url('/door_biomech_keyart_v2.webp'));
+  background-image: var(--map-door-bg-image, var(--asset-door-key-art));
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center center;
@@ -2711,7 +3464,7 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
 
 /* Fallback for any legacy or injected panel without inner texture */
 .map-box-door__panel:not(:has(.map-box-door__texture)) {
-  background-image: var(--map-door-bg-image, url('/door_biomech_keyart_v2.webp'));
+  background-image: var(--map-door-bg-image, var(--asset-door-key-art));
   background-repeat: no-repeat;
   background-size: cover;
 }
@@ -3459,7 +4212,7 @@ body:not(.controller-mode) .title-menu-btn:focus:not(:focus-visible) {
 .game-over-section-label {
   grid-column: 1 / -1;
   font-family: 'Space Mono', monospace;
-  font-size: clamp(9px, calc(var(--vu) * 1.0), 11px);
+  font-size: clamp(11px, calc(var(--vu) * 1.0), 12px);
   font-weight: 700;
   color: var(--accent-primary, #ff9f1c);
   letter-spacing: 2px;
@@ -3487,7 +4240,7 @@ body:not(.controller-mode) .title-menu-btn:focus:not(:focus-visible) {
 
 .game-over-stat-label {
   font-family: 'Space Mono', monospace;
-  font-size: clamp(9px, calc(var(--vu) * 0.95), 11px);
+  font-size: clamp(11px, calc(var(--vu) * 0.95), 11.5px);
   font-weight: 700;
   letter-spacing: 1.2px;
   color: rgba(180, 195, 210, 0.75);
@@ -3550,7 +4303,7 @@ body:not(.controller-mode) .title-menu-btn:focus:not(:focus-visible) {
 .game-over-bank-note {
   grid-column: 1 / -1;
   font-family: 'Space Mono', monospace;
-  font-size: clamp(10px, calc(var(--vu) * 1.25), 13px);
+  font-size: clamp(11px, calc(var(--vu) * 1.25), 13px);
   font-weight: 700;
   color: rgba(125, 255, 90, 0.85);
   letter-spacing: 1.2px;
@@ -3676,7 +4429,7 @@ body:not(.controller-mode) .title-menu-btn:focus:not(:focus-visible) {
   .game-over-subtitle {
     margin-top: 4px;
     padding: 6px 10px;
-    font-size: clamp(9px, calc(var(--vu) * 1.1), 11px) !important;
+    font-size: clamp(11px, calc(var(--vu) * 1.1), 12px) !important;
     line-height: 1.35 !important;
   }
 
@@ -3751,7 +4504,7 @@ body:not(.controller-mode) .title-menu-btn:focus:not(:focus-visible) {
   }
 
   .game-over-subtitle {
-    font-size: clamp(8px, calc(var(--vu) * 1.02), 10px);
+    font-size: clamp(11px, calc(var(--vu) * 1.02), 11.5px);
     letter-spacing: 0.09em;
     line-height: 1.28;
     white-space: pre-line;
@@ -3769,7 +4522,7 @@ body:not(.controller-mode) .title-menu-btn:focus:not(:focus-visible) {
   }
 
   .game-over-stat-label {
-    font-size: clamp(8px, calc(var(--vu) * 0.95), 10px);
+    font-size: clamp(11px, calc(var(--vu) * 0.95), 11.5px);
     letter-spacing: 0.09em;
   }
 
@@ -4919,6 +5672,13 @@ input:checked+.slider:before {
   text-wrap: pretty;
 }
 
+/* Whose run the abort ends, read before the buttons. */
+.confirm-scope {
+  margin-top: calc(var(--vu) * -2);
+  color: #ffb347;
+  font-weight: 700;
+}
+
 .confirm-actions {
   display: flex;
   justify-content: center;
@@ -5049,11 +5809,30 @@ input:checked+.slider:before {
   transition: transform 520ms cubic-bezier(.7, 0, .24, 1);
 }
 
+/* Behind the stage doors the card is the film layer over the shut bunker
+   doors (hero/area art), so it rises above them and drops its own panels. */
+.song-interstitial.uses-stage-doors { z-index: 260000; }
+.song-interstitial.uses-stage-doors .song-interstitial__door { display: none; }
+
 .song-interstitial__door--left { left: 0; transform: translateX(-101%); }
 .song-interstitial__door--right { right: 0; transform: translateX(101%) scaleX(-1); }
 .song-interstitial.is-closing .song-interstitial__door { transform: translateX(0); }
 .song-interstitial.is-open .song-interstitial__door--left { transform: translateX(-101%); }
 .song-interstitial.is-open .song-interstitial__door--right { transform: translateX(101%) scaleX(-1); }
+/* Exit bookend (docs/planning/camp-interaction-and-cinematics-audit-2026-10-16.md
+   §13.1): the doors shut over the last frame, the conversation mounts behind
+   them, then they open on live gameplay with the window on top. */
+.song-interstitial.is-open.is-closing-out .song-interstitial__door { transform: translateX(0); }
+.song-interstitial.is-revealing { pointer-events: none; }
+.song-interstitial.is-open.is-revealing::before,
+.song-interstitial.is-open.is-revealing .song-interstitial__media,
+.song-interstitial.is-open.is-revealing .song-interstitial__placeholder,
+.song-interstitial.is-open.is-revealing .song-interstitial__caption,
+.song-interstitial.is-open.is-revealing .song-interstitial__flash {
+  opacity: 0;
+  transition: none;
+  animation: none;
+}
 
 .song-interstitial__caption {
   position: absolute;
@@ -5104,6 +5883,75 @@ input:checked+.slider:before {
   .song-interstitial__media,
   .song-interstitial__placeholder { transition-duration: 90ms; }
   .song-interstitial.is-open .song-interstitial__flash { animation: none; }
+}
+
+/* SUB-CRUST PROTOCOL: 1984 (src/arcadeCabinetMinigame.js). Before this the
+   cabinet drew as a bare 320x240 canvas in the page corner with the live
+   world running around it. The world is frozen behind it (threeGame
+   hasBlockingGameplayOverlay); the screen is the 4:3 canvas scaled up crisp. */
+.arcade-cabinet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 16100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(4, 8, 6, 0.45), rgba(0, 0, 0, 0.65) 75%);
+  backdrop-filter: blur(12px) brightness(.72) saturate(.85);
+  -webkit-backdrop-filter: blur(12px) brightness(.72) saturate(.85);
+}
+.arcade-cabinet-overlay.hidden { display: none; }
+.arcade-cabinet-frame {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  padding: clamp(14px, 2.4vw, 28px);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #1d1f1a, #0b0c0a 70%);
+  border: 2px solid #3a3d33;
+  box-shadow: 0 0 0 6px #070806, 0 30px 80px rgba(0, 0, 0, 0.85), inset 0 2px 0 rgba(255, 255, 255, 0.06);
+}
+.arcade-cabinet-frame::after {
+  content: "";
+  position: absolute;
+  inset: -14px -18px;
+  background: url('/ui/overlays/arcade_cabinet_overlay.webp') no-repeat center / 100% 100%;
+  pointer-events: none;
+  z-index: 105;
+  filter: drop-shadow(0 20px 50px rgba(0, 0, 0, 0.9));
+}
+.arcade-cabinet-screen {
+  position: relative;
+  width: min(84vw, calc(78vh * 4 / 3), 960px);
+  aspect-ratio: 4 / 3;
+  border-radius: 14px / 18px;
+  overflow: hidden;
+  background: #020403;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9), 0 0 24px rgba(80, 255, 140, 0.12);
+}
+.arcade-cabinet-screen canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+.arcade-cabinet-crt-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.28) 0 1px, transparent 1px 3px);
+  box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.75);
+}
+.arcade-cabinet-controls-hint {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 22px;
+  color: #8dffb0;
+  font: 700 clamp(0.7rem, 1.4vw, 0.9rem) monospace;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 8px rgba(80, 255, 140, 0.45);
 }
 
 .camp-choice-panel {
@@ -6236,7 +7084,7 @@ input:checked+.slider:before {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: clamp(8px, calc(var(--vu) * 1.1), 12px);
+  font-size: clamp(11px, calc(var(--vu) * 1.1), 12px);
   font-weight: 900;
   letter-spacing: 0.12em;
   color: #00e5ff;
@@ -6244,7 +7092,7 @@ input:checked+.slider:before {
 }
 
 .desktop-compass__hint {
-  font-size: clamp(7px, calc(var(--vu) * 0.95), 10px);
+  font-size: clamp(11px, calc(var(--vu) * 0.95), 11.5px);
   font-weight: 700;
   letter-spacing: 0.05em;
   color: rgba(0, 229, 255, 0.9);
@@ -6399,7 +7247,7 @@ input:checked+.slider:before {
 
 .weapon-status-panel__title,
 .ship-status-panel__title {
-  font-size: clamp(9px, calc(var(--vu) * 1.18), 12px);
+  font-size: clamp(11px, calc(var(--vu) * 1.18), 12px);
   color: rgba(255, 230, 178, 0.9);
 }
 
@@ -6421,7 +7269,7 @@ input:checked+.slider:before {
 }
 
 .weapon-status-panel__cache {
-  font-size: clamp(8px, calc(var(--vu) * 1.05), 11px);
+  font-size: clamp(11px, calc(var(--vu) * 1.05), 12px);
   line-height: 1;
   color: rgba(255, 212, 149, 0.92);
   letter-spacing: 0.06em;
@@ -6949,6 +7797,7 @@ body.player-cold-exposed #game-viewport::before {
   align-items: center;
   gap: 9px;
   min-width: clamp(250px,22vw,390px);
+  max-width: clamp(300px,34vw,520px);
   padding: 8px 11px;
   border: 1px solid rgba(135,220,255,.58);
   border-left: 4px solid #87dcff;
@@ -6958,10 +7807,12 @@ body.player-cold-exposed #game-viewport::before {
 }
 .hazard-status-panel.hidden { display: none; }
 .hazard-status-panel[data-hazard="toxin"] { border-color: rgba(126,255,102,.6); border-left-color: #7eff66; color: #dcffd6; }
+.hazard-status-panel[data-hazard="emitter"] { border-color: rgba(255,179,71,.6); border-left-color: #ffb347; color: #fff0d6; }
 .hazard-status-panel__icon { font: 900 18px 'Space Mono',monospace; }
 .hazard-status-panel__copy { display: flex; flex-direction: column; min-width: 0; }
 .hazard-status-panel__copy strong { font: 900 12px 'Outfit',sans-serif; letter-spacing: .1em; }
-.hazard-status-panel__copy span { font: 700 9px 'Space Mono',monospace; opacity: .78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Two lines: the immediate action and the durable answer must both read. */
+.hazard-status-panel__copy span { font: 700 9px 'Space Mono',monospace; opacity: .78; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
 .hazard-status-panel__time { font: 900 15px 'Space Mono',monospace; }
 @keyframes cold-edge-breathe { 0%,100% { opacity:.42; } 50% { opacity:.9; } }
 @media (prefers-reduced-motion: reduce) { body.player-cold-exposed #game-viewport::before { animation: none; opacity: .65; } }
@@ -7187,7 +8038,7 @@ body.distress-mode #game-viewport::after {
   }
 
   .weapon-status-panel__cache {
-    font-size: clamp(8px, calc(var(--vu) * 0.95), 10px);
+    font-size: clamp(11px, calc(var(--vu) * 0.95), 12px);
   }
 
   .ship-status-panel__track {
@@ -7211,7 +8062,7 @@ body.distress-mode #game-viewport::after {
   }
 
   .vitals-panel--topbar .vitals-panel__title {
-    font-size: clamp(10px, calc(var(--vu) * 1.4), 12px);
+    font-size: clamp(11px, calc(var(--vu) * 1.4), 12px);
     margin-bottom: 0;
   }
 
@@ -7226,18 +8077,18 @@ body.distress-mode #game-viewport::after {
   .level-indicator {
     top: clamp(34px, 5.8vh, 52px);
     left: calc(var(--vu) * 3);
-    font-size: clamp(10px, calc(var(--vu) * 1.55), 13px);
+    font-size: clamp(11px, calc(var(--vu) * 1.55), 13px);
     padding: clamp(4px, calc(var(--vu) * 0.62), 7px) clamp(7px, calc(var(--vu) * 1.05), 10px);
     letter-spacing: 1.05px;
   }
 
   .level-indicator__title {
-    font-size: clamp(9px, calc(var(--vu) * 1.25), 11px);
+    font-size: clamp(11px, calc(var(--vu) * 1.25), 12px);
     letter-spacing: 1px;
   }
 
   .level-indicator__biome {
-    font-size: clamp(9px, calc(var(--vu) * 1.2), 11px);
+    font-size: clamp(11px, calc(var(--vu) * 1.2), 12px);
     letter-spacing: 0.95px;
   }
 
@@ -7916,7 +8767,6 @@ html.boot-cursor-hidden #tactical-cursor {
 html.phase-menu .hud-notification-stack,
 html.phase-menu #mothership-dialogue,
 html.phase-menu #leader-conversation-modal,
-html.phase-menu #npc-dialogue-modal,
 html.phase-menu #wanderer-encounter-modal,
 html.phase-menu #tutorial-prompt,
 html.phase-menu .radio-transmission-prompt,
@@ -8529,6 +9379,13 @@ body.mission-intro-active #game-container canvas {
   overflow: hidden;
 }
 
+@media (min-width: 1024px) {
+  .mothership-dialogue-panel {
+    width: min(calc(var(--vu) * 160), 92vw, 1580px);
+    min-height: min(calc(var(--vu) * 92), 88vh, 850px);
+  }
+}
+
 .mothership-panel-video-wrap {
   position: absolute;
   inset: 0;
@@ -8570,7 +9427,10 @@ body.mission-intro-active #game-container canvas {
 .leader-conversation-modal {
   --leader-accent: #9cff85;
   z-index: 10020;
-  background: rgba(2, 6, 10, 0.88);
+  /* An in-world conversation reads as a window over live play, not as
+     "menu land": keep the camp visible behind the opaque panel (§13.1). */
+  background: rgba(2, 6, 10, 0.38);
+  backdrop-filter: blur(2px);
 }
 
 .leader-conversation-panel {
@@ -8715,6 +9575,22 @@ html[data-camp-dialog="open"] .hud-notification-stack {
 }
 .leader-conversation-actions button:hover,
 .leader-conversation-actions button:focus-visible { border-color: var(--leader-accent); background: color-mix(in srgb, var(--leader-accent) 16%, #081010); }
+/* One conversation grammar (camp audit 2026-10-16 §6.1): the intent is a
+   small muted chip, and Continue dims while it holds after a new line. */
+.leader-conversation-choices .npc-choice-tone {
+  flex: 0 0 auto;
+  min-width: 5.5em;
+  padding: 1px 8px;
+  border: 1px solid color-mix(in srgb, var(--leader-accent) 45%, transparent);
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--leader-accent) 60%, #c8d2cc);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+.leader-conversation-choices .npc-choice-tone:empty { display: none; }
+#leader-conversation-continue.is-holding { opacity: 0.55; }
 
 @media (max-width: 760px) {
   .leader-conversation-panel { grid-template-columns: 1fr; }
@@ -9251,6 +10127,8 @@ html[data-camp-dialog="open"] .hud-notification-stack {
 }
 
 .tutorial-prompt__text {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-family: 'Outfit', sans-serif;
   font-size: var(--font-xs);
   font-weight: 800;
@@ -9277,7 +10155,9 @@ html[data-camp-dialog="open"] .hud-notification-stack {
   position: absolute;
   top: calc(var(--vu) * 30);
   right: calc(var(--vu) * 4);
-  width: 100%;
+  width: min(calc(var(--vu) * 54), calc(100% - calc(var(--vu) * 8)));
+  max-width: calc(100% - calc(var(--vu) * 8));
+  box-sizing: border-box;
   justify-content: flex-start;
   border: 1.5px solid rgba(255, 200, 50, 0.75);
   border-radius: 8px;
@@ -10021,6 +10901,49 @@ html[data-camp-dialog="open"] .hud-notification-stack {
 .expedition-briefing-card.visible {
   opacity: 1;
   transform: translate(-50%, 0);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Folded briefing: a pill pinned to the top edge, above the room title. */
+.expedition-briefing-card.is-collapsed {
+  top: calc(var(--vu) * 1.2);
+  width: max-content;
+  max-width: min(calc(var(--vu) * 70), 90%);
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--vu) * 1);
+  padding: calc(var(--vu) * 0.45) calc(var(--vu) * 1.6);
+  border-radius: 999px;
+  background: rgba(8, 13, 18, 0.78);
+}
+
+.expedition-briefing-card.is-collapsed :is(
+  .expedition-briefing-card__tagline,
+  .expedition-briefing-card__effect,
+  .expedition-briefing-card__meta
+) {
+  display: none;
+}
+
+.expedition-briefing-card.is-collapsed .expedition-briefing-card__kicker {
+  font-size: calc(var(--vu) * 1.05);
+  opacity: 0.75;
+}
+
+.expedition-briefing-card.is-collapsed .expedition-briefing-card__title {
+  margin-top: 0;
+  font-size: calc(var(--vu) * 1.7);
+}
+
+.expedition-briefing-card.is-collapsed::after {
+  content: '+';
+  font-weight: 900;
+  color: rgba(158, 224, 255, 0.85);
+}
+
+html:not(.phase-gameplay) .expedition-briefing-card {
+  display: none !important;
 }
 
 .expedition-briefing-card.hidden,
@@ -10075,11 +10998,15 @@ html[data-camp-dialog="open"] .hud-notification-stack {
   /* Below the header row (vitals / sidearm / integrity end near 5.7vu). */
   top: calc(var(--vu) * 7);
   left: 50%;
-  max-width: min(calc(var(--vu) * 72), 88vw);
+  /* Stacked, never truncated: the player must read what they uncovered.
+     Tag (kicker) over the full room name, subtitle beneath. */
+  width: max-content;
+  max-width: min(calc(var(--vu) * 90), 94%);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: calc(var(--vu) * 1.2);
-  padding: calc(var(--vu) * 0.7) calc(var(--vu) * 2);
+  gap: calc(var(--vu) * 0.35);
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 4);
   border-top: 1px solid rgba(133, 208, 255, 0.55);
   border-bottom: 1px solid rgba(133, 208, 255, 0.55);
   background: linear-gradient(90deg, transparent, rgba(8, 13, 18, 0.86) 18%, rgba(8, 13, 18, 0.86) 82%, transparent);
@@ -10089,7 +11016,7 @@ html[data-camp-dialog="open"] .hud-notification-stack {
   transition: opacity 420ms ease-out, transform 420ms ease-out;
   pointer-events: none;
   font-family: 'Outfit', sans-serif;
-  white-space: nowrap;
+  text-align: center;
 }
 
 .compound-location-title.visible {
@@ -10118,13 +11045,14 @@ html[data-camp-dialog="open"] .hud-notification-stack {
 }
 
 .compound-location-title__text {
-  font-size: calc(var(--vu) * 1.9);
+  font-size: calc(var(--vu) * 2.4);
   font-weight: 800;
   letter-spacing: 3px;
   color: #e4f7ff;
   text-transform: uppercase;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
 .compound-location-title__subtitle {
@@ -10133,8 +11061,8 @@ html[data-camp-dialog="open"] .hud-notification-stack {
   letter-spacing: 1.8px;
   color: #7ec8e3;
   text-transform: uppercase;
-  border-left: 1px solid rgba(133, 208, 255, 0.35);
-  padding-left: calc(var(--vu) * 0.9);
+  line-height: 1.2;
+  text-wrap: balance;
 }
 
 .compound-location-title__tag {
@@ -10145,6 +11073,7 @@ html[data-camp-dialog="open"] .hud-notification-stack {
   background: #ffd166;
   border-radius: 3px;
   padding: calc(var(--vu) * 0.2) calc(var(--vu) * 0.7);
+  order: -1;
 }
 
 body.mission-intro-active .expedition-briefing-card,
@@ -12523,6 +13452,39 @@ html.phase-menu .menu-commentary-stack .commentary-toast,
   opacity: 1;
 }
 
+.foundry-part-hud-prompt {
+  position: absolute !important;
+  top: calc(var(--vu) * 12) !important;
+  right: calc(var(--vu) * 4) !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  background: rgba(11, 13, 15, 0.9) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1.5px solid rgba(0, 255, 210, 0.65) !important;
+  border-radius: 8px !important;
+  padding: calc(var(--vu) * 1.5) calc(var(--vu) * 3) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: calc(var(--vu) * 2) !important;
+  z-index: 9999 !important;
+  box-shadow: 0 0 14px rgba(0, 255, 210, 0.35), inset 0 0 8px rgba(0, 255, 210, 0.08) !important;
+  animation: prompt-float 2.5s infinite ease-in-out !important;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  color: #a8fff0 !important;
+}
+.foundry-part-hud-prompt.hidden {
+  display: none !important;
+}
+.foundry-part-hud-prompt.visible {
+  display: flex !important;
+  opacity: 1;
+}
+
 .mayor-tina-hud-prompt {
   border-color: rgba(255, 73, 183, 0.72) !important;
   color: #ffb4df !important;
@@ -13362,6 +14324,8 @@ button.archive-log-entry:active {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: calc(var(--vu) * 1);
   border-bottom: 1.5px solid rgba(var(--terminal-glow-rgb), 0.25);
   padding-bottom: calc(var(--vu) * 1.3);
   margin-bottom: calc(var(--vu) * 1.8);
@@ -13389,7 +14353,10 @@ button.archive-log-entry:active {
   text-transform: uppercase;
   text-shadow: 0 0 4px var(--terminal-glow);
   box-shadow: 0 0 8px rgba(var(--terminal-glow-rgb), 0.15);
-  margin-right: calc(var(--vu) * 8);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 0;
+  margin-right: clamp(24px, calc(var(--vu) * 5), 48px);
 }
 
 .terminal-clock-row {
@@ -15126,6 +16093,14 @@ body.cutscene-video-active .tactical-overlay {
   transform: none;
   background: transparent;
   transition: opacity 0.18s ease-out;
+}
+
+/* Sleep begins after the bunker panels finish closing. Its film is the next
+   authored layer, so raise only that cutscene over the door curtain; normal
+   cinematics still remain behind doors used to conceal world swaps. */
+body.sleep-cutscene-active .class-intro-overlay,
+body.sleep-cutscene-active .sleep-interstitial {
+  z-index: 260000;
 }
 
 .class-intro-skip {
@@ -21538,244 +22513,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   color: #000000;
 }
 
-/* ==========================================================================
-   INTERACTIVE NPC DIALOGUE & SENSUAL STORYLINE MODAL
-   ========================================================================== */
-
-.npc-dialogue-content {
-  max-width: 820px;
-  width: 94%;
-  background: linear-gradient(175deg, rgba(14, 20, 28, 0.98), rgba(6, 9, 14, 0.99));
-  border: 1px solid rgba(255, 79, 100, 0.35);
-  box-shadow: 0 0 45px rgba(0, 0, 0, 0.9), 0 0 25px rgba(255, 79, 100, 0.15);
-  border-radius: 4px;
-  padding: 24px 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  position: relative;
-  overflow: hidden;
-}
-
-.npc-dialogue-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 12px;
-}
-
-.npc-header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.npc-header-icon {
-  font-size: 26px;
-  filter: drop-shadow(0 0 8px rgba(255, 79, 100, 0.6));
-}
-
-.npc-header-name {
-  font-family: 'Orbitron', 'Space Grotesk', sans-serif;
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: #ffffff;
-}
-
-.npc-header-faction {
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  color: #ff8899;
-}
-
-.npc-header-right {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.npc-bond-container {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-}
-
-.npc-bond-tag {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.npc-bond-badge {
-  font-family: 'Space Mono', monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: #ffaa00;
-  background: rgba(255, 170, 0, 0.12);
-  border: 1px solid rgba(255, 170, 0, 0.4);
-  padding: 3px 8px;
-  border-radius: 2px;
-}
-
-.npc-story-tracker {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  background: rgba(14, 22, 34, 0.85);
-  border: 1px solid rgba(255, 170, 0, 0.25);
-  border-left: 3px solid #ffaa00;
-  padding: 8px 14px;
-  border-radius: 2px;
-}
-
-.npc-story-stage-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.npc-story-stage-title {
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: #ffaa00;
-}
-
-.npc-story-progress-dots {
-  display: flex;
-  gap: 6px;
-}
-
-.story-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-}
-
-.story-dot--active {
-  background: #ffaa00;
-  border-color: #ffd070;
-  box-shadow: 0 0 8px rgba(255, 170, 0, 0.8);
-}
-
-.story-dot--completed {
-  background: #00ffd2;
-  border-color: #a0ffee;
-  box-shadow: 0 0 6px rgba(0, 255, 210, 0.6);
-}
-
-.npc-story-objective-text {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 11px;
-  color: #c0d8e8;
-  letter-spacing: 0.02em;
-}
-
-.npc-dialogue-body {
-  display: flex;
-  gap: 22px;
-  align-items: stretch;
-}
-
-.npc-portrait-wrapper {
-  width: 140px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.npc-portrait-frame {
-  width: 130px;
-  height: 130px;
-  background: radial-gradient(circle, rgba(40, 20, 30, 0.8) 0%, rgba(10, 10, 15, 0.95) 100%);
-  border: 2px solid rgba(255, 79, 100, 0.5);
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  box-shadow: inset 0 0 15px rgba(255, 79, 100, 0.2);
-}
-
-.npc-avatar-visual {
-  font-size: 54px;
-  filter: drop-shadow(0 0 12px rgba(255, 79, 100, 0.8));
-  animation: pulseGlow 3s ease-in-out infinite alternate;
-}
-
-.npc-mood-indicator {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #ff8899;
-  text-align: center;
-  background: rgba(255, 79, 100, 0.1);
-  padding: 2px 6px;
-  border-radius: 2px;
-  width: 100%;
-}
-
-.npc-script-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: rgba(4, 8, 12, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 16px;
-  border-radius: 4px;
-}
-
-.npc-narration-box {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #d8c090;
-  font-style: italic;
-  border-left: 2px solid #ffaa00;
-  padding-left: 10px;
-}
-
-.npc-dialogue-box {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.npc-dialogue-speaker {
-  font-family: 'Orbitron', 'Space Grotesk', sans-serif;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: #ff8899;
-}
-
-.npc-dialogue-text {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 15px;
-  line-height: 1.55;
-  color: #f0f8ff;
-  margin: 0;
-}
-
-.npc-choices-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
+/* Choice buttons in the camp conversation (#leader-conversation-choices). */
 .npc-choice-btn {
   display: flex;
   align-items: center;
@@ -21825,20 +22563,6 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   flex: 1;
 }
 
-.npc-dialogue-footer {
-  display: flex;
-  justify-content: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 8px;
-}
-
-.npc-footer-hint {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.4);
-}
-
 /* ── Fullsize 3D Pre-Mission Armory (#armory-screen) ─────────────────── */
 /* Positioned/sized like #menu (position: absolute; inset: 0) rather than
    position:fixed — #game-viewport establishes a containing block for fixed
@@ -21862,6 +22586,13 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 #armory-screen.hidden {
   display: none !important;
+}
+
+/* The Armory departure: every bit of UI goes (main.js playArmoryDeparture). */
+#armory-hud-overlay.armory-departing {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease-out;
 }
 
 #armory-canvas {
@@ -24034,14 +24765,43 @@ body.contrast-max .hud-panel {
 }
 
 /* Full-screen, paged settings: categories replace the continuous scroll. */
-.modal-content.settings-modal-panel { width: calc(100% - 24px) !important; height: min(94vh, 1040px) !important; max-width: 1680px !important; max-height: 94vh !important; }
+.modal-content.settings-modal-panel { width: calc(100% - 24px) !important; height: min(94vh, 1040px) !important; max-width: min(94vw, 1720px) !important; max-height: 94vh !important; }
 .settings-tabs { flex: 0 0 auto; display: flex; flex-wrap: nowrap; gap: 8px; padding: 10px clamp(14px, 2vw, 34px); overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; overscroll-behavior-x: contain; scroll-snap-type: x proximity; border-bottom: 1px solid rgba(255,159,28,.3); background: rgba(8,12,17,.72); }
 .settings-tab { flex: 1 1 0; min-width: 0; min-height: 44px; scroll-snap-align: nearest; white-space: nowrap; border: 1px solid rgba(255,159,28,.28); border-radius: 5px; background: rgba(255,159,28,.04); color: rgba(255,224,180,.68); font: 900 clamp(11px,1vw,16px) 'Outfit',sans-serif; letter-spacing: clamp(.05em,.08vw,.12em); cursor: pointer; }
 .settings-tab.active { color: #fff2d4; border-color: #ff9f1c; background: rgba(255,159,28,.2); box-shadow: inset 0 -3px 0 #ff9f1c,0 0 16px rgba(255,159,28,.14); }
 .settings-modal-panel .settings-modal-content { overflow: hidden !important; padding: clamp(12px,1.7vw,28px) !important; }
 .settings-modal-content > .settings-category-group:not(.hidden) { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-content: start; gap: clamp(7px,.8vh,12px) clamp(14px,2vw,30px); height: 100%; margin: 0; overflow: hidden; }
 .settings-modal-content > .settings-category-group > .settings-category-header { grid-column: 1 / -1; margin-bottom: 4px; }
-.settings-modal-content .setting-item { min-height: clamp(46px,6vh,66px); margin: 0 !important; padding: 8px 14px; border: 1px solid rgba(255,159,28,.12); background: rgba(255,255,255,.018); cursor: pointer; }
+.settings-modal-content .setting-item {
+  min-height: clamp(46px,6vh,66px);
+  margin: 0 !important;
+  padding: 8px 14px;
+  border: 1px solid rgba(255,159,28,.12);
+  background: rgba(255,255,255,.018);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: clamp(8px, 1.2vw, 18px);
+  min-width: 0;
+  overflow: hidden;
+}
+.settings-modal-content .setting-item > span:first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-modal-content .setting-item select,
+.settings-modal-content .settings-select {
+  flex: 0 1 auto;
+  max-width: 58%;
+  min-width: 0;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
 .settings-modal-content .setting-item:hover { border-color: rgba(255,159,28,.5); }
 
 /* Full-screen terminal with page-local layouts and no first-tab scrollbar. */
@@ -24190,20 +24950,25 @@ body.contrast-max .hud-panel {
 }
 
 #menu .map-box {
-  padding: calc(var(--vu) * 0.6) calc(var(--vu) * 1.0) calc(var(--vu) * 0.8);
+  padding: calc(var(--vu) * 0.7) calc(var(--vu) * 1.0) calc(var(--vu) * 0.9);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: calc(var(--vu) * 0.25);
+  justify-content: flex-start;
+  gap: clamp(8px, calc(var(--vu) * 0.85), 16px);
 }
 
 #menu .map-box #game-container {
   flex: 0 0 auto;
-  width: 100%;
-  height: calc(var(--vu) * 7.2);
-  min-height: 50px;
-  max-height: 75px;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 1 / 1;
+  width: min(100%, clamp(110px, calc(var(--vu) * 14.5), 175px));
+  height: auto;
+  min-height: 100px;
+  max-height: none;
+  margin: 0 auto;
+  align-self: center;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 0 16px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,159,28,0.25);
 }
 
 #menu .preview-box {
@@ -24312,7 +25077,7 @@ body.contrast-max .hud-panel {
   height: 100%;
   z-index: 8002;
   pointer-events: none;
-  background: url('/menu_frame_overlay.webp') center / 100% 100% no-repeat;
+  background: var(--asset-menu-frame-overlay) center / 100% 100% no-repeat;
 }
 
 #menu.hidden ~ .homebase-plate-overlay {
@@ -24756,15 +25521,29 @@ body.contrast-max .hud-panel {
 #menu .hero-select-back-btn {
   flex: 0 0 auto;
   width: 100%;
-  margin-top: calc(var(--vu) * 0.1);
-  min-height: 28px;
-  padding: calc(var(--vu) * 0.3) calc(var(--vu) * 0.5);
-  font-size: clamp(9.5px, calc(var(--vu) * 1.05), 12px);
+  margin-top: auto;
+  min-height: 38px;
+  padding: calc(var(--vu) * 0.5) calc(var(--vu) * 0.8);
+  font-size: clamp(12px, calc(var(--vu) * 1.35), 14px);
   font-weight: 800;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #e2e8f0;
+  background: rgba(15, 23, 36, 0.9);
+  border: 1px solid rgba(255, 159, 28, 0.45);
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 159, 28, 0.15);
+  transition: all 0.2s ease;
+}
+
+#menu .hero-select-back-btn:hover,
+#menu .hero-select-back-btn:focus-visible {
+  color: #fff;
+  border-color: #ff9f1c;
+  background: rgba(255, 159, 28, 0.2);
+  box-shadow: 0 0 14px rgba(255, 159, 28, 0.35);
 }
 
 /* Title actions live on the same right-hand deployment axis as the shared
@@ -25069,8 +25848,8 @@ html.phase-gameplay #tactical-telemeter-box {
 }
 
 .armory-hud-theme-preview__copy { display: grid; min-width: 0; }
-.armory-hud-theme-preview__copy b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(8px, .62vw, 11px); text-transform: uppercase; }
-.armory-hud-theme-preview__copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--hud-primary, #8ca0aa); font-size: 7px; letter-spacing: .05em; }
+.armory-hud-theme-preview__copy b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(11px, .75vw, 12px); text-transform: uppercase; }
+.armory-hud-theme-preview__copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--hud-primary, #8ca0aa); font-size: clamp(11px, .65vw, 11.5px); letter-spacing: .05em; }
 .armory-hud-theme-preview__map { display: grid; place-items: center; width: 30px; height: 24px; color: var(--hud-primary, #8ca0aa); border: 1px solid currentColor; }
 .armory-hud-theme-preview[data-hud-shape="crt"] { border-radius: 0; }
 .armory-hud-theme-preview[data-hud-shape="radar"] .armory-hud-theme-preview__map { border-radius: 50%; }
@@ -25500,3 +26279,677 @@ html.phase-gameplay #tactical-telemeter-box {
 }
 .sleep-interstitial__body { font-size: clamp(12px, 1.6vw, 17px); opacity: 0.8; max-width: 36rem; }
 .sleep-interstitial__skip { position: absolute; bottom: 8%; font-size: 12px; letter-spacing: 0.2em; opacity: 0.45; text-transform: uppercase; }
+
+/* Short notices (src/toastNotification.js): lobby join rejections, co-op
+   squad events. Above menus and modals, below the debug console; never
+   takes pointer or focus. */
+.hb-toast-stack {
+  position: fixed;
+  top: calc(var(--vu) * 4);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--vu) * 1);
+  width: min(92vw, calc(var(--vu) * 110));
+  pointer-events: none;
+}
+.hb-toast {
+  padding: calc(var(--vu) * 1.4) calc(var(--vu) * 2.4);
+  border: 1px solid rgba(34, 211, 238, 0.55);
+  border-left-width: 4px;
+  background: rgba(6, 12, 14, 0.94);
+  color: #e6f4f6;
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--vu) * 1.9);
+  letter-spacing: 0.06em;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: 0 0 calc(var(--vu) * 2) rgba(0, 0, 0, 0.6);
+  animation: hb-toast-in 180ms ease-out;
+}
+.hb-toast--warning {
+  border-color: rgba(245, 158, 11, 0.75);
+  color: #fde7c2;
+}
+.hb-toast--error {
+  border-color: rgba(239, 68, 68, 0.8);
+  color: #ffd9d9;
+}
+@keyframes hb-toast-in {
+  from { opacity: 0; transform: translateY(calc(var(--vu) * -1.5)); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hb-toast { animation: none; }
+}
+.net-spec-row--build-mismatch .net-lobby-build-warning {
+  color: #fca5a5;
+}
+
+/* ── Kiosk frames (src/kioskFrame.js, src/kioskTerminals.js) ───────────────
+   The terminal UI sits in the holes of a keyed machine painting. The machine
+   is zoomed to its working area; around it the live game shows, blurred and
+   dimmed, so the player is standing at the machine, not in a menu. Text in
+   each hole is sized from the hole (container query units), so it stays
+   legible at any viewport. */
+.modal:has(> .kiosk-framed),
+.arcade-cabinet-overlay:has(.kiosk-framed) {
+  background: rgba(2, 5, 8, 0.38) !important;
+  backdrop-filter: blur(7px) brightness(0.62) saturate(0.85);
+  -webkit-backdrop-filter: blur(7px) brightness(0.62) saturate(0.85);
+}
+
+.modal-content.kiosk-framed,
+.arcade-cabinet-frame.kiosk-framed {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  transform: none !important;
+}
+
+.kiosk-plate {
+  position: absolute;
+  pointer-events: none;
+}
+
+.kiosk-plate__art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 28px 60px rgba(0, 0, 0, 0.75));
+}
+
+.kiosk-slot {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  overflow: hidden;
+  container-type: size;
+  pointer-events: auto;
+}
+
+/* Screens: a CRT phosphor field, the UI scrolls inside it. */
+.kiosk-slot--screen {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(40, 255, 190, 0.07) 0%, transparent 70%),
+    #02100c;
+  box-shadow: inset 0 0 6cqh rgba(0, 0, 0, 0.9);
+}
+
+.kiosk-slot--screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply;
+}
+
+.kiosk-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 3.5cqh 3.5cqw;
+  font-size: clamp(11px, 3.4cqh, 18px);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(71, 197, 169, 0.6) transparent;
+}
+
+.kiosk-screen > * {
+  max-width: 100%;
+}
+
+/* More of the list sits below the machine's screen (src/kioskTerminals.js). */
+/* Sticks clear of the painted lip that overlaps the screen hole's bottom. */
+.kiosk-screen .kiosk-scroll-cue {
+  position: sticky;
+  bottom: 1.2em;
+  z-index: 2;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0.8em auto 0;
+  padding: 0.35em 1em;
+  text-align: center;
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #9ff5df;
+  background: rgba(4, 16, 14, 0.94);
+  border: 1px solid rgba(71, 197, 169, 0.75);
+  border-radius: 999px;
+  box-shadow: 0 0 0.8em rgba(71, 197, 169, 0.35);
+  pointer-events: none;
+  animation: kiosk-scroll-cue-pulse 1.6s ease-in-out infinite;
+}
+
+.kiosk-screen .kiosk-scroll-cue.is-hidden {
+  visibility: hidden;
+}
+
+@keyframes kiosk-scroll-cue-pulse {
+  50% { color: #e9fff8; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-screen .kiosk-scroll-cue { animation: none; }
+}
+
+/* What the machine's painted bezel already says, the UI need not repeat. */
+.kiosk-screen .fab-minimart-bezel-top,
+.kiosk-screen .fab-minimart-footer-tray,
+.kiosk-screen .terminal-kiosk-bezel-top,
+.kiosk-screen .terminal-kiosk-footer,
+.kiosk-screen .terminal-scanline {
+  display: none !important;
+}
+
+.kiosk-screen--fab .fab-recipe-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15em), 1fr));
+  gap: 0.8em;
+}
+
+.kiosk-screen--terminal .terminal-body {
+  max-height: none;
+  overflow: visible;
+}
+
+.kiosk-screen--arcade {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.kiosk-screen--arcade .arcade-cabinet-screen {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.kiosk-screen--arcade canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.kiosk-screen--arcade .arcade-cabinet-controls-hint {
+  display: none;
+}
+
+/* Aisle buttons, row windows and the exit: lit glass keys in their holes. */
+.kiosk-slot--aisle > button,
+.kiosk-slot--row > button,
+.kiosk-slot--aisle > .kiosk-exit,
+.kiosk-slot--row > .kiosk-exit {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35em;
+  width: 100%;
+  height: 100%;
+  padding: 0 6cqw;
+  cursor: pointer;
+  text-align: center;
+  font-family: var(--font-mono, 'Share Tech Mono', monospace);
+  font-size: clamp(8px, 30cqh, 15px);
+  line-height: 1.05;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(151, 247, 176, 0.72);
+  background: linear-gradient(180deg, #0a2a22 0%, #041611 100%);
+  text-shadow: 0 0 6px rgba(71, 197, 169, 0.55);
+  transition: background 0.15s, color 0.15s;
+}
+
+.kiosk-slot--aisle > button .fab-aisle-key,
+.kiosk-slot--aisle > button .fab-aisle-icon,
+.kiosk-slot--row > button .fab-aisle-key,
+.kiosk-slot--row > button .fab-aisle-icon,
+.kiosk-slot--row > button .terminal-tab-key,
+.kiosk-slot--row > button .terminal-tab-btn__status {
+  display: none;
+}
+
+.kiosk-slot--aisle > button:hover,
+.kiosk-slot--aisle > button:focus-visible,
+.kiosk-slot--row > button:hover,
+.kiosk-slot--row > button:focus-visible,
+.kiosk-slot--aisle > button.active,
+.kiosk-slot--row > button.active {
+  color: #04120d;
+  background: linear-gradient(180deg, #97f7b0 0%, #47c5a9 100%);
+  text-shadow: none;
+}
+
+.kiosk-slot--aisle > .kiosk-exit,
+.kiosk-slot--row > .kiosk-exit {
+  color: rgba(255, 190, 120, 0.85);
+  background: linear-gradient(180deg, #2a160a 0%, #150a04 100%);
+}
+
+.kiosk-slot--aisle > .kiosk-exit:hover,
+.kiosk-slot--aisle > .kiosk-exit:focus-visible,
+.kiosk-slot--row > .kiosk-exit:hover,
+.kiosk-slot--row > .kiosk-exit:focus-visible {
+  color: #1a0a02;
+  background: linear-gradient(180deg, #ffb52d 0%, #f2780c 100%);
+}
+
+/* Black-Ice 21's round buttons. */
+.kiosk-slot--row > .kiosk-arcade-btn {
+  border-radius: 50%;
+  padding: 0;
+  font-size: clamp(6px, 20cqh, 11px);
+  color: #fff3c4;
+  background: radial-gradient(circle at 40% 35%, #ff5f7e 0%, #a3123a 70%, #4d0418 100%);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+}
+
+.kiosk-slot--row > .kiosk-arcade-btn:active {
+  transform: translateY(1px);
+  filter: brightness(1.25);
+}
+
+/* The Slot-O-Mart: the roll in the readout, spinning reels, the lever. */
+.kiosk-reel {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: linear-gradient(180deg, #e8e2cc 0%, #fff 50%, #e8e2cc 100%);
+  box-shadow: inset 0 1.5cqh 2cqh rgba(0, 0, 0, 0.5), inset 0 -1.5cqh 2cqh rgba(0, 0, 0, 0.5);
+}
+
+.kiosk-reel__strip {
+  font-size: 30cqh;
+  line-height: 36cqh;
+  text-align: center;
+  color: #4d0418;
+  transform: translateY(-36cqh);
+}
+
+.kiosk-reels-spinning .kiosk-reel__strip {
+  animation: kiosk-reel-spin 0.32s linear infinite;
+  animation-delay: var(--reel-delay, 0s);
+}
+
+@keyframes kiosk-reel-spin {
+  from { transform: translateY(-180cqh); }
+  to { transform: translateY(0); }
+}
+
+.kiosk-slot--lever > .kiosk-lever {
+  all: unset;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.kiosk-slot--lever > .kiosk-lever:focus-visible {
+  outline: 2px solid #ffb52d;
+  outline-offset: 2px;
+}
+
+.kiosk-screen .fab-roll-panel,
+.kiosk-slot--screen > .fab-roll-panel {
+  margin: 0;
+}
+
+.kiosk-slot--screen > .fab-roll-panel {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 3cqh 3cqw;
+  font-size: clamp(9px, 5cqh, 15px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-reels-spinning .kiosk-reel__strip {
+    animation: none;
+  }
+}
+
+/* The measured kiosk frame replaces the stretched full-modal ::after frames:
+   one machine painting per terminal, aligned to its screen. */
+.kiosk-framed::before,
+.kiosk-framed::after {
+  content: none !important;
+  background: none !important;
+}
+
+.kiosk-screen--arcade {
+  flex-direction: column;
+}
+
+.kiosk-screen--arcade .arcade-cabinet-screen {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The cabinet's buttons sit under the table, never over its message line. */
+.kiosk-screen .kiosk-arcade-bar {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  gap: 3cqw;
+  padding: 1.5cqh 0 2.5cqh;
+}
+
+/* The terminal: header and departments stay put, the department scrolls. */
+.kiosk-screen--terminal {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.kiosk-screen--terminal > .terminal-header {
+  flex: 0 0 auto;
+  margin: 0 0 0.6em;
+  padding: 0;
+}
+
+.kiosk-screen--terminal > .terminal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.kiosk-screen--terminal .terminal-tabs {
+  flex: 0 0 auto;
+}
+
+.kiosk-screen--terminal .terminal-tab-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* The department scrolls; its sections and cards keep their full height
+   instead of shrinking under each other (the O2 card's button sat under the
+   next card's header). */
+.kiosk-screen--terminal .terminal-tab-content > *,
+.kiosk-screen--terminal .terminal-layout > *,
+.kiosk-screen--terminal .upgrade-goals-section > *,
+.kiosk-screen--terminal .action-card {
+  flex-shrink: 0;
+}
+
+/* The Auto-Mart's aisles on its screen: four big, lit keys and EXIT. */
+.kiosk-screen--fab > .fab-aisle-nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 0.5em;
+  margin: 0 0 0.7em;
+}
+
+.kiosk-screen--fab .fab-aisle-btn {
+  grid-template-columns: auto 1fr;
+  min-height: 2.8em;
+  padding: 0.35em 0.6em;
+  font-size: 1.02em;
+  line-height: 1.1;
+}
+
+.kiosk-screen--fab .fab-aisle-btn .fab-aisle-icon {
+  display: none;
+}
+
+.kiosk-screen--fab .fab-aisle-btn .fab-aisle-label {
+  font-size: 1em;
+  white-space: normal;
+}
+
+.kiosk-screen--fab > .fab-aisle-nav > .kiosk-exit,
+.kiosk-screen > .fab-aisle-nav + .kiosk-exit {
+  float: none;
+}
+
+.kiosk-arcade-bar > .kiosk-arcade-btn {
+  width: 13cqh;
+  height: 13cqh;
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  font: 700 clamp(9px, 2.7cqh, 13px) var(--font-mono, 'Share Tech Mono', monospace);
+  color: #fff3c4;
+  background: radial-gradient(circle at 40% 35%, #ff5f7e 0%, #a3123a 70%, #4d0418 100%);
+  box-shadow: 0 0.6cqh 0 #2a0210, 0 0 2cqh rgba(255, 60, 120, 0.45);
+}
+
+.kiosk-arcade-bar > .kiosk-arcade-btn:active {
+  transform: translateY(0.4cqh);
+  box-shadow: 0 0.2cqh 0 #2a0210;
+}
+
+.kiosk-exit {
+  position: static !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.6em;
+  padding: 0.35em 0.9em !important;
+  border: 1px solid rgba(255, 181, 45, 0.7) !important;
+  border-radius: 4px;
+  font: 700 0.86em var(--font-mono, 'Share Tech Mono', monospace) !important;
+  letter-spacing: 0.1em;
+  color: #ffb52d !important;
+  background: rgba(40, 20, 4, 0.85) !important;
+  cursor: pointer;
+}
+
+.kiosk-exit:hover,
+.kiosk-exit:focus-visible {
+  color: #1a0a02 !important;
+  background: #ffb52d !important;
+}
+
+/* ── Bezel controls seated on the painted machine (src/kioskTerminals.js
+   seatBezel, src/data/kioskControls.js). The painting is the visual; the
+   controls are glass over it that glows under the cursor and flashes when
+   pressed. They sit above the painting so they take the clicks. ── */
+.kiosk-framed .bezel-interactive-layer--seated {
+  display: none !important;
+}
+
+.kiosk-slot[data-kiosk-role^="screw"],
+.kiosk-slot--keypad,
+.kiosk-slot--auxDisplay,
+.kiosk-slot--leds,
+.kiosk-slot--coinInput,
+.kiosk-slot--hatch {
+  z-index: 4;
+  overflow: visible;
+}
+
+.kiosk-slot[data-kiosk-role^="screw"] > .bezel-hex-screw {
+  position: static !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 50%;
+  background: transparent !important;
+  box-shadow: none !important;
+  cursor: grab;
+  transition: transform 0.18s ease-out, box-shadow 0.15s;
+}
+
+.kiosk-slot[data-kiosk-role^="screw"] > .bezel-hex-screw::after {
+  opacity: 0.55;
+  mix-blend-mode: screen;
+}
+
+.kiosk-slot[data-kiosk-role^="screw"] > .bezel-hex-screw:hover,
+.kiosk-slot[data-kiosk-role^="screw"] > .bezel-hex-screw:focus-visible {
+  box-shadow: 0 0 0 2px rgba(255, 181, 45, 0.85), 0 0 14px rgba(255, 181, 45, 0.55) !important;
+}
+
+/* The keypad: digits over the painted 3 x 4 keys, CLR and ENT on its
+   function column. */
+.kiosk-slot--keypad > .bezel-keypad-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) 1.15fr;
+  grid-template-rows: repeat(4, 1fr);
+  gap: 6% 5%;
+  width: 100%;
+  height: 100%;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.kiosk-slot--keypad .bezel-keypad-btn {
+  all: unset;
+  pointer-events: auto;
+  border-radius: 3px;
+  cursor: pointer;
+  color: transparent;
+  transition: box-shadow 0.1s, background 0.1s;
+}
+
+.kiosk-slot--keypad .bezel-keypad-btn:nth-child(-n+3) { grid-row: 1; }
+.kiosk-slot--keypad .bezel-keypad-btn:nth-child(n+4):nth-child(-n+6) { grid-row: 2; }
+.kiosk-slot--keypad .bezel-keypad-btn:nth-child(n+7):nth-child(-n+9) { grid-row: 3; }
+.kiosk-slot--keypad .bezel-keypad-btn:nth-child(n+10):nth-child(-n+12) { grid-row: 4; }
+.kiosk-slot--keypad .bezel-keypad-btn.btn-clr { grid-column: 4; grid-row: 1 / span 2; }
+.kiosk-slot--keypad .bezel-keypad-btn.btn-ent { grid-column: 4; grid-row: 3 / span 2; }
+
+.kiosk-slot--keypad .bezel-keypad-btn:hover,
+.kiosk-slot--keypad .bezel-keypad-btn:focus-visible {
+  box-shadow: 0 0 0 1px rgba(151, 247, 176, 0.8), 0 0 10px rgba(71, 197, 169, 0.6);
+}
+
+.kiosk-slot--keypad .bezel-keypad-btn:active {
+  background: rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+/* The readout lights the painted LCD. */
+.kiosk-slot--auxDisplay > .bezel-aux-display {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 4% !important;
+  border: 0 !important;
+  background: rgba(10, 40, 18, 0.82) !important;
+  color: #97f7b0;
+  font: 700 clamp(7px, 26cqh, 14px) var(--font-mono, 'Share Tech Mono', monospace);
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-shadow: 0 0 6px rgba(151, 247, 176, 0.75);
+  container-type: size;
+}
+
+/* LEDs: four lamps over the painted row. */
+.kiosk-slot--leds > .bezel-led-cluster {
+  display: flex !important;
+  justify-content: space-around;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  cursor: pointer;
+}
+
+.kiosk-slot--leds .bezel-led {
+  mix-blend-mode: screen;
+  opacity: 0.45;
+}
+
+.kiosk-slot--coinInput > .bezel-coin-lever {
+  all: unset;
+  pointer-events: auto;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  cursor: pointer;
+  color: transparent;
+}
+
+.kiosk-slot--coinInput > .bezel-coin-lever:hover,
+.kiosk-slot--coinInput > .bezel-coin-lever:focus-visible {
+  box-shadow: 0 0 0 2px rgba(255, 181, 45, 0.8), 0 0 14px rgba(255, 181, 45, 0.5);
+}
+
+.kiosk-slot--coinInput > .bezel-coin-lever:active {
+  transform: translateY(2px);
+  filter: brightness(1.3);
+}
+
+/* The maintenance hatch drops open over the machine's lower panel. */
+.kiosk-slot--hatch > .bezel-maintenance-hatch {
+  position: absolute !important;
+  inset: 0 !important;
+  width: auto !important;
+  max-height: none !important;
+  overflow-y: auto;
+  transform-origin: top center;
+  animation: kiosk-hatch-drop 0.38s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.kiosk-slot--hatch > .bezel-maintenance-hatch.hidden {
+  display: none !important;
+}
+
+@keyframes kiosk-hatch-drop {
+  from { transform: perspective(600px) rotateX(-80deg); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-slot--hatch > .bezel-maintenance-hatch { animation: none; }
+}
+
+/* Control slots are click-through; only the controls in them take clicks,
+   and the hatch only once it has dropped open (it then covers the keypad). */
+.kiosk-slot[data-kiosk-role^="screw"],
+.kiosk-slot--keypad,
+.kiosk-slot--auxDisplay,
+.kiosk-slot--leds,
+.kiosk-slot--coinInput,
+.kiosk-slot--hatch {
+  pointer-events: none;
+}
+
+.kiosk-slot[data-kiosk-role^="screw"] > *,
+.kiosk-slot--keypad > *,
+.kiosk-slot--auxDisplay > *,
+.kiosk-slot--leds > *,
+.kiosk-slot--coinInput > *,
+.kiosk-slot--hatch > .bezel-maintenance-hatch:not(.hidden) {
+  pointer-events: auto;
+}
+
+.kiosk-slot--hatch {
+  z-index: 5;
+}

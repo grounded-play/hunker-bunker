@@ -22,6 +22,8 @@ export const RIG_MODULE_PRICES = Object.freeze({
 
 const ACHIEVEMENT_MODULES = Object.freeze({ 4162: 'slay_the_queen', 4163: 'archivist' });
 const DEPTH_MODULES = Object.freeze({ 4166: 4, 4167: 6 });
+export const ARCADE_WIZARD_DECAL_ID = 4168;
+export const ARCADE_WIZARD_SCORE = 65000;
 
 // Runs as a class it takes to earn that class's community skins, in order.
 export const SKIN_RUN_THRESHOLDS = Object.freeze([1, 2, 3, 5, 7, 10, 13, 16, 20, 25, 30]);
@@ -47,6 +49,9 @@ export function computeProgressionUnlocks(achievementState = null, { purchases =
     for (const [id, key] of Object.entries(ACHIEVEMENT_MODULES)) if (unlocked[key]) ids.add(id);
     const depth = deepestTier(achievementState);
     for (const [id, tier] of Object.entries(DEPTH_MODULES)) if (depth >= tier) ids.add(id);
+    if (Number(achievementState?.stats?.arcadeBestScore) >= ARCADE_WIZARD_SCORE) {
+        ids.add(String(ARCADE_WIZARD_DECAL_ID));
+    }
     for (const [cls, skins] of skinsByClass()) {
         const runs = Number(achievementState?.stats?.byClass?.[cls]?.runs) || 0;
         skins.forEach((skinId, index) => {
@@ -64,6 +69,7 @@ export function describeProgressionUnlock(itemId) {
     if (ACHIEVEMENT_MODULES[id] === 'slay_the_queen') return { key: 'ui.unlock.slay_the_queen', params: {} };
     if (ACHIEVEMENT_MODULES[id] === 'archivist') return { key: 'ui.unlock.archivist', params: {} };
     if (DEPTH_MODULES[id]) return { key: 'ui.unlock.reach_depth', params: { depth: DEPTH_MODULES[id] } };
+    if (id === String(ARCADE_WIZARD_DECAL_ID)) return { key: 'ui.unlock.arcade_score', params: { score: ARCADE_WIZARD_SCORE } };
     for (const [cls, skins] of skinsByClass()) {
         const index = skins.indexOf(id);
         if (index >= 0) return { key: 'ui.unlock.class_runs', params: { runs: SKIN_RUN_THRESHOLDS[index], cls } };

@@ -44,21 +44,52 @@ function wallAdjacency(cell, grid) {
         .reduce((count, [dx, dy]) => count + (grid?.[cell.y + dy]?.[cell.x + dx] === '#' ? 1 : 0), 0);
 }
 
-function findCellWallNormal(cell, grid) {
+function wallTileIsOnRoomShell(wallX, wallY, bounds) {
+    if (!bounds) return true;
+    return wallX < bounds.left || wallX > bounds.right
+        || wallY < bounds.top || wallY > bounds.bottom;
+}
+
+function findCellWallNormal(cell, grid, bounds = null, { shellOnly = false } = {}) {
     if (!cell || !grid) return null;
-    if (grid?.[cell.y - 1]?.[cell.x] === '#') return { x: 0, z: 1 };
-    if (grid?.[cell.y + 1]?.[cell.x] === '#') return { x: 0, z: -1 };
-    if (grid?.[cell.y]?.[cell.x - 1] === '#') return { x: 1, z: 0 };
-    if (grid?.[cell.y]?.[cell.x + 1] === '#') return { x: -1, z: 0 };
+    const directions = [
+        { dx: 0, dy: -1, normal: { x: 0, z: 1 } },
+        { dx: 0, dy: 1, normal: { x: 0, z: -1 } },
+        { dx: -1, dy: 0, normal: { x: 1, z: 0 } },
+        { dx: 1, dy: 0, normal: { x: -1, z: 0 } }
+    ];
+    for (const direction of directions) {
+        const wallX = cell.x + direction.dx;
+        const wallY = cell.y + direction.dy;
+        if (grid?.[wallY]?.[wallX] !== '#') continue;
+        if (shellOnly && !wallTileIsOnRoomShell(wallX, wallY, bounds)) continue;
+        return direction.normal;
+    }
     return null;
 }
 
+export function findRoomShellWallNormal(cell, grid, bounds) {
+    return findCellWallNormal(cell, grid, bounds, { shellOnly: true });
+}
+
 export function isWallBackedPropType(type) {
-    return isWallMountedModel(type);
+    if (!type) return false;
+    if (isWallMountedModel(type)) return true;
+    const lower = String(type).toLowerCase();
+    return lower.includes('console')
+        || lower.includes('terminal')
+        || lower.includes('panel')
+        || lower.includes('intercom')
+        || lower.includes('junction')
+        || lower.includes('switchboard')
+        || lower.includes('server_rack')
+        || lower.includes('breaker')
+        || lower.includes('fuse_box');
 }
 
 function pickCandidate(candidates, random, grid, center, {
     wallOnly = false,
+    wallBounds = null,
     kind = 'small',
     doors = [],
     placements = []
@@ -68,9 +99,25 @@ function pickCandidate(candidates, random, grid, center, {
     // ship consoles, mission fixtures, and readable combat lanes. Wall-backed
     // props (like altars and cradles) strictly require an adjacent wall tile.
     let pool = wallOnly
-        ? candidates.filter((cell) => findCellWallNormal(cell, grid) !== null)
+        ? candidates.filter((cell) => findCellWallNormal(cell, grid, wallBounds, { shellOnly: Boolean(wallBounds) }) !== null)
         : candidates;
     if (pool.length === 0 && wallOnly) return null;
+
+    // Filter candidates to enforce minimum spacing from existing placements so items don't clump on adjacent cells
+    const isOverlayDecal = kind === 'grounding-decal';
+    const minSpacing = isOverlayDecal ? 0.75 : 1.15;
+    const wellSpaced = pool.filter((cell) => {
+        for (const p of placements) {
+            if (p.kind === 'grounding-decal') continue;
+            const dist = Math.hypot(cell.x - p.x, cell.y - p.y);
+            if (dist < minSpacing) return false;
+        }
+        return true;
+    });
+    if (wellSpaced.length > 0) {
+        pool = wellSpaced;
+    }
+
     const focalPlacements = placements.filter((placement) => (
         ['signature', 'large', 'structural', 'interaction'].includes(placement.kind)
     ));
@@ -87,10 +134,6 @@ function pickCandidate(candidates, random, grid, center, {
             ? Math.min(...focalPlacements.map((placement) => Math.hypot(cell.x - placement.x, cell.y - placement.y)))
             : placedDistance;
         const isSupport = !['signature', 'large', 'ammo-cache', 'pickup'].includes(kind);
-        // Corners are valuable for large silhouettes, but treating a second
-        // wall as +100 made every small object flee to the four corners. Give
-        // support dressing enough edge bias to stay out of combat lanes while
-        // still allowing it to cluster around the room's authored focal prop.
         let score = wallCount * (isSupport ? 14 : 40) + centerDistance;
         if (kind === 'signature') score += doorDistance * 9;
         else if (['large', 'ammo-cache'].includes(kind)) score += doorDistance * 3 + placedDistance * 5;
@@ -261,13 +304,16 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
         const wallOnly = isWallBackedPropType(type);
         const cell = pickCandidate(candidates, random, grid, center, {
             wallOnly,
+            wallBounds: room.bounds ?? null,
             kind,
             doors: doorLanes,
             placements
         });
         if (!cell) return false;
         reserved.add(cellKey(cell));
-        const wallNormal = findCellWallNormal(cell, grid);
+        const wallNormal = wallOnly
+            ? findCellWallNormal(cell, grid, room.bounds ?? null, { shellOnly: Boolean(room.bounds) })
+            : findCellWallNormal(cell, grid);
         const yaw = computePropFacingYaw({
             type,
             x: cell.x,

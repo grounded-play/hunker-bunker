@@ -117,6 +117,12 @@ describe('OST Track Catalog and Contextual Music System', () => {
         expect(playlist).toContain(track);
     });
 
+    it('resolves dedicated non-rotating main theme track for menu context', () => {
+        const track = AudioManager.resolveMusicTrackKey('menu');
+        expect(track).toBe('mainbg_music');
+        expect(AudioManager.MUSIC_CONTEXT_PLAYLISTS.menu).toEqual(['mainbg_music']);
+    });
+
     it('resolves distinct tracks for alpha specimen bosses', () => {
         const cyber = AudioManager.resolveMusicTrackKey('boss_cybersnail');
         const cryo = AudioManager.resolveMusicTrackKey('boss_cryosnail');

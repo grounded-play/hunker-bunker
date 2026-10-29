@@ -91,6 +91,19 @@ describe('host enemies a guest does not have', () => {
         expect(game.scatterSprites).toHaveLength(0);
     });
 
+    // QA 2026-10-28: the PC guest stuttered through the intro video while
+    // the Deck host did not; each copy clones and prepares a model.
+    it('waits out an intro video before creating host enemies', () => {
+        const { game } = makeGuest();
+        game.loadingPaused = true;
+        const snapshot = { enemies: [{ scatterKey: 'spawned:snail:1', enemyType: 'cybersnail', x: 5, z: 6, hp: 3 }] };
+        game.handleEnemyStateSnapshot(snapshot);
+        expect(game.scatterSprites).toHaveLength(0);
+        game.loadingPaused = false;
+        game.handleEnemyStateSnapshot(snapshot);
+        expect(game.scatterSprites).toHaveLength(1);
+    });
+
     it('creates at most a few per snapshot so a burst cannot hitch the guest', () => {
         const { game } = makeGuest();
         const enemies = Array.from({ length: 20 }, (_, i) => ({ scatterKey: `s${i}`, enemyType: 'cybersnail', x: 1 + i, z: 1, hp: 3 }));
@@ -167,14 +180,34 @@ describe('a host enemy chases the same player on both screens', () => {
         sprite
     });
 
-    it('bites the guest it is hunting, once per attack cooldown', () => {
+    // A relay that routes enemyContactHit (server/relay.js RELAY_FEATURES).
+    const routedGuest = (sprite) => ({ ...guest(sprite), relayFeatures: new Set(['enemyContactHit']) });
+
+    it('does not infer a bite from an interpolated guest replica', () => {
         const sprite = enemy({ netTargetX: 0, netTargetZ: 0, netAggroTargetId: 'guest-socket', netAggroMode: 'hunt' });
-        const game = guest(sprite);
+        const game = routedGuest(sprite);
         ThreeGame.prototype.updateRemoteEnemyReplica.call(game, sprite, 1 / 60);
+        ThreeGame.prototype.updateRemoteEnemyReplica.call(game, sprite, 1 / 60);
+        expect(game.takeDamage).not.toHaveBeenCalled();
+        expect(game.applySnailContactKnockback).not.toHaveBeenCalled();
+    });
+
+    // QA 2026-10-28: the deployed relay predated the enemyContactHit route and
+    // dropped every host bite, so the guest took no damage at all.
+    it('bites the guest from its replica when the relay cannot route host bites', () => {
+        const sprite = enemy({ netTargetX: 0, netTargetZ: 0, netAggroTargetId: 'guest-socket', netAggroMode: 'hunt' });
+        const game = { ...guest(sprite), relayFeatures: new Set() };
         ThreeGame.prototype.updateRemoteEnemyReplica.call(game, sprite, 1 / 60);
         expect(game.takeDamage).toHaveBeenCalledTimes(1);
-        expect(game.takeDamage.mock.calls[0][0]).toBe(1);
         expect(game.applySnailContactKnockback).toHaveBeenCalledTimes(1);
+    });
+
+    it('sends no host bite the relay would drop', () => {
+        const emit = vi.fn();
+        const host = { isMultiplayerHost: true, netSocket: { emit }, relayFeatures: new Set() };
+        const sent = ThreeGame.prototype.reportEnemyContactHit.call(host, { id: 'guest-socket', x: 0, z: 0 }, enemy(), 1);
+        expect(sent).toBe(false);
+        expect(emit).not.toHaveBeenCalled();
     });
 
     it('leaves the guest alone while it chases the host', () => {
@@ -194,11 +227,11 @@ describe('a host enemy chases the same player on both screens', () => {
         expect(act2.takeDamage).not.toHaveBeenCalled();
     });
 
-    it("hurts on contact with a boss's body whoever it is after", () => {
+    it("does not infer boss body damage from the guest's render replica", () => {
         const sprite = enemy({ type: 'boss_cybersnail', isBoss: true, netTargetX: 0, netTargetZ: 0, netAggroTargetId: 'ship', netAggroMode: 'hunt' });
-        const game = guest(sprite);
+        const game = routedGuest(sprite);
         ThreeGame.prototype.updateRemoteEnemyReplica.call(game, sprite, 1 / 60);
-        expect(game.takeDamage).toHaveBeenCalledWith(2, 'boss_cybersnail', expect.any(Number), expect.any(Number));
+        expect(game.takeDamage).not.toHaveBeenCalled();
     });
 
     it('turns to face the player it is hunting while it stands still', () => {

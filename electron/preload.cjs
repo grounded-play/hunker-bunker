@@ -344,6 +344,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     writeSessionLog: (filename, body) => ipcRenderer.invoke('hb:writeSessionLog', filename, body),
     openSessionLogDir: () => ipcRenderer.invoke('hb:openSessionLogDir'),
     getSaveData: () => ipcRenderer.invoke('hb:getSaveData'),
+    resetSaveData: () => {
+        try {
+            return ipcRenderer.sendSync('hb:resetSaveDataSync');
+        } catch (err) {
+            console.warn('[hb] resetSaveData failed:', err);
+            return false;
+        }
+    },
     onSaveDataChanged: (key, value) => ipcRenderer.send('hb:saveDataChanged', key, value),
     onSaveDataRemoved: (key) => ipcRenderer.send('hb:saveDataRemoved', key),
     unlockAchievement: (key, generation = 0) => ipcRenderer.invoke('hb:unlockAchievement', key, generation),
@@ -401,6 +409,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ),
     getSteamLeaderboard,
     openSteamOverlayToUrl: (url) => ipcRenderer.invoke('hb:openSteamOverlayToUrl', url),
+    activateSteamOverlay: (dialog = 'friends') => ipcRenderer.invoke('hb:activateSteamOverlay', dialog),
+    activateSteamStore: (appId) => ipcRenderer.invoke('hb:activateSteamStore', appId),
     addSteamTimelineEvent: (event) => ipcRenderer.invoke('hb:addSteamTimelineEvent', event),
     setSteamTimelineGameMode: (mode) => ipcRenderer.invoke('hb:setSteamTimelineGameMode', mode),
     setSteamInputPhase: (phase) => ipcRenderer.send('hb:steamInputPhase', phase),

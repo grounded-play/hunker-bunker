@@ -1,7 +1,7 @@
 import { addWallShell, carveDisk, carveLine, constrainBorderSockets } from './architecturalMaze.js';
 import { CRASH_SITE_BUILD } from './data/crashSiteBuild.js';
 
-const WALKABLE = new Set(['.', 'D', 'R', 'B', 'L']);
+const WALKABLE = new Set(['.', 'D', 'R', 'B', 'L', 'O']);
 
 function fill(grid, value) {
     for (const row of grid ?? []) row.fill(value);
@@ -10,7 +10,8 @@ function fill(grid, value) {
 export function stampCrashSiteOrigin(grid, build = CRASH_SITE_BUILD, {
     exteriorTile = 'C',
     wallTile = '#',
-    floorTile = '.'
+    floorTile = '.',
+    exteriorGroundTile = 'O'
 } = {}) {
     if (!Array.isArray(grid) || grid.length === 0) return false;
     fill(grid, exteriorTile);
@@ -24,13 +25,33 @@ export function stampCrashSiteOrigin(grid, build = CRASH_SITE_BUILD, {
     const centerX = build.center.x;
     const preHall = build.northPreHall;
     for (let y = preHall.top; y <= preHall.bottom; y += 1) {
-        for (let x = centerX - preHall.halfWidth; x <= centerX + preHall.halfWidth; x += 1) {
+        const halfWidth = y === preHall.top
+            ? (preHall.socketHalfWidth ?? preHall.halfWidth)
+            : preHall.halfWidth;
+        for (let x = centerX - halfWidth; x <= centerX + halfWidth; x += 1) {
             grid[y][x] = floorTile;
         }
+        grid[y][centerX - halfWidth - 1] = wallTile;
+        grid[y][centerX + halfWidth + 1] = wallTile;
     }
-    for (let y = preHall.top; y < preHall.bottom; y += 1) {
-        grid[y][centerX - preHall.halfWidth - 1] = wallTile;
-        grid[y][centerX + preHall.halfWidth + 1] = wallTile;
+    for (const partition of build.sectorZero?.partitions ?? []) {
+        const openings = new Set(partition.openings ?? []);
+        for (let cursor = partition.from; cursor <= partition.to; cursor += 1) {
+            if (openings.has(cursor)) continue;
+            const x = partition.axis === 'vertical' ? partition.at : cursor;
+            const y = partition.axis === 'horizontal' ? partition.at : cursor;
+            if (grid[y]?.[x] !== undefined) grid[y][x] = wallTile;
+        }
+    }
+    // This lane ends at the intact hull, so the boss must breach it before
+    // either it or the player can enter the berth through this route.
+    const attackLane = build.firstBossBreach?.exteriorLane;
+    if (attackLane) {
+        for (let y = attackLane.top; y <= attackLane.bottom; y += 1) {
+            for (let x = attackLane.left; x <= attackLane.right; x += 1) {
+                if (grid[y]?.[x] !== undefined) grid[y][x] = exteriorGroundTile;
+            }
+        }
     }
     return true;
 }
@@ -42,9 +63,11 @@ export function stampCrashSiteOrigin(grid, build = CRASH_SITE_BUILD, {
  */
 export function crashSiteClearCells(build = CRASH_SITE_BUILD) {
     const lane = build.clearManeuverLane;
-    const halfWidth = Math.max(build.northPreHall.halfWidth, lane.halfWidth);
     const cells = [];
     for (let y = build.northPreHall.top; y <= lane.toZ; y += 1) {
+        const halfWidth = y === build.northPreHall.top
+            ? (build.northPreHall.socketHalfWidth ?? build.northPreHall.halfWidth)
+            : Math.max(build.northPreHall.halfWidth, lane.halfWidth);
         for (let x = lane.centerX - halfWidth; x <= lane.centerX + halfWidth; x += 1) cells.push({ x, y });
     }
     return cells;
@@ -79,6 +102,50 @@ function openingRecord(opening) {
     return { open: true, offset: Math.max(0, Math.round((coordinate - 1) / 2)) };
 }
 
+function floodWalkable(grid, start) {
+    if (!WALKABLE.has(grid[start.y]?.[start.x])) return new Set();
+    const seen = new Set([`${start.x},${start.y}`]);
+    const queue = [start];
+    for (let index = 0; index < queue.length; index += 1) {
+        const cell = queue[index];
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const x = cell.x + dx;
+            const y = cell.y + dy;
+            const key = `${x},${y}`;
+            if (seen.has(key) || !WALKABLE.has(grid[y]?.[x])) continue;
+            seen.add(key);
+            queue.push({ x, y });
+        }
+    }
+    return seen;
+}
+
+/** Validate every named crash-site room and ship system against the same
+ * connected floor component as the wreck. This turns layout connectivity
+ * into a build invariant instead of relying on visual inspection. */
+export function validateCrashSiteRooms(originGrid, build = CRASH_SITE_BUILD) {
+    if (!Array.isArray(originGrid)) return { valid: false, reason: 'missing-grid' };
+    const start = { x: Math.round(build.center.x), y: Math.round(build.center.z) };
+    const reachable = floodWalkable(originGrid, start);
+    const targets = (build.sectorZero?.rooms ?? []).map((room) => ({
+        id: room.id,
+        x: Math.round((room.left + room.right) / 2),
+        y: Math.round((room.top + room.bottom) / 2)
+    }));
+    const o2Offset = build.shipSystems?.o2ModuleOffset;
+    if (o2Offset) targets.push({
+        id: 'ship-o2-module',
+        x: Math.round(build.center.x + o2Offset.x),
+        y: Math.round(build.center.z + o2Offset.z)
+    });
+    for (const target of targets) {
+        if (!reachable.has(`${target.x},${target.y}`)) {
+            return { valid: false, reason: 'authored-room-unreachable', targetId: target.id };
+        }
+    }
+    return { valid: true, reason: null };
+}
+
 export function stampCrashSiteApproach(grid, build = CRASH_SITE_BUILD, {
     solidTile = 'X',
     floorTile = '.',
@@ -96,17 +163,28 @@ export function stampCrashSiteApproach(grid, build = CRASH_SITE_BUILD, {
     const approach = build.serviceApproach;
     const hub = approach.hub;
     const release = approach.releaseBounds;
+    const yard = build.escapeCraftYard;
     const layoutVariant = Math.abs(Math.trunc(variant)) % 4;
-    if (layoutVariant === 0) {
-        for (let y = release.top; y <= release.bottom; y += 1) {
-            for (let x = release.left; x <= release.right; x += 1) grid[y][x] = floorTile;
+    // Every variant shares one concrete, readable staging room. Variants add
+    // side pockets without replacing the room, so a seed can no longer turn
+    // the first destination into what looks like disconnected cave fragments.
+    for (let y = release.top; y <= release.bottom; y += 1) {
+        for (let x = release.left; x <= release.right; x += 1) grid[y][x] = floorTile;
+    }
+    if (yard?.localBounds) {
+        const bounds = yard.localBounds;
+        for (let y = bounds.top; y <= bounds.bottom; y += 1) {
+            for (let x = bounds.left; x <= bounds.right; x += 1) grid[y][x] = floorTile;
         }
-    } else {
+        carveLine(grid, hub, yard.localEntry, 2);
+        carveLine(grid, yard.localEntry, yard.localCenter, 2);
+    }
+    if (layoutVariant !== 0) {
         const satellites = layoutVariant === 1
-            ? [{ x: hub.x - 5, y: hub.y + 3 }]
+            ? [{ x: hub.x + 10, y: hub.y + 3 }]
             : layoutVariant === 2
-                ? [{ x: hub.x - 5, y: hub.y }, { x: hub.x + 5, y: hub.y }]
-                : [{ x: hub.x + 4, y: hub.y - 4 }];
+                ? [{ x: hub.x - 8, y: hub.y - 7 }, { x: hub.x + 10, y: hub.y - 7 }]
+                : [{ x: hub.x + 11, y: hub.y - 3 }];
         for (const satellite of satellites) {
             carveDisk(grid, satellite.x, satellite.y, 2);
             carveLine(grid, satellite, hub, 1);
@@ -148,6 +226,8 @@ export function stampCrashSiteApproach(grid, build = CRASH_SITE_BUILD, {
             mode: 'crash-approach',
             variant: layoutVariant
         },
+        stagingRoom: { ...release },
+        escapeCraftYard: yard?.localBounds ? { ...yard.localBounds } : null,
         width: approach.halfWidth * 2 + 1,
         hub: { ...hub },
         openings,
@@ -165,6 +245,8 @@ export function stampCrashSiteApproach(grid, build = CRASH_SITE_BUILD, {
 
 export function validateCrashSiteConnection(originGrid, approachGrid, build = CRASH_SITE_BUILD) {
     if (!Array.isArray(originGrid) || !Array.isArray(approachGrid)) return { valid: false, reason: 'missing-grid' };
+    const originRooms = validateCrashSiteRooms(originGrid, build);
+    if (!originRooms.valid) return originRooms;
     const centerX = build.center.x;
     const approachEdgeY = approachGrid.length - 1;
     const socketClear = [-1, 0, 1].every((dx) => (
@@ -173,20 +255,25 @@ export function validateCrashSiteConnection(originGrid, approachGrid, build = CR
     ));
     if (!socketClear) return { valid: false, reason: 'shared-socket-blocked' };
 
-    const target = build.serviceApproach.hub;
-    const seen = new Set([`${centerX},${approachEdgeY}`]);
-    const queue = [{ x: centerX, y: approachEdgeY }];
-    for (let index = 0; index < queue.length; index += 1) {
-        const cell = queue[index];
-        if (cell.x === target.x && cell.y === target.y) return { valid: true, reason: null };
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-            const x = cell.x + dx;
-            const y = cell.y + dy;
-            const key = `${x},${y}`;
-            if (seen.has(key) || !WALKABLE.has(approachGrid[y]?.[x])) continue;
-            seen.add(key);
-            queue.push({ x, y });
+    const seen = floodWalkable(approachGrid, { x: centerX, y: approachEdgeY });
+    const approachTargets = [
+        { id: 'approach-hub', x: build.serviceApproach.hub.x, y: build.serviceApproach.hub.y },
+        { id: 'approach-encounter', x: build.serviceApproach.encounter.localX, y: build.serviceApproach.encounter.localY },
+        ...(build.escapeCraftYard?.localCenter ? [{
+            id: 'escape-craft-yard',
+            x: build.escapeCraftYard.localCenter.x,
+            y: build.escapeCraftYard.localCenter.y
+        }] : []),
+        ...(build.serviceApproach.supplies ?? []).map((supply) => ({
+            id: `approach-supply:${supply.id}`,
+            x: supply.localX,
+            y: supply.localY
+        }))
+    ];
+    for (const target of approachTargets) {
+        if (!seen.has(`${target.x},${target.y}`)) {
+            return { valid: false, reason: 'approach-target-unreachable', targetId: target.id };
         }
     }
-    return { valid: false, reason: 'approach-hub-unreachable' };
+    return { valid: true, reason: null };
 }

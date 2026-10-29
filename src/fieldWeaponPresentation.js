@@ -55,6 +55,11 @@ export async function createFieldWeaponDropVisual(profileId) {
             position: [0, 0, 0],
             sheenColor: presentation.color
         });
+        // createClassWeapon returns the gameplay/hand pose, whose calibration
+        // turns the source gun upright to meet the operator's palm. A world
+        // pickup is free-standing: restore the authored horizontal pose before
+        // fitting and grounding it so the barrel lies along the floor.
+        weapon.rotation.set(0, 0, 0);
         weapon.updateMatrixWorld(true);
         const initialBounds = new THREE.Box3().setFromObject(weapon);
         const size = initialBounds.getSize(new THREE.Vector3());

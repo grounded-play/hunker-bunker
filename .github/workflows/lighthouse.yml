@@ -13,6 +13,12 @@ permissions:
 jobs:
   lighthouse:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - lighthouserc.json
+          - lighthouserc.mobile.json
     permissions:
       contents: read
 
@@ -32,9 +38,10 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Run Lighthouse CI
+      - name: Run Lighthouse CI (${{ matrix.config }})
         uses: treosh/lighthouse-ci-action@v12
         with:
-          configPath: ./lighthouserc.json
+          configPath: ./${{ matrix.config }}
+          artifactName: lighthouse-results-${{ matrix.config }}
           uploadArtifacts: true
           temporaryPublicStorage: false

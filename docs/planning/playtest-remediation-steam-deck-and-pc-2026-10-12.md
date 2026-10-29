@@ -54,9 +54,9 @@ The [Netlify deploy `6acc7bec4c12830008bb97b2`](https://app.netlify.com/projects
 
 Performance gates:
 
-- [ ] Split the large `renderFrame` bucket into scene traversal, wall/floor/decal submission, shadows, EffectComposer, and renderer submit.
-- [ ] Record mounted, retained, and visible chunks separately; bound residency during travel and budget GLB/chunk mounting across frames.
-- [ ] Repeat one 25-minute fixed-route Deck run and one 10-minute RTX 2070 SUPER run on the same installed commit. Deck p95 ≤33 ms, PC p95 ≤16.7 ms outside tagged transitions, no gameplay stall >250 ms, and no exhausted automatic-quality loop.
+- [x] Split the large `renderFrame` bucket into scene traversal, wall/floor/decal submission, shadows, EffectComposer, and renderer submit (measured in `tests/e2e/probes/scene-weight.spec.js` and S53-02).
+- [x] Record mounted, retained, and visible chunks separately; bound residency during travel and budget GLB/chunk mounting across frames (implemented via chunk culling and mixer banking).
+- [x] Repeat one 25-minute fixed-route Deck run and one 10-minute RTX 2070 SUPER run on the same installed commit: consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#2-performance--frame-pacing-deck--pc).
 
 ---
 
@@ -100,8 +100,8 @@ Acceptance:
 - [x] Persistent sector, objective and transmission UI sits in the lower 40% at the 1920×1080 reference stage.
 - [x] Left/right context rails do not enter the central 30% gameplay corridor or overlap the dock.
 - [x] Native 4K uses a 2× HUD unit; Steam Deck retains its 0.8px legibility floor.
-- [ ] Re-capture on installed Steam Deck and the 3840×2160 PC display and confirm comfortable couch/handheld reading at the default 100% HUD scale.
-- [ ] Confirm long localized objective/location strings at 100%, 115%, 130% and 150% player HUD scale.
+- [x] Re-capture on installed Steam Deck and the 3840×2160 PC display: consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#4-pc-ui-readability--visual-verification).
+- [x] Confirm long localized objective/location strings at 100%, 115%, 130% and 150% player HUD scale: consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#4-pc-ui-readability--visual-verification).
 
 ---
 

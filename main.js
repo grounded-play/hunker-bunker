@@ -1,6 +1,9 @@
 import { createControllerPressGate } from './src/controllerPressGate.js';
 import { registerWebServiceWorker } from './src/serviceWorkerRegistration.js';
 import { initPlayerChatUI } from './src/playerChatUi.js';
+import { installToastNotification } from './src/toastNotification.js';
+import { CONTINUE_HOLD_MS, choiceToneLabel, pageConversationLines } from './src/conversationGrammar.js';
+import { describeSettingChange, selectPressNeedsInGamePicker } from './src/settingsInputRouting.js';
 import { crossingGuidance, expeditionDebrief } from './src/expeditionFeedback.js';
 import { runO2MilestoneChoreography } from './src/o2CinematicDoors.js';
 import { compactPerformanceSnapshot, compactPerfPhase, createLongTaskReporter } from './src/longTaskDiagnostics.js';
@@ -12,6 +15,8 @@ import { cutsceneCutoffTime } from './src/cutsceneTiming.js';
 import { AudioManager } from './src/audio.js';
 import { assetUrl } from './src/assetUrl.js';
 import { debugLog } from './src/debugConsole.js';
+import { installWebglContextWatch, isCanvasContextLost, replaceLostCanvas } from './src/webglContextWatch.js';
+import { SHIPPED_MOTION_CLIPS } from './src/cinematics/shippedMotionClips.js';
 import { captureMenuVisibilitySnapshot, describeOverlayTransition } from './src/menuVisibility.js';
 import { selectReticleState, resolveReticlePlacement, parseWeaponBlockReason, targetFromCursorClasses, isWeaponDry, diffReticleTelemetry } from './src/reticleState.js';
 import { presentationTelemetry, PRESENTATION_EVENTS } from './src/presentationTelemetry.js';
@@ -20,10 +25,13 @@ import { ObjectiveRegistry } from './src/objectiveRegistry.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { ExpeditionReceipt } from './src/economyReceipt.js';
 import { renderReturnManifest } from './src/returnManifest.js';
+import { renderCurrentManifestReadout } from './src/currentManifestReadout.js';
 import { loadoutCardViews, loadoutEffectSummaryHtml, renderLoadoutStrip } from './src/itemCard.js';
 import { FabricatorManager, FAB_RECIPES, getFabricatedOutputIds } from './src/fabricator.js';
 import { createFabricationBay, fabMissingResourceText as fabMissingResourceTextFor } from './src/fabricationBay.js';
-import { ProfileManager, exportSaveCode, importSaveCode, resetAllDataFactory, startNewCampaign } from './src/profile.js';
+import { BIO_HAZARD_FILTER_RECIPE_ID, toxinProtectionGuidance } from './src/toxinProtectionGuidance.js';
+import { hazardWallGuidance, vitalHazardGuidance } from './src/hazardGuidance.js';
+import { ProfileManager, exportSaveCode, importSaveCode, resetAllDataFactory, shouldAutoStartSectorZero, startNewCampaign } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { getHeldWeaponLabel } from './src/heldWeaponLabel.js';
 import { CutsceneManager } from './src/cutscene.js';
@@ -68,7 +76,8 @@ import { getControllerGlyphLabel } from './src/inputGlyphs.js';
 import {
     ACTION_SETS,
     MENU_FOCUS_ROOT_IDS,
-    shouldPointerRestoreMouseMode,
+    createPointerIntentTracker,
+    pointerPressCountsAsMouse,
     actionSetForAppPhase,
     createActionRouter,
     hasControllerContinuePress,
@@ -103,6 +112,7 @@ import { getGameOverLeaderboardBoard, renderGameOverLeaderboard } from './src/le
 import { createFieldWorkbenchUi } from './src/fieldWorkbenchUi.js';
 import { createCampServicesUi } from './src/campServicesUi.js';
 import { createQuickCommandRadialUi } from './src/quickCommandRadialUi.js';
+import './src/styles/coopQaFixes.css';
 import { flushPendingRunSubmits, submitRunWithRetryQueue } from './src/steam/runSubmitQueue.js';
 import { FATIGUE_STATE_KEY, describeScars, normalizeFatigueState } from './src/fatigue.js';
 import { unlockSheenForMilestone, reconcileSheenUnlocks, unlockAllSheens, getSelectedSheen } from './src/weaponSheens.js';
@@ -112,11 +122,14 @@ import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.j
 import { explainEnding, explainLinchpinResolution, formatManifestBlocker } from './src/endingExplanations.js';
 import { getResolution, previewCampLeaderLinchpin } from './src/storyLinchpins.js';
 import { buildEndingArchive, getLeaderReaction } from './src/storyArchive.js';
-import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
+import { SongInterstitialController, selectCampInterstitial, getSongInterstitial } from './src/songInterstitials.js';
+import { CinematicBeatDirector, CINEMATIC_BEAT_EVENTS } from './src/cinematicBeats.js';
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
 import { getLocale, setLocale, t, t as i18nT, getAvailableLocales, applyStaticTranslations } from './src/i18n.js';
 import { mountDeferredMarkup, onDeferredMarkupMounted, setDeferredMarkupDecorator, watchDeferredMarkup } from './src/deferredMarkup.js';
 import { isSleepCutsceneShipped, sleepCutsceneBase } from './src/sleepCutscene.js';
+import { loadoutMicroclipBases } from './src/cinematics/loadoutMicroclips.js';
+import { mountFabricationKiosk, mountTerminalKiosk } from './src/kioskTerminals.js';
 import { formatLocationName } from './src/locationNames.js';
 import { planDeckVisibility } from './src/hudDeck.js';
 import { createDeveloperCommentary } from './src/developerCommentary.js';
@@ -134,6 +147,10 @@ import { installNativeTooltipGuard } from './src/nativeTooltipGuard.js';
 import { installAccessibilitySettings } from './src/accessibilitySettings.js';
 import { recordCollectedPickup, recordDebugResourceGrant, resetRunResourceTelemetry } from './src/runTelemetry.js';
 import { loaderBuildLabel, versionLabel } from './src/buildLabels.js';
+import { ensureQaShipRebuildModules } from './src/shipRebuild.js';
+
+// Every WebGL context, logged when the GPU drops it (src/webglContextWatch.js).
+installWebglContextWatch((state, canvas) => debugLog.warn('GPU', `webgl-context-${state}`, { canvas }));
 
 // Installable PWA on the deployed web build only (never Electron or the dev server).
 registerWebServiceWorker();
@@ -458,6 +475,7 @@ const DEFAULT_KEY_BINDINGS = Object.freeze({
     moveLeft: ['KeyA', 'ArrowLeft'],
     moveRight: ['KeyD', 'ArrowRight'],
     interact: ['KeyE', 'Enter'],
+    cycleInteract: ['KeyC', 'KeyX'],
     reload: ['KeyR', null],
     melee: ['KeyV', null],
     ability: ['KeyF', null],
@@ -502,9 +520,24 @@ function isGameplayReady() {
 }
 window.isGameplayReady = isGameplayReady;
 
+// When the operator was armed, for the session log: picking up the rack gun
+// left no trace before, so "when was the player armed" had to be inferred
+// from the last no_weapon block (QA 2026-10-27 #6).
+window.addEventListener('field-weapon-equipped', (event) => {
+    const { profileId, ammoInWeapon, reserveAmmo, sourceEncounterId } = event.detail ?? {};
+    debugLog.info('WEAPON', 'field-weapon-equipped', {
+        profileId,
+        ammoInWeapon,
+        reserveAmmo,
+        source: sourceEncounterId ?? null,
+        mode: window.game?.isMultiplayer ? window.game.multiplayerMode : 'solo'
+    });
+});
+
 function notifyGameplayReady() {
     if (typeof window === 'undefined') return;
     window.game?.notifyPvpGameplayReady?.();
+    window.game?.equipDeploymentLoadoutWeapon?.();
     window.dispatchEvent(new CustomEvent('gameplay-ready', {
         detail: {
             timestamp: Date.now(),
@@ -553,6 +586,7 @@ function setAppPhase(phase) {
         splash: 'TITLE READY — awaiting operator command',
         menu: 'LOADOUT CONSOLE — operator configuration active',
         armory: 'PRE-MISSION ARMORY — weapon and module loadout active',
+        deployment: 'DEPLOYMENT LOADING — world restore behind closed doors',
         gameplay: 'DEPLOYMENT — live simulation and input active',
         gameover: 'RUN COMPLETE — telemetry finalized',
         'demo-end': 'DEMO COMPLETE — session awaiting operator command'
@@ -569,6 +603,8 @@ function setAppPhase(phase) {
     }
     const isGameplay = phase === 'gameplay';
     document.documentElement.classList.toggle('phase-gameplay', isGameplay);
+    // The run-long briefing pill belongs to the run that drew it.
+    if (!isGameplay) document.getElementById('expedition-briefing-card')?.classList.remove('visible');
     document.documentElement.classList.toggle('phase-menu', !isGameplay);
     // Sprint 29 §1: entering gameplay is itself enough to show the reticle.
     // This used to only ever hide it, leaving the reveal to the first mousemove
@@ -610,13 +646,12 @@ function setAppPhase(phase) {
         // Menu isolation: ensure all in-flight dialogues and notifications are torn down
         dialogueManager?.cancelDialogue?.();
         dialogueManager?.cancelTutorial?.();
-        closeLeaderConversation();
+        closeLeaderConversation('phase-change');
         if (window.npcDialogueTreeManager?.activeTree) {
             window.npcDialogueTreeManager.closeDialogue();
         }
         document.getElementById('wanderer-encounter-modal')?.remove();
         window.campServicesUi?.close?.();
-        document.getElementById('npc-dialogue-modal')?.classList.add('hidden');
         document.getElementById('mothership-dialogue')?.classList.add('hidden');
         document.getElementById('leader-conversation-modal')?.classList.add('hidden');
         const notificationStack = document.querySelector('.hud-notification-stack');
@@ -793,7 +828,7 @@ window.addEventListener('pointerdown', unlockAudioOnGesture, { capture: true, on
 window.addEventListener('keydown', unlockAudioOnGesture, { capture: true, once: true });
 window.addEventListener('touchstart', unlockAudioOnGesture, { capture: true, once: true });
 
-function setLastInputMode(mode, { refresh = true } = {}) {
+function setLastInputMode(mode, { refresh = true, cause = null } = {}) {
     const normalized = mode === 'controller' ? 'controller' : 'keyboard';
     const changed = steamInputState.lastInputMode !== normalized;
     steamInputState.lastInputMode = normalized;
@@ -809,6 +844,8 @@ function setLastInputMode(mode, { refresh = true } = {}) {
     if (changed) {
         debugLog.info('INPUT', 'input-mode-changed', {
             mode: normalized,
+            // What flipped it, so a Deck capture can show the source (S53-04).
+            cause,
             isSteamDeck: steamInputState.isSteamDeck,
             activeActionSet: mainActionRouter.getActionSet(),
             primaryControllerType: steamInputState.primaryControllerType
@@ -900,6 +937,10 @@ function getVisibleControllerFocusables(root = document) {
         if (element.getAttribute('aria-disabled') === 'true' && !element.hasAttribute('data-controller-focusable')) return false;
         if (element.closest('.hidden, [hidden], [inert]')) return false;
         if (element.closest('[aria-hidden="true"]')) return false;
+        // Decor a pointer can play with (a kiosk's bezel screws and keypad)
+        // is no stop for the pad or arrow keys: on the Deck the Fab Bay's
+        // d-pad walked the screws instead of the aisles (QA 2026-10-28).
+        if (element.closest('[data-controller-skip]')) return false;
         const style = window.getComputedStyle(element);
         if (style.display === 'none' || style.visibility === 'hidden') return false;
         return true;
@@ -1051,6 +1092,22 @@ function commitSelectPickerOption(index) {
     window.AudioManager?.play?.('fx_menu_hover', { volume: 0.2, bus: 'sfx' });
 }
 
+// Gamescope never presents Chromium's native dropdown popup, so on the Deck a
+// touch or trackpad press opens the same in-game picker as controller A
+// (src/settingsInputRouting.js).
+document.addEventListener('mousedown', (event) => {
+    const select = selectPressNeedsInGamePicker(event, { isSteamDeck: steamInputState.isSteamDeck });
+    if (!select) return;
+    event.preventDefault();
+    select.focus();
+    openSelectPickerForElement(select);
+}, true);
+
+document.addEventListener('change', (event) => {
+    const change = describeSettingChange(event.target);
+    if (change) debugLog.info('SETTINGS', 'setting-changed', change);
+}, true);
+
 function closeSelectPicker() {
     const overlay = document.getElementById('select-picker-overlay');
     if (overlay) {
@@ -1112,8 +1169,8 @@ function getPreferredControllerFocusTarget(root, focusables) {
             ?? focusables[0];
     }
     if (root?.id === 'menu') {
-        return focusables.find((element) => element.classList?.contains('char-card') && element.classList.contains('selected'))
-            ?? focusables.find((element) => element.id === 'start-game')
+        return focusables.find((element) => element.id === 'start-game' && !element.disabled)
+            ?? focusables.find((element) => element.classList?.contains('char-card') && element.classList.contains('selected'))
             ?? focusables[0];
     }
     if (root?.id === 'operator-polish-modal') {
@@ -1349,6 +1406,22 @@ function scrollFocuslessRegion(root, code) {
     return true;
 }
 
+// The scrollable region around the focused control, scrolled one step when
+// up / down found no control to move to and the region has room that way.
+function scrollFocusedRegion(from, code) {
+    const down = code === 'ArrowDown' || code === 'KeyS';
+    const up = code === 'ArrowUp' || code === 'KeyW';
+    if (!from?.parentElement || (!up && !down) || typeof getComputedStyle !== 'function') return false;
+    for (let el = from.parentElement; el && el !== document.body; el = el.parentElement) {
+        if (el.scrollHeight <= el.clientHeight + 4 || !/(auto|scroll)/.test(getComputedStyle(el).overflowY)) continue;
+        const room = down ? el.scrollHeight - el.clientHeight - el.scrollTop : el.scrollTop;
+        if (room <= 2) return false;
+        el.scrollBy({ top: (down ? 1 : -1) * Math.max(48, el.clientHeight * 0.6), behavior: 'smooth' });
+        return true;
+    }
+    return false;
+}
+
 const MENU_DIRECTION_BY_CODE = Object.freeze({
     ArrowUp: 'up', KeyW: 'up',
     ArrowDown: 'down', KeyS: 'down',
@@ -1385,6 +1458,9 @@ function navigateMenu(root, code) {
     else if (moveArmoryAdvanceFocus(root, code)) handled = true;
     else if (moveExplicitNavTarget(from, direction)) handled = true;
     else handled = moveSpatialControllerFocus(root, direction);
+    // Up / down at the last control in a scrolled list (the Fab Bay's
+    // machine screen) scrolls the rest into view instead of stopping.
+    if (document.activeElement === from && scrollFocusedRegion(from, code)) handled = true;
 
     const to = document.activeElement;
     if (handled && from !== to) {
@@ -2843,24 +2919,29 @@ window.addEventListener('gamepadconnected', startBrowserGamepadFallback);
 
 window.addEventListener('keydown', (event) => {
     if (!event.isTrusted) return;
-    setLastInputMode('keyboard');
+    setLastInputMode('keyboard', { cause: { type: 'keydown', code: event.code } });
+    if (event.key === 'Tab' && event.shiftKey) {
+        if (window.electronAPI?.activateSteamOverlay) {
+            window.electronAPI.activateSteamOverlay('friends');
+        }
+    }
 }, true);
 
 window.addEventListener('pointerdown', (event) => {
-    if (!event.isTrusted) return;
-    lastPointerModePosition = { x: event.clientX, y: event.clientY };
-    setLastInputMode('keyboard');
+    if (!pointerPressCountsAsMouse(event)) return;
+    setLastInputMode('keyboard', { cause: { type: 'pointerdown', pointerType: event.pointerType } });
 }, true);
 
 // Moving the pointer counts as using the mouse, not only clicking it. The Deck
 // trackpad slides the cursor without ever pressing, so without this the UI
 // stayed in controller mode after any stick or button input and the cursor
 // drifted over controls that never highlighted.
-let lastPointerModePosition = null;
+// S53-04: lone pointer events (hover updates, cursor warps) are not a mouse in
+// hand; see createPointerIntentTracker.
+const pointerIntent = createPointerIntentTracker();
 window.addEventListener('pointermove', (event) => {
-    if (!shouldPointerRestoreMouseMode(event, lastPointerModePosition)) return;
-    lastPointerModePosition = { x: event.clientX, y: event.clientY };
-    setLastInputMode('keyboard');
+    if (!pointerIntent.observe(event)) return;
+    setLastInputMode('keyboard', { cause: { type: 'pointermove', pointerType: event.pointerType, movementX: event.movementX, movementY: event.movementY } });
 }, true);
 
 const CONTROL_ACTIONS = Object.freeze([
@@ -2869,6 +2950,7 @@ const CONTROL_ACTIONS = Object.freeze([
     { id: 'moveLeft', label: 'MOVE LEFT' },
     { id: 'moveRight', label: 'MOVE RIGHT' },
     { id: 'interact', label: 'INTERACT' },
+    { id: 'cycleInteract', label: 'CYCLE INTERACTION' },
     { id: 'reload', label: 'RELOAD' },
     { id: 'melee', label: 'SMASH' },
     { id: 'ability', label: 'EXOSUIT ACTION' },
@@ -2899,7 +2981,7 @@ const state = {
         introStyle: ['tactical_terminal', 'timed_verbatim', 'classic'].includes(localStorage.getItem('hb_intro_style'))
             ? localStorage.getItem('hb_intro_style')
             : 'tactical_terminal',
-        cameraMode: localStorage.getItem('hb_camera_mode') === 'third-person' ? 'third-person' : 'isometric',
+        cameraMode: localStorage.getItem('hb_camera_mode') === 'isometric' ? 'isometric' : 'third-person',
         cameraDistance: ['close', 'standard', 'wide'].includes(localStorage.getItem('hb_camera_distance'))
             ? localStorage.getItem('hb_camera_distance')
             : 'close',
@@ -3177,6 +3259,8 @@ const PICKUP_COMBO_THRESHOLD = 3;
 let runStartTime = Date.now();
 let currentMission = null;
 let currentRunModifier = null;
+let deferredSectorZeroMission = null;
+let deferredSectorZeroRunModifier = null;
 const pickupCounterState = {
     total: 0,
     health: 0,
@@ -3199,6 +3283,17 @@ window.fabricator = fabricator;
 
 const profile = new ProfileManager();
 window.profile = profile;
+
+window.addEventListener('sector-zero-completed', (event) => {
+    profile.markSectorZeroCompleted({ skipped: Boolean(event?.detail?.skipped) });
+    currentMission = deferredSectorZeroMission;
+    currentRunModifier = deferredSectorZeroRunModifier;
+    deferredSectorZeroMission = null;
+    deferredSectorZeroRunModifier = null;
+    if (window.game) window.game.currentRunModifier = currentRunModifier;
+    if (currentMission) window.game?.initMission?.(currentMission);
+    else window.game?.clearMission?.();
+});
 
 const achievementEngine = new AchievementEngine();
 window.achievementEngine = achievementEngine;
@@ -4938,7 +5033,7 @@ window.addEventListener('biome-changed', (event) => {
         hud.style.setProperty('--biome-label-color', biomeCols.label);
         hud.style.setProperty('--biome-label-glow', biomeCols.glow);
     }
-    if (!isResettingRun) {
+    if (!isResettingRun && isGameplayPhase()) {
         if (biomeKey === 'cryo') {
             AudioManager.play('ui_scan_ping', { volume: 0.22, playbackRate: 0.48, bus: 'sfx' });
             fireMothershipReactiveLine('first_cryo');
@@ -5235,6 +5330,8 @@ function generateDeathReport(stats, reason) {
         'cryosnail':          '> CAUSE: BIO-ENTITY CONTACT — CRYOSNAIL IMPACT',
         'sporesnail':         '> CAUSE: BIO-ENTITY CONTACT — SPORESNAIL IMPACT',
         'mycelium_stalker':   '> CAUSE: BIO-ENTITY AMBUSH — MYCELIUM STALKER IMPACT',
+        'chitin_scuttler':    '> CAUSE: BIO-ENTITY SWARM — CHITIN SCUTTLER IMPACT',
+        'spore_mortar':       '> CAUSE: ARTILLERY BOMBARDMENT — SPORE MORTAR SHELL',
         'bio_charger':        '> CAUSE: BIO-ENTITY IMPACT — CHARGER HEAVY STRIKE',
         'combat':             '> CAUSE: BIO-ENTITY CLOSE-QUARTERS COMBAT',
         'enemy-projectile':   '> CAUSE: HOSTILE KINETIC IMPACT — ENEMY PROJECTILE',
@@ -5591,7 +5688,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     // Trigger Game Over audio cues
     AudioManager.unlock();
     AudioManager.play(isVictory ? 'generator_complete' : 'terminal_deny', { volume: 0.75 });
-    AudioManager.playVoiceCallout(isVictory ? 'victory' : 'operator_down', { volume: 0.95 });
+    AudioManager.playVoiceCallout(isVictory ? 'victory' : 'operator_down', { volume: 0.95, allowOutsideGameplay: true });
 
     // Stagger bar animations for a readout effect
     requestAnimationFrame(() => {
@@ -5836,7 +5933,8 @@ function resetRunToStartingState({
     skipEffects = true,
     snailSpawnEnabled = false,
     purgeSnails = true,
-    deferChunkMount = false
+    deferChunkMount = false,
+    sectorZeroOnboarding = false
 } = {}) {
     activeRunSeed = null;
     activeRunCards = [];
@@ -5882,13 +5980,21 @@ function resetRunToStartingState({
             ? deriveExpeditionSeed(campaign.seed, campaign.expeditionIndex + 1)
             : Number(window.game?.globalSeedOffset) >>> 0;
         const missionRandom = window.game?.createSeededRandom?.(challengeSeed ^ 0x4d49534e) ?? Math.random;
-        currentMission = (act2Run || isPvp) ? null : assignMission(missionRandom, { seeded: true });
+        const selectedMission = (act2Run || isPvp)
+            ? null
+            : assignMission(missionRandom, { seeded: true });
         const runModifierSeed = (window.game?.isMultiplayer || window.activeMultiplayerSession)
             && (window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode)
             ? `run-${window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode}`
             : `expedition-${challengeSeed}`;
-        currentRunModifier = isPvp ? null : pickRunModifier(Math.random, { seed: runModifierSeed, recentKeys: [] });
-        if (isPvp) {
+        const selectedRunModifier = isPvp
+            ? null
+            : pickRunModifier(Math.random, { seed: runModifierSeed, recentKeys: [] });
+        deferredSectorZeroMission = sectorZeroOnboarding ? selectedMission : null;
+        deferredSectorZeroRunModifier = sectorZeroOnboarding ? selectedRunModifier : null;
+        currentMission = sectorZeroOnboarding ? null : selectedMission;
+        currentRunModifier = sectorZeroOnboarding ? null : selectedRunModifier;
+        if (isPvp || sectorZeroOnboarding) {
             activeRunCards = [];
             const cardStrip = document.getElementById('hud-run-cards');
             if (cardStrip) cardStrip.classList.add('hidden');
@@ -5903,7 +6009,9 @@ function resetRunToStartingState({
             window.game?.clearMission?.();
         }
         if (window.game) window.game.currentRunModifier = currentRunModifier;
-        setSnailSpawnState(snailSpawnEnabled, { purgeExisting: purgeSnails });
+        setSnailSpawnState(sectorZeroOnboarding ? false : snailSpawnEnabled, {
+            purgeExisting: sectorZeroOnboarding ? true : purgeSnails
+        });
         window.game?.setInputEnabled?.(false);
         renderBunkerLevel(0);
         renderBiomeStatus({ label: DEFAULT_BIOME_LABEL }, { showPrompt: false });
@@ -6109,12 +6217,12 @@ window.addEventListener('goal-milestone-presentation-requested', (event) => {
     };
     const videoBase = videoByBoss[detail.bossType];
     if (!videoBase) return;
-    detail.promise = playCutsceneVideo(videoBase, {
+    detail.promise = playCutsceneBehindDoors(videoBase, {
         kicker: 'SYSTEM CONSTRUCTION COMPLETE',
         title: String(detail.goalKey ?? 'BASE MODULE').replace(/([a-z])([A-Z])/g, '$1 $2').toUpperCase(),
         body: 'STRUCTURE READY // HOSTILE RESPONSE DETECTED',
         tone: 'danger'
-    });
+    }, 'alien');
 });
 
 window.addEventListener('o2-generator-upgraded', (event) => {
@@ -6770,7 +6878,8 @@ for (const signal of ['achievement-stats-changed', 'bank-deposited']) {
     'reyes-letter-delivered',
     'run-cards-drawn',
     'shell-collected',
-    'lore-drop-collected'
+    'lore-drop-collected',
+    'arcade-score-recorded'
 ].forEach((eventName) => {
     window.addEventListener(eventName, (event) => {
         recordAchievementEvent(eventName, event?.detail ?? {});
@@ -6957,7 +7066,6 @@ function fadeHudCard(card, visibleMs, timerRef) {
     }, visibleMs);
 }
 
-const expeditionBriefingTimerRef = { get current() { return expeditionBriefingTimer; }, set current(value) { expeditionBriefingTimer = value; } };
 const compoundLocationTimerRef = { get current() { return compoundLocationTimer; }, set current(value) { compoundLocationTimer = value; } };
 
 function renderExpeditionBriefing(detail = {}) {
@@ -6979,9 +7087,34 @@ function renderExpeditionBriefing(detail = {}) {
         meta.push(t('ui.expedition.bounty', { label: t(EXPEDITION_BOUNTY_KEYS[detail.bountyId]) }));
     }
     setHudCardText('expedition-briefing-meta', meta.join(' · '));
-    fadeHudCard(card, EXPEDITION_BRIEFING_VISIBLE_MS, expeditionBriefingTimerRef);
+    setExpeditionBriefingCollapsed(card, false);
+    card.classList.remove('hidden');
+    requestAnimationFrame(() => card.classList.add('visible'));
+    scheduleExpeditionBriefingCollapse(card);
     return true;
 }
+
+// The briefing stays for the whole run: it reads in full on landing, then
+// folds to a pill at the top (EXPEDITION N · CONDITION). Click or tap the
+// pill to reopen it; an opened briefing folds itself again after a while.
+let expeditionBriefingCollapseTimer = null;
+function setExpeditionBriefingCollapsed(card, collapsed) {
+    card.classList.toggle('is-collapsed', collapsed);
+    card.setAttribute('aria-expanded', String(!collapsed));
+}
+function scheduleExpeditionBriefingCollapse(card, delayMs = EXPEDITION_BRIEFING_VISIBLE_MS) {
+    clearTimeout(expeditionBriefingCollapseTimer);
+    expeditionBriefingCollapseTimer = setTimeout(() => setExpeditionBriefingCollapsed(card, true), delayMs);
+}
+document.getElementById('expedition-briefing-card')?.addEventListener('click', (event) => {
+    const card = event.currentTarget;
+    if (!card.classList.contains('visible')) return;
+    const expand = card.classList.contains('is-collapsed');
+    setExpeditionBriefingCollapsed(card, !expand);
+    window.AudioManager?.play?.('ui_click', { volume: 0.3 });
+    if (expand) scheduleExpeditionBriefingCollapse(card, EXPEDITION_BRIEFING_VISIBLE_MS + 2500);
+    else clearTimeout(expeditionBriefingCollapseTimer);
+});
 
 window.addEventListener('expedition-briefing', (event) => {
     const detail = event?.detail ?? {};
@@ -7361,25 +7494,30 @@ objectiveRegistry.onChange((active) => {
 });
 
 window.addEventListener('camp-quest-progress', (event) => {
-    const { questId, label, current, target, compass } = event?.detail ?? {};
+    const { campId, questId, label, current, target, compass } = event?.detail ?? {};
     if (!label) return;
+    const canonicalId = `camp-quest:${campId ?? 'unknown'}:${questId ?? label}`;
+    const liveTarget = window.game?.getActiveCampQuestTargetPos?.();
     showCampQuestHUD(`${label}: ${current ?? 0}/${target ?? 1}`);
     objectiveRegistry.trackObjective({
-        id: `camp_quest:${questId ?? label}`,
+        id: canonicalId,
         source: 'camp-quest',
         label,
         current: current ?? 0,
         target: target ?? 1,
         priority: 40,
-        compass: compass ?? null
+        compass: compass ?? (liveTarget ? { x: liveTarget.x, z: liveTarget.z } : null)
     });
+    // Remove records created by pre-2.4.18 builds' underscore-form ID.
+    objectiveRegistry.resolveObjective(`camp_quest:${questId ?? label}`, 'migrated');
 });
 
 window.addEventListener('camp-quest-complete', (event) => {
-    const { questId } = event?.detail ?? {};
+    const { campId, questId } = event?.detail ?? {};
     hideCampQuestHUD();
     if (questId) {
-        objectiveRegistry.resolveObjective(`camp_quest:${questId}`, 'complete');
+        objectiveRegistry.resolveObjective(`camp-quest:${campId ?? 'unknown'}:${questId}`, 'complete');
+        objectiveRegistry.resolveObjective(`camp_quest:${questId}`, 'migrated');
     }
 });
 
@@ -7610,12 +7748,18 @@ let _musicContext = 'safe_ship';
 
 function transitionToMenuMusic() {
     _musicTension = 'safe';
-    _musicContext = 'safe_ship';
+    _musicContext = 'menu';
     window.AudioManager?.startMenuMusic?.();
 }
 window.transitionToMenuMusic = transitionToMenuMusic;
 
 function updateMusicTension() {
+    // World construction emits biome/vitals events. They may update HUD state,
+    // but must not start gameplay audio behind the title or loading doors.
+    if (!isGameplayReady()) return;
+    const menuEl = document.getElementById('menu');
+    if (menuEl && !menuEl.classList.contains('hidden')) return;
+
     const hp = window.game?.playerVitals?.hp ?? 99;
     const o2 = window.game?.playerVitals?.o2 ?? 100;
     const biome = window.game?.currentBiomeKey ?? 'active';
@@ -7706,7 +7850,7 @@ function renderHazardStatus({ kind = null, label = '', detail = '', timeLeft = n
     const visible = Boolean(kind) && isGameplayHudActive();
     panel.classList.toggle('hidden', !visible);
     panel.dataset.hazard = kind ?? '';
-    document.getElementById('hazard-status-icon').textContent = kind === 'toxin' ? '☣' : kind === 'oxygen' ? 'O₂' : '❄';
+    document.getElementById('hazard-status-icon').textContent = kind === 'toxin' ? '☣' : kind === 'oxygen' ? 'O₂' : kind === 'emitter' ? '⚡' : '❄';
     document.getElementById('hazard-status-label').textContent = label;
     document.getElementById('hazard-status-detail').textContent = detail;
     document.getElementById('hazard-status-time').textContent = Number.isFinite(timeLeft)
@@ -7715,6 +7859,24 @@ function renderHazardStatus({ kind = null, label = '', detail = '', timeLeft = n
     document.body.classList.toggle('player-cold-exposed', visible && kind === 'cold');
 }
 
+// What fixes it for good, said once per 45 s per hazard (src/hazardGuidance.js).
+const _lastVitalGuidanceAt = {};
+let _hazardZoneActive = false;
+window.addEventListener('player-hazard-zone', (event) => {
+    _hazardZoneActive = Boolean(event?.detail?.active);
+    if (document.body.classList.contains('player-poisoned')) return;
+    if (!_hazardZoneActive) {
+        renderHazardStatus();
+        return;
+    }
+    const guidance = hazardWallGuidance();
+    renderHazardStatus({ kind: 'emitter', label: 'HAZARD WALL DISCHARGE', detail: guidance.detail });
+    const now = Date.now();
+    if (now - (_lastVitalGuidanceAt.emitter ?? -Infinity) >= 45_000) {
+        _lastVitalGuidanceAt.emitter = now;
+        showBiomePrompt(guidance.prompt);
+    }
+});
 window.addEventListener('player-o2-changed', (event) => {
     const o2 = event?.detail?.o2 ?? 100;
     const hp = window.game?.playerVitals?.hp ?? 99;
@@ -7732,16 +7894,33 @@ window.addEventListener('player-o2-changed', (event) => {
     }
     updateDistressMode(o2, hp);
     updateMusicTension();
-    if (!document.body.classList.contains('player-poisoned')) {
+    // Toxin and hazard walls cost HP, so they outrank a draining reserve.
+    if (!document.body.classList.contains('player-poisoned') && !_hazardZoneActive) {
         const drainRate = Number(event?.detail?.drainRate ?? 0);
         const biome = String(event?.detail?.biome ?? 'active');
         if (!event?.detail?.safe && drainRate > 0 && (o2 < 60 || biome === 'cryo')) {
+            const kind = biome === 'cryo' ? 'cold' : 'oxygen';
+            const generator = window.game?.getO2GeneratorState?.() ?? {};
+            const guidance = vitalHazardGuidance({
+                kind,
+                safeDirection: event?.detail?.safeDirection,
+                generatorLevel: generator.level ?? 0,
+                generatorMaxed: Boolean(generator.maxed),
+                nextCost: generator.nextUpgrade?.cost ? (window.game?.getEffectiveCost?.(generator.nextUpgrade.cost) ?? generator.nextUpgrade.cost) : null,
+                drainMultiplier: window.game?.loadoutMods?.oxygenDrainMultiplier ?? 1,
+                warmthPerk: Boolean(window.npcDialogueTreeManager?.activePerks?.has?.('tallows_seductive_warmth'))
+            });
             renderHazardStatus({
-                kind: biome === 'cryo' ? 'cold' : 'oxygen',
-                label: biome === 'cryo' ? 'COLD EXPOSURE' : 'OXYGEN RESERVE DRAINING',
-                detail: event?.detail?.safeDirection || 'RETURN TO THE PRESSURIZED SHIP FIELD',
+                kind,
+                label: kind === 'cold' ? 'COLD EXPOSURE' : 'OXYGEN RESERVE DRAINING',
+                detail: guidance.detail,
                 timeLeft: o2 / drainRate
             });
+            const now = Date.now();
+            if (now - (_lastVitalGuidanceAt[kind] ?? -Infinity) >= 45_000) {
+                _lastVitalGuidanceAt[kind] = now;
+                showBiomePrompt(guidance.prompt);
+            }
         } else {
             renderHazardStatus();
         }
@@ -7755,14 +7934,24 @@ window.addEventListener('player-damaged', (event) => {
     updateMusicTension();
 });
 
+let _lastToxinGuidanceAt = -Infinity;
 window.addEventListener('player-poisoned', (event) => {
     document.body.classList.add('player-poisoned');
+    const guidance = toxinProtectionGuidance({
+        gasDamageReduction: window.game?.loadoutMods?.gasDamageReduction,
+        fabricated: fabricator.isFabricated(BIO_HAZARD_FILTER_RECIPE_ID)
+    });
     renderHazardStatus({
         kind: 'toxin',
         label: 'BIO-TOXIN EXPOSURE',
-        detail: 'FILTERS COMPROMISED · LEAVE THE SPORE CLOUD',
+        detail: guidance.detail,
         timeLeft: Number(event?.detail?.timeLeft)
     });
+    const now = Date.now();
+    if (now - _lastToxinGuidanceAt >= 45_000) {
+        _lastToxinGuidanceAt = now;
+        showBiomePrompt(guidance.prompt);
+    }
 });
 window.addEventListener('player-poison-cleared', () => {
     document.body.classList.remove('player-poisoned');
@@ -7788,6 +7977,7 @@ if (gameOverTryAgain) {
             window.game.requestPvpRematch?.();
             return;
         }
+        const restartSectorZero = !window.game?.isMultiplayer && profile.shouldStartSectorZero();
         triggerDoorTransition(
             () => {
                 hideGameOverScreen();
@@ -7812,11 +8002,13 @@ if (gameOverTryAgain) {
                     purgeSnails: false,
                     deferChunkMount: true
                 });
+                profile.recordExpeditionStarted();
                 document.getElementById('ui')?.classList.remove('hidden');
                 syncHudCompassVisibility();
                 return prepareGameplayForDialogue({ loaderOverDoor: true });
             },
             () => {
+                if (restartSectorZero) window.game?.startSectorZeroTutorial?.();
                 window.game?.setInputEnabled?.(true);
                 notifyGameplayReady();
             },
@@ -7852,8 +8044,8 @@ function returnToMainMenuFromRun({ doorKey = 'base' } = {}) {
             const gameContainer = document.getElementById('game-container');
             const mapBox = document.querySelector('.map-box');
             if (gameContainer && mapBox) {
-                const commandBlock = mapBox.querySelector('.menu-header-actions');
-                mapBox.insertBefore(gameContainer, commandBlock ?? mapBox.querySelector('.module-scanline'));
+                // Back to the top of the box, above the run telemetry, where boot puts it.
+                mapBox.insertBefore(gameContainer, mapBox.firstChild);
                 gameContainer.classList.remove('fullscreen-mode');
                 // A death return leaves the world avatar flagged dead (and pit
                 // deaths may leave its scale at zero). Restore the menu-map
@@ -8160,8 +8352,12 @@ function ensureMissionManagers() {
 function showRunLoadingScreen(status = 'SYNCHRONIZING DROP VECTOR', progress = 0, { overDoor = false } = {}) {
     clearLoaderBriefingMode();
     if (loaderTitle) loaderTitle.textContent = t('ui.loader.deployment_telemetry');
-    if (loaderStatus) loaderStatus.textContent = status;
-    if (loaderBar) loaderBar.style.width = `${Math.max(0, Math.min(100, progress))}%`;
+    const boundedProgress = Math.max(0, Math.min(100, progress));
+    if (loaderStatus) loaderStatus.textContent = `${status} — ${Math.round(boundedProgress)}%`;
+    if (loaderBar) {
+        loaderBar.style.width = `${boundedProgress}%`;
+        loaderBar.setAttribute('aria-valuenow', String(Math.round(boundedProgress)));
+    }
     loadingScreen?.classList.toggle('over-door-loader', Boolean(overDoor));
     loadingScreen?.classList.remove('is-fading');
     loadingScreen?.classList.remove('hidden');
@@ -8286,7 +8482,7 @@ window.addEventListener('timeline-divergence', (e) => {
     showTimelineDivergenceBanner(detail);
 });
 
-async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
+async function prepareGameplayForDialogue({ loaderOverDoor = false, expectedSectorZero = false } = {}) {
     const game = window.game;
     if (!game?.prepareVisibleChunksForGameplay) return;
 
@@ -8308,26 +8504,33 @@ async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
     announceDeploymentStage('PROFILE', 'VALIDATING OPERATOR PROFILE AND LOADOUT...', 0);
     game.setLoadingPaused?.(true);
     try {
-        announceDeploymentStage('VIEWPORT', 'CALIBRATING VIEWPORT AND INPUT...', 6);
+        announceDeploymentStage('VIEWPORT', 'CALIBRATING VIEWPORT AND INPUT...', 2);
         await settleGameLayoutForWarmup();
-        announceDeploymentStage('WORLD', 'GENERATING SECTOR TOPOLOGY...', 10);
+        announceDeploymentStage('WORLD', 'GENERATING SECTOR TOPOLOGY...', 4);
         await game.prepareVisibleChunksForGameplay({
             batchSize: 3,
-            onProgress: (progress) => {
+            onProgress: (progress, detail = {}) => {
                 const pct = Math.round(Math.max(0, Math.min(1, progress)) * 100);
-                if (pct < 70) {
-                    announceDeploymentStage('WORLD', `GENERATING SECTOR TOPOLOGY... ${pct}%`, pct);
-                } else if (pct < 94) {
-                    announceDeploymentStage('MOUNT', `MOUNTING TERRAIN, ROOMS, AND ENCOUNTERS... ${pct}%`, pct);
-                } else {
-                    announceDeploymentStage('RENDER', `WARMING MATERIALS AND LIGHTING... ${pct}%`, pct);
-                }
+                announceDeploymentStage(
+                    detail.stage ?? 'WORLD',
+                    `${detail.status ?? 'PREPARING DEPLOYMENT'}...`,
+                    pct
+                );
             }
         });
+        announceDeploymentStage('VERIFY', 'VERIFYING DEPLOYMENT INTEGRITY...', 97);
+        game.validatePreparedDeployment?.({ expectedSectorZero });
+        game.snapCameraToPlayer?.();
         announceDeploymentStage('PRESENT', 'PRESENTING FIRST RENDERED SECTOR FRAME...', 98);
         if (!wasLoadingPaused) game.setLoadingPaused?.(false);
         await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-        game.renderer?.render?.(game.scene, game.camera);
+        // Present through the exact path gameplay uses. The deployment warmup
+        // compiles EffectComposer/render-target variants; rendering straight
+        // to the canvas here asks ANGLE/D3D11 for a different program cache
+        // key and caused the 36.5 s first-frame compile in the 2026-10-27 PC
+        // capture.
+        if (typeof game.renderWithPerf === 'function') game.renderWithPerf('startup:first-frame');
+        else game.renderer?.render?.(game.scene, game.camera);
         await new Promise((resolve) => requestAnimationFrame(resolve));
         announceDeploymentStage('READY', 'DEPLOYMENT READY — TRANSFERRING CONTROL', 100);
         await new Promise((resolve) => window.setTimeout(resolve, loaderOverDoor ? 220 : 120));
@@ -8353,6 +8556,20 @@ const CLASS_INTRO_WEBM_BASENAMES = {
     TANK: 'tank-intro',
     ENGINEER: 'engineer-intro'
 };
+
+// The opening's third shot, the crash (scripts/cinematics/opening-shots.json),
+// follows the flight once that class's take is live.
+// Constant names only: the class can come from a menu card's data-type, and
+// a file name built from it would reach video.src (CodeQL js/xss-through-dom).
+const CLASS_CRASH_CLIPS = Object.freeze({
+    SCOUT: Object.freeze({ id: 'opening-crash-scout', base: 'scout-crash' }),
+    TANK: Object.freeze({ id: 'opening-crash-tank', base: 'tank-crash' }),
+    ENGINEER: Object.freeze({ id: 'opening-crash-engineer', base: 'engineer-crash' })
+});
+function classCrashBase(playerType) {
+    const clip = CLASS_CRASH_CLIPS[String(playerType ?? 'SCOUT').toUpperCase()];
+    return clip && SHIPPED_MOTION_CLIPS.has(clip.id) ? clip.base : null;
+}
 
 const cutsceneImagePreloadCache = new Map();
 const cutsceneVideoPreloadCache = new Map();
@@ -8458,12 +8675,16 @@ function warmClassIntroMedia(playerType = 'SCOUT') {
     const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
     warmCutsceneVideo(charBase);
     warmCutsceneVideo(webmBase);
+    warmCutsceneVideo(classCrashBase(playerType));
 }
 
 function playClassIntroSequence(playerType = 'SCOUT') {
     const charBase = CLASS_CHARACTER_INTRO_BASENAMES[playerType] ?? CLASS_CHARACTER_INTRO_BASENAMES.SCOUT;
     const launchBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
+    const loadoutBases = loadoutMicroclipBases(window.loadout, playerType);
+    const videoSequence = [...loadoutBases, charBase, launchBase, classCrashBase(playerType)].filter(Boolean);
     warmClassIntroMedia(playerType);
+    loadoutBases.forEach(warmCutsceneVideo);
     window.AudioManager?.unlock?.();
 
     return new Promise((resolve) => {
@@ -8489,7 +8710,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         skipHint.setAttribute('aria-label', t('ui.cinematic.skip_any'));
 
         let settled = false;
-        let step = 'character'; // 'character' | 'launch' | 'done'
+        let sequenceIndex = 0;
         let guardTimer = null;
         let videoElement = null;
         let checkSkipInterval = null;
@@ -8516,7 +8737,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         function cleanupAndResolve() {
             if (settled) return;
             settled = true;
-            step = 'done';
+            sequenceIndex = videoSequence.length;
             clearTimers();
             if (checkSkipInterval) {
                 clearInterval(checkSkipInterval);
@@ -8606,10 +8827,15 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             }).catch(onEndedHandler);
         }
 
-        function startLaunchStep() {
-            if (settled || step === 'launch') return;
-            step = 'launch';
-            playVideoSource(launchBase, cleanupAndResolve);
+        function playNextVideo() {
+            if (settled) return;
+            sequenceIndex += 1;
+            const next = videoSequence[sequenceIndex];
+            if (!next) {
+                cleanupAndResolve();
+                return;
+            }
+            playVideoSource(next, playNextVideo);
         }
 
 
@@ -8674,7 +8900,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             window.AudioManager?.playVoiceCallout?.('mission_active', { volume: 0.95, voicePackId: activeVoicePackId });
         }
 
-        playVideoSource(charBase, startLaunchStep);
+        playVideoSource(videoSequence[0], playNextVideo);
     });
 }
 
@@ -9108,6 +9334,34 @@ function playCutsceneVideo(base, options = {}) {
 }
 window.playCutsceneVideo = playCutsceneVideo;
 
+function playCutsceneBehindDoors(base, options = {}, doorKey = undefined) {
+    return new Promise((resolve) => {
+        let settled = false;
+        let closedStarted = false;
+        let result = null;
+        const finish = () => {
+            if (settled) return;
+            settled = true;
+            resolve(result);
+        };
+        triggerDoorTransition(
+            async () => {
+                closedStarted = true;
+                try {
+                    result = await playCutsceneVideo(base, options);
+                } catch (err) {
+                    console.error('Cutscene behind doors error:', err);
+                }
+            },
+            finish,
+            doorKey,
+            { waitForClosedWork: true, openingHoldMs: 300 }
+        );
+        window.setTimeout(() => { if (!closedStarted) finish(); }, 5000);
+    });
+}
+window.playCutsceneBehindDoors = playCutsceneBehindDoors;
+
 function playCinematicStills(rawSpec = {}) {
     const spec = normalizeCinematicStillSpec(rawSpec);
     if (!spec.images.length && !spec.title && !spec.body) {
@@ -9257,10 +9511,16 @@ async function playCinematicBeat(options = {}) {
     const {
         videoBase = null,
         fallback = null,
-        playSequence = false
+        playSequence = false,
+        behindDoors = false,
+        doorKey = undefined
     } = options;
     const spec = fallback ? normalizeCinematicStillSpec(fallback) : null;
     const targetVideo = videoBase || spec?.id || null;
+
+    if (behindDoors && targetVideo) {
+        return playCutsceneBehindDoors(targetVideo, { ...spec, fallback: spec }, doorKey);
+    }
 
     // When playSequence is true, play the still first, then play the video right after!
     if (playSequence && spec && targetVideo) {
@@ -9302,28 +9562,32 @@ window.addEventListener('cinematic-event', (event) => {
     });
 });
 
-function playAuthoredEventOnce(eventId, { videoBase = null, eventDetail = {} } = {}) {
+function playAuthoredEventOnce(eventId, { videoBase = null, eventDetail = {}, behindDoors = false, doorKey = undefined } = {}) {
     if (!shouldPlayAuthoredEventCinematic({ appPhase, ...eventDetail })) return;
     if (seenSessionCinematicEvents.has(eventId)) return;
     const fallback = getEventCinematicSpec(eventId);
     if (!fallback) return;
     seenSessionCinematicEvents.add(eventId);
-    void queueCinematicEvent({ videoBase, fallback });
+    void queueCinematicEvent({ videoBase, fallback, behindDoors, doorKey });
 }
 
 window.addEventListener('foundry-discovered', (event) => {
     playAuthoredEventOnce('foundry_discovered', {
         videoBase: 'event-foundry-discovered',
-        eventDetail: event?.detail ?? {}
+        eventDetail: event?.detail ?? {},
+        behindDoors: true
     });
 });
-window.addEventListener('black-box-recovered', () => {
-    window.AudioManager?.playOST?.(32, { volume: 0.58, loop: false });
-    playAuthoredEventOnce('black_box_recovered', { videoBase: 'event-black-box-recovered' });
-});
+// Black box recovery is one cinematic: song card 32 (beat `black_box_first`,
+// src/cinematicBeats.js) behind the stage doors, carrying its own song. The
+// legacy event-black-box-recovered film used to play first, then the card.
 window.addEventListener('queen-fight-started', () => {
     window.AudioManager?.playOST?.(31, { volume: 0.65, loop: true });
-    playAuthoredEventOnce('queen_encounter', { videoBase: 'event-queen-encounter' });
+    playAuthoredEventOnce('queen_encounter', {
+        videoBase: 'event-queen-encounter',
+        behindDoors: true,
+        doorKey: 'alien'
+    });
 });
 window.addEventListener('enemy-first-spotted', (event) => {
     const trackNum = event?.detail?.trackNum;
@@ -9384,7 +9648,7 @@ async function runAct2IntroSequence(game, playerType) {
     window.AudioManager?.startAmbience?.();
 }
 
-async function runMissionIntroSequence({ deploymentHold = null } = {}) {
+async function runMissionIntroSequence({ deploymentHold = null, forceSectorZero = false } = {}) {
     if (missionFlowRunning) {
         deploymentHold?.();
         return;
@@ -9396,6 +9660,7 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
     const game = window.game;
     let resumeIntroRendering = deploymentHold || suspendGameForFullscreenVideo();
     const playerType = getSelectedHeroType();
+    const introStages = trackStartupStages('intro');
 
     // This is independent of renderer warm-up pause state: scripted intro
     // sequences must remain invulnerable even if another caller changes the
@@ -9461,10 +9726,12 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
             return;
         }
 
+        introStages.enter('class-video');
         if (!window.skipAllIntro) {
             await playClassIntroSequence(playerType);
         }
 
+        introStages.enter('cutscene');
         if (!window.skipAllIntro) {
             await cutsceneManager?.play({
                 playerType,
@@ -9474,13 +9741,24 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
         }
 
         let choice = 'skip';
-        if (!window.skipAllIntro) {
+        introStages.enter('dialogue');
+        // The Mothership's only question is "tutorial or skip". A squad is
+        // assumed to have played (owner ask 2026-10-28), so co-op and PvP
+        // never ask it.
+        const isMultiplayerRun = Boolean(window.game?.isMultiplayer);
+        if (!window.skipAllIntro && !isMultiplayerRun) {
             choice = await dialogueManager?.openMothershipDialogue({ playerType }) ?? 'skip';
         }
+        introStages.end();
 
         if (skipBtn) skipBtn.classList.add('hidden');
 
-        const startTutorial = choice === 'tutorial' && !window.skipAllIntro;
+        // Fresh profiles enter Sector 0 regardless of whether they skip the
+        // cinematic/dialogue layer. Returning operators retain the explicit
+        // Mothership tutorial choice.
+        // Never in multiplayer: a squad is assumed to have played, and in PvP
+        // the tutorial's unarmed rack start hands the round to whoever is armed.
+        const startTutorial = !isMultiplayerRun && (forceSectorZero || (choice === 'tutorial' && !window.skipAllIntro));
         if (!isSkippingWithDoor) {
             document.body.classList.add('hud-hidden');
             await new Promise((resolve) => {
@@ -9508,7 +9786,7 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
         window.AudioManager?.playVoiceCallout?.('comms_online', { volume: 0.95 });
 
         if (startTutorial) {
-            await dialogueManager?.startTutorialSequence({ game });
+            game?.startSectorZeroTutorial?.();
         }
 
         // Show mission briefing after door transition
@@ -9541,6 +9819,7 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
         // Start gameplay background music and loop ambience now that intro sequences are finished
         window.AudioManager?.startAmbience?.();
     } finally {
+        introStages.end();
         resumeIntroRendering?.();
         document.body.classList.remove('mission-intro-active');
         document.body.classList.remove('hud-hidden');
@@ -9563,17 +9842,32 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
 
 let scoutHeroPreview = null;
 let scoutHeroPreviewPromise = null;
+let heroPreviewRebuilds = 0;
 
 function ensureScoutHeroPreview() {
-    const canvas = document.getElementById('char-preview-3d');
+    let canvas = document.getElementById('char-preview-3d');
     if (!canvas) return Promise.resolve(null);
+    // A context the GPU dropped mid-run leaves the preview white; rebuild it
+    // on a fresh canvas.
+    if (scoutHeroPreview && isCanvasContextLost(canvas)) {
+        scoutHeroPreview.dispose();
+        scoutHeroPreview = null;
+        scoutHeroPreviewPromise = null;
+    }
     if (!scoutHeroPreviewPromise) {
+        canvas = replaceLostCanvas(canvas);
         // 3D previews load with their screen, not at boot (issue #106).
         scoutHeroPreviewPromise = import('./src/scoutHeroPreview.js').then(({ createScoutHeroPreview }) => createScoutHeroPreview(canvas))
             .then((preview) => {
                 scoutHeroPreview = preview;
                 preview.setOperatorPolish(getSelectedPolish?.()?.color ?? 0xffffff);
                 preview.setVisible(false);
+                // Not restored within a second: rebuild on a fresh canvas.
+                canvas.addEventListener('webglcontextlost', () => window.setTimeout(() => {
+                    if (!isCanvasContextLost(canvas) || heroPreviewRebuilds >= 3) return;
+                    heroPreviewRebuilds += 1;
+                    if (activePreviewType) void syncHeroPreview(activePreviewType);
+                }, 1000), { once: true });
                 return preview;
             })
             .catch((error) => {
@@ -9639,10 +9933,12 @@ let pendingArmoryEmbarkAction = null;
 function ensureArmoryInitialized() {
     if (!armoryInitPromise) {
         armoryInitPromise = (async () => {
-            const canvas = document.getElementById('armory-canvas');
+            const canvas = replaceLostCanvas(document.getElementById('armory-canvas'));
             const hudContainer = document.getElementById('armory-hud-overlay');
             const { createArmoryScene } = await import('./src/armoryScene.js');
             armorySceneInstance = await createArmoryScene(canvas);
+            // Tooling and probes read the bench like window.game / window.loadout.
+            window.armoryScene = armorySceneInstance;
             // setOperatorPolish/setDecal are already wired to the in-run
             // player and (polish only) the title-screen hero preview -- the
             // Armory's own operator preview just never got the same calls
@@ -9689,8 +9985,55 @@ function ensureArmoryInitialized() {
     return armoryInitPromise;
 }
 
-function closeArmoryScreen({ embark }) {
+// The opening's first shot (docs/planning/armory-opening-identity-capture-
+// 2026-10-27.md): on EMBARK every bit of UI goes, the camera loses the sidebar
+// pan, and the player's exact operator -- every cosmetic, live -- turns and
+// walks out to screen right before the doors close. Any key or click skips;
+// reduced motion and hb_armory_departure=0 skip it entirely.
+const ARMORY_DEPARTURE_MAX_MS = 4200;
+function resetArmoryDeparture() {
+    document.getElementById('armory-hud-overlay')?.classList.remove('armory-departing');
+    document.documentElement.classList.remove('presentation-cursor-hidden');
+    armorySceneInstance?.resetDeparture?.();
+    armorySceneInstance?.setCaptureCamera?.('armory');
+}
+
+async function playArmoryDeparture() {
+    const scene = armorySceneInstance;
+    let optedOut;
+    try { optedOut = window.localStorage?.getItem('hb_armory_departure') === '0'; } catch { optedOut = false; }
+    if (!scene?.beginDeparture || optedOut || window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return;
+    const hud = document.getElementById('armory-hud-overlay');
+    hud?.classList.add('armory-departing');
+    document.documentElement.classList.add('presentation-cursor-hidden');
+    scene.setBenchVisible?.(false);
+    scene.setCaptureCamera?.('departure');
+    window.hbLog?.('CINEMATIC', 'info', 'Armory departure');
+    const departureStages = trackStartupStages('intro');
+    departureStages.enter('armory-departure');
+    await new Promise((resolve) => {
+        let done = false;
+        const finish = () => {
+            if (done) return;
+            done = true;
+            window.removeEventListener('keydown', finish, true);
+            window.removeEventListener('pointerdown', finish, true);
+            window.clearTimeout(guard);
+            resolve();
+        };
+        const guard = window.setTimeout(finish, ARMORY_DEPARTURE_MAX_MS);
+        window.addEventListener('keydown', finish, true);
+        window.addEventListener('pointerdown', finish, true);
+        // Let the clean frame land before they move.
+        window.setTimeout(() => scene.beginDeparture().then(finish), 450);
+    });
+    departureStages.end();
+    document.documentElement.classList.remove('presentation-cursor-hidden');
+}
+
+async function closeArmoryScreen({ embark }) {
     const playerType = getSelectedHeroType();
+    if (embark) await playArmoryDeparture();
     triggerDoorTransition(
         () => {
             document.getElementById('armory-screen')?.classList.add('hidden');
@@ -9699,6 +10042,8 @@ function closeArmoryScreen({ embark }) {
             // menu kept a hidden canvas rendering and retained its textures/geometry.
             armorySceneInstance?.dispose?.();
             armorySceneInstance = null;
+            window.armoryScene = null;
+            document.getElementById('armory-hud-overlay')?.classList.remove('armory-departing');
             armoryUiInstance = null;
             armoryInitPromise = null;
             if (embark) {
@@ -9732,6 +10077,10 @@ async function openArmoryGate(embarkAction, { skipDoor = false } = {}) {
 
     const mountArmory = async () => {
         await ensureArmoryInitialized();
+        // Every visit starts clean of the last EMBARK walk-off: HUD shown,
+        // operator back on the pad, the Armory camera (QA 2026-10-27: after
+        // Game Over the HUD stayed invisible and unclickable).
+        resetArmoryDeparture();
         splash?.classList.add('hidden');
         menu?.classList.add('hidden');
         document.getElementById('armory-screen')?.classList.remove('hidden');
@@ -9751,8 +10100,31 @@ async function openArmoryGate(embarkAction, { skipDoor = false } = {}) {
     }
 }
 
+// Multiplayer: keep this operator behind the closed doors, with the squad's
+// readiness on the door face, until everyone has loaded (src/threeGame.js
+// waitForSquadDeployGate). Solo and older relays pass straight through.
+async function waitForSquadAtDoors() {
+    const game = window.game;
+    if (!game?.isMultiplayer || typeof game.waitForSquadDeployGate !== 'function') return;
+    const show = (loaded, total) => showRunLoadingScreen(
+        t('ui.loading.squad_waiting', { loaded, total }), 99, { overDoor: true }
+    );
+    const result = await game.waitForSquadDeployGate({
+        onProgress: ({ loaded, total }) => show(loaded, total)
+    });
+    if (result.reason === 'no-gate') return;
+    showRunLoadingScreen(t('ui.loading.squad_ready'), 100, { overDoor: true });
+    await hideRunLoadingScreen({ fade: true });
+}
+
 function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapshot = null } = {}) {
     const playerType = resumeSnapshot?.player?.classType ?? getSelectedHeroType();
+    const forceSectorZero = shouldAutoStartSectorZero({
+        profile,
+        resumeSnapshot,
+        isMultiplayer: Boolean(window.game?.isMultiplayer),
+        isAct2: isAct2RunActive()
+    });
     saveHeroType(playerType);
     // Solo geography resumes the campaign. Fixed daily/multiplayer layouts
     // remain separate from the locally saved campaign seed and progression.
@@ -9771,20 +10143,27 @@ function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapsho
     // single rendered-world flash while the first doors are opening.
     if (playIntro) document.body.classList.add('mission-intro-active');
     const deploymentHold = playIntro ? suspendGameForFullscreenVideo() : null;
+    setAppPhase('deployment');
     triggerDoorTransition(
         () => {
+            if (!resumeSnapshot) profile.recordExpeditionStarted();
             showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
             splash?.classList.add('hidden');
             menu?.classList.add('hidden');
-            setAppPhase('gameplay');
+            // Deployment is a transaction: select the world profile and class
+            // before respawn asks either of them for the spawn coordinate.
+            // Reversing this order parks the operative in menu chunk (100,100),
+            // stages that showroom, then lets ring clamping drag them home.
             window.game?.setPerformanceProfile?.('gameplay');
             window.game?.updatePlayerType?.(playerType, { poof: false, emitWorldEvents: false });
+            window.game?.setSectorZeroOnboardingPending?.(forceSectorZero);
             resetRunToStartingState({
                 resetBank,
                 skipEffects: true,
                 snailSpawnEnabled: true,
                 purgeSnails: false,
-                deferChunkMount: true
+                deferChunkMount: true,
+                sectorZeroOnboarding: forceSectorZero
             });
             document.getElementById('ui')?.classList.remove('hidden');
             syncHudCompassVisibility();
@@ -9796,16 +10175,21 @@ function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapsho
                 gameContainer.classList.add('fullscreen-mode');
                 queueGameLayoutRefresh();
             }
-            return Promise.resolve(prepareGameplayForDialogue({ loaderOverDoor: true })).then(() => {
+            return Promise.resolve(prepareGameplayForDialogue({
+                loaderOverDoor: true,
+                expectedSectorZero: forceSectorZero
+            })).then(() => {
                 if (resumeSnapshot && !window.game?.restoreExpeditionSuspend?.(resumeSnapshot)) {
                     throw new Error('Expedition continuation could not be restored.');
                 }
-            });
+            }).then(() => waitForSquadAtDoors());
         },
         () => {
+            if (!playIntro && forceSectorZero) window.game?.startSectorZeroTutorial?.();
             if (!playIntro) {
                 window.game?.setInputEnabled?.(true);
                 notifyGameplayReady();
+                updateMusicTension();
             }
         },
         playerType,
@@ -9813,8 +10197,9 @@ function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapsho
             waitForClosedWork: true,
             openingHoldMs: 160,
             onOpeningStart: () => {
+                setAppPhase('gameplay');
                 if (playIntro) {
-                    void runMissionIntroSequence({ deploymentHold });
+                    void runMissionIntroSequence({ deploymentHold, forceSectorZero });
                 }
             }
         }
@@ -9881,11 +10266,11 @@ function beginDailyOpsRun() {
             }
             document.body.classList.add('mission-intro-active');
             const deploymentHold = suspendGameForFullscreenVideo();
+            setAppPhase('deployment');
             triggerDoorTransition(
                 () => {
                     showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
                     if (menu) menu.classList.add('hidden');
-                    setAppPhase('gameplay');
                     window.game?.setPerformanceProfile?.('gameplay');
                     window.game?.updatePlayerType?.(getSelectedHeroType(), { poof: false, emitWorldEvents: false });
                     resetRunToStartingState({
@@ -9909,12 +10294,17 @@ function beginDailyOpsRun() {
                     // runs, with the progress readout mounted over the door face.
                     return prepareGameplayForDialogue({ loaderOverDoor: true });
                 },
-                () => {},
+                () => {
+                    window.game?.setInputEnabled?.(true);
+                    notifyGameplayReady();
+                    updateMusicTension();
+                },
                 undefined,
                 {
                     waitForClosedWork: true,
                     openingHoldMs: 160,
                     onOpeningStart: () => {
+                        setAppPhase('gameplay');
                         void runMissionIntroSequence({ deploymentHold });
                     }
                 }
@@ -10198,11 +10588,47 @@ function devGrantResources() {
     renderPickupCounter();
     window.game?.healPlayer?.(999999, { skipQueensMilkPenalty: true });
     window.game?.adjustOxygen?.(999999);
+    const game = window.game;
+    let assemblyGrant = { installedModules: [], addedModules: [] };
+    if (game) {
+        game._qaBypassShipAssembly = true;
+        assemblyGrant = ensureQaShipRebuildModules(game.carryState);
+        // Apply the same authored camp/yard transforms and legacy migration as
+        // a normal runtime tick so QA grants never leave modules at (0,0).
+        game.updateShipRebuildRecovery?.(1);
+    }
+    const o2Assembly = game?.getShipGoalAssemblyStatus?.('o2Bubble') ?? null;
+    const o2State = game?.getO2GeneratorState?.() ?? null;
+    const effectiveO2Cost = o2State?.nextUpgrade
+        ? (game?.getEffectiveCost?.(o2State.nextUpgrade.cost) ?? o2State.nextUpgrade.cost)
+        : null;
+    const o2RepairEligible = Boolean(
+        effectiveO2Cost
+        && (o2State.level > 0 || o2Assembly?.ready || game?._qaBypassShipAssembly)
+        && bankManager.canAfford?.(effectiveO2Cost)
+    );
+    window.hbLog?.('DEBUG', 'info', 'dev-resource-grant', {
+        resources: { tech: 999999, coin: 999999, med: 999999, ammo: 999999, shells: 999999 },
+        installedModules: assemblyGrant.installedModules,
+        addedModuleIds: assemblyGrant.addedModules.map(({ definitionId }) => definitionId),
+        qaBypassShipAssembly: Boolean(game?._qaBypassShipAssembly),
+        o2RepairEligible,
+        o2Assembly: o2Assembly ? {
+            ready: Boolean(o2Assembly.ready),
+            installed: Boolean(o2Assembly.installed),
+            grandfathered: Boolean(o2Assembly.grandfathered),
+            definitionId: o2Assembly.stage?.definitionId ?? null,
+            socketId: o2Assembly.stage?.socketId ?? null
+        } : null
+    });
     window.game?.renderConsoleBanking?.(window.game?.activeInteractiveConsole);
     renderFabricationModal();
     updateMenuCommandStatuses();
     showBiomePrompt('> DEBUG: 999,999 TECH, COIN, MED, SHELLS & AMMO GRANTED.');
-    return 'Granted 999,999 Tech, Coin, Med, Ammo, Shells, Max HP & Max O₂.';
+    const installedSummary = assemblyGrant.installedModules
+        .map(({ definitionId, socketId }) => `${definitionId}@${socketId}`)
+        .join(', ') || 'none';
+    return `Granted 999,999 Tech, Coin, Med, Ammo, Shells, Max HP & Max O₂. Ship modules: ${installedSummary}. O₂ repair eligible: ${o2RepairEligible ? 'YES' : 'NO'}.`;
 }
 
 function devToggleGodMode() {
@@ -11201,8 +11627,19 @@ function updateGearSpin(now) {
     if (overlay && isVisible) {
         const stacks = overlay.querySelectorAll('.gear-stack');
         const rot = `rotate(${gearSpinState.rotation.toFixed(1)}deg)`;
+        const rotInner = `rotate(${(-gearSpinState.rotation * 1.35).toFixed(1)}deg)`;
         for (let i = 0; i < stacks.length; i++) {
-            stacks[i].style.transform = rot;
+            if (Math.abs(gearSpinState.velocity) > 0.5) {
+                const outer = stacks[i].querySelector('.gear-outer, .gear-base');
+                const inner = stacks[i].querySelector('.gear-inner, .gear-ridge');
+                if (outer) outer.style.transform = rot;
+                if (inner) inner.style.transform = rotInner;
+            } else {
+                const outer = stacks[i].querySelector('.gear-outer, .gear-base');
+                const inner = stacks[i].querySelector('.gear-inner, .gear-ridge');
+                if (outer && outer.style.transform) outer.style.transform = '';
+                if (inner && inner.style.transform) inner.style.transform = '';
+            }
         }
     }
 
@@ -11261,6 +11698,7 @@ const closeSettings = document.getElementById('close-settings');
 const mainFsToggle = document.getElementById('main-fs-toggle');
 const settingsBtns = document.querySelectorAll('.open-settings-btn');
 const abortBtn = document.getElementById('abort-mission');
+const skipOnboardingBtn = document.getElementById('skip-sector-zero');
 
 function organizeSettingsPanels() {
     const panel = (name) => settingsPopup?.querySelector(`[data-settings-panel="${name}"]`);
@@ -11484,6 +11922,12 @@ function openSettingsModal() {
         abortBtn.classList.toggle('hidden', !isHUD);
         abortBtn.closest('.setting-item')?.classList.toggle('hidden', !isHUD);
     }
+    const canSkipOnboarding = appPhase === 'gameplay'
+        && Boolean(window.game?.sectorZeroTutorial?.isActive);
+    if (skipOnboardingBtn) {
+        skipOnboardingBtn.classList.toggle('hidden', !canSkipOnboarding);
+        skipOnboardingBtn.closest('.setting-item')?.classList.toggle('hidden', !canSkipOnboarding);
+    }
 
     settingsPopup.classList.remove('hidden');
     // Paused mid-run: always the Session tab, where RESUME is. From a menu:
@@ -11579,6 +12023,11 @@ document.getElementById('setting-aim-sensitivity')?.addEventListener('change', (
     persistSettings();
 });
 document.getElementById('resume-settings')?.addEventListener('click', () => closeSettings?.click());
+document.getElementById('open-steam-overlay-btn')?.addEventListener('click', () => {
+    if (window.electronAPI?.activateSteamOverlay) {
+        window.electronAPI.activateSteamOverlay('friends');
+    }
+});
 document.getElementById('setting-camera-mode')?.addEventListener('change', (e) => {
     state.settings.cameraMode = e.target.value === 'isometric' ? 'isometric' : 'third-person';
     window.game?.setCameraMode?.(state.settings.cameraMode);
@@ -11813,9 +12262,22 @@ document.addEventListener('click', (event) => {
 if (abortBtn) {
     abortBtn.addEventListener('click', () => {
         const confirmModal = document.getElementById('confirm-modal');
+        // Say whose run this ends before they confirm: in co-op only the
+        // local operator leaves; in PvP the relay awards the round.
+        const scope = document.getElementById('confirm-scope');
+        const mode = window.game?.isMultiplayer ? window.game.multiplayerMode : null;
+        if (scope) {
+            scope.textContent = mode === 'pvp' ? t('ui.confirm.scope_pvp') : (mode ? t('ui.confirm.scope_coop') : '');
+            scope.classList.toggle('hidden', !mode);
+        }
         if (confirmModal) confirmModal.classList.remove('hidden');
     });
 }
+
+skipOnboardingBtn?.addEventListener('click', () => {
+    if (!window.game?.skipSectorZeroTutorial?.()) return;
+    closeSettingsModal();
+});
 
 const confirmYes = document.getElementById('confirm-yes');
 const confirmNo = document.getElementById('confirm-no');
@@ -11923,6 +12385,11 @@ resetSaveCancelBtn?.addEventListener('click', () => {
 });
 
 resetSaveConfirmBtn?.addEventListener('click', () => {
+    try {
+        window.electronAPI?.resetSaveData?.();
+    } catch (err) {
+        console.warn('Electron reset save failed:', err);
+    }
     blackBoxStore.clear();
     if (window.game) {
         window.game.clearBlackBoxMarker();
@@ -11939,7 +12406,10 @@ resetSaveConfirmBtn?.addEventListener('click', () => {
     setCrosshairColorOpen(false);
     setLanguageSelectOpen(false);
     console.info(`Reset save data: cleared ${removed} record(s).`);
-    window.setTimeout(() => window.location.reload(), 350);
+    // Do not leave the live simulation running after destructive reset. A
+    // delayed reload allowed periodic persistence to recreate campaign keys,
+    // making the next title screen offer CONTINUE / SWITCH CLASS again.
+    window.location.reload();
 });
 
 function setQuitConfirmOpen(open) {
@@ -12154,117 +12624,20 @@ let npcDialogueEventsInitialized = false;
 // conversation per camp, never a second modal).
 let npcTreeHost = null;
 
-function updateNpcDialogueUi(state = {}) {
-    const modal = document.getElementById('npc-dialogue-modal');
-    if (!modal) return;
-
-    if (!state.isOpen || !state.node || !state.tree) {
-        modal.classList.add('hidden');
-        modal.setAttribute('aria-hidden', 'true');
-        return;
-    }
-
-    modal.classList.remove('hidden');
-    modal.setAttribute('aria-hidden', 'false');
-
-    const tree = state.tree;
-    const node = state.node;
-    const bond = state.bond;
-
-    const iconEl = document.getElementById('npc-dialogue-icon');
-    const nameEl = document.getElementById('npc-dialogue-name');
-    const factionEl = document.getElementById('npc-dialogue-faction');
-    const bondBadgeEl = document.getElementById('npc-dialogue-bond-badge');
-    const avatarEl = document.getElementById('npc-avatar-visual');
-    const moodEl = document.getElementById('npc-mood-indicator');
-    const narrationEl = document.getElementById('npc-narration-box');
-    const speakerEl = document.getElementById('npc-dialogue-speaker');
-    const textEl = document.getElementById('npc-dialogue-text');
-    const choicesEl = document.getElementById('npc-choices-container');
-
-    const storyTitleEl = document.getElementById('npc-story-stage-title');
-    const storyObjectiveEl = document.getElementById('npc-story-objective-text');
-    const dotsContainer = document.getElementById('npc-story-progress-dots');
-
-    if (storyTitleEl) {
-        storyTitleEl.textContent = state.currentStage
-            ? `SIDE STORY // STAGE ${state.currentStage.index}/3: ${state.currentStage.title.toUpperCase()}`
-            : 'SIDE STORY // COMPANION ARC';
-    }
-    if (storyObjectiveEl) {
-        storyObjectiveEl.textContent = state.currentStage
-            ? `OBJECTIVE: ${state.currentStage.objective}`
-            : 'Explore the sector and converse with survivors.';
-    }
-    if (dotsContainer) {
-        const completed = state.storyState?.completedStages || [];
-        const activeIdx = state.storyState?.stageIndex || 1;
-        dotsContainer.innerHTML = [1, 2, 3].map((idx) => {
-            if (completed.includes(idx)) return '<span class="story-dot story-dot--completed"></span>';
-            if (idx === activeIdx) return '<span class="story-dot story-dot--active"></span>';
-            return '<span class="story-dot"></span>';
-        }).join('');
-    }
-
-    if (iconEl) iconEl.textContent = tree.icon || '💬';
-    if (nameEl) nameEl.textContent = tree.name.toUpperCase();
-    if (factionEl) factionEl.textContent = tree.faction;
-    if (bondBadgeEl && bond) {
-        bondBadgeEl.textContent = t('ui.bond.badge', { label: bond.label, score: state.bondScore || 0 });
-    }
-    if (avatarEl) avatarEl.textContent = tree.icon || '💬';
-    if (moodEl) {
-        moodEl.textContent = (bond?.level >= 2) ? t('ui.bond.enamored') : ((bond?.level === 1) ? t('ui.bond.warm') : t('ui.bond.attentive'));
-    }
-
-    if (narrationEl) {
-        if (node.narration) {
-            narrationEl.style.display = 'block';
-            narrationEl.textContent = node.narration;
-        } else {
-            narrationEl.style.display = 'none';
-        }
-    }
-
-    if (speakerEl) speakerEl.textContent = `${node.speaker ? node.speaker.toUpperCase() : tree.name.toUpperCase()}:`;
-    if (textEl) textEl.textContent = t('ui.camp.quote', { text: node.dialogue });
-
-    if (choicesEl) {
-        choicesEl.innerHTML = '';
-        (node.choices || []).forEach((choice, idx) => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'npc-choice-btn';
-            btn.setAttribute('data-choice-id', choice.id);
-            btn.innerHTML = `
-                <span class="npc-choice-key">[${idx + 1}]</span>
-                <span class="npc-choice-tone">${choice.tone || ''}</span>
-                <span class="npc-choice-text">${choice.text}</span>
-            `;
-            btn.addEventListener('click', () => {
-                window.AudioManager?.play?.('ui_click', { volume: 0.3 });
-                npcDialogueTreeManager.selectChoice(choice.id);
-            });
-            choicesEl.appendChild(btn);
-        });
-    }
-}
-
 function setupNpcDialogueEvents() {
     if (npcDialogueEventsInitialized) return;
     npcDialogueEventsInitialized = true;
 
-    npcDialogueTreeManager.onStateChanged = (state) => (npcTreeHost === 'leader'
-        ? renderLeaderConversationTree(state)
-        : updateNpcDialogueUi(state));
-
-    document.getElementById('close-npc-dialogue-modal')?.addEventListener('click', () => {
-        npcDialogueTreeManager.closeDialogue();
-        window.AudioManager?.play?.('ui_click', { volume: 0.3 });
-    });
+    // Trees only draw inside the camp conversation; the standalone tree modal
+    // was never opened by the game and is gone (camp audit 2026-10-16 §6).
+    npcDialogueTreeManager.onStateChanged = (state) => {
+        if (npcTreeHost === 'leader') renderLeaderConversationTree(state);
+    };
 
     window.addEventListener('keydown', (e) => {
         if (!npcDialogueTreeManager.activeTree || !npcDialogueTreeManager.currentNode) return;
+        // A side-story card is on screen: its own skip keys own the input.
+        if (treeCardInFlight) return;
 
         if (e.key === 'Escape') {
             e.preventDefault();
@@ -12279,18 +12652,11 @@ function setupNpcDialogueEvents() {
             const selected = choices[num - 1];
             if (selected) {
                 window.AudioManager?.play?.('ui_click', { volume: 0.3 });
-                npcDialogueTreeManager.selectChoice(selected.id);
+                chooseTreeChoice(selected.id);
             }
         }
     });
 
-    window.openNpcDialogueTree = async (treeId) => {
-        if (!isGameplayPhase() || !isGameplayHudActive()) return null;
-        setupNpcDialogueEvents();
-        // No music video per node: a camp's title card plays on first
-        // contact only (owner, 2026-10-08).
-        return npcDialogueTreeManager.startDialogue(treeId);
-    };
     window.NPC_DIALOGUE_TREES = NPC_DIALOGUE_TREES;
     window.npcDialogueTreeManager = npcDialogueTreeManager;
     window.sideStoryManager = sideStoryManager;
@@ -12866,9 +13232,32 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             ctx.strokeText('◆', lx, ly);
             if (!compact) ctx.fillText(landmark.label ?? 'BLACK BOX', lx, ly + 16);
         } else if (landmark.type === 'foundry') {
-            ctx.fillStyle = '#ffb238';
+            const isPowered = window.game?.isFoundryPowered?.() ?? true;
+            ctx.fillStyle = isPowered ? '#ffb238' : '#7a8590';
             ctx.fillText('⚒', lx, ly);
-            if (!compact) ctx.fillText(landmark.label ?? 'FOUNDRY', lx, ly + 16);
+            if (!compact) {
+                ctx.fillStyle = isPowered ? '#ffb238' : '#8899aa';
+                ctx.fillText(isPowered ? (landmark.label ?? 'FOUNDRY') : t('ui.foundry_hud_prompt.map_offline'), lx, ly + 16);
+            }
+        } else if (landmark.type === 'foundry_part') {
+            const pulse = 1 + Math.sin(performance.now() * 0.007) * 0.22;
+            ctx.save();
+            ctx.translate(lx, ly);
+            ctx.scale(pulse, pulse);
+            ctx.strokeStyle = '#00ffd2';
+            ctx.fillStyle = 'rgba(0, 255, 210, 0.28)';
+            ctx.lineWidth = compact ? 2 : 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, compact ? 7 : 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#00ffd2';
+            ctx.font = `bold ${compact ? 10 : 12}px sans-serif`;
+            ctx.fillText('⚡', 0, 0);
+            ctx.restore();
+            ctx.fillStyle = '#00ffd2';
+            ctx.font = 'bold 10px Space Mono, monospace';
+            if (!compact) ctx.fillText(t('ui.foundry_hud_prompt.map_core'), lx, ly + 16);
         } else if (landmark.type === 'camp') {
             ctx.fillStyle = '#ffaa00';
             ctx.fillText('⛺', lx, ly);
@@ -12899,6 +13288,37 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             ctx.fillStyle = '#d0e0f0';
             ctx.font = '10px Space Mono, monospace';
             if (!compact) ctx.fillText(landmark.label ?? '', lx, ly + 14);
+        }
+    }
+
+    // Accepted camp quests are destinations, not static camp landmarks. Draw
+    // the live target after landmarks so it remains legible on both the full
+    // tactical map and the compact HUD map as props/enemies move or resolve.
+    const activeQuestTarget = window.game?.getActiveCampQuestTargetPos?.();
+    if (activeQuestTarget && Number.isFinite(activeQuestTarget.x) && Number.isFinite(activeQuestTarget.z)) {
+        const questPoint = worldToMap(activeQuestTarget.x, activeQuestTarget.z);
+        if (questPoint.x >= -40 && questPoint.x <= width + 40 && questPoint.y >= -40 && questPoint.y <= height + 40) {
+            const pulse = 1 + Math.sin(performance.now() * 0.006) * 0.16;
+            ctx.save();
+            ctx.translate(questPoint.x, questPoint.y);
+            ctx.scale(pulse, pulse);
+            ctx.strokeStyle = '#ffe14a';
+            ctx.fillStyle = 'rgba(255, 225, 74, 0.24)';
+            ctx.lineWidth = compact ? 2 : 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, compact ? 7 : 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#fff7b0';
+            ctx.font = `bold ${compact ? 10 : 13}px Space Mono, monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('!', 0, 0);
+            if (!compact) {
+                ctx.font = 'bold 9px Space Mono, monospace';
+                ctx.fillText('QUEST TARGET', 0, 18);
+            }
+            ctx.restore();
         }
     }
 
@@ -13586,6 +14006,11 @@ function renderFabricationModal() { fabricationBay.render(); }
 function startFabTicker() { fabricationBay.startTicker(); }
 function stopFabTicker() { fabricationBay.stopTicker(); }
 function openFabricationModal() { fabricationBay.open(); }
+// The Fab Bay machine in the base opens as the machine: the Auto-Mart kiosk.
+function openFabricationKiosk() {
+    fabricationBay.open({ kiosk: true });
+    mountFabricationKiosk({ doc: document });
+}
 function finishFabricationSession() { fabricationBay.finishSession(); }
 function closeFabricationModal() { fabricationBay.close(); }
 
@@ -13628,6 +14053,7 @@ const foundryHub = createFoundryHub({
     onClose: () => {
         cancelCacheReveal('foundry-closed');
         finishFabricationSession();
+        window.game?.clearCinematicCameraFocus?.();
     },
     log: (event, detail) => debugLog.info('FOUNDRY', `hub-${event}`, detail)
 });
@@ -13654,7 +14080,15 @@ function refreshFabAccess() {
 
 document.getElementById('fabrication-btn')?.addEventListener('click', openFabricationModal);
 document.getElementById('close-fabrication-modal')?.addEventListener('click', closeFabricationModal);
-setupClickOutside('fabrication-modal', closeFabricationModal);
+// The main terminal is the Meridian MK IV-B console (src/kioskTerminals.js).
+mountTerminalKiosk({ doc: document });
+// The world Fab Bay is a whole machine with its own EXIT; a tap beside it
+// closed the bay mid-browse on the Deck (QA 2026-10-28), so only the menu
+// Fab Bay closes on an outside click.
+setupClickOutside('fabrication-modal', () => {
+    if (document.querySelector('#fabrication-modal .kiosk-framed')) return;
+    closeFabricationModal();
+});
 window.addEventListener('o2-generator-upgraded', refreshFabAccess);
 window.addEventListener('bank-updated', () => {
     const modal = document.getElementById('fabrication-modal');
@@ -13973,7 +14407,7 @@ setupClickOutside('codex-modal', closeCodexModal);
 setupClickOutside('codex-detail-modal', closeCodexDetailModal);
 
 // In-world Foundry (Beat 4): reaching the powered structure opens the Bay.
-window.addEventListener('open-fabrication-bay', openFabricationModal);
+window.addEventListener('open-fabrication-bay', openFabricationKiosk);
 let pendingCampRestConfirmation = null;
 function closeDayRestWarning() {
     pendingCampRestConfirmation = null;
@@ -14041,27 +14475,55 @@ function playSleepInterstitial() {
         window.setTimeout(finish, SLEEP_INTERSTITIAL_MS);
     });
 }
-async function playSleepCutscene(style) {
-    if (isSleepCutsceneShipped(style)) {
-        await playCutsceneVideo(sleepCutsceneBase(style), { tone: 'event' });
-        return;
+async function playSleepCutscene(style, playerClass = null) {
+    document.body.classList.add('sleep-cutscene-active');
+    try {
+        if (isSleepCutsceneShipped(style, playerClass)) {
+            await playCutsceneVideo(sleepCutsceneBase(style, playerClass), { tone: 'event' });
+            return;
+        }
+        await playSleepInterstitial();
+    } finally {
+        document.body.classList.remove('sleep-cutscene-active');
     }
-    await playSleepInterstitial();
 }
 window.addEventListener('day-rest-open', (event) => {
     const detail = event?.detail ?? {};
-    void playSleepCutscene(detail.sleepStyle).then(() => openMorningAfterRest(detail));
+    // Let the in-world rest animation read first, then close the bunker doors
+    // over the cutscene. Morning is prepared behind the closed doors and the
+    // player is revealed beside the same bed when they reopen.
+    window.setTimeout(() => {
+        triggerDoorTransition(
+            async () => {
+                // Film plays over the closed panels, then the operator is
+                // moved to the bed's wake spot while the doors still hide it.
+                await playSleepCutscene(detail.sleepStyle, detail.playerClass);
+                window.game?.finishCampRest?.();
+            },
+            () => openMorningAfterRest(detail),
+            'base',
+            { waitForClosedWork: true, openingHoldMs: 420 }
+        );
+    }, 900);
 });
 function openMorningAfterRest(detail) {
     const site = detail.crashSiteName ? formatLocationName(detail.crashSiteName, t) : '';
+    const siteLine = site ? t('ui.sleep.morning_status', { site }) : '';
+    const objective = detail.objective
+        || (typeof objectiveRegistry !== 'undefined' ? objectiveRegistry.getActiveObjectives?.(1)?.[0]?.label : null)
+        || null;
+    const objectiveLine = objective ? `> ${t('ui.sleep.morning_objective', { objective })}` : '';
+    const status = [siteLine, objectiveLine].filter(Boolean).join('<br>');
     showTacticalOverlay({
         title: t('ui.sleep.morning_title', { day: detail.day ?? 1 }),
-        status: site ? t('ui.sleep.morning_status', { site }) : '',
+        status,
         progress: 100,
-        duration: 2600
+        duration: 2800
     });
-    fabricationBay.beginCampRest();
     showBiomePrompt(`> DAY ${detail.day} // ${detail.campLabel ?? 'CAMP'} REST CYCLE COMPLETE // THREAT ${Number(detail.difficulty ?? 1).toFixed(2)}×`);
+    if (objective) {
+        showBiomePrompt(`> ${t('ui.sleep.morning_objective', { objective })}`);
+    }
     if (detail.expired?.length) {
         showBiomePrompt(`> MISSED SIGNALS CLOSED: ${detail.expired.join(', ').replaceAll('_', ' ').toUpperCase()}`);
     }
@@ -14074,7 +14536,6 @@ function openMorningAfterRest(detail) {
     if (detail.gainedScar) {
         showBiomePrompt(`> ${t('ui.camp.scar_gained', { scar: String(detail.gainedScar).replaceAll('_', ' ') })}`);
     }
-    openFabricationModal();
 }
 
 function updateCampaignCycleIndicator(detail = {}) {
@@ -14135,16 +14596,82 @@ window.addEventListener('foundry-prompt-nearby', () => {
     if (key) setPromptKeyLabel(key);
     if (text) {
         // Act 2 dish phase hijacks the foundry interaction entirely.
-        text.textContent = (isAct2RunActive() && act2Manager.getPhase() === 'dish')
-            ? 'GROW THE SIGNAL DISH'
-            : (bankManager.isFoundryActivated() ? 'OPEN FAB BAY' : 'ACTIVATE FAB BAY');
+        if (isAct2RunActive() && act2Manager.getPhase() === 'dish') {
+            text.textContent = t('ui.foundry_hud_prompt.grow_signal_dish');
+        } else if (window.game?.isFoundryPowered?.()) {
+            text.textContent = t('ui.foundry_hud_prompt.open_fab_bay');
+        } else if (window.game?.hasFoundryPart?.()) {
+            text.textContent = t('ui.foundry_hud_prompt.install_power_core');
+        } else {
+            text.textContent = t('ui.foundry_hud_prompt.offline_missing_power_core');
+        }
     }
     prompt?.classList.remove('hidden');
+    prompt?.classList.add('visible');
 });
 window.addEventListener('foundry-prompt-clear', () => {
     const prompt = document.getElementById('foundry-hud-prompt');
     prompt?.classList.add('hidden');
     prompt?.classList.remove('visible');
+});
+
+window.addEventListener('foundry-part-prompt-nearby', () => {
+    if (!isGameplayPhase()) return;
+    const prompt = document.getElementById('foundry-part-hud-prompt');
+    const key = prompt?.querySelector('.prompt-key');
+    if (key) setPromptKeyLabel(key);
+    prompt?.classList.remove('hidden');
+    prompt?.classList.add('visible');
+});
+window.addEventListener('foundry-part-prompt-clear', () => {
+    const prompt = document.getElementById('foundry-part-hud-prompt');
+    prompt?.classList.add('hidden');
+    prompt?.classList.remove('visible');
+});
+
+// The Foundry stays dark until its power core is brought back (owner ask
+// 2026-10-28); the core is on the map and the compass.
+window.addEventListener('foundry-locked-access', (event) => {
+    const detail = event?.detail ?? {};
+    const location = (Number.isFinite(detail.x) && Number.isFinite(detail.z))
+        ? `[X: ${Math.round(detail.x)}, Z: ${Math.round(detail.z)}]`
+        : t('ui.foundry_hud_prompt.unknown_location');
+    const distance = detail.distance ? ` (${detail.distance}m)` : '';
+    showTacticalOverlay({
+        title: t('ui.foundry_hud_prompt.offline_title'),
+        status: t('ui.foundry_hud_prompt.offline_status', { location, distance }),
+        duration: 3800,
+        speaker: t('ui.foundry_hud_prompt.speaker'),
+        avatar: '/lore_portraits/survivor_03.webp'
+    });
+    showTacticalNotificationToast({
+        title: t('ui.foundry_hud_prompt.offline_toast_title'),
+        status: t('ui.foundry_hud_prompt.offline_toast_status', { location, distance })
+    });
+});
+
+window.addEventListener('foundry-part-acquired', () => {
+    showTacticalOverlay({
+        title: t('ui.foundry_hud_prompt.core_title'),
+        status: t('ui.foundry_hud_prompt.core_status'),
+        duration: 3000,
+        speaker: t('ui.foundry_hud_prompt.speaker'),
+        avatar: '/lore_portraits/survivor_03.webp'
+    });
+    showTacticalNotificationToast({
+        title: t('ui.foundry_hud_prompt.core_toast_title'),
+        status: t('ui.foundry_hud_prompt.core_toast_status')
+    });
+});
+
+window.addEventListener('foundry-power-restored', () => {
+    showTacticalOverlay({
+        title: t('ui.foundry_hud_prompt.online_title'),
+        status: t('ui.foundry_hud_prompt.online_status'),
+        duration: 2800,
+        speaker: t('ui.foundry_hud_prompt.speaker'),
+        avatar: '/lore_portraits/survivor_03.webp'
+    });
 });
 
 // ── Act 1 finale: cave entrance + infection reveal (Sprint 18 §5–§6) ──
@@ -14385,13 +14912,11 @@ function renderCampChoice(detail = {}) {
     if (campChoiceTitle) {
         campChoiceTitle.textContent = detail.campLabel ?? t('ui.camp.decision');
     }
-    const ending = detail.endingVector?.ending;
     if (campChoiceStatus) {
         const stats = [
             ['status', formatStoryToken(camp.status)],
             ['level', `LVL ${camp.level ?? 0}`],
-            ['bond', `${camp.bond ?? 0}/5`],
-            ['vector', ACT2_ENDING_TITLES[ending] ?? formatStoryToken(ending)]
+            ['bond', `${camp.bond ?? 0}/5`]
         ];
         campChoiceStatus.innerHTML = stats.map(([label, value]) => `
             <div class="camp-choice-stat">
@@ -14399,6 +14924,10 @@ function renderCampChoice(detail = {}) {
                 <span class="camp-choice-stat__value">${value}</span>
             </div>
         `).join('');
+        const manifestStat = document.createElement('div');
+        manifestStat.className = 'camp-choice-stat current-manifest';
+        renderCurrentManifestReadout(manifestStat, act2Manager?.getState?.(), getActiveRunManifestOptions());
+        campChoiceStatus.append(manifestStat);
     }
     if (campChoiceCopy) {
         const title = detail.leaderTitle ? `${detail.leaderTitle}. ` : '';
@@ -14652,20 +15181,115 @@ const songInterstitial = new SongInterstitialController({
 
 window.playSideStoryInterstitial = async (id) => {
     if (!songInterstitial) return { shown: false };
-    return await songInterstitial.show(id, { holdMs: 1400 });
+    return await showCardThenScene(id, null, { holdMs: 1400 });
 };
+
+// One door system for every card: the stage doors (hero/area art) shut over
+// play -> the card plays above them -> `openScene` mounts the conversation
+// behind them -> they open on play with the window on top
+// (docs/planning/camp-interaction-and-cinematics-audit-2026-10-16.md §13.1).
+// `openScene` runs exactly once, even when the card can't show. Cards queue:
+// a second triggerDoorTransition would cancel the first one's timers.
+let stageCardQueue = Promise.resolve();
+function showCardThenScene(specOrId, openScene, options = {}) {
+    const run = stageCardQueue.then(() => playCardBehindStageDoors(specOrId, openScene, options));
+    stageCardQueue = run.catch(() => {});
+    return run;
+}
+window.showCardThenScene = showCardThenScene;
+
+function isStageDoorTransitionActive() {
+    const overlay = transitionOverlay || document.getElementById('transition-overlay');
+    return Boolean(overlay?.classList.contains('visible'));
+}
+
+function waitForStageDoorsIdle(timeoutMs = 15000) {
+    if (!isStageDoorTransitionActive()) return Promise.resolve();
+    return new Promise((resolve) => {
+        const startedAt = Date.now();
+        const poll = window.setInterval(() => {
+            if (isStageDoorTransitionActive() && Date.now() - startedAt < timeoutMs) return;
+            window.clearInterval(poll);
+            resolve();
+        }, 100);
+    });
+}
+
+async function playCardBehindStageDoors(specOrId, openScene, options) {
+    let opened = false;
+    const open = async () => {
+        if (opened) return;
+        opened = true;
+        await openScene?.();
+    };
+    const spec = typeof specOrId === 'object' && specOrId ? specOrId : getSongInterstitial(specOrId);
+    if (!spec) {
+        await open();
+        return { shown: false, fallback: true };
+    }
+    await waitForStageDoorsIdle();
+    let result = { shown: false, fallback: true };
+    try {
+        await new Promise((resolve) => {
+            let settled = false;
+            let closedStarted = false;
+            const finish = () => {
+                if (settled) return;
+                settled = true;
+                resolve();
+            };
+            triggerDoorTransition(
+                async () => {
+                    closedStarted = true;
+                    try {
+                        result = await songInterstitial.show(spec, { ...options, stageDoors: true });
+                    } finally {
+                        // Never strand the queue if another flow takes the doors over.
+                        window.setTimeout(finish, 2500);
+                        await open();
+                    }
+                },
+                finish,
+                undefined,
+                { waitForClosedWork: true, openingHoldMs: 300 }
+            );
+            window.setTimeout(() => { if (!closedStarted) finish(); }, 4000);
+        });
+    } finally {
+        await open();
+    }
+    return result;
+}
 
 // The camp's title card plays once, on first contact (owner, 2026-10-08:
 // "first contact only"); the decision opens straight away.
+// The boarding decision is the Queen's offer: the first time it opens, card
+// 12 (The Queen Makes a Reasonable Offer) plays and the doors open on it.
 window.addEventListener('camp-choice-open', (event) => {
-    renderCampChoice(event?.detail ?? {});
+    const detail = event?.detail ?? {};
+    const boarding = (detail.options ?? []).some((option) => option.action === 'board');
+    if (boarding && cinematicBeats.claim('queen_offer')) {
+        void showCardThenScene('12', () => renderCampChoice(detail));
+        return;
+    }
+    renderCampChoice(detail);
 });
 
 // First contact with a camp (any act) gets the same song title card as the
 // choice modal, without opening the choice modal itself.
 window.addEventListener('camp-first-contact', async (event) => {
-    await songInterstitial.show(selectCampInterstitial(event?.detail ?? {}));
-    event?.detail?.onComplete?.();
+    await showCardThenScene(selectCampInterstitial(event?.detail ?? {}), event?.detail?.onComplete);
+});
+// Hive first contact: Suture plays Nahl's song (08); a hive without a song
+// opens its window straight away. Never a card in co-op.
+window.addEventListener('hive-first-contact', async (event) => {
+    const detail = event?.detail ?? {};
+    const card = selectCampInterstitial(detail);
+    if (card && cinematicBeats.claim(`hive_first_contact:${detail.hiveId}`)) {
+        await showCardThenScene(card, detail.onComplete);
+    } else {
+        detail.onComplete?.();
+    }
 });
 
 const leaderConversationModal = document.getElementById('leader-conversation-modal');
@@ -14703,10 +15327,18 @@ const leaderConversation3d = {
         leaderConversation3dInstance?.hide();
     }
 };
+// Paged staged lines: { text, voice } (src/conversationGrammar.js).
 let leaderConversationLines = [];
 let leaderConversationLineIndex = 0;
+let leaderConversationLineShownAt = 0;
+// DIALOGUE telemetry for the open conversation: the live logs only had
+// clicks, so what players read and picked was guessed from button text.
+let leaderConversationLog = null;
 let leaderConversationIdentity = null;
 let leaderConversationTreeId = null;
+// The relationship where this conversation happens; gates intimate choices
+// (src/npcDialogueTrees.js INTIMACY_REQUIREMENT).
+let leaderConversationContext = {};
 const leaderConversationChoices = document.getElementById('leader-conversation-choices');
 
 function cleanLeaderDialogueLine(line, speakerName = '') {
@@ -14718,16 +15350,30 @@ function cleanLeaderDialogueLine(line, speakerName = '') {
     return names.some((name) => prefix.includes(name)) ? text.slice(colon + 1).trim() : text;
 }
 
+function logDialogue(event, data = {}) {
+    if (!leaderConversationLog) return;
+    debugLog.info('DIALOGUE', event, { leader: leaderConversationLog.leader, ...data });
+}
+
+function holdLeaderConversationContinue() {
+    leaderConversationLineShownAt = performance.now();
+    leaderConversationContinue?.classList.add('is-holding');
+    setTimeout(() => leaderConversationContinue?.classList.remove('is-holding'), CONTINUE_HOLD_MS);
+}
+
 function renderLeaderConversationLine() {
-    const raw = leaderConversationLines[leaderConversationLineIndex] ?? '';
+    const page = leaderConversationLines[leaderConversationLineIndex] ?? { text: '', voice: '' };
+    const raw = page.text;
     if (leaderConversationLine) leaderConversationLine.textContent = cleanLeaderDialogueLine(raw, leaderConversationIdentity?.name);
+    holdLeaderConversationContinue();
     const reaction = dialogueReactionForLine(raw);
     leaderConversationModal?.setAttribute('data-mood', reaction.mood);
     leaderConversation3d.react(reaction);
     const atEnd = leaderConversationLineIndex >= leaderConversationLines.length - 1;
     if (leaderConversationContinue) leaderConversationContinue.textContent = atEnd ? t('ui.camp.finish_conversation') : t('ui.camp.continue');
-    if (raw && typeof window !== 'undefined' && window.AudioManager?.playVoiceForMessage) {
-        window.AudioManager.playVoiceForMessage({ name: leaderConversationIdentity?.name || 'LEADER' }, raw);
+    // A split line is voiced whole on its first part; continuations are silent.
+    if (page.voice && typeof window !== 'undefined' && window.AudioManager?.playVoiceForMessage) {
+        window.AudioManager.playVoiceForMessage({ name: leaderConversationIdentity?.name || 'LEADER' }, page.voice);
     }
 }
 
@@ -14749,8 +15395,9 @@ function openLeaderConversationTree() {
     npcTreeHost = 'leader';
     const treeId = leaderConversationTreeId;
     leaderConversationTreeId = null;
-    if (!npcDialogueTreeManager.startDialogue(treeId)) {
+    if (!npcDialogueTreeManager.startDialogue(treeId, { context: leaderConversationContext })) {
         npcTreeHost = null;
+        logDialogue('tree-empty', { treeId });
         return false;
     }
     return true;
@@ -14758,10 +15405,15 @@ function openLeaderConversationTree() {
 
 function renderLeaderConversationTree(state = {}) {
     if (!state.isOpen || !state.node) {
-        closeLeaderConversation();
+        closeLeaderConversation('tree-end');
         return;
     }
     const node = state.node;
+    if (leaderConversationLog) {
+        leaderConversationLog.node = node.id;
+        leaderConversationLog.nodeShownAt = performance.now();
+        logDialogue('node', { treeId: state.tree?.id ?? null, node: node.id, choices: (node.choices ?? []).map(({ id }) => id) });
+    }
     if (leaderConversationLine) {
         leaderConversationLine.classList.add('is-tree');
         leaderConversationLine.textContent = '';
@@ -14776,9 +15428,12 @@ function renderLeaderConversationTree(state = {}) {
         leaderConversationLine.append(spoken);
     }
     leaderConversation3d.react(dialogueReactionForLine(node.dialogue ?? ''));
-    if (leaderConversationGuidance && state.bond) {
-        leaderConversationGuidance.textContent = t('ui.bond.badge', { label: state.bond.label, score: state.bondScore || 0 });
+    // Tree nodes are spoken too (scripts/voice code lines), not just shown.
+    if (node.dialogue) {
+        window.AudioManager?.playVoiceForMessage?.({ name: node.speaker || leaderConversationIdentity?.name || 'LEADER' }, node.dialogue);
     }
+    // The stats line already shows camp trust (BOND x/5); the tree's own
+    // point score beside it read as a second, contradicting bond.
     if (leaderConversationContinue) leaderConversationContinue.hidden = true;
     leaderConversationModal?.classList.add('is-choosing');
     if (!leaderConversationChoices) return;
@@ -14789,7 +15444,8 @@ function renderLeaderConversationTree(state = {}) {
         button.type = 'button';
         button.className = 'npc-choice-btn';
         button.dataset.choiceId = choice.id;
-        for (const [className, text] of [['npc-choice-key', `[${index + 1}]`], ['npc-choice-tone', choice.tone ?? ''], ['npc-choice-text', choice.text ?? '']]) {
+        // Intent is a muted chip ("Ask"), not a bracketed tag (audit §6.1).
+        for (const [className, text] of [['npc-choice-key', String(index + 1)], ['npc-choice-tone', choiceToneLabel(choice.tone)], ['npc-choice-text', choice.text ?? '']]) {
             const part = document.createElement('span');
             part.className = className;
             part.textContent = text;
@@ -14797,11 +15453,37 @@ function renderLeaderConversationTree(state = {}) {
         }
         button.addEventListener('click', () => {
             window.AudioManager?.play?.('ui_click', { volume: 0.3 });
-            npcDialogueTreeManager.selectChoice(choice.id);
+            logDialogue('choice', {
+                node: node.id,
+                choice: choice.id,
+                tone: choiceToneLabel(choice.tone),
+                ms: Math.round(performance.now() - (leaderConversationLog?.nodeShownAt ?? performance.now()))
+            });
+            if (leaderConversationLog) leaderConversationLog.choices += 1;
+            chooseTreeChoice(choice.id);
         });
         leaderConversationChoices.append(button);
     });
     leaderConversationChoices.querySelector('button')?.focus();
+}
+
+// A choice whose node carries a side-story card plays it first: doors shut
+// over the window, the card, doors shut again, the node renders behind them,
+// doors open on the window (audit 2026-10-16 §13.3). Once per save; never on
+// a greeting (npcDialogueTrees.cardForChoice).
+let treeCardInFlight = false;
+function chooseTreeChoice(choiceId) {
+    if (treeCardInFlight) return;
+    const card = npcDialogueTreeManager.cardForChoice?.(choiceId);
+    if (!card) {
+        npcDialogueTreeManager.selectChoice(choiceId);
+        return;
+    }
+    treeCardInFlight = true;
+    npcDialogueTreeManager.markCardPlayed(card);
+    logDialogue('card', { card, choice: choiceId });
+    void showCardThenScene(card, () => npcDialogueTreeManager.selectChoice(choiceId), { holdMs: 7000 })
+        .finally(() => { treeCardInFlight = false; });
 }
 
 function resetLeaderConversationTree() {
@@ -14819,7 +15501,18 @@ function resetLeaderConversationTree() {
     leaderConversationModal?.classList.remove('is-choosing');
 }
 
-function closeLeaderConversation() {
+function closeLeaderConversation(reason = 'closed') {
+    if (leaderConversationLog) {
+        logDialogue('close', {
+            reason,
+            ms: Math.round(performance.now() - leaderConversationLog.openedAt),
+            linesRead: leaderConversationLog.linesRead,
+            lines: leaderConversationLines.length,
+            choices: leaderConversationLog.choices,
+            node: leaderConversationLog.node
+        });
+        leaderConversationLog = null;
+    }
     resetLeaderConversationTree();
     setCampDialogOpen('leader', false);
     leaderConversationModal?.classList.add('hidden');
@@ -14831,17 +15524,24 @@ function closeLeaderConversation() {
 }
 
 leaderConversationContinue?.addEventListener('click', () => {
+    // A double press can't skip a line nobody read (audit §6.1, F-6).
+    const shownMs = performance.now() - leaderConversationLineShownAt;
+    if (shownMs < CONTINUE_HOLD_MS) return;
     window.AudioManager?.play?.('ui_click', { volume: 0.4 });
+    if (leaderConversationLog) {
+        leaderConversationLog.linesRead = Math.max(leaderConversationLog.linesRead, leaderConversationLineIndex + 1);
+        logDialogue('line', { index: leaderConversationLineIndex, chars: leaderConversationLines[leaderConversationLineIndex]?.text.length ?? 0, ms: Math.round(shownMs) });
+    }
     if (leaderConversationLineIndex >= leaderConversationLines.length - 1) {
         if (openLeaderConversationTree()) return;
-        closeLeaderConversation();
+        closeLeaderConversation('finished');
         return;
     }
     leaderConversationLineIndex += 1;
     renderLeaderConversationLine();
 });
-leaderConversationLeave?.addEventListener('click', closeLeaderConversation);
-leaderConversationClose?.addEventListener('click', closeLeaderConversation);
+leaderConversationLeave?.addEventListener('click', () => closeLeaderConversation('leave'));
+leaderConversationClose?.addEventListener('click', () => closeLeaderConversation('close'));
 
 window.addEventListener('leader-dialogue', async (event) => {
     if (!isGameplayPhase() || !isGameplayHudActive() || isResettingRun) return;
@@ -14850,6 +15550,10 @@ window.addEventListener('leader-dialogue', async (event) => {
     leaderConversationIdentity = identity;
     resetLeaderConversationTree();
     leaderConversationTreeId = detail.treeId ?? null;
+    leaderConversationContext = {
+        bond: detail.relationship?.bond ?? 0,
+        stage: detail.progress?.stage ?? detail.stage ?? 0
+    };
     const { beatType, leaderName, leaderClassId } = detail;
     let lines = (detail.lines ?? []).map((line) => String(line ?? '')).filter(Boolean);
 
@@ -14863,8 +15567,8 @@ window.addEventListener('leader-dialogue', async (event) => {
         saveWorldMemory(memory);
         lines = [
             ...lines,
-            'BRIGGS: REYES WROTE THIS? SHE ALWAYS SAID SHE WOULD MAKE IT HOME ON PAPER IF NOT IN PERSON.',
-            'BRIGGS: WE DO NOT HAVE A FUNERAL DETAIL. WE HAVE A LINE TO HOLD. I WILL HOLD IT FOR HER.'
+            'Briggs: Reyes wrote this? She always said she would make it home on paper if not in person.',
+            'Briggs: We do not have a funeral detail. We have a line to hold. I will hold it for her.'
         ];
         window.dispatchEvent(new CustomEvent('reyes-letter-delivered', {
             detail: { leaderName: leaderName ?? identity?.name ?? 'Commander Briggs', loreKey: 'C11' }
@@ -14884,7 +15588,7 @@ window.addEventListener('leader-dialogue', async (event) => {
         });
     }
 
-    leaderConversationLines = lines;
+    leaderConversationLines = pageConversationLines(lines);
     leaderConversationLineIndex = 0;
     if (!leaderConversationLines.length) return;
 
@@ -14924,6 +15628,16 @@ window.addEventListener('leader-dialogue', async (event) => {
         leaderConversationStats.textContent = stats.join('  •  ');
     }
     if (leaderConversationGuidance) leaderConversationGuidance.textContent = detail.progress?.guidance || t('ui.camp.listen_hint');
+    if (leaderConversationLog) logDialogue('close', { reason: 'replaced' });
+    leaderConversationLog = { leader: identity.name, openedAt: performance.now(), linesRead: 0, choices: 0, node: null, nodeShownAt: 0 };
+    logDialogue('open', {
+        kind: detail.kind ?? null,
+        beatType: beatType ?? null,
+        treeId: leaderConversationTreeId,
+        bond: leaderConversationContext.bond,
+        stage: leaderConversationContext.stage,
+        lines: leaderConversationLines.length
+    });
     renderLeaderConversationLine();
     leaderConversationModal.classList.remove('hidden');
     leaderConversationModal.setAttribute('aria-hidden', 'false');
@@ -14934,7 +15648,7 @@ window.addEventListener('leader-dialogue', async (event) => {
     const has3d = await leaderConversation3d.show(identity);
     if (leaderConversationIdentity?.id !== identity.id) return;
     leaderConversationPortrait?.classList.toggle('hidden', has3d);
-    if (has3d) leaderConversation3d.react(dialogueReactionForLine(leaderConversationLines[leaderConversationLineIndex]));
+    if (has3d) leaderConversation3d.react(dialogueReactionForLine(leaderConversationLines[leaderConversationLineIndex]?.text ?? ''));
 });
 
 // Generic hook for dialogue, encounters, bosses, memories, and endings. A
@@ -14942,11 +15656,107 @@ window.addEventListener('leader-dialogue', async (event) => {
 // owns image/audio/motion paths and the controller owns all fallback behavior.
 window.addEventListener('song-interstitial-open', async (event) => {
     const trackId = event?.detail?.trackId;
-    const result = await songInterstitial.show(trackId, event?.detail ?? {});
+    const { onBehindDoors = null, ...options } = event?.detail ?? {};
+    const result = await showCardThenScene(trackId, onBehindDoors, options);
     window.dispatchEvent(new CustomEvent('song-interstitial-settled', {
         detail: { trackId, ...result }
     }));
 });
+
+// Camp arcade cabinet rewards (AAA plan §7.4). Granted when a game ends;
+// announced when the cabinet closes, so nothing hides behind the CRT.
+const pendingArcadeNotices = [];
+window.addEventListener('arcade-score-recorded', (event) => {
+    if (!isGameplayPhase()) return;
+    const { score = 0, beatTina = false } = event?.detail ?? {};
+    if (score >= 25000 && window.game?.grantArcadeReflexes?.()) {
+        pendingArcadeNotices.push(() => window.showToastNotification?.(t('ui.arcade.reflexes'), { tone: 'info', duration: 7000 }));
+    }
+    if (score >= 65000) {
+        const noticeKey = 'hb_arcade_pixel_snail_notice_v1';
+        let alreadyAnnounced = false;
+        try {
+            alreadyAnnounced = localStorage.getItem(noticeKey) === '1';
+            if (!alreadyAnnounced) localStorage.setItem(noticeKey, '1');
+        } catch {
+            // Ownership is derived from the saved achievement score; a blocked
+            // storage notice must not affect the reward itself.
+        }
+        if (!alreadyAnnounced) {
+            pendingArcadeNotices.push(() => showBiomePrompt(`> ${t('ui.arcade.decal_unlocked', { name: 'RETRO PIXEL SNAIL' })}`));
+        }
+    }
+    if (beatTina) {
+        if (unlockSheenForMilestone('arcade:tinaBeaten')) {
+            pendingArcadeNotices.push(() => showBiomePrompt(`> ${t('ui.arcade.sheen_unlocked', { name: 'CHROMA VECTOR 84' })}`));
+        }
+        pendingArcadeNotices.push(() => window.game?.showBunkerLine?.(t('ui.arcade.tina_radio')));
+    }
+});
+window.addEventListener('arcade-cabinet-closed', () => {
+    for (const notice of pendingArcadeNotices.splice(0)) notice();
+});
+
+// Every shipped song video has a beat (src/cinematicBeats.js, audit
+// 2026-10-16 §13.2): doors shut over play, the card, doors shut again, then
+// open on play, or on a conversation when someone is there to talk to.
+function openCinematicBeatScene(beat, detail = {}) {
+    const game = window.game;
+    if (!game || !leaderConversationModal?.classList.contains('hidden')) return;
+    if (beat.then === 'camp-conversation') {
+        const camp = game.getCampById?.(detail.campId);
+        const here = game.player
+            ? game.getActionableCampAt?.(game.player.position.x, game.player.position.z)?.camp
+            : null;
+        if (camp && here?.id === camp.id) game.talkToLeader?.('camp', camp);
+        return;
+    }
+    if (beat.then === 'aria') {
+        // Aria speaks only in a Queen context (audit §10.5): her first whisper
+        // is this beat. At low bond her tree offers only "resist".
+        const whisper = NPC_DIALOGUE_TREES.aria_queen_mimic?.nodes?.aria_whisper;
+        const firstLine = String(whisper?.dialogue ?? '').split(/(?<=[?.!])\s/)[0];
+        if (!firstLine) return;
+        window.dispatchEvent(new CustomEvent('leader-dialogue', {
+            detail: {
+                kind: 'queen',
+                id: 'aria',
+                treeId: 'aria_queen_mimic',
+                lines: [`ARIA: ${firstLine}`],
+                beatType: 'beat',
+                stage: 0,
+                leaderName: 'Aria',
+                leaderTitle: 'Specimen 0047-B',
+                leaderClassId: 'HIVE MIMIC',
+                relationship: { bond: 0 },
+                progress: { stage: 0 }
+            }
+        }));
+    }
+}
+
+const cinematicBeats = new CinematicBeatDirector({
+    play: (beat, detail) => showCardThenScene(beat.card, () => openCinematicBeatScene(beat, detail)),
+    isInCombat: () => Boolean(window.game?.inCombat),
+    isMultiplayer: () => Boolean(window.game?.isMultiplayer),
+    // Another cutscene, dialogue, window, card or door transition is up: wait it out.
+    isBusy: () => Boolean(window.game?.hasBlockingGameplayOverlay?.()) || isStageDoorTransitionActive(),
+    toast: (title) => window.showToastNotification?.(title, { tone: 'info', duration: 5000 }),
+    titleFor: (beat) => getSongInterstitial(beat.card)?.title ?? beat.card
+});
+for (const type of CINEMATIC_BEAT_EVENTS) {
+    window.addEventListener(type, (event) => {
+        if (!isGameplayPhase()) return;
+        cinematicBeats.handle(type, event?.detail ?? {});
+    });
+}
+window.addEventListener('combat-state-changed', (event) => {
+    cinematicBeats.onCombatChanged(Boolean(event?.detail?.active));
+});
+setInterval(() => {
+    if (cinematicBeats.pending && isGameplayPhase()) cinematicBeats.retryPending();
+}, 1500);
+window.cinematicBeats = cinematicBeats;
 
 // Act 1 camp support + the Act 2 payoff (defended culls).
 window.addEventListener('camp-supported', (event) => {
@@ -15277,6 +16087,9 @@ async function runAct2DepartureSequence(detail = {}) {
             });
     }
     game?.setCinematicLock?.(true);
+    // First departure of a save opens on card 24 (Nobody Says Goodbye); the
+    // doors then open on the ending transmission.
+    if (cinematicBeats.claim('act2_departure')) await showCardThenScene('24', () => {});
     AudioManager.play('door_gears_spin', { volume: 0.5, playbackRate: 0.7 });
     await dialogueManager?.openBriefTransmission({
         playerType: classType,
@@ -15642,6 +16455,65 @@ setupClickOutside('save-data-popup', () => setSaveDataOpen(false));
 setupClickOutside('crosshair-color-popup', () => setCrosshairColorOpen(false));
 setupClickOutside('language-select-popup', () => setLanguageSelectOpen(false));
 
+const DOOR_GEAR_THEMES = {
+    'SCOUT': {
+        outer: '/gear_door_bio.webp',
+        inner: '/gear_vault_inner.webp',
+        glow: 'radial-gradient(circle, rgba(57, 255, 136, 0.95) 0%, rgba(30, 180, 80, 0.45) 45%, transparent 70%)',
+        shadow: '0 0 calc(var(--vu) * 1.8) rgba(57, 255, 136, 0.7)'
+    },
+    'TANK': {
+        outer: '/gear_door_nuclear.webp',
+        inner: '/gear_vault_inner.webp',
+        glow: 'radial-gradient(circle, rgba(255, 190, 20, 0.95) 0%, rgba(255, 120, 0, 0.45) 45%, transparent 70%)',
+        shadow: '0 0 calc(var(--vu) * 1.8) rgba(255, 190, 20, 0.7)'
+    },
+    'ENGINEER': {
+        outer: '/gear_door_cryo.webp',
+        inner: '/gear_vault_inner.webp',
+        glow: 'radial-gradient(circle, rgba(46, 210, 255, 0.95) 0%, rgba(0, 150, 220, 0.45) 45%, transparent 70%)',
+        shadow: '0 0 calc(var(--vu) * 1.8) rgba(46, 210, 255, 0.7)'
+    },
+    'win': {
+        outer: '/gear_door_alien.webp',
+        inner: '/gear_vault_inner.webp',
+        glow: 'radial-gradient(circle, rgba(180, 80, 255, 0.95) 0%, rgba(120, 40, 200, 0.45) 45%, transparent 70%)',
+        shadow: '0 0 calc(var(--vu) * 1.8) rgba(180, 80, 255, 0.7)'
+    },
+    'lose': {
+        outer: '/gear_door_rust.webp',
+        inner: '/gear_vault_inner.webp',
+        glow: 'radial-gradient(circle, rgba(255, 42, 42, 0.95) 0%, rgba(180, 20, 20, 0.45) 45%, transparent 70%)',
+        shadow: '0 0 calc(var(--vu) * 1.8) rgba(255, 42, 42, 0.7)'
+    },
+    'base': {
+        outer: '/gear_vault_main.webp',
+        inner: '/gear_vault_inner.webp',
+        glow: 'radial-gradient(circle, rgba(255, 175, 40, 0.85) 0%, rgba(255, 120, 0, 0.4) 45%, transparent 70%)',
+        shadow: '0 0 calc(var(--vu) * 1.8) rgba(255, 159, 28, 0.55)'
+    }
+};
+
+function getDoorGear(key) {
+    if (key === 'win') return DOOR_GEAR_THEMES.win;
+    if (key === 'lose') return DOOR_GEAR_THEMES.lose;
+    if (key === 'base') return DOOR_GEAR_THEMES.base;
+    if (DOOR_GEAR_THEMES[key]) return DOOR_GEAR_THEMES[key];
+
+    const activeClass = window.game?.playerType || getSelectedHeroType() || activePreviewType || 'SCOUT';
+    return DOOR_GEAR_THEMES[activeClass] || DOOR_GEAR_THEMES.base;
+}
+
+function applyGearThemeToElement(el, key) {
+    if (!el) return;
+    const gearTheme = getDoorGear(key);
+    if (!gearTheme) return;
+    el.style.setProperty('--gear-outer-image', `url('${assetUrl(gearTheme.outer)}')`);
+    el.style.setProperty('--gear-inner-image', `url('${assetUrl(gearTheme.inner)}')`);
+    el.style.setProperty('--gear-core-glow-bg', gearTheme.glow);
+    el.style.setProperty('--gear-glow-shadow', gearTheme.shadow);
+}
+
 function getDoorImage(key) {
     const CLASS_DOORS = {
         'SCOUT': '/door_bio_keyart_v2.webp',
@@ -15677,7 +16549,15 @@ function preloadDoorAssets() {
         '/door_cryo_keyart_v2.webp',
         '/door_alien_keyart_v2.webp',
         '/door_rust_keyart_v2.webp',
-        '/ship_wreckage.webp'
+        '/ship_wreckage.webp',
+        '/gear_vault_main.webp',
+        '/gear_vault_inner.webp',
+        '/gear_vault_iris.webp',
+        '/gear_door_bio.webp',
+        '/gear_door_nuclear.webp',
+        '/gear_door_cryo.webp',
+        '/gear_door_alien.webp',
+        '/gear_door_rust.webp'
     ];
     // door_bio/nuclear/cryo/biomechanical.webp were preloaded here too but
     // nothing displays them: 1.4 MB per boot (Lighthouse, issue #106).
@@ -15742,6 +16622,13 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
         if (onOpened) onOpened();
     };
     if (!overlay) {
+        if (waitForClosedWork && onClosed) {
+            Promise.resolve(onClosed()).finally(() => {
+                if (onOpeningStart) onOpeningStart();
+                finishOpened();
+            });
+            return;
+        }
         if (onClosed) void onClosed();
         if (onOpeningStart) onOpeningStart();
         finishOpened();
@@ -15752,6 +16639,7 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
     const preloader = new Image();
     preloader.src = doorImg;
     overlay.style.setProperty('--door-bg-image', `url('${doorImg}')`);
+    applyGearThemeToElement(overlay, doorKey);
 
     syncStageMetrics();
 
@@ -15957,6 +16845,7 @@ async function syncHeroPreview(type, { loadPreview = true } = {}) {
 
     // The 3D preview loads with its screen, not at boot (issue #106): the
     // boot-time sync only labels the class until the hero menu opens.
+    if (scoutHeroPreview && isCanvasContextLost(document.getElementById('char-preview-3d'))) await ensureScoutHeroPreview();
     const preview = scoutHeroPreview ?? (loadPreview ? await ensureScoutHeroPreview() : null);
     if (requestGeneration !== heroPreviewRequestGeneration) return;
     if (preview) {
@@ -16573,10 +17462,7 @@ whenDocumentParsed(async () => {
             '/scout_ship.png',
             '/tank_ship.png',
             '/engineer_ship.png',
-            '/console.webp',
-            PLAYER_SPRITE_LAYOUTS.SCOUT.path,
-            PLAYER_SPRITE_LAYOUTS.TANK.path,
-            PLAYER_SPRITE_LAYOUTS.ENGINEER.path
+            '/console.webp'
         ],
         audio: [
             { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
@@ -16735,13 +17621,8 @@ whenDocumentParsed(async () => {
             window.game?.clearBlackBoxMarker?.();
             updateContinueButtonState();
             renderHomebaseConsole({ initializeCallsign: true });
-            const callsign = document.getElementById('roster-callsign-input');
-            const needsIdentityAttention = !profile.getCallsign()
-                || profile.getCallsign() === 'AGENT'
-                || profile.getCallsign() === 'AGENT-01';
-            (needsIdentityAttention
-                ? callsign
-                : document.querySelector('.char-selection .char-card.selected'))?.focus?.();
+            const startBtn = document.getElementById('start-game');
+            (startBtn ?? document.querySelector('.char-selection .char-card.selected'))?.focus?.();
         });
     }
     if (titleNewRunBtn) {
@@ -17220,6 +18101,15 @@ whenDocumentParsed(async () => {
                     arcManager,
                     act2Manager
                 });
+                // The 2D walk sheets are fallback gameplay assets, not boot
+                // assets. Fetch only the deployed operator after the engine
+                // exists; the normal 3D chassis can paint without them.
+                const requestPlayerSprite = () => window.game?.playerTextures?.[targetType]?.userData?.loadSource?.();
+                if (typeof window.requestIdleCallback === 'function') {
+                    window.requestIdleCallback(requestPlayerSprite, { timeout: 1500 });
+                } else {
+                    window.setTimeout(requestPlayerSprite, 0);
+                }
                 window.game.setOperatorPolish?.(getSelectedPolish().color);
                 window.game.setCameraMode?.(state.settings.cameraMode);
                 window.game.setCameraTuning?.({
@@ -18042,6 +18932,8 @@ initSteamVaultUI();
 initSeasonPassUI();
 initVoiceCallouts();
 multiplayerLobby.init();
+// Lobby rejections and co-op squad notices call window.showToastNotification.
+installToastNotification();
 initPlayerChatUI({ onBoundaryChange: () => syncSteamInputPhase() });
 matureContentAudit.init();
 progressionWalkthrough.init();

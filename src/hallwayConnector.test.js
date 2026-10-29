@@ -20,11 +20,24 @@ function seededRandom(seed) {
 describe('HALLWAY_BUILD_CATALOG', () => {
     it('every archetype declares a valid width range, positive cooldown, and non-empty family lists', () => {
         for (const archetype of HALLWAY_BUILD_CATALOG) {
-            expect(archetype.widthRange[0]).toBeGreaterThanOrEqual(1);
+            expect(archetype.widthRange[0]).toBeGreaterThanOrEqual(2);
             expect(archetype.widthRange[1]).toBeGreaterThanOrEqual(archetype.widthRange[0]);
             expect(archetype.repetitionCooldown).toBeGreaterThanOrEqual(1);
             expect(archetype.compatibleFamilies.from.length).toBeGreaterThan(0);
             expect(archetype.compatibleFamilies.to.length).toBeGreaterThan(0);
+        }
+    });
+
+    it('keeps every authored connector broad enough for combat and two-player passing', () => {
+        for (const archetype of HALLWAY_BUILD_CATALOG) {
+            const result = realizeHallwayConnector(archetype, seededRandom(11), {
+                openings: { west: { open: true, offset: 10 }, east: { open: true, offset: 10 } }
+            });
+            // carveDisk uses the catalog width as a radius, so radius two is
+            // a five-cell clear run before its wall shell.
+            expect(result.width, archetype.id).toBeGreaterThanOrEqual(2);
+            expect(result.grid[result.hub.y].filter((tile) => tile === '.').length, archetype.id)
+                .toBeGreaterThanOrEqual(5);
         }
     });
 

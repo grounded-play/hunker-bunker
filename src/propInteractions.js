@@ -4,6 +4,8 @@
  */
 
 import { applyChitinVulnerability, STATUS_DEFAULTS } from './statusEffects.js';
+import { resolveInteractionVignettePreset } from './interactionVignette.js';
+import { WORLD_EXPANSION_80_SPECS } from './data/worldExpansion80.js';
 
 export const BIOMECH_SYNERGY_TUNING = Object.freeze({
     cryoStunRadius: 5.0,
@@ -103,6 +105,7 @@ function terminalInteraction(interactPrompt, response, { hp = 35, sound = 'termi
         hp,
         canInteract: true,
         repeatable: true,
+        generic: 'terminal',
         interactPrompt,
         onInteract: (game) => {
             game.showBunkerLine?.(response);
@@ -194,11 +197,61 @@ export function isSearchableType(type) {
     return SEARCHABLE.test(String(type ?? '')) && !/^arch_/.test(String(type));
 }
 
+const WORLD_EXPANSION_80_INTERACTIONS = Object.freeze(Object.fromEntries(
+    WORLD_EXPANSION_80_SPECS.map((spec) => [spec.id, statefulInteraction(
+        `[E] ${spec.prompt.toUpperCase()}`,
+        (state) => `${propLabel(spec.id)}: ${state.toUpperCase()}.`,
+        {
+            hp: spec.placement === 'tabletop' ? 18 : 45,
+            repeatable: true,
+            sound: spec.fx === 'organic' ? 'neural_tap' : spec.fx === 'thermal' ? 'ambient_steam_hiss' : 'power_hum',
+            nextState: (_game, prop) => {
+                const current = spec.states.indexOf(prop?.userData?.propState);
+                return spec.states[(current + 1 + spec.states.length) % spec.states.length];
+            }
+        }
+    )])
+));
+
 export const PROP_INTERACTION_SPECS = Object.freeze({
+    ...WORLD_EXPANSION_80_INTERACTIONS,
     life_arcade_cabinet: statefulInteraction(
         '[E] PLAY ARCADE CABINET',
         () => 'ARCADE CABINET: HIGH SCORE TABLE RECOVERED. INITIALS: T.I.N.A.',
-        { nextState: () => 'working', sound: 'terminal_beep' }
+        {
+            nextState: () => 'working',
+            sound: 'terminal_beep',
+            onUse: (game, prop) => {
+                if (typeof window !== 'undefined') {
+                    if (prop?.userData?.definitionId === 'arcade_blackjack_cabinet' || prop?.userData?.isBlackjackCabinet) {
+                        import('./blackjackArcade.js').then(({ getBlackjackController }) => {
+                            getBlackjackController({ game }).open();
+                        }).catch(() => {});
+                    } else {
+                        import('./arcadeCabinetMinigame.js').then(({ getArcadeController }) => {
+                            const controller = getArcadeController({ game });
+                            controller.open();
+                        }).catch(() => {});
+                    }
+                }
+            }
+        }
+    ),
+    arcade_blackjack_cabinet: statefulInteraction(
+        '[E] PLAY BLACK-ICE 21 (BLACKJACK)',
+        () => 'BLACK-ICE 21: DEALER C.H.I.P.-0 ONLINE. PLACE YOUR WAGER.',
+        {
+            nextState: () => 'working',
+            sound: 'terminal_beep',
+            onUse: (game) => {
+                if (typeof window !== 'undefined') {
+                    import('./blackjackArcade.js').then(({ getBlackjackController }) => {
+                        const controller = getBlackjackController({ game });
+                        controller.open();
+                    }).catch(() => {});
+                }
+            }
+        }
     ),
     life_surgical_lamp: statefulInteraction(
         '[E] TOGGLE SURGICAL LAMP',
@@ -273,9 +326,7 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
     decon_exosuit_scrubber_station: statefulInteraction(
         '[E] CYCLE DECON SCRUBBER',
         () => 'EXOSUIT SCRUBBER: PRESSURIZED DECON FOAM CYCLED. BIOLOGICAL STATUS CLEANSED.',
-        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'water_shower', onUse: (game) => {
-            game.healPlayer?.(15);
-        } }
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'water_shower' }
     ),
     engineer_wave_relay_dynamo: statefulInteraction(
         '[E] ENGAGE WAVE DYNAMO',
@@ -1190,6 +1241,17 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
         (state) => `WEAPON CASE: ${state === 'open' ? 'LID RELEASED — M70 CRADLE ACCESSIBLE' : 'LID SECURED'}.`,
         { hp: 45, nextState: (_game, prop) => nextBinaryState(prop, 'open', 'closed'), sound: 'toolbox_open' }
     ),
+    base_cot_installed: {
+        hp: 40,
+        canInteract: true,
+        interactPrompt: '[E] REST ON FIELD COT',
+        onInteract: (game) => {
+            game.healPlayer?.(25);
+            game.showBunkerLine?.('RESTED ON COT: FATIGUE CLEANSED. +25 HP.');
+            safePlaySound('shrine_blessing', { volume: 0.6 });
+            return true;
+        }
+    },
     ship_module_navigation_core: statefulInteraction(
         '[E] SPIN UP NAVIGATION GYRO',
         (state) => `NAVIGATION CORE: ${state === 'working' ? 'GYRO HOLDING A STAR FIX' : 'ROTOR BRAKED'}.`,
@@ -1610,22 +1672,56 @@ export function handleCustomPropDestruction(game, propKey, propPosition, propObj
  * acts like what the player sees.
  */
 export function interactionSpecKeyFor(data) {
+    // Installed base modules may reuse a catalogue model while providing a
+    // more specific interaction (the Blackjack cabinet renders with the
+    // ordinary arcade GLB). Prefer that authored identity when present.
+    const definition = data?.definitionId;
+    if (definition && PROP_INTERACTION_SPECS[definition]) return definition;
     const key = data?.type || data?.modelKey || data?.propKey;
     if (key && PROP_INTERACTION_SPECS[key]) return key;
     const model = data?.world3dModelType;
     return model && PROP_INTERACTION_SPECS[model] ? model : key;
 }
 
+const INTERACTION_FORWARD_CONE_COS = Math.cos(70 * Math.PI / 180);
+const INTERACTION_LOS_TARGET_BACKOFF = 0.2;
+
+function hasInteractionLineOfSight(game, px, pz, sprite, dx, dz, distance) {
+    if (typeof game?.hasLineOfSight === 'function') {
+        return game.hasLineOfSight(px, pz, sprite.position.x, sprite.position.z, sprite) !== false;
+    }
+    if (typeof game?.hasWallBetween !== 'function') return true;
+
+    // Wall-mounted props sit flush with wall geometry. Stop just before the
+    // prop so its own backing wall is not mistaken for an obstruction, while
+    // walls between the player and the prop still reject the candidate.
+    const visibleDistance = Math.max(0, distance - INTERACTION_LOS_TARGET_BACKOFF);
+    const scale = distance > 0 ? visibleDistance / distance : 0;
+    return !game.hasWallBetween(px, pz, px + dx * scale, pz + dz * scale);
+}
+
 /**
- * Finds the nearest interactable prop to the player.
+ * Finds the nearest visible interactable prop inside the player's forward
+ * interaction cone. Headless/legacy callers without a facing value retain
+ * the distance-only fallback.
  */
 export function findNearestInteractableProp(game, maxDist = 2.5) {
     if (!game?.player || !Array.isArray(game.scatterSprites)) return null;
     const px = game.player.position.x;
     const pz = game.player.position.z;
 
+    // Check player facing orientation
+    const yaw = game.facingYaw ?? game.player.rotation?.y ?? null;
+    let forwardX = 0;
+    let forwardZ = 0;
+    const hasFacing = Number.isFinite(yaw);
+    if (hasFacing) {
+        forwardX = Math.sin(yaw);
+        forwardZ = Math.cos(yaw);
+    }
+
     let nearest = null;
-    let minDist = maxDist;
+    let minScore = Infinity;
 
     for (const sprite of game.scatterSprites) {
         if (!sprite || sprite.userData?.burstTriggered) continue;
@@ -1635,9 +1731,21 @@ export function findNearestInteractableProp(game, maxDist = 2.5) {
         if (!spec || !spec.canInteract) continue;
         if (isSpentProp(game, sprite)) continue;
 
-        const d = Math.hypot(sprite.position.x - px, sprite.position.z - pz);
-        if (d < minDist) {
-            minDist = d;
+        const dx = sprite.position.x - px;
+        const dz = sprite.position.z - pz;
+        const d = Math.hypot(dx, dz);
+        if (d > maxDist) continue;
+
+        if (hasFacing && d > 0.001) {
+            const dirX = dx / d;
+            const dirZ = dz / d;
+            const dot = dirX * forwardX + dirZ * forwardZ;
+            if (dot < INTERACTION_FORWARD_CONE_COS) continue;
+        }
+        if (!hasInteractionLineOfSight(game, px, pz, sprite, dx, dz, d)) continue;
+
+        if (d < minScore) {
+            minScore = d;
             nearest = { sprite, spec, propKey, distance: d };
         }
     }
@@ -1648,7 +1756,7 @@ export function findNearestInteractableProp(game, maxDist = 2.5) {
 /**
  * Executes interaction on a prop.
  */
-export function interactWithCustomProp(game, nearestInfo) {
+export function executeCustomPropInteraction(game, nearestInfo) {
     if (!nearestInfo || !nearestInfo.spec || typeof nearestInfo.spec.onInteract !== 'function') {
         return false;
     }
@@ -1657,22 +1765,60 @@ export function interactWithCustomProp(game, nearestInfo) {
     const success = Boolean(result.success);
     if (success) {
         applyPropInteractionState(nearestInfo.sprite, result);
+        const emitterMode = result.fxMode ?? result.state;
+        if (emitterMode != null) {
+            game.worldEmitterRuntime?.applyMode?.(nearestInfo.sprite, emitterMode);
+        } else {
+            const fx = propWorldRoot(nearestInfo.sprite)?.userData?.propFx;
+            if (fx) game.worldEmitterRuntime?.applyAction?.(nearestInfo.sprite, fx.enabled ? 'enable' : 'disable');
+        }
         if (result.state == null) game.acknowledgePropExperience?.(nearestInfo.sprite);
         else game.acknowledgePropExperience?.(nearestInfo.sprite, { toggleArticulation: false });
         nearestInfo.sprite.userData.hasBeenInteracted = result.spent ?? !nearestInfo.spec.repeatable;
-        const key = nearestInfo.sprite.userData.scatterKey;
+        const key = nearestInfo.sprite.userData?.scatterKey || nearestInfo.sprite.userData?.dressingStableId;
         if (key && (result.state != null || result.fxMode != null || typeof result.solid === 'boolean')) {
             (game.propInteractionStates ??= new Map()).set(key, {
                 state: result.state,
                 fxMode: result.fxMode,
                 solid: result.solid
             });
+            if (game.isMultiplayer) {
+                game.broadcastSharedWorldEvent?.('prop-interacted', {
+                    key,
+                    state: result.state,
+                    fxMode: result.fxMode,
+                    solid: result.solid,
+                    x: nearestInfo.sprite.position?.x,
+                    y: nearestInfo.sprite.position?.y,
+                    z: nearestInfo.sprite.position?.z,
+                    rotY: nearestInfo.sprite.rotation?.y
+                });
+            }
         }
         if (!nearestInfo.spec.repeatable && !nearestInfo.sprite.userData.interactionSpec && key) {
             (game.spentPropScatterKeys ??= new Set()).add(key);
         }
     }
     return success;
+}
+
+export function interactWithCustomProp(game, nearestInfo) {
+    if (!nearestInfo || !nearestInfo.spec || typeof nearestInfo.spec.onInteract !== 'function') {
+        return false;
+    }
+    const propType = nearestInfo.sprite?.userData?.type ?? nearestInfo.sprite?.userData?.world3dModelType;
+    const preset = resolveInteractionVignettePreset(propType, nearestInfo.spec);
+    if (game?.interactionVignette && preset && !game.interactionVignette.isActive()) {
+        return game.interactionVignette.startVignette({
+            sprite: nearestInfo.sprite,
+            spec: nearestInfo.spec,
+            preset,
+            onComplete: () => {
+                executeCustomPropInteraction(game, nearestInfo);
+            }
+        });
+    }
+    return executeCustomPropInteraction(game, nearestInfo);
 }
 
 /** Applies the visual/collision portion of a local or replicated interaction. */

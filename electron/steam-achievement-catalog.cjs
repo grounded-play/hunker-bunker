@@ -6,7 +6,8 @@ const PUBLISHED_ACHIEVEMENT_KEYS = Object.freeze([
     'ending_full_brood', 'ending_clean_escape', 'ending_mixed_crew', 'ending_carriers_bargain',
     'ending_scorched_sky', 'ending_mothership_infection', 'ending_alien_exodus',
     'ending_outed_escape', 'ending_failed_carrier', 'ending_empty_husk', 'cartographer',
-    'archivist', 'kin', 'ghost', 'gentle_drill', 'chen_thirteenth', 'reyes_courier', 'hardened'
+    'archivist', 'kin', 'ghost', 'gentle_drill', 'chen_thirteenth', 'reyes_courier', 'hardened',
+    'slay_the_queen', 'arcade_wizard', 'tinas_challenger'
 ]);
 
 module.exports = { PUBLISHED_ACHIEVEMENT_KEYS };

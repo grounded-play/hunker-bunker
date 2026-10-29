@@ -54,6 +54,16 @@ describe('Character Portraits and Speaker Resolution', () => {
         expect(hybrid.portrait).toBe('/lore_portraits/survivor_hybrid.webp');
     });
 
+    // Leader lines are sentence case since the 2026-10-16 conversation grammar.
+    it('resolves sentence-case leader lines to the same speakers', () => {
+        expect(dm.getDialogueSpeaker('Kaelen: The grid hungers.').portrait).toBe('/lore_portraits/meridian_kaelen.jpg');
+        expect(dm.getDialogueSpeaker('Martha: Come closer to the steam.').name).toBe('SISTER MARTHA');
+        expect(dm.getDialogueSpeaker('Briggs: Sit down.').name).toBe('COMMANDER BRIGGS');
+        const vey = dm.getDialogueSpeaker('Vey: Your signal died.');
+        expect(vey.name).toBe('VEY, THE LISTENER');
+        expect(vey.cleanText ?? vey.text).toBe('Your signal died.');
+    });
+
     it('resolves camp leaders and Dr. Okonkwo to their authentic portraits', () => {
         const kaelen = dm.getDialogueSpeaker('OVERSEER KAELEN: SENSORY TELEMETRY CONFIRMED.');
         expect(kaelen.name).toBe('OVERSEER KAELEN');

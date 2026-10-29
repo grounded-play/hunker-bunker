@@ -2,6 +2,51 @@ import { describe, expect, it, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 
 describe('Boss Wall Destruction & Visibility', () => {
+    it('stages the first O2 boss outside to advance on a two-tile camp breach', () => {
+        const game = {
+            getTileType: () => '#',
+            showBunkerLine: vi.fn()
+        };
+        const boss = { userData: {} };
+
+        expect(ThreeGame.prototype.stageFirstBossCampBreach.call(game, boss)).toBe(true);
+        expect(boss.userData.campBreachCommitted).toBe(false);
+        expect(boss.userData.campBreachTarget).toEqual({ x: 15, z: 5 });
+        expect(boss.userData.campBreachTiles).toEqual([{ x: 15, z: 3 }, { x: 16, z: 3 }]);
+        expect(game.showBunkerLine).toHaveBeenCalledWith(expect.stringContaining('HOSTILE APPROACHING'));
+    });
+
+    it('commits the authored breach only when the approaching boss reaches the hull', () => {
+        const walls = new Map([
+            ['15,3', { userData: { isWall: true, wallKey: '15,3' } }],
+            ['16,3', { userData: { isWall: true, wallKey: '16,3' } }]
+        ]);
+        const game = {
+            getTileType: (x, z) => walls.has(`${x},${z}`) ? '#' : '.',
+            isHoleTile: () => false,
+            getBossBreachTiles: () => [{ x: 15, z: 3 }, { x: 16, z: 3 }],
+            findWallMeshAt: (x, z) => walls.get(`${x},${z}`),
+            damageWall: vi.fn(),
+            showBunkerLine: vi.fn(),
+            tryBossBreakWall: ThreeGame.prototype.tryBossBreakWall
+        };
+        const boss = {
+            position: { x: 15, z: 2 },
+            userData: {
+                isBoss: true,
+                wallBreakCooldown: 0,
+                campBreachTarget: { x: 15, z: 5 },
+                campBreachTiles: [{ x: 15, z: 3 }, { x: 16, z: 3 }],
+                campBreachCommitted: false
+            }
+        };
+
+        expect(game.tryBossBreakWall(boss, 15, 3)).toBe(true);
+        expect(game.damageWall).toHaveBeenCalledTimes(2);
+        expect(boss.userData.campBreachCommitted).toBe(true);
+        expect(boss.userData.campBreachTarget).toBeNull();
+    });
+
     it('smashes forward destructible wall when boss moves into it', () => {
         const damagedWalls = [];
         const destroyedBlastDoors = [];

@@ -212,20 +212,27 @@
   box-shadow: 0 0 12px rgba(255, 170, 0, 0.35);
 }
 
-.field-workbench-craft-btn:not(:disabled):hover,
-.field-workbench-craft-btn:not(:disabled):focus {
+.field-workbench-craft-btn:not(:disabled):not([aria-disabled="true"]):hover,
+.field-workbench-craft-btn:not(:disabled):not([aria-disabled="true"]):focus {
   background: linear-gradient(180deg, #ffc107, #ff9100);
   box-shadow: 0 0 20px rgba(255, 200, 50, 0.6);
   outline: 2px solid #fff;
   transform: translateY(-1px);
 }
 
-.field-workbench-craft-btn:disabled {
+.field-workbench-craft-btn:disabled,
+.field-workbench-craft-btn[aria-disabled="true"] {
   background: rgba(40, 40, 40, 0.6);
   color: #777;
   border: 1px solid rgba(80, 80, 80, 0.4);
   box-shadow: none;
   cursor: not-allowed;
+}
+
+/* Reachable by the pad, so the focus still shows. */
+.field-workbench-craft-btn[aria-disabled="true"]:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  color: #bbb;
 }
 
 .field-workbench-footer {
@@ -258,4 +265,173 @@
   border-color: #ffc107;
   color: #fff;
   outline: 2px solid #ffaa00;
+}
+
+/* ── Field Recalibration Tabs & Cards ── */
+.field-workbench-tabs {
+  display: flex;
+  gap: calc(var(--vu, 10px) * 1);
+  margin-bottom: calc(var(--vu, 10px) * 2);
+  border-bottom: 1px solid rgba(255, 170, 0, 0.3);
+  padding-bottom: calc(var(--vu, 10px) * 0.8);
+}
+
+.field-workbench-tab {
+  padding: calc(var(--vu, 10px) * 1) calc(var(--vu, 10px) * 2);
+  font-family: monospace;
+  font-size: calc(var(--vu, 10px) * 1.3);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 170, 0, 0.35);
+  color: #ffaa00;
+  border-radius: 3px 3px 0 0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.field-workbench-tab:hover,
+.field-workbench-tab:focus {
+  background: rgba(255, 170, 0, 0.2);
+  color: #fff;
+  outline: none;
+}
+
+.field-workbench-tab.is-active {
+  background: rgba(255, 170, 0, 0.25);
+  border-color: #ffaa00;
+  border-bottom-color: transparent;
+  color: #ffe082;
+  box-shadow: 0 -2px 10px rgba(255, 170, 0, 0.2);
+}
+
+.field-workbench-recalibration-section {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu, 10px) * 1.5);
+  margin-bottom: calc(var(--vu, 10px) * 2.5);
+}
+
+.field-workbench-recalibration-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(var(--vu, 10px) * 1) calc(var(--vu, 10px) * 1.5);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 170, 0, 0.25);
+  border-radius: 3px;
+}
+
+.field-workbench-camp-badge {
+  font-family: monospace;
+  font-size: calc(var(--vu, 10px) * 1.25);
+  letter-spacing: 0.08em;
+  color: #a7ffeb;
+}
+
+.field-workbench-camp-badge.is-consumed {
+  color: #ff8a80;
+}
+
+.field-workbench-reroll-btn {
+  padding: calc(var(--vu, 10px) * 0.8) calc(var(--vu, 10px) * 1.6);
+  font-family: monospace;
+  font-size: calc(var(--vu, 10px) * 1.2);
+  font-weight: 700;
+  text-transform: uppercase;
+  background: rgba(40, 20, 10, 0.8);
+  border: 1px solid rgba(255, 170, 0, 0.5);
+  color: #ffe082;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.field-workbench-reroll-btn:not(:disabled):hover,
+.field-workbench-reroll-btn:not(:disabled):focus {
+  background: rgba(255, 170, 0, 0.35);
+  color: #fff;
+  border-color: #ffea00;
+}
+
+.field-workbench-reroll-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.field-workbench-recalibration-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--vu, 10px) * 28), 1fr));
+  gap: calc(var(--vu, 10px) * 1.8);
+}
+
+.field-workbench-card--fusion {
+  border-color: rgba(125, 242, 255, 0.6);
+  background: radial-gradient(circle at 50% 0%, rgba(125, 242, 255, 0.12), rgba(16, 22, 24, 0.95) 70%);
+  box-shadow: 0 0 24px rgba(125, 242, 255, 0.2);
+}
+
+.field-workbench-fusion-tag {
+  display: inline-block;
+  font-family: monospace;
+  font-size: calc(var(--vu, 10px) * 1.1);
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  margin-bottom: calc(var(--vu, 10px) * 0.8);
+  border-radius: 2px;
+  background: rgba(125, 242, 255, 0.2);
+  border: 1px solid rgba(125, 242, 255, 0.7);
+  color: #7df2ff;
+  letter-spacing: 0.08em;
+}
+
+.field-workbench-diff-box {
+  margin: calc(var(--vu, 10px) * 1) 0;
+  padding: calc(var(--vu, 10px) * 1);
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: calc(var(--vu, 10px) * 1.15);
+}
+
+.field-workbench-diff-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.field-workbench-diff-row.is-highlight {
+  color: #7df2ff;
+  font-weight: 700;
+}
+
+.field-workbench-diff-label {
+  color: #888;
+}
+
+.field-workbench-diff-val {
+  color: #ffe082;
+}
+
+.field-workbench-diff-val.diff--positive {
+  color: #b9ff78;
+}
+
+.field-workbench-diff-val.diff--negative,
+.field-workbench-card__tradeoff {
+  color: #ffbd9e;
+}
+
+.field-workbench-card__tradeoff {
+  font-size: calc(var(--vu, 10px) * 1.2);
+  line-height: 1.45;
+  margin: 0 0 calc(var(--vu, 10px) * 1);
+}
+
+.field-workbench-card__desc strong,
+.field-workbench-card__tradeoff strong {
+  color: #e0e0e0;
 }

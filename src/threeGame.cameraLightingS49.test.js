@@ -7,10 +7,10 @@ describe('ThreeGame S49-26 Camera, Tilt-Shift, and Character Rim Light', () => {
         vi.restoreAllMocks();
     });
 
-    it('defaults cameraMode to isometric in accordance with Decision 12', () => {
+    it('defaults cameraMode to third-person on new save or reset', () => {
         const game = Object.create(ThreeGame.prototype);
-        game.cameraMode = 'isometric';
-        expect(game.cameraMode).toBe('isometric');
+        game.cameraMode = 'third-person';
+        expect(game.cameraMode).toBe('third-person');
 
         // Test setCameraMode defaults and switches
         game.selectActiveCamera = vi.fn();
@@ -22,9 +22,9 @@ describe('ThreeGame S49-26 Camera, Tilt-Shift, and Character Rim Light', () => {
         expect(game.setCameraMode('isometric')).toBe('isometric');
         expect(game.cameraMode).toBe('isometric');
 
-        // Any non-third-person value defaults to isometric
-        expect(game.setCameraMode()).toBe('isometric');
-        expect(game.cameraMode).toBe('isometric');
+        // Unset mode defaults to third-person
+        expect(game.setCameraMode()).toBe('third-person');
+        expect(game.cameraMode).toBe('third-person');
     });
 
     it('disables gameplay tilt-shift blur passes by default and allows toggling', () => {

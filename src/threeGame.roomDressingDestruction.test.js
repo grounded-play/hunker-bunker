@@ -164,4 +164,45 @@ describe('ThreeGame instanced room dressing destruction (G3.1)', () => {
         expect(m1.elements[5]).toBe(0);
         expect(m1.elements[10]).toBe(0);
     });
+
+    it('unregisters attached FX and presentation before removing a broken prop root', () => {
+        const rootParent = new THREE.Group();
+        const root = new THREE.Group();
+        rootParent.add(root);
+        const colliderParent = new THREE.Group();
+        const collider = new THREE.Object3D();
+        collider.position.set(2, 0, 3);
+        collider.userData = {
+            type: 'prop_pipe_rupture',
+            isDestructibleProp: true,
+            propHp: 1,
+            scatterKey: 'pipe:teardown',
+            world3dRoot: root
+        };
+        colliderParent.add(collider);
+        const fakeGame = {
+            scatterSprites: [collider],
+            pickupMeshes: [],
+            brokenPropScatterKeys: new Set(),
+            disposeWorld3dPropFx: vi.fn(),
+            disposeWorld3dPropExperience: vi.fn(),
+            worldEmitterRuntime: { destroySource: vi.fn(() => [{ kind: 'jet', id: 'pipe:teardown:destroyed:jet:0' }]) },
+            materializeWorldEmitterDestruction: vi.fn(),
+            world3dMixers: new Set(),
+            spawnGearPoofEffect: vi.fn(),
+            spawnDestructiblePropDrops: vi.fn(),
+            breakScatterProp: ThreeGame.prototype.breakScatterProp
+        };
+
+        expect(fakeGame.breakScatterProp(collider, { plannedDrops: [] })).toBe(true);
+        expect(fakeGame.disposeWorld3dPropFx).toHaveBeenCalledOnce();
+        expect(fakeGame.disposeWorld3dPropFx).toHaveBeenCalledWith(root);
+        expect(fakeGame.disposeWorld3dPropExperience).toHaveBeenCalledWith(root);
+        expect(fakeGame.materializeWorldEmitterDestruction).toHaveBeenCalledWith(
+            [expect.objectContaining({ id: 'pipe:teardown:destroyed:jet:0' })],
+            collider
+        );
+        expect(root.parent).toBeNull();
+        expect(collider.userData.world3dRoot).toBeNull();
+    });
 });

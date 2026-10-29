@@ -19,10 +19,13 @@ describe('which sleep cutscene plays', () => {
         expect(SLEEP_CUTSCENE_STYLES).toEqual(['bunker', 'camp', 'cryo', 'hive', 'squad']);
         expect(sleepCutsceneBase('camp')).toBe('sleep-camp');
         expect(sleepCutsceneBase('nonsense')).toBe('sleep-bunker');
+        // A class cut is used only once it has shipped.
+        expect(sleepCutsceneBase('camp', 'TANK')).toBe(SHIPPED_SLEEP_CUTSCENES.has('sleep-camp-tank') ? 'sleep-camp-tank' : 'sleep-camp');
+        expect(sleepCutsceneBase('bunker', 'SCOUT')).toBe('sleep-bunker');
     });
 
     it('lists only videos that are really in public/cutscenes', () => {
-        expect([...SHIPPED_SLEEP_CUTSCENES]).toEqual(['sleep-bunker']);
+        expect(SHIPPED_SLEEP_CUTSCENES.has('sleep-bunker')).toBe(true);
         for (const base of SHIPPED_SLEEP_CUTSCENES) {
             const webm = new URL(`../public/cutscenes/${base}.webm`, import.meta.url);
             const mp4 = new URL(`../public/cutscenes/${base}.mp4`, import.meta.url);

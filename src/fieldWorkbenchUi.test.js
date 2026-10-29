@@ -218,10 +218,23 @@ describe('Field Workbench UI & Affordability (S49-13)', () => {
             closeBtn = mockDoc.register('close-field-workbench', new MockElement('button', 'close-field-workbench'));
             footerCloseBtn = mockDoc.register('field-workbench-footer-close', new MockElement('button', 'field-workbench-footer-close'));
 
+            const tabSuppliesBtn = mockDoc.register('workbench-tab-supplies', new MockElement('button', 'workbench-tab-supplies'));
+            const tabRecalibrationBtn = mockDoc.register('workbench-tab-recalibration', new MockElement('button', 'workbench-tab-recalibration'));
+            const suppliesSection = mockDoc.register('field-workbench-supplies-section', new MockElement('div', 'field-workbench-supplies-section'));
+            const recalibrationSection = mockDoc.register('field-workbench-recalibration-section', new MockElement('div', 'field-workbench-recalibration-section'));
+            const recalibrationHeaderEl = mockDoc.register('field-workbench-recalibration-header', new MockElement('div', 'field-workbench-recalibration-header'));
+            const recalibrationGridEl = mockDoc.register('field-workbench-recalibration-grid', new MockElement('div', 'field-workbench-recalibration-grid'));
+
             modalEl.appendChild(closeBtn);
             modalEl.appendChild(kickerEl);
             modalEl.appendChild(titleEl);
             modalEl.appendChild(statsStripEl);
+            modalEl.appendChild(tabSuppliesBtn);
+            modalEl.appendChild(tabRecalibrationBtn);
+            modalEl.appendChild(suppliesSection);
+            modalEl.appendChild(recalibrationSection);
+            recalibrationSection.appendChild(recalibrationHeaderEl);
+            recalibrationSection.appendChild(recalibrationGridEl);
             modalEl.appendChild(recipesGridEl);
             modalEl.appendChild(footerCloseBtn);
 
@@ -382,7 +395,7 @@ describe('Field Workbench UI & Affordability (S49-13)', () => {
             expect(statsStripEl.innerHTML).toContain('25'); // updated tech
         });
 
-        it('disables craft button when resources are insufficient', () => {
+        it('marks craft buttons unavailable but focusable when resources are insufficient', () => {
             mockGame.bank.state = { tech: 0, med: 0, coin: 0, shells: 0 };
             const ui = createFieldWorkbenchUi({
                 document: mockDoc,
@@ -393,8 +406,14 @@ describe('Field Workbench UI & Affordability (S49-13)', () => {
 
             for (const card of recipesGridEl.children) {
                 const btn = card.querySelector('.field-workbench-craft-btn');
-                expect(btn.disabled).toBe(true);
+                // Unavailable, but still reachable by the controller.
+                expect(btn.disabled).toBe(false);
+                expect(btn.getAttribute('aria-disabled')).toBe('true');
+                expect(btn.getAttribute('data-controller-focusable')).toBe('');
             }
+            mockGame.craftFieldRecipe = vi.fn(() => true);
+            recipesGridEl.children[0].querySelector('.field-workbench-craft-btn').click();
+            expect(mockGame.craftFieldRecipe).not.toHaveBeenCalled();
         });
 
         it('cleans up window listeners on destroy()', () => {
@@ -410,6 +429,49 @@ describe('Field Workbench UI & Affordability (S49-13)', () => {
 
             expect(windowListeners.get('open-field-workbench')?.length).toBe(0);
             expect(windowListeners.get('keydown')?.length).toBe(0);
+        });
+
+        it('switches between supplies and recalibration tabs and renders recalibration cards', () => {
+            mockGame.recalibrateFieldWeapon = vi.fn(() => true);
+            mockGame.isCampRecalibrated = vi.fn(() => false);
+            const ui = createFieldWorkbenchUi({
+                document: mockDoc,
+                getGame: () => mockGame
+            });
+
+            ui.open({ campId: 'camp-echo' });
+            expect(ui.getActiveTab()).toBe('supplies');
+
+            // Switch to recalibration tab
+            ui.setTab('recalibration');
+            expect(ui.getActiveTab()).toBe('recalibration');
+
+            const recalibrationGrid = mockDoc.getElementById('field-workbench-recalibration-grid');
+            expect(recalibrationGrid.children.length).toBe(3);
+
+            // Click first recalibration card button
+            const firstCardBtn = recalibrationGrid.children[0].querySelector('.field-workbench-recalibrate-btn');
+            expect(firstCardBtn).not.toBeNull();
+            firstCardBtn.dispatchEvent({ type: 'click' });
+
+            expect(mockGame.recalibrateFieldWeapon).toHaveBeenCalled();
+        });
+
+        it('disables recalibration buttons if camp is already recalibrated', () => {
+            mockGame.isCampRecalibrated = vi.fn(() => true);
+            const ui = createFieldWorkbenchUi({
+                document: mockDoc,
+                getGame: () => mockGame
+            });
+
+            ui.open({ campId: 'camp-used', recalibrated: true });
+            ui.setTab('recalibration');
+
+            const recalibrationGrid = mockDoc.getElementById('field-workbench-recalibration-grid');
+            for (const card of recalibrationGrid.children) {
+                const btn = card.querySelector('.field-workbench-recalibrate-btn');
+                expect(btn.getAttribute('aria-disabled')).toBe('true');
+            }
         });
     });
 });

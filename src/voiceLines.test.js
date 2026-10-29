@@ -39,7 +39,8 @@ describe('voice lines', () => {
         await library.load();
         expect(library.resolve('PROVE YOU CAN HOLD A LINE. FORTIFY THIS POSITION, THEN WE TALK.')).toEqual({
             key: 'narrative.leaderDialogue.briggs.stages.0.loop',
-            url: '/audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.0.loop.mp3'
+            url: '/audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.0.loop.mp3',
+            source: 'catalog'
         });
         expect(library.resolve('MOTHERSHIP: Agent — first threat neutralized. Proceed.')?.key).toBe('narrative.mothershipReactive.0.text');
         expect(library.resolve('A line nobody recorded.')).toBeNull();
@@ -53,6 +54,20 @@ describe('voice lines', () => {
         expect(library.urlFor('narrative.commentary.run_start.body')).toBeNull();
         setLocale('en');
         expect(library.urlFor('narrative.commentary.run_start.body')).toBe('/audio/voice/lines/en/narrative.commentary.run_start.body.mp3');
+    });
+
+    it('matches code lines by their own text in every language, playing the English recording', async () => {
+        const { library, setLocale } = setup({
+            locales: { en: [...Object.keys(STRINGS.en), 'code.tina.abc'], de: Object.keys(STRINGS.de) },
+            texts: { 'code.tina.abc': 'MAYOR TINA: PUT THAT DOWN. I AM ASKING ONCE.', 'code.tina.missing': 'MAYOR TINA: NOT RECORDED.' }
+        });
+        await library.load();
+        const expected = { key: 'code.tina.abc', url: '/audio/voice/lines/en/code.tina.abc.mp3', source: 'code' };
+        expect(library.resolve('> MAYOR TINA: Put that down. I am asking once.')).toEqual(expected);
+        setLocale('de');
+        expect(library.resolve('MAYOR TINA: PUT THAT DOWN. I AM ASKING ONCE.')).toEqual(expected);
+        // Listed in texts but never encoded: nothing to play.
+        expect(library.resolve('MAYOR TINA: NOT RECORDED.')).toBeNull();
     });
 
     it('stays silent, not broken, when no voice lines have shipped yet', async () => {

@@ -46,6 +46,27 @@ app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('enable-zero-copy');
 app.commandLine.appendSwitch('enable-native-gpu-memory-buffers');
 
+// Steam Overlay hooking for Electron:
+// Steam's overlay hook (gameoverlayrenderer64.dll on Windows) injects into the main
+// process and intercepts DirectX/Vulkan frame presentation. Chromium by default runs
+// GPU compositing in an isolated child process with DirectComposition enabled.
+// steamworks.js's electronEnableSteamOverlay MUST be called before app.whenReady() so:
+// 1. 'in-process-gpu' and 'disable-direct-composition' switches are applied before GPU init.
+// 2. browserWindow invalidation is attached (disableEachFrameInvalidation: false) so frames
+//    continue presenting at 60Hz and Steam's overlay renderer can hook Shift+Tab and wallet modals.
+let steamOverlayConfigured = false;
+if (process.platform === 'win32' || process.env.HB_ENABLE_STEAM_OVERLAY === '1') {
+    try {
+        const steamworksEarly = require('steamworks.js');
+        if (typeof steamworksEarly.electronEnableSteamOverlay === 'function') {
+            steamworksEarly.electronEnableSteamOverlay(false);
+            steamOverlayConfigured = true;
+        }
+    } catch (err) {
+        console.warn('[steam] early electronEnableSteamOverlay hook failed:', err);
+    }
+}
+
 if (process.platform === 'linux') {
     app.commandLine.appendSwitch('no-sandbox');
     app.commandLine.appendSwitch('disable-gpu-sandbox');
@@ -569,13 +590,15 @@ function initSteam() {
 // overlay hook handles rendering without in-process-gpu.
 function enableOverlay() {
     try {
-        if (steam?.electronEnableSteamOverlay && process.platform === 'win32') {
-            steam.electronEnableSteamOverlay(true);
-            recordSteamDiagnostic('info', 'overlay_ready', 'Steam overlay hook enabled without redundant frame invalidation');
+        if (steamOverlayConfigured) {
+            recordSteamDiagnostic('info', 'overlay_ready', 'Steam overlay hook configured with active frame invalidation');
         } else if (process.platform === 'linux') {
             recordSteamDiagnostic('info', 'overlay_ready', 'Steam overlay active via Linux LD_PRELOAD hook');
+        } else if (steam?.electronEnableSteamOverlay) {
+            steam.electronEnableSteamOverlay(false);
+            recordSteamDiagnostic('info', 'overlay_ready', 'Steam overlay hook applied fallback');
         } else {
-            recordSteamDiagnostic('warn', 'overlay_unavailable', 'Steam overlay hook is unavailable because Steamworks did not initialize');
+            recordSteamDiagnostic('warn', 'overlay_unavailable', 'Steam overlay hook is unavailable');
         }
     } catch (err) {
         recordSteamDiagnostic('warn', 'overlay_failed', 'Steam overlay hook failed', serializeError(err));
@@ -829,6 +852,33 @@ ipcMain.on('hb:saveDataRemoved', (_e, key) => {
     delete saveState[key];
     scheduleFlush();
 });
+
+function clearSaveFileSynchronously() {
+    if (saveTimer) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+    }
+    saveState = {};
+    const primary = saveFilePath();
+    const backup = `${primary}.bak`;
+    try {
+        writeSaveAtomic(fs, primary, {});
+        if (fs.existsSync(backup)) {
+            try { fs.unlinkSync(backup); } catch { /* ignore */ }
+        }
+    } catch (err) {
+        console.log(`[save] reset write failed: ${err?.message ?? err}`);
+    }
+}
+
+ipcMain.on('hb:resetSaveDataSync', (event) => {
+    clearSaveFileSynchronously();
+    event.returnValue = true;
+});
+ipcMain.handle('hb:resetSaveData', async () => {
+    clearSaveFileSynchronously();
+    return { ok: true };
+});
 const PUBLISHED_ACHIEVEMENT_KEY_SET = new Set(PUBLISHED_ACHIEVEMENT_KEYS);
 const achievementResetGenerationByAccount = new Map();
 
@@ -978,6 +1028,42 @@ ipcMain.handle('hb:openSteamOverlayToUrl', async (_e, url) => {
         return { ok: true, overlay: false };
     } catch (err) {
         return { ok: false, reason: 'open_external_failed', message: err.message };
+    }
+});
+ipcMain.handle('hb:activateSteamOverlay', async (_e, dialogType = 'friends') => {
+    if (!steamClient?.overlay?.activateDialog) {
+        return { ok: false, reason: 'steam_overlay_unavailable' };
+    }
+    try {
+        const dialogMap = {
+            friends: 0,
+            community: 1,
+            players: 2,
+            settings: 3,
+            officialgamegroup: 4,
+            stats: 5,
+            achievements: 6
+        };
+        const dialog = dialogMap[String(dialogType).toLowerCase()] ?? 0;
+        steamClient.overlay.activateDialog(dialog);
+        recordSteamDiagnostic('info', 'overlay_activated', `Steam overlay activated to dialog: ${dialogType}`);
+        return { ok: true };
+    } catch (err) {
+        recordSteamDiagnostic('warn', 'overlay_activate_failed', `Failed activating overlay dialog: ${dialogType}`, serializeError(err));
+        return { ok: false, reason: 'activate_overlay_failed', message: err?.message ?? String(err) };
+    }
+});
+ipcMain.handle('hb:activateSteamStore', async (_e, targetAppId = STEAM_APPID) => {
+    if (!steamClient?.overlay?.activateToStore) {
+        return { ok: false, reason: 'steam_overlay_unavailable' };
+    }
+    try {
+        steamClient.overlay.activateToStore(Number(targetAppId) || STEAM_APPID, 0);
+        recordSteamDiagnostic('info', 'overlay_store_activated', `Steam store activated for appId: ${targetAppId}`);
+        return { ok: true };
+    } catch (err) {
+        recordSteamDiagnostic('warn', 'overlay_store_failed', `Failed activating store for appId: ${targetAppId}`, serializeError(err));
+        return { ok: false, reason: 'activate_store_failed', message: err?.message ?? String(err) };
     }
 });
 ipcMain.handle('hb:addSteamTimelineEvent', (_e, event) => addSteamTimelineEvent(event));

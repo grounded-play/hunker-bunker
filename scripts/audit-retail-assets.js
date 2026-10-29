@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WORLD_EXPANSION_80_MODELS } from '../src/data/worldExpansion80.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MANIFEST_PATH = path.join(ROOT, 'steam/referenced-assets.json');
@@ -104,9 +105,15 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // payload is 4112 MiB, leaving 88 MiB rather than hiding duplicate growth.
 // Raised 4200->5300 MiB in Sprint 52 for interactive world expansion (60 new GLB
 // interactive props and models), localized audio packs, and tactical terminal
-// cinematic video cuts (intro-boot, intro-mothership-briefing, credits);
-// measured payload is ~4933 MiB, leaving ~367 MiB headroom.
-const PUBLIC_BUDGET = 5300 * 1024 * 1024;
+// cinematic video cuts (intro-boot, intro-mothership-briefing, credits).
+// Raised 5300->5350 MiB in Sprint 53 for biometric vault door gears and spinner UI.
+// Raised 5350->5800 MiB for 50 PBR world-story GLBs, companion decals, and
+// new flight/crash and grindhouse opening cinematics (~294 MiB growth; measured
+// payload is ~5630 MiB, leaving ~170 MiB headroom).
+// Raised 5800->6000 MiB on 2026-10-28 for 23 Armory loadout microclips
+// (113 MiB) and 8 more grindhouse cuts (~70 MiB); measured payload is
+// 5821 MiB, leaving ~179 MiB headroom.
+const PUBLIC_BUDGET = 6000 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus
@@ -122,10 +129,14 @@ const PUBLIC_BUDGET = 5300 * 1024 * 1024;
 // track this weight at all -- it was never real asar payload to begin
 // with, just misplaced. ~190MB of headroom kept above the current
 // measurement rather than the bare minimum.
-const ASAR_BUDGET = 950 * 1024 * 1024;
-const UNKNOWN_ASSET_BUDGET = 160;
+// Raised 950->1000->1200 MiB in Sprint 53 (v2.4.18-beta). The package measured
+// 1140947789 bytes (~1088 MiB) after integrating the 50 new PBR world-story
+// models and 50 decals (which package decal PNGs and companion textures into
+// dist/ and app.asar). Raising to 1200 MiB keeps ~112 MiB of headroom.
+const ASAR_BUDGET = 1200 * 1024 * 1024;
+const UNKNOWN_ASSET_BUDGET = 185;
 const CODEC_MISMATCH_BUDGET = 140;
-const DUPLICATE_GROUP_BUDGET = 140;
+const DUPLICATE_GROUP_BUDGET = 195;
 
 function walkFiles(root) {
     if (!fs.existsSync(root)) return [];
@@ -177,7 +188,17 @@ export function extractAssetReferences(text) {
             || /^(?:opt|tmp)\//.test(ref)) continue;
         refs.add(ref);
     }
+    // index.html installs the menu artwork as bare names in a CSS custom
+    // property map ('--asset-gear-vault-main': 'gear_vault_main.webp') so they
+    // resolve against document.baseURI in both HTTP and file:// builds.
+    const cssAsset = /['"]--asset-[\w-]+['"]\s*:\s*['"]([^'"\/\s]+\.(?:avif|gif|jpe?g|png|svg|webp))['"]/g;
+    for (const match of String(text ?? '').matchAll(cssAsset)) refs.add(match[1]);
     return [...refs].sort();
+}
+
+// Model families resolved from data ids, so no literal path exists in source.
+export function dataKeyedAssetReferences() {
+    return Object.values(WORLD_EXPANSION_80_MODELS).map(({ url }) => url.replace(/^\/+/, ''));
 }
 
 function collectSourceTexts(root) {
@@ -256,7 +277,7 @@ function fileSizeTotal(files) {
 export function buildRetailAssetAudit(root = ROOT) {
     const publicRoot = path.join(root, 'public');
     const publicFiles = walkFiles(publicRoot);
-    const references = new Set(collectSourceTexts(root).flatMap(extractAssetReferences));
+    const references = new Set([...collectSourceTexts(root).flatMap(extractAssetReferences), ...dataKeyedAssetReferences()]);
     const missingReferences = [...references].filter((ref) => !fs.existsSync(path.join(publicRoot, ref)));
     const assets = publicFiles.map((file) => {
         const relativePath = posix(path.relative(publicRoot, file));

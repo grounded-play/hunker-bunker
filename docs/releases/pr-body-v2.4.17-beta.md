@@ -1,5 +1,8 @@
 # Release PR: v2.4.17-beta — Base Rebuild & Carry, Field Weapons & Flamethrower, Lived-in World, Lower-Console HUD, Playtest Fixes
 
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** Packaged verification, hardware acceptance, and release gate closure for this release candidate are consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md).
+
 **Target Branch:** `mothership` ← **Source Branch:** `dev/sprint-52`
 
 ---
@@ -64,12 +67,12 @@ Internal tickets closed: playtest remediation T1–T10 ([plan](https://github.co
 
 - [x] Bug fix
 - [x] Player-facing feature/change
-- [ ] Platform / Steam / multiplayer
+- [-] Platform / Steam / multiplayer (no platform changes in this PR)
 - [x] Performance / reliability
-- [ ] Refactor / ownership extraction
+- [-] Refactor / ownership extraction (none)
 - [x] Asset / content / audio / 3D
 - [x] Documentation / release governance
-- [ ] Breaking change / migration
+- [-] Breaking change / migration (backward-compatible)
 
 ### Explicit non-goals
 
@@ -89,8 +92,8 @@ Internal tickets closed: playtest remediation T1–T10 ([plan](https://github.co
   - the HUD weapon label;
   - the floor blend;
   - the trailer captures.
-- [ ] **Packaged-verified**
-- [ ] **Accepted**
+- [H] **Packaged-verified** (Consolidated into [Sprint 53 Master Verification Plan](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md))
+- [H] **Accepted** (Consolidated into [Sprint 53 Master Verification Plan](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md))
 
 **Highest honest evidence state:** Live-verified in a GPU dev build for the items above; the rest is Tested.
 
@@ -112,10 +115,10 @@ Internal tickets closed: playtest remediation T1–T10 ([plan](https://github.co
 ### Environment-specific / human
 
 - [x] Browser/dev live verification (GPU, Vulkan ANGLE)
-- [ ] Packaged Electron verification
-- [ ] Steam-launched installed build
-- [ ] Physical Steam Deck / 1280×800
-- [ ] Human visual/audio acceptance
+- [H] Packaged Electron verification (Consolidated into [Sprint 53 Master Verification Plan](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md))
+- [H] Steam-launched installed build (Consolidated into [Sprint 53 Master Verification Plan](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md))
+- [H] Physical Steam Deck / 1280×800 (Consolidated into [Sprint 53 Master Verification Plan](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md))
+- [H] Human visual/audio acceptance (Consolidated into [Sprint 53 Master Verification Plan](../planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md))
 
 ## Known gaps / carry-forward
 

@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+    INTIMACY_REQUIREMENT,
     NPC_DIALOGUE_TREES,
     NpcDialogueTreeManager
 } from './npcDialogueTrees.js';
+import { SideStoryManager } from './sideStorySystem.js';
 
 describe('NpcDialogueTreeManager & Sensual Storyline Trees', () => {
     it('contains all 4 major mature character dialogue trees', () => {
@@ -12,19 +14,54 @@ describe('NpcDialogueTreeManager & Sensual Storyline Trees', () => {
         expect(NPC_DIALOGUE_TREES).toHaveProperty('aria_queen_mimic');
     });
 
+    // Owner 2026-10-16: a stage's side-story card plays behind doors before
+    // its node (audit §13.3), once per save, never on a greeting (first
+    // contact already played the camp's card) and never behind the window.
+    it('names the side-story card a choice should play, once', () => {
+        const manager = new NpcDialogueTreeManager({ stories: { state: {} } });
+        manager.startDialogue('sister_val', { context: { bond: 3, stage: 1 } });
+        expect(manager.cardForChoice('val_lore_spores')).toBeNull();
+        expect(manager.cardForChoice('val_leave')).toBeNull();
+        expect(manager.cardForChoice('no_such_choice')).toBeNull();
+        expect(manager.cardForChoice('val_warmth_touch')).toBe('val_spore_communion');
+        manager.markCardPlayed('val_spore_communion');
+        expect(manager.cardForChoice('val_warmth_touch')).toBeNull();
+    });
+
+    it('remembers played cards with the side stories, across conversations', () => {
+        const stories = { state: {} };
+        new NpcDialogueTreeManager({ stories }).startDialogue('sister_val', { context: { bond: 3, stage: 1 } });
+        const first = new NpcDialogueTreeManager({ stories });
+        first.startDialogue('sister_val', { context: { bond: 3, stage: 1 } });
+        first.markCardPlayed('val_spore_communion');
+        const later = new NpcDialogueTreeManager({ stories });
+        later.startDialogue('sister_val', { context: { bond: 3, stage: 1 } });
+        expect(later.cardForChoice('val_warmth_touch')).toBeNull();
+    });
+
+    it('never plays a card on a tree\'s opening node', () => {
+        for (const tree of Object.values(NPC_DIALOGUE_TREES)) {
+            const manager = new NpcDialogueTreeManager({ stories: { state: {} } });
+            manager.activeTree = tree;
+            manager.currentNode = { id: 'probe', choices: [{ id: 'to_start', nextNode: tree.initialNode }] };
+            expect(manager.cardForChoice('to_start')).toBeNull();
+        }
+    });
+
     it('starts dialogue and transitions through choices correctly', () => {
         const stateCallback = vi.fn();
-        const manager = new NpcDialogueTreeManager({ onStateChanged: stateCallback });
+        const manager = new NpcDialogueTreeManager({ onStateChanged: stateCallback, stories: { state: {} } });
 
-        const firstNode = manager.startDialogue('sister_val');
+        const firstNode = manager.startDialogue('sister_val', { context: { bond: 3, stage: 1 } });
         expect(firstNode).not.toBeNull();
         expect(firstNode.id).toBe('val_greeting');
         expect(stateCallback).toHaveBeenCalled();
 
-        // Select intimate touch choice
+        // Select intimate touch choice. Intimacy carries no power perk: the
+        // leader's perk lives on the trusted path.
         const secondNode = manager.selectChoice('val_warmth_touch');
         expect(secondNode.id).toBe('val_massage_response');
-        expect(manager.activePerks.has('tallows_seductive_warmth')).toBe(true);
+        expect(manager.activePerks.has('tallows_seductive_warmth')).toBe(false);
 
         // Select deepen intimacy choice
         const thirdNode = manager.selectChoice('val_whisper_more');
@@ -37,10 +74,11 @@ describe('NpcDialogueTreeManager & Sensual Storyline Trees', () => {
     });
 
     it('accumulates bond points and advances bond levels', () => {
-        const manager = new NpcDialogueTreeManager();
+        const manager = new NpcDialogueTreeManager({ stories: { state: {} } });
         expect(manager.getBondLevel('commander_briggs').level).toBe(0);
 
-        manager.startDialogue('commander_briggs');
+        manager.startDialogue('commander_briggs', { context: { bond: 3, stage: 1 } });
+        manager.selectChoice('briggs_trust_drill');
         manager.selectChoice('briggs_flirt_clasps');
         expect(manager.bondState.commander_briggs).toBeGreaterThanOrEqual(25);
         expect(manager.getBondLevel('commander_briggs').level).toBeGreaterThanOrEqual(1);
@@ -51,8 +89,8 @@ describe('NpcDialogueTreeManager & Sensual Storyline Trees', () => {
     });
 
     it('navigates Aria queen mimic sensual telepathy tree', () => {
-        const manager = new NpcDialogueTreeManager();
-        const start = manager.startDialogue('aria_queen_mimic');
+        const manager = new NpcDialogueTreeManager({ stories: { state: {} } });
+        const start = manager.startDialogue('aria_queen_mimic', { context: { bond: 3, stage: 1 } });
         expect(start.id).toBe('aria_whisper');
 
         const surrender = manager.selectChoice('aria_surrender');
@@ -124,5 +162,112 @@ describe('no third way to leave', () => {
         // this file advance Kaelen's stage on the shared side-story state).
         expect(NPC_DIALOGUE_TREES.overseer_kaelen.nodes.kaelen_greeting.choices
             .some((choice) => /LEAVE/.test(choice.tone ?? ''))).toBe(true);
+    });
+});
+
+// Owner, 2026-10-16: every leader opened with seduction options before the
+// player had done anything, and the same options came back on every visit.
+// docs/planning/camp-interaction-and-cinematics-audit-2026-10-16.md
+describe('earned, non-repeating leader conversations', () => {
+    const CLOSE = { context: { bond: 5, stage: 3 } };
+    const STRANGER = { context: { bond: 0, stage: 0 } };
+    const freshStories = () => new SideStoryManager({ storage: null });
+    const intimateOpening = {
+        sister_val: 'val_warmth_touch',
+        commander_briggs: 'briggs_inspect_scars',
+        overseer_kaelen: 'kaelen_bio_link'
+    };
+
+    it('holds intimate choices until camp trust and the story allow them', () => {
+        for (const treeId of ['sister_val', 'commander_briggs', 'overseer_kaelen']) {
+            const stranger = new NpcDialogueTreeManager({ stories: freshStories() }).startDialogue(treeId, STRANGER);
+            expect(stranger.choices.map(({ id }) => id), treeId).not.toContain(intimateOpening[treeId]);
+            const below = new NpcDialogueTreeManager({ stories: freshStories() })
+                .startDialogue(treeId, { context: { bond: INTIMACY_REQUIREMENT.bond - 1, stage: 3 } });
+            expect(below.choices.map(({ id }) => id), treeId).not.toContain(intimateOpening[treeId]);
+            const close = new NpcDialogueTreeManager({ stories: freshStories() }).startDialogue(treeId, CLOSE);
+            expect(close.choices.map(({ id }) => id), treeId).toContain(intimateOpening[treeId]);
+        }
+    });
+
+    it('does not offer a branch again once all of it has been heard, and ends the tree when nothing is new', () => {
+        const stories = freshStories();
+        const exits = NPC_DIALOGUE_TREES.sister_val.nodes.val_spores_response.choices
+            .filter((choice) => !/TASTE|INTIMA|SENSUAL/.test(choice.tone ?? ''));
+        for (const exit of exits) {
+            const visit = new NpcDialogueTreeManager({ stories });
+            visit.startDialogue('sister_val', STRANGER);
+            visit.selectChoice('val_lore_spores');
+            visit.selectChoice(exit.id);
+        }
+        const later = new NpcDialogueTreeManager({ stories });
+        const nextStage = later.startDialogue('sister_val', STRANGER);
+        expect(nextStage?.choices.map(({ id }) => id) ?? []).not.toContain('val_lore_spores');
+    });
+
+    it('pays bond and perks once, not on every walk down the same branch', () => {
+        const stories = freshStories();
+        const manager = new NpcDialogueTreeManager({ stories });
+        manager.startDialogue('commander_briggs', CLOSE);
+        manager.selectChoice('briggs_trust_drill');
+        const afterFirst = manager.bondState.commander_briggs;
+        expect(afterFirst).toBeGreaterThan(0);
+        manager.closeDialogue();
+        const again = new NpcDialogueTreeManager({ stories });
+        again.bondState.commander_briggs = afterFirst;
+        again.startDialogue('commander_briggs', CLOSE);
+        const reoffered = again.currentNode.choices.find((choice) => choice.id === 'briggs_trust_drill');
+        if (reoffered) again.selectChoice('briggs_trust_drill');
+        expect(again.bondState.commander_briggs).toBe(afterFirst);
+    });
+});
+
+// Plan step 3 (2026-10-16): a Stranger tier on first meeting, each leader's
+// perk on a non-intimate Trusted path, and never more than four choices.
+describe('stranger and trusted tiers', () => {
+    const freshStories = () => new SideStoryManager({ storage: null });
+    const LEADERS = {
+        overseer_kaelen: { trust: 'kaelen_trust_cradle', perk: 'meridian_neural_overclock', assist: ['kaelen_grid_lore', 'kaelen_assist_probe'] },
+        sister_val: { trust: 'val_trust_tend', perk: 'tallows_seductive_warmth', assist: ['val_lore_spores', 'val_assist_mold'] },
+        commander_briggs: { trust: 'briggs_trust_drill', perk: 'vesper_vanguard_adrenaline', assist: ['briggs_tactics', 'briggs_assist_armory'] }
+    };
+
+    it('greets a stranger with the camp and its first quest, not personal or intimate talk', () => {
+        for (const [treeId, leader] of Object.entries(LEADERS)) {
+            const manager = new NpcDialogueTreeManager({ stories: freshStories() });
+            const greeting = manager.startDialogue(treeId, { context: { bond: 0, stage: 0 } });
+            expect(greeting.choices.map(({ tone }) => tone), treeId).toEqual(['[ASK]', '[LEAVE]']);
+            manager.selectChoice(leader.assist[0]);
+            const pointer = manager.selectChoice(leader.assist[1]);
+            expect(pointer.id, treeId).toMatch(/pointer$/);
+        }
+    });
+
+    it("earns each leader's perk on the trusted path, without intimacy", () => {
+        for (const [treeId, leader] of Object.entries(LEADERS)) {
+            const manager = new NpcDialogueTreeManager({ stories: freshStories() });
+            manager.startDialogue(treeId, { context: { bond: 2, stage: 0 } });
+            expect(manager.currentNode.choices.map(({ id }) => id), treeId).toContain(leader.trust);
+            manager.selectChoice(leader.trust);
+            expect(manager.activePerks.has(leader.perk), treeId).toBe(true);
+        }
+    });
+
+    it('never opens on a node the relationship has not reached', () => {
+        const stories = freshStories();
+        stories.getStoryState('sister_val').stageIndex = 3;
+        const node = new NpcDialogueTreeManager({ stories }).startDialogue('sister_val', { context: { bond: 0, stage: 0 } });
+        expect(node.id).toBe('val_greeting');
+    });
+
+    it('shows at most four choices', () => {
+        for (const tree of Object.values(NPC_DIALOGUE_TREES)) {
+            for (const node of Object.values(tree.nodes)) {
+                const manager = new NpcDialogueTreeManager({ stories: freshStories() });
+                manager.context = { bond: 5, stage: 3 };
+                const shown = manager.visibleChoices(tree, node, manager.memoryFor(tree.id));
+                expect(shown.length, `${tree.id}/${node.id}`).toBeLessThanOrEqual(4);
+            }
+        }
     });
 });

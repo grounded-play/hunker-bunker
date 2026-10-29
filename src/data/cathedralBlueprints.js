@@ -47,13 +47,13 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         roles: ['ringCrossing', 'objective'],
         structuralAnchors: [
             { id: 'buttress_nw', type: 'prop_pipe_organ_heat_exchanger', x: 4, y: 2 },
-            { id: 'buttress_sw', type: 'prop_pipe_organ_heat_exchanger', x: 4, y: 8 },
-            { id: 'buttress_ne', type: 'prop_pipe_organ_heat_exchanger', x: 16, y: 2 },
+            { id: 'buttress_sw', type: 'prop_vertebral_cable_riser', x: 4, y: 8 },
+            { id: 'buttress_ne', type: 'prop_vertebral_cable_riser', x: 16, y: 2 },
             { id: 'buttress_se', type: 'prop_pipe_organ_heat_exchanger', x: 16, y: 8 }
         ],
         interactionAnchors: [
             { id: 'apse_scripture_terminal', type: 'prop_liturgical_terminal_lectern', x: 10, y: 3 },
-            { id: 'conduit_bridge_controls', type: 'base_console', x: 12, y: 6 }
+            { id: 'conduit_bridge_controls', type: 'relay_harmonic_tuning_fork', x: 12, y: 6 }
         ],
         signatureAnchorId: 'apse_scripture_terminal',
         compassAnchors: { approach: 'approach', objective: 'apse_scripture_terminal' },
@@ -101,7 +101,7 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
             { id: 'saint_sarcophagus_dais', type: 'prop_corporate_saint_reliquary', x: 7, y: 6 }
         ],
         interactionAnchors: [
-            { id: 'lectern_scripture', type: 'prop_liturgical_terminal_lectern', x: 7, y: 8 }
+            { id: 'lectern_scripture', type: 'corp_quantum_ledger_podium', x: 7, y: 8 }
         ],
         compassAnchors: { approach: 'entry', objective: 'lectern_scripture' },
         coverZones: [{ x: 5, y: 4, w: 5, h: 5 }],
@@ -144,7 +144,7 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
             { id: 'umbilical_pillar_east', type: 'prop_biomech_tracheal_wall_pipe', x: 11, y: 3 }
         ],
         interactionAnchors: [
-            { id: 'specimen_tank_console', type: 'prop_diagnostic_console', x: 8, y: 5 }
+            { id: 'specimen_tank_console', type: 'vass_containment_bell_jar', x: 8, y: 5 }
         ],
         compassAnchors: { approach: 'entry', objective: 'specimen_tank_console' },
         coverZones: [{ x: 4, y: 3, w: 2, h: 2 }, { x: 11, y: 3, w: 2, h: 2 }],
@@ -181,7 +181,7 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         biomeEligibility: ['cryo', 'active'],
         roles: ['objective', 'questDestination'],
         structuralAnchors: [
-            { id: 'cryo_manifold_north', type: 'prop_oxygen_bottle_cascade_rack', x: 4, y: 3 },
+            { id: 'cryo_manifold_north', type: 'evac_cryo_hypergolic_manifold', x: 4, y: 3 },
             { id: 'cryo_manifold_south', type: 'prop_oxygen_bottle_cascade_rack', x: 12, y: 8 }
         ],
         interactionAnchors: [
@@ -228,7 +228,7 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
             { id: 'bay_divider_south', type: 'prop_vital_monitor', x: 7, y: 7 }
         ],
         interactionAnchors: [
-            { id: 'surgical_slab_controls', type: 'prop_medical_bed', x: 5, y: 5 },
+            { id: 'surgical_slab_controls', type: 'corp_dissection_gurney', x: 5, y: 5 },
             { id: 'fabricator_ward_terminal', type: 'prop_fabricator_workstation', x: 14, y: 5 }
         ],
         signatureAnchorId: 'surgical_slab_controls',
@@ -276,11 +276,11 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['objective', 'defense'],
         structuralAnchors: [
-            { id: 'console_barrier_west', type: 'prop_cyber_junction', x: 4, y: 5 },
-            { id: 'console_barrier_east', type: 'prop_cyber_junction', x: 11, y: 5 }
+            { id: 'console_barrier_west', type: 'life_server_racks', x: 4, y: 5 },
+            { id: 'console_barrier_east', type: 'life_server_racks', x: 11, y: 5 }
         ],
         interactionAnchors: [
-            { id: 'astrogation_radar_table', type: 'prop_diagnostic_console', x: 8, y: 5 }
+            { id: 'astrogation_radar_table', type: 'life_route_map_table', x: 8, y: 5 }
         ],
         compassAnchors: { approach: 'entry', objective: 'astrogation_radar_table' },
         coverZones: [{ x: 4, y: 4, w: 2, h: 3 }, { x: 11, y: 4, w: 2, h: 3 }],
@@ -328,7 +328,7 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
             { id: 'stasis_rack_south', type: 'prop_flesh_steel_cradle', x: 11, y: 7 }
         ],
         interactionAnchors: [
-            { id: 'chrysalis_pod_console', type: 'prop_icey_thermal_pod', x: 7, y: 2 }
+            { id: 'chrysalis_pod_console', type: 'corp_cryo_transport_coffin', x: 7, y: 2 }
         ],
         signatureAnchorId: 'chrysalis_pod_console',
         compassAnchors: { approach: 'entry', objective: 'chrysalis_pod_console' },
@@ -380,10 +380,10 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         roles: ['challenge', 'questDestination'],
         structuralAnchors: [
             { id: 'decon_station_west', type: 'prop_decon_eyewash_shower_station', x: 2, y: 5 },
-            { id: 'decon_station_east', type: 'prop_decon_eyewash_shower_station', x: 10, y: 3 }
+            { id: 'decon_station_east', type: 'decon_exosuit_scrubber_station', x: 10, y: 3 }
         ],
         interactionAnchors: [
-            { id: 'airlock_purge_override', type: 'prop_pipe_organ_heat_exchanger', x: 1, y: 4 }
+            { id: 'airlock_purge_override', type: 'life_lung_filter_bellows', x: 1, y: 4 }
         ],
         signatureAnchorId: 'airlock_purge_override',
         compassAnchors: { approach: 'entry', objective: 'airlock_purge_override' },

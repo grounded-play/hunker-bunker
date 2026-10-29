@@ -52,7 +52,8 @@ chrome/
 scratch/
 tmp/
 temp/
-screenshots/
+/screenshots/
+!docs/screenshots/
 test-artifacts/
 better-todo-tree-*.txt
 **/better-todo-tree-*.txt

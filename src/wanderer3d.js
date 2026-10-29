@@ -69,6 +69,20 @@ export async function createWanderer3dInstance({
             // Animation mixer
             let mixer = null;
             let currentAction = null;
+            const locomotionBones = new Map();
+            const locomotionNames = [
+                'mixamorig:LeftUpLeg', 'mixamorig:RightUpLeg',
+                'mixamorig:LeftLeg', 'mixamorig:RightLeg',
+                'mixamorig:LeftArm', 'mixamorig:RightArm'
+            ];
+            clonedScene.traverse((child) => {
+                if (child.isBone && locomotionNames.includes(child.name)) {
+                    locomotionBones.set(child.name, {
+                        bone: child,
+                        rotation: child.rotation.clone()
+                    });
+                }
+            });
             if (gltf.animations && gltf.animations.length > 0) {
                 mixer = new THREE.AnimationMixer(clonedScene);
                 const clip = gltf.animations.find((a) => a.name === actionKey) || gltf.animations[0];
@@ -78,13 +92,51 @@ export async function createWanderer3dInstance({
                 }
             }
 
+            let locomotionTime = 0;
+            let wasMoving = false;
+            const restoreBindPose = () => {
+                clonedScene.traverse((child) => {
+                    if (child.isSkinnedMesh) child.skeleton?.pose?.();
+                });
+            };
+            const animateLocomotion = (delta, running) => {
+                locomotionTime += delta * (running ? 10 : 7);
+                const stride = Math.sin(locomotionTime) * (running ? 0.72 : 0.48);
+                const knee = Math.max(0, Math.sin(locomotionTime)) * 0.38;
+                const apply = (name, offset) => {
+                    const record = locomotionBones.get(name);
+                    if (!record) return;
+                    record.bone.rotation.copy(record.rotation);
+                    record.bone.rotation.x += offset;
+                };
+                apply('mixamorig:LeftUpLeg', stride);
+                apply('mixamorig:RightUpLeg', -stride);
+                apply('mixamorig:LeftLeg', knee);
+                apply('mixamorig:RightLeg', Math.max(0, -Math.sin(locomotionTime)) * 0.38);
+                apply('mixamorig:LeftArm', -stride * 0.7);
+                apply('mixamorig:RightArm', stride * 0.7);
+                clonedScene.position.y += Math.abs(Math.sin(locomotionTime * 2)) * (running ? 0.035 : 0.02);
+            };
+            const baseSceneY = clonedScene.position.y;
+
             return {
                 root: group,
                 scene: clonedScene,
                 mixer,
                 action: currentAction,
-                update: (delta) => {
-                    if (mixer) mixer.update(delta);
+                update: (delta, { moving = false, running = false } = {}) => {
+                    clonedScene.position.y = baseSceneY;
+                    if (moving) {
+                        if (!wasMoving) {
+                            currentAction?.stop?.();
+                            restoreBindPose();
+                        }
+                        animateLocomotion(delta, running);
+                    } else {
+                        if (wasMoving && currentAction) currentAction.reset().fadeIn(0.16).play();
+                        if (mixer) mixer.update(delta);
+                    }
+                    wasMoving = moving;
                 },
                 dispose: () => {
                     if (mixer) mixer.stopAllAction();

@@ -414,7 +414,7 @@ export function getVesperDoctrineReloadEffect(wasEmpty, equippedOverclocks = [])
 //    to accidentally double-flip). Returns a positive damage amount for the
 //    caller to route through takeDamage() instead of healing, or null when
 //    the relic isn't equipped / there's nothing to flip.
-const QUEENS_MILK_ALIEN_CONTACT_REASONS = new Set(['crawler', 'mycelium_stalker', 'bio_charger']);
+const QUEENS_MILK_ALIEN_CONTACT_REASONS = new Set(['crawler', 'chitin_scuttler', 'mycelium_stalker', 'bio_charger']);
 
 export function getQueensMilkAlienContactHeal(reason, equippedRelics = []) {
     if (!QUEENS_MILK_ALIEN_CONTACT_REASONS.has(reason)) return null;
@@ -459,6 +459,14 @@ export const SYNERGY_DEFINITIONS = Object.freeze({
         description: 'Bio enemies you corrode restore O2 and a heart when they die.',
         element: 'bio',
         components: Object.freeze(['caustic_payload', 'bio_vampirism'])
+    }),
+    subzero_necrosis: Object.freeze({
+        id: 'subzero_necrosis',
+        name: 'Sub-Zero Necrosis',
+        nameKey: 'ui.relics.synergy.subzero_necrosis',
+        description: 'Frozen enemies infected with bio-corrosion release an explosive cryo-toxic nova when defeated or shattered.',
+        element: 'fusion',
+        components: Object.freeze(['cryo_rime', 'caustic_payload'])
     })
 });
 
@@ -471,10 +479,40 @@ export function computeActiveSynergies(equippedItems = []) {
     if (itemIds.has('caustic_payload') && itemIds.has('bio_vampirism')) {
         active.push(SYNERGY_DEFINITIONS.bio_predator);
     }
+    if ((itemIds.has('cryo_rime') && itemIds.has('caustic_payload')) || itemIds.has('subzero_necrosis')) {
+        active.push(SYNERGY_DEFINITIONS.subzero_necrosis);
+    }
     return active;
 }
 
+export function resolveSubZeroNecrosisNova({
+    originX = 0,
+    originZ = 0,
+    scatterSprites = [],
+    novaRadius = 4.5,
+    novaDamage = 35,
+    sourceSprite = null
+} = {}) {
+    const affected = [];
+    for (const other of scatterSprites) {
+        if (!other?.parent || other === sourceSprite || other.userData?.burstTriggered) continue;
+        const dx = other.position.x - originX;
+        const dz = other.position.z - originZ;
+        const distance = Math.hypot(dx, dz);
+        if (distance > novaRadius) continue;
+        affected.push({
+            sprite: other,
+            distance,
+            damage: novaDamage,
+            freezeAmount: 50,
+            poisonDuration: 3.0
+        });
+    }
+    return affected;
+}
+
 export const BIO_ENEMY_TYPES = Object.freeze(new Set([
+    'chitin_scuttler',
     'crawler',
     'alien_proto_crawler_A',
     'alien_proto_spitter',

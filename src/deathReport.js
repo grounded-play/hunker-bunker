@@ -15,6 +15,7 @@ export const ENEMY_NAME_KEYS = Object.freeze({
     sporesnail: 'ui.death.enemy.sporesnail',
     sentinel: 'ui.death.enemy.sentinel',
     crawler: 'ui.death.enemy.crawler',
+    chitin_scuttler: 'ui.death.enemy.chitin_scuttler',
     alien_proto_crawler: 'ui.death.enemy.alien_proto_crawler',
     alien_proto_spitter: 'ui.death.enemy.alien_proto_spitter',
     mycelium_stalker: 'ui.death.enemy.mycelium_stalker',
@@ -74,7 +75,9 @@ export function describeDeathCause(reason) {
 export const BUILD_LINE_KEYS = Object.freeze({
     cryo_shatter: 'ui.death.build.cryo_shatter',
     bio_predator: 'ui.death.build.bio_predator',
+    subzero_necrosis: 'ui.death.build.subzero_necrosis',
     equipped: 'ui.death.build.equipped',
+    loadout: 'ui.death.build.loadout',
     none: 'ui.death.build.none'
 });
 
@@ -83,9 +86,10 @@ export const BUILD_LINE_KEYS = Object.freeze({
  * headline (the one that fired most); otherwise the equipped components are
  * listed; otherwise the report says there were none.
  */
-export function summarizeBuild({ equippedDropIds = [], telemetry = {} } = {}) {
+export function summarizeBuild({ equippedDropIds = [], telemetry = {}, suitModules = [] } = {}) {
     const shatter = telemetry.cryo_shatter ?? {};
     const predator = telemetry.bio_predator ?? {};
+    const necrosis = telemetry.subzero_necrosis ?? {};
     const fired = [
         (shatter.activations ?? 0) > 0 && {
             activations: shatter.activations,
@@ -94,11 +98,19 @@ export function summarizeBuild({ equippedDropIds = [], telemetry = {} } = {}) {
         (predator.activations ?? 0) > 0 && {
             activations: predator.activations,
             line: { key: BUILD_LINE_KEYS.bio_predator, params: { count: predator.activations, o2: Math.round(predator.o2 ?? 0), hearts: predator.hearts ?? 0 } }
+        },
+        (necrosis.activations ?? 0) > 0 && {
+            activations: necrosis.activations,
+            line: { key: BUILD_LINE_KEYS.subzero_necrosis, params: { count: necrosis.activations, damage: Math.round(necrosis.damage ?? 0) } }
         }
     ].filter(Boolean).sort((a, b) => b.activations - a.activations);
     if (fired.length) return fired[0].line;
     const ids = [...new Set(equippedDropIds.filter(Boolean))];
     if (ids.length) return { key: BUILD_LINE_KEYS.equipped, params: { dropKeys: ids.map((id) => `ui.relics.${id}.name`), dropIds: ids } };
+    // No field drops, but the suit carried installed modules: name them, so
+    // "no field upgrades" never hides a Pressure Seal the player built for.
+    const modules = suitModules.filter(Boolean);
+    if (modules.length) return { key: BUILD_LINE_KEYS.loadout, params: { list: modules.join(' · ') } };
     return { key: BUILD_LINE_KEYS.none };
 }
 

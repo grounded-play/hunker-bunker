@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-import { PROP_FX_ANCHORS, PROP_FX_PROFILES, applyPropFxQuality, createPropFx, getPropFxProfile, setPropFxQuality } from './propFx.js';
+import { PROP_FX_ANCHORS, PROP_FX_PROFILES, applyPropFxQuality, createPropFx, getPropFxProfile, resolvePropFxTransform, setPropFxQuality } from './propFx.js';
 
 describe('prop FX recipes', () => {
     const recentVerticalSlice = [
@@ -196,6 +196,68 @@ describe('prop FX recipes', () => {
         const fx = createPropFx(root, model, 'life_water_still');
         const water = fx.group.children.find((child) => child.isMesh);
         expect(water.position.toArray()).toEqual([0.2, 0.9, -0.1]);
+    });
+
+    it('preserves an authored outlet orientation relative to a rotated prop root', () => {
+        const parent = new THREE.Group();
+        const root = new THREE.Group();
+        root.rotation.y = Math.PI / 3;
+        parent.add(root);
+        const model = new THREE.Group();
+        const anchor = new THREE.Object3D();
+        anchor.name = PROP_FX_ANCHORS.EMITTER;
+        anchor.position.set(0.3, 0.7, -0.2);
+        anchor.rotation.z = -Math.PI / 2;
+        model.add(anchor);
+        root.add(model);
+
+        const transform = resolvePropFxTransform(root, model, {
+            anchor: PROP_FX_ANCHORS.EMITTER,
+            position: [9, 9, 9],
+            direction: [0, 1, 0]
+        });
+        const direction = new THREE.Vector3(0, 1, 0).applyQuaternion(transform.quaternion);
+
+        expect(transform.source).toBe('anchor');
+        expect(transform.anchor).toBe(PROP_FX_ANCHORS.EMITTER);
+        expect(transform.position.toArray()).toEqual(expect.arrayContaining([
+            expect.closeTo(0.3, 6), expect.closeTo(0.7, 6), expect.closeTo(-0.2, 6)
+        ]));
+        expect(direction.x).toBeCloseTo(1, 6);
+        expect(direction.y).toBeCloseTo(0, 6);
+        expect(direction.z).toBeCloseTo(0, 6);
+    });
+
+    it('uses an explicit fallback direction when a model has no outlet anchor', () => {
+        const root = new THREE.Group();
+        const model = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2));
+        root.add(model);
+        const transform = resolvePropFxTransform(root, model, {
+            anchor: 'FX_MISSING',
+            bounds: [1, 0.5, 0.5],
+            direction: [1, 0, 0]
+        });
+        const direction = new THREE.Vector3(0, 1, 0).applyQuaternion(transform.quaternion);
+
+        expect(transform.source).toBe('bounds');
+        expect(transform.position.toArray()).toEqual([1, 0, 0]);
+        expect(direction.x).toBeCloseTo(1, 6);
+        expect(direction.y).toBeCloseTo(0, 6);
+        expect(direction.z).toBeCloseTo(0, 6);
+    });
+
+    it('orients pipe steam along its fallback outlet without rotating away its origin', () => {
+        const root = new THREE.Group();
+        const model = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+        root.add(model);
+        const fx = createPropFx(root, model, 'prop_pipe_rupture');
+        const steam = fx.group.children.find((child) => child.isPoints);
+        const direction = new THREE.Vector3(0, 1, 0).applyQuaternion(steam.quaternion);
+
+        expect(steam.userData.propFxTransformSource).toBe('position');
+        expect(steam.position.toArray()).toEqual([0, 0.56, 0]);
+        expect(direction.x).toBeGreaterThan(0.98);
+        expect(direction.y).toBeGreaterThan(0.1);
     });
 
     it('places ambient effects from normalized model bounds when no authored anchor exists', () => {

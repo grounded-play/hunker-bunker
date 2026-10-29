@@ -55,6 +55,59 @@ describe('physical field weapon runtime', () => {
         expect(game.reconcileFieldWeaponDropVisuals).toHaveBeenCalledOnce();
     });
 
+    it('arms a PvP round with the staged class gun, and leaves solo and co-op on the rack', () => {
+        const makeGame = (mode) => {
+            let state = createFieldWeaponRunState('run-test');
+            state = addFieldWeaponDrop(state, createFieldWeaponDrop({
+                instanceId: 'sector-zero-loadout:run-test',
+                profileId: 'mk1_sidearm',
+                ammoInWeapon: 12,
+                reserveAmmo: 36,
+                worldPosition: { x: 40, z: 40 },
+                runId: state.runId
+            })).state;
+            const game = {
+                multiplayerMode: mode,
+                carryState: { carried: null },
+                fieldWeaponRunState: state,
+                stageSectorZeroLoadoutWeapon: () => game.fieldWeaponRunState.worldDrops[0],
+                interactWithFieldWeaponDrop: ThreeGame.prototype.interactWithFieldWeaponDrop,
+                reconcileFieldWeaponDropVisuals: vi.fn(),
+                syncEquippedFieldWeapon: ThreeGame.prototype.syncEquippedFieldWeapon,
+                emitWeaponClipState: vi.fn(),
+                showBunkerLine: vi.fn()
+            };
+            return game;
+        };
+
+        const pvp = makeGame('pvp');
+        expect(ThreeGame.prototype.equipPvpLoadoutWeapon.call(pvp)).toBe(true);
+        expect(pvp.fieldWeaponRunState.equipped).toMatchObject({ profileId: 'mk1_sidearm', ammoInWeapon: 12 });
+        // Already armed: nothing changes on a second ready signal.
+        expect(ThreeGame.prototype.equipPvpLoadoutWeapon.call(pvp)).toBe(false);
+
+        for (const mode of ['coop', undefined]) {
+            const game = makeGame(mode);
+            expect(ThreeGame.prototype.equipPvpLoadoutWeapon.call(game)).toBe(false);
+            expect(game.fieldWeaponRunState.equipped).toBeNull();
+        }
+
+        const coop = makeGame('coop');
+        expect(ThreeGame.prototype.equipDeploymentLoadoutWeapon.call(coop)).toBe(true);
+        expect(coop.fieldWeaponRunState.equipped).toMatchObject({ profileId: 'mk1_sidearm', ammoInWeapon: 12 });
+        expect(ThreeGame.prototype.equipDeploymentLoadoutWeapon.call(coop)).toBe(false);
+
+        const soloNoTutorial = makeGame(undefined);
+        soloNoTutorial._sectorZeroTutorialActive = false;
+        expect(ThreeGame.prototype.equipDeploymentLoadoutWeapon.call(soloNoTutorial)).toBe(true);
+        expect(soloNoTutorial.fieldWeaponRunState.equipped).toMatchObject({ profileId: 'mk1_sidearm', ammoInWeapon: 12 });
+
+        const soloTutorial = makeGame(undefined);
+        soloTutorial._sectorZeroTutorialActive = true;
+        expect(ThreeGame.prototype.equipDeploymentLoadoutWeapon.call(soloTutorial)).toBe(false);
+        expect(soloTutorial.fieldWeaponRunState.equipped).toBeNull();
+    });
+
     it('reloads from the equipped gun reserve without consuming the shared ammo cache', () => {
         const game = {
             fieldWeaponRunState: equippedState('cryo_lance', 2, 2),

@@ -60,4 +60,32 @@ describe('prop experience registry', () => {
         root.add(model);
         expect(createPropExperience(root, model, 'prop_cave_spores')).toBeNull();
     });
+
+    it('modulates emissive intensity on flickering corridor props and broken fixtures', () => {
+        for (const type of ['life_cochlear_intercom', 'life_ribcage_rescue_cabinet', 'life_fuse_bypass_panel', 'prop_terminal_ruptured']) {
+            const root = new THREE.Group();
+            const model = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ color: 0x333333, emissive: 0xffa648, emissiveIntensity: 1.0 });
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat);
+            model.add(mesh);
+            root.add(model);
+
+            const exp = createPropExperience(root, model, type);
+            expect(exp).not.toBeNull();
+            expect(mesh.material).not.toBe(mat);
+
+            const initialIntensity = mesh.material.emissiveIntensity;
+            let varied = false;
+            for (let i = 0; i < 20; i++) {
+                exp.update(0.05);
+                if (Math.abs(mesh.material.emissiveIntensity - initialIntensity) > 0.01) {
+                    varied = true;
+                    break;
+                }
+            }
+            expect(varied).toBe(true);
+            exp.dispose();
+            expect(mesh.material).toBe(mat);
+        }
+    });
 });

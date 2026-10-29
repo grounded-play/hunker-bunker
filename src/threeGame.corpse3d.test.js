@@ -18,7 +18,7 @@ describe('3D corpses', () => {
             getFogOfWarVisibility: () => 1,
             applyFogOfWarOpacity: () => {}
         };
-        for (const name of ['spawnEnemyCorpse', 'attachCorpse3d', 'syncCorpse3d', 'disposeCorpse3d', 'updateCorpses', 'clearCorpses', 'prewarmLateModel']) {
+        for (const name of ['spawnEnemyCorpse', 'attachCorpse3d', 'syncCorpse3d', 'disposeCorpse3d', 'updateCorpses', 'clearCorpses', 'prewarmLateModel', 'compileLateModel']) {
             game[name] = ThreeGame.prototype[name];
         }
         return game;

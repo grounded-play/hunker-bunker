@@ -68,19 +68,19 @@ export const KEYED_SPRITE_BAKES = Object.freeze({
     },
     "/decal_abandoned_meal_tray.png::14::0": {
         "url": "/3d/runtime/sprites/decal_abandoned_meal_tray-t14-c0.ktx2",
-        "sha1": "b10f56354a468ccef9d41d2e1d097a6b07874c94"
+        "sha1": "b9a2f5d4fa127defba426cae610ce302987b35f3"
     },
     "/decal_barricade_last_stand.png::14::0": {
         "url": "/3d/runtime/sprites/decal_barricade_last_stand-t14-c0.ktx2",
-        "sha1": "da1f80e7f28c82b1bb2c2e15718d3a70cbd6ded9"
+        "sha1": "97f0eba04987e64f88cb5ec590b0bb35a1d6229e"
     },
     "/decal_bio_sample_spill.png::14::0": {
         "url": "/3d/runtime/sprites/decal_bio_sample_spill-t14-c0.ktx2",
-        "sha1": "1666447d1a85f77d88128c195a3a76bd3578536c"
+        "sha1": "33ce7ea898f1f9d9f6b9e850dddd4d931cf2f540"
     },
     "/decal_biohazard_stencil.png::14::0": {
         "url": "/3d/runtime/sprites/decal_biohazard_stencil-t14-c0.ktx2",
-        "sha1": "b2f9b186c688aeee50257c542fbf2546698b9cc9"
+        "sha1": "45f88a97dd156f8a4c09a33031a75a8ba3c4babd"
     },
     "/decal_bite_marks_02.png::14::0": {
         "url": "/3d/runtime/sprites/decal_bite_marks_02-t14-c0.ktx2",
@@ -92,15 +92,15 @@ export const KEYED_SPRITE_BAKES = Object.freeze({
     },
     "/decal_bullet_holes.png::14::0": {
         "url": "/3d/runtime/sprites/decal_bullet_holes-t14-c0.ktx2",
-        "sha1": "b7c4aeb13664e392651dfd5568b6959be6664223"
+        "sha1": "203a2dd6dec059dcf125b48e6c028602caef4eba"
     },
     "/decal_childlike_cave_map.png::14::0": {
         "url": "/3d/runtime/sprites/decal_childlike_cave_map-t14-c0.ktx2",
-        "sha1": "feb96440aefd9149f838b331d85ff10129d24e65"
+        "sha1": "9832b8940b4df02a5a28ce53d93ee28e2ce2ef10"
     },
     "/decal_claw_scratches.png::14::0": {
         "url": "/3d/runtime/sprites/decal_claw_scratches-t14-c0.ktx2",
-        "sha1": "43986c4422edd91cc9338774d5b5e7b30a4952d1"
+        "sha1": "f73466e4702b89376cd10204087a7e58c7640ab0"
     },
     "/decal_condensation_run.png::14::0": {
         "url": "/3d/runtime/sprites/decal_condensation_run-t14-c0.ktx2",
@@ -108,11 +108,11 @@ export const KEYED_SPRITE_BAKES = Object.freeze({
     },
     "/decal_emergency_oxygen_nest.png::14::0": {
         "url": "/3d/runtime/sprites/decal_emergency_oxygen_nest-t14-c0.ktx2",
-        "sha1": "a81dc1281fdb184a8621e338f261891365624bf1"
+        "sha1": "5583ed58c0f1f9d5761204f53bfc88c0586d12c6"
     },
     "/decal_failed_decon_kit.png::14::0": {
         "url": "/3d/runtime/sprites/decal_failed_decon_kit-t14-c0.ktx2",
-        "sha1": "6dbb476a394afdd7fff8b260856a5841986b6fde"
+        "sha1": "ed9a1865fffd028337cc99d7d4bfa7637bc85720"
     },
     "/decal_flesh_press.png::14::0": {
         "url": "/3d/runtime/sprites/decal_flesh_press-t14-c0.ktx2",
@@ -156,7 +156,7 @@ export const KEYED_SPRITE_BAKES = Object.freeze({
     },
     "/decal_footprints_mud.png::14::0": {
         "url": "/3d/runtime/sprites/decal_footprints_mud-t14-c0.ktx2",
-        "sha1": "dd863ee6eed8b2b088fa691821916548dfb8a9f7"
+        "sha1": "1538ea4829271b9d8db26fd2d8c83512bd0e784d"
     },
     "/decal_friction_burn.png::14::0": {
         "url": "/3d/runtime/sprites/decal_friction_burn-t14-c0.ktx2",
@@ -200,11 +200,11 @@ export const KEYED_SPRITE_BAKES = Object.freeze({
     },
     "/decal_hazard_stripes.png::14::0": {
         "url": "/3d/runtime/sprites/decal_hazard_stripes-t14-c0.ktx2",
-        "sha1": "76fc46ca1836e0135a8227f72737eeac9cfec95a"
+        "sha1": "5ff5e1ea5e732a967e4ed59e121c2c7a422d888c"
     },
     "/decal_hive_growth.png::14::0": {
         "url": "/3d/runtime/sprites/decal_hive_growth-t14-c0.ktx2",
-        "sha1": "b3299f8f7437c19085c042bc6755bc121ccb709b"
+        "sha1": "f2294ce251037b9f734b2e7c01f9090830f202e8"
     },
     "/decal_lacquer_blister_01.png::14::0": {
         "url": "/3d/runtime/sprites/decal_lacquer_blister_01-t14-c0.ktx2",
@@ -220,11 +220,11 @@ export const KEYED_SPRITE_BAKES = Object.freeze({
     },
     "/decal_maintenance_shrine.png::14::0": {
         "url": "/3d/runtime/sprites/decal_maintenance_shrine-t14-c0.ktx2",
-        "sha1": "228fdaf1cc2a9eb9ea24bfc9251cfe45f1a2f68a"
+        "sha1": "06f0fe0a6b0faf7a9eabe6c58e3eacf113c1f19c"
     },
     "/decal_meridian_stencil.png::14::0": {
         "url": "/3d/runtime/sprites/decal_meridian_stencil-t14-c0.ktx2",
-        "sha1": "2996ba3432ac74b8b385db4d1e5007574e17ba71"
+        "sha1": "bf8f24273ec420b6effed239d880123747cfa036"
     },
     "/decal_mirror_tarnished.png::14::0": {
         "url": "/3d/runtime/sprites/decal_mirror_tarnished-t14-c0.ktx2",
@@ -232,7 +232,7 @@ export const KEYED_SPRITE_BAKES = Object.freeze({
     },
     "/decal_oil_spill_patch.png::14::0": {
         "url": "/3d/runtime/sprites/decal_oil_spill_patch-t14-c0.ktx2",
-        "sha1": "0f9e5384db804b023c8a73083e479ba9e994e8b2"
+        "sha1": "f8df4ecffbb6a3194c31abae1c47761e06e65d52"
     },
     "/decal_rust_bleed_1.png::14::0": {
         "url": "/3d/runtime/sprites/decal_rust_bleed_1-t14-c0.ktx2",
@@ -248,7 +248,7 @@ export const KEYED_SPRITE_BAKES = Object.freeze({
     },
     "/decal_spore_growth_patch.png::14::0": {
         "url": "/3d/runtime/sprites/decal_spore_growth_patch-t14-c0.ktx2",
-        "sha1": "154f959001d7b747ede27ef8d7697ec9ab2f1b7c"
+        "sha1": "e22f99dda1a48b1da4b71a764b50938bf92f5a4a"
     },
     "/decal_spore_stain_01.png::14::0": {
         "url": "/3d/runtime/sprites/decal_spore_stain_01-t14-c0.ktx2",
@@ -264,7 +264,7 @@ export const KEYED_SPRITE_BAKES = Object.freeze({
     },
     "/decal_tallow_symbol.png::14::0": {
         "url": "/3d/runtime/sprites/decal_tallow_symbol-t14-c0.ktx2",
-        "sha1": "6edb3c4c34ae38a2a4c16e9257ff2923cc2cd3b7"
+        "sha1": "26b7d4c436b4f7dc80a11daf2b2ef29673e26680"
     },
     "/decal_vine_iron_shadow_1.png::14::0": {
         "url": "/3d/runtime/sprites/decal_vine_iron_shadow_1-t14-c0.ktx2",
@@ -276,7 +276,7 @@ export const KEYED_SPRITE_BAKES = Object.freeze({
     },
     "/decal_wall_breach.png::14::0": {
         "url": "/3d/runtime/sprites/decal_wall_breach-t14-c0.ktx2",
-        "sha1": "f91c31a1f69e6e09990e626688e582628ebcbabf"
+        "sha1": "b07908f285808c9119c9463219886156dcebff2a"
     },
     "/decal_wall_panel_grille_01.png::14::0": {
         "url": "/3d/runtime/sprites/decal_wall_panel_grille_01-t14-c0.ktx2",
@@ -300,7 +300,7 @@ export const KEYED_SPRITE_BAKES = Object.freeze({
     },
     "/decal_worker_sleep_roll.png::14::0": {
         "url": "/3d/runtime/sprites/decal_worker_sleep_roll-t14-c0.ktx2",
-        "sha1": "31969c0cf524d201109121a77c01f6db1a834992"
+        "sha1": "c0d9d7811bc797d10331b20216314a2ae36cf7d4"
     },
     "/door_biomechanical.png::14::0": {
         "url": "/3d/runtime/sprites/door_biomechanical-t14-c0.ktx2",

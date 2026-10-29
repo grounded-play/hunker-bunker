@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T19:13:01.630Z",
+  "generatedAt": "2026-10-17T22:16:46.183Z",
   "app": {
     "appId": 4957040,
     "title": "Hunker Bunker",
@@ -296,25 +296,34 @@
       "displayName": "SLAY THE QUEEN",
       "description": "Defeat the Queen in single combat.",
       "hidden": true,
-      "publishNow": false,
-      "codeStatus": "hold: comingSoon in code",
+      "publishNow": true,
+      "codeStatus": "active",
       "icon": "public/ach_slay_the_queen.png",
       "lockedIcon": "public/ach_slay_the_queen_locked.png"
-    }
-  ],
-  "activeAchievementCount": 23,
-  "heldAchievements": [
+    },
     {
-      "apiName": "slay_the_queen",
-      "displayName": "SLAY THE QUEEN",
-      "description": "Defeat the Queen in single combat.",
+      "apiName": "arcade_wizard",
+      "displayName": "ARCADE WIZARD",
+      "description": "Score 65,000 or higher on the camp arcade cabinet.",
+      "hidden": false,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_arcade_wizard.png",
+      "lockedIcon": "public/ach_arcade_wizard_locked.png"
+    },
+    {
+      "apiName": "tinas_challenger",
+      "displayName": "TINA'S CHALLENGER",
+      "description": "Beat Mayor Tina's arcade record of 104,200.",
       "hidden": true,
-      "publishNow": false,
-      "codeStatus": "hold: comingSoon in code",
-      "icon": "public/ach_slay_the_queen.png",
-      "lockedIcon": "public/ach_slay_the_queen_locked.png"
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_tinas_challenger.png",
+      "lockedIcon": "public/ach_tinas_challenger_locked.png"
     }
   ],
+  "activeAchievementCount": 26,
+  "heldAchievements": [],
   "stats": [
     {
       "apiName": "total_deaths",
@@ -540,7 +549,7 @@
   },
   "inventory": {
     "appid": 4957040,
-    "itemCount": 125,
+    "itemCount": 127,
     "sellableItems": [
       {
         "itemdefid": 4001,

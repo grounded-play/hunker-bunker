@@ -1,4 +1,19 @@
 {
+  "recalibration_feedback": {
+    "action_label": "PRÓXIMO COMBATE:",
+    "tradeoff_label": "DESVENTAJA:",
+    "installed": "{name} instalado. Calibración verificada.",
+    "next_fight": "{name} LISTO — {action}",
+    "mods": {
+      "cryo_rime": { "action": "Golpea al mismo enemigo hasta congelarlo y cambia de posición.", "tradeoff": "5% menos daño directo; congelar requiere varios impactos." },
+      "caustic_payload": { "action": "Infecta a un enemigo y cúbrete mientras la corrosión sigue actuando.", "tradeoff": "10% menos daño directo; la corrosión necesita tiempo." },
+      "subzero_necrosis": { "action": "Congela y corroe un objetivo; mátalo junto a otros para provocar una nova.", "tradeoff": "La nova requiere que muera un objetivo congelado y corroído." },
+      "kinetic_hollow_point": { "action": "Dispara desde cobertura para causar 25% más daño directo.", "tradeoff": "Recibes 15% más daño." },
+      "hyper_split_core": { "action": "Atrapa a un grupo con tu abanico de tres proyectiles.", "tradeoff": "Cada proyectil causa 25% menos daño; la dispersión reduce la precisión." },
+      "corrupted_overcharge": { "action": "Busca cobertura entre ráfagas para causar 80% más daño directo.", "tradeoff": "Recibes 35% más daño." },
+      "o2_siphon_chamber": { "action": "Con menos de 50% de oxígeno, el daño aumenta al bajar el oxígeno. Prepara una salida.", "tradeoff": "Sin bonificación por encima de 50% de oxígeno. La asfixia sigue siendo mortal." }
+    }
+  },
   "common": {
     "ok": "Aceptar",
     "cancel": "Cancelar",
@@ -53,6 +68,26 @@
       "copy": "Sintetiza suministros de campo usando materiales almacenados. Los efectos se aplican de inmediato a tu expedición actual.",
       "craft": "FABRICAR",
       "close": "SALIR DEL BANCO",
+      "tab_supplies": "FABRICACIÓN DE SUMINISTROS",
+      "tab_recalibration": "RECALIBRACIÓN DE CAMPO (1/CAMPAMENTO)",
+      "recalibration_consumed": "RECALIBRACIÓN CONSUMIDA (1/1)",
+      "recalibration_ready": "PROTOCOLO LISTO (1 POR CAMPAMENTO)",
+      "reroll_matrix": "REGENERAR MATRIZ ({cost} TEC)",
+      "fusion_tag": "FUSIÓN CRIO + BIO",
+      "element_overclock": "SOBRECARGA {element}",
+      "weapon_overclock": "SOBRECARGA DE ARMA",
+      "calibration_used": "CALIBRACIÓN DEL CAMPAMENTO USADA",
+      "synthesize_fusion": "SINTETIZAR FUSIÓN",
+      "install_recalibration": "INSTALAR RECALIBRACIÓN",
+      "stat_tech": "TEC / CHATARRA",
+      "stat_med": "SUMINISTROS MÉDICOS",
+      "stat_coin": "MONEDA",
+      "stat_shells": "CÁPSULAS",
+      "stat_health": "SALUD",
+      "stat_shield": "ESCUDO",
+      "stat_ammo": "MUNICIÓN",
+      "need_resource": "FALTAN {need} {resource}",
+      "deficit": "DÉFICIT",
       "ammo_pack_name": "Paquete de Municiones Estándar",
       "ammo_pack_desc": "Recarga 30 rondas cinéticas y llena el cargador activo.",
       "med_patch_name": "Biosutura de Emergencia",
@@ -247,8 +282,11 @@
       "accessibility": "ACCESIBILIDAD",
       "profile_saves": "PERFIL Y PARTIDAS",
       "session_display": "SESIÓN Y PANTALLA",
+      "steam_overlay": "OVERLAY DE STEAM (SHIFT+TAB)",
       "return_to_game": "VOLVER AL JUEGO",
       "resume": "REANUDAR",
+      "skip_onboarding": "OMITIR ENTRENAMIENTO",
+      "skip_onboarding_desc": "ABRIR SECTOR 1 CON EQUIPO DE CAMPO ESTÁNDAR",
       "abort_current_mission": "ABORTAR MISIÓN ACTUAL",
       "abort_mission": "ABORTAR MISIÓN",
       "title_active_crosshair_color": "Color de mira activo",
@@ -434,9 +472,12 @@
     },
     "loading": {
       "aria_label_build_and_developer": "Información de compilación y desarrollador",
+      "aria_label_deployment_progress": "Progreso del despliegue",
       "system_build": "COMPILACIÓN DEL SISTEMA",
       "dev_console": "CONSOLA DEV",
       "initializing_systems": "INICIALIZANDO SISTEMAS",
+      "squad_waiting": "SINCRONIZANDO ESCUADRA — {loaded} / {total} OPERADORES LISTOS",
+      "squad_ready": "ESCUADRA LISTA — ABRIENDO COMPUERTAS",
       "msg_biometric_airlock": "CALIBRANDO LA ESCLUSA BIOMÉTRICA",
       "msg_reactor_bulkhead": "BLINDANDO LA MAMPARA DE REFRIGERANTE DEL REACTOR",
       "msg_thermal_shield": "ESTABILIZANDO EL ESCUDO SUPERCONDUCTOR TÉRMICO",
@@ -681,13 +722,6 @@
     "close_player_trade": {
       "aria_label_close_trade_link": "Cerrar enlace de intercambio"
     },
-    "npc_dialogue": {
-      "affection_bond": "AFECTO // VÍNCULO",
-      "press_1_4_or_click": "PULSA [1-4] O HAZ CLIC EN UNA CARTA • [ESC] RETIRARSE"
-    },
-    "close_npc_dialogue": {
-      "title_exit_dialogue": "Salir del diálogo"
-    },
     "demo_end": {
       "transmission_terminated": "◈ TRANSMISIÓN TERMINADA",
       "you_belong_to_the_deep": "«Ahora perteneces a las profundidades, maquinita. El enjambre recuerda tu llamado.»",
@@ -832,9 +866,34 @@
       "press_e": "PULSA E",
       "defense_turret_controls": "CONTROLES DE TORRETA DEFENSIVA"
     },
+    "coop": {
+      "revive_prompt": "REANIMAR A {callsign}",
+      "reviving_toast": "REANIMANDO A {callsign}...",
+      "downed_toast": "ESTÁS CAÍDO — UN COMPAÑERO PUEDE REANIMARTE",
+      "squadmate_down_toast": "COMPAÑERO CAÍDO: {callsign} — PÁRATE SOBRE ÉL Y PULSA INTERACTUAR PARA REANIMAR"
+    },
     "foundry_hud_prompt": {
       "press_e": "PULSA E",
-      "open_fab_bay": "ABRIR TALLER DE FABRICACIÓN"
+      "open_fab_bay": "ABRIR TALLER DE FABRICACIÓN",
+      "grow_signal_dish": "AMPLIAR ANTENA DE SEÑAL",
+      "install_power_core": "INSTALAR NÚCLEO DE ENERGÍA",
+      "offline_missing_power_core": "FUERA DE LÍNEA · FALTA NÚCLEO DE ENERGÍA",
+      "recover_power_core": "RECUPERAR NÚCLEO DE ENERGÍA DE LA FUNDICIÓN",
+      "locked_line": "FUNDICIÓN SIN ENERGÍA — BUSCA EL NÚCLEO MARCADO EN EL MAPA.",
+      "offline_title": "FUNDICIÓN FUERA DE LÍNEA // SIN ENERGÍA",
+      "offline_status": "> ACOPLE DE ENERGÍA DE LA BAHÍA MUERTO<br>> RECUPERA EL NÚCLEO EN {location}{distance} (MARCADO EN EL MAPA)",
+      "offline_toast_title": "FUNDICIÓN FUERA DE LÍNEA",
+      "offline_toast_status": "Sin energía. Recupera el núcleo en {location}{distance}, marcado en el mapa.",
+      "core_title": "NÚCLEO DE LA FUNDICIÓN ASEGURADO",
+      "core_status": "> NÚCLEO DE ENERGÍA RECUPERADO<br>> VUELVE A LA FUNDICIÓN PARA RESTAURAR LA ENERGÍA",
+      "core_toast_title": "NÚCLEO OBTENIDO",
+      "core_toast_status": "Vuelve a la fundición para restaurar la energía de fabricación.",
+      "online_title": "FUNDICIÓN EN LÍNEA",
+      "online_status": "> NÚCLEO INSTALADO // BAHÍA DE FABRICACIÓN EN LÍNEA",
+      "map_offline": "FUNDICIÓN (FUERA DE LÍNEA)",
+      "map_core": "NÚCLEO DE FUNDICIÓN",
+      "unknown_location": "ANOMALÍA DEL SECTOR",
+      "speaker": "OPERADOR INGENIERO"
     },
     "scientist_hud_prompt": {
       "press_e": "PULSA E",
@@ -968,7 +1027,9 @@
       "abort_mission": "ABORTAR MISIÓN",
       "cancel": "CANCELAR",
       "terminate_question": "¿TERMINAR ESTE CONTRATO AQUÍ MISMO?",
-      "terminate_detail": "Mantenimiento embolsará el traje y preparará una caja negra para el próximo descenso."
+      "terminate_detail": "Mantenimiento embolsará el traje y preparará una caja negra para el próximo descenso.",
+      "scope_coop": "Solo sales tú. Tu escuadra sigue con la expedición.",
+      "scope_pvp": "Abandonas la ronda. Tu rival gana."
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "LA NOCHE CERRARÁ LAS PUERTAS",
@@ -1157,8 +1218,48 @@
       "no_ranks": "SIN CLASIFICACIONES",
       "anonymous_agent": "Agente"
     },
+    "arcade": {
+      "thrust": "[W/A/D · STICK] EMPUJE/GIRO",
+      "fire": "[ESPACIO · A] DISPARAR",
+      "exit": "[ESC · B] SALIR DE LA MÁQUINA",
+      "reflexes": "REFLEJOS DE ARCADE: recargas 10 % más rápidas por el resto de esta expedición.",
+      "sheen_unlocked": "BRILLO DE ARMA DESBLOQUEADO: {name}",
+      "decal_unlocked": "CALCOMANÍA DESBLOQUEADA: {name}",
+      "tina_radio": "ALCALDESA TINA: Vaya, vaya, estrella... por fin alguien rompió mi récord. Pasa por el puesto de la deriva; las bebidas corren por mi cuenta.",
+      "blackjack_title": "BLACK-ICE 21",
+      "blackjack_prompt": "[E] JUGAR BLACK-ICE 21 (BLACKJACK)",
+      "blackjack_built": "ÁREA RECREATIVA EN LÍNEA // GABINETE BLACK-ICE 21 CONSTRUIDO",
+      "blackjack_wager": "APUESTA ACTUAL: {amount} MONEDAS",
+      "blackjack_win": "GANA EL OPERADOR: +{amount} MONEDAS",
+      "blackjack_tier_clear": "NIVEL {tier} SUPERADO: +{bonus} MONEDAS EXTRA",
+      "blackjack_module": "MÓDULO RECREATIVO DE LA BASE",
+      "blackjack_module_desc": "TERMINAL DE BLACKJACK ROGUELIKE · INSTALACIÓN PERMANENTE EN EL SITIO DEL IMPACTO",
+      "blackjack_installed": "INSTALADO EN EL SITIO DEL IMPACTO",
+      "blackjack_build": "CONSTRUIR GABINETE BLACK-ICE 21",
+      "blackjack_controls_wager": "[↑/↓] APUESTA",
+      "blackjack_controls_deal": "[ESPACIO] REPARTIR/PLANTARSE",
+      "blackjack_controls_hit": "[1] PEDIR",
+      "blackjack_controls_stand": "[2] PLANTARSE",
+      "blackjack_controls_double": "[3] DOBLAR",
+      "blackjack_controls_chips": "[4/5/6] CRIO / TÉRMICO / PEM",
+      "blackjack_controls_exit": "[ESC] SALIR"
+    },
     "interstitial": {
       "track": "PISTA {id}"
+    },
+    "current_manifest": {
+      "title": "MANIFIESTO DE DESPEGUE",
+      "known_title": "PLAZAS COMPROMETIDAS CONOCIDAS",
+      "claimed": "{used}/{max} COMPROMETIDAS",
+      "operator": "TÚ 1",
+      "survivors": "SUPERVIVIENTES {count}",
+      "allies": "ALIADOS {count}",
+      "queen": "REINA 2",
+      "egg": "HUEVO 1",
+      "free": "LIBRES {count}",
+      "over_capacity": "{count} PLAZAS DE MÁS — REVISA LOS COMPROMISOS ANTES DE ABORDAR.",
+      "egg_requires_nahl": "EL HUEVO NECESITA A NAHL A BORDO.",
+      "egg_unstable": "EL HUEVO NECESITA A LA REINA O A NAHL A BORDO."
     },
     "manifest": {
       "title": "MANIFIESTO DE REGRESO",
@@ -1307,7 +1408,10 @@
       "no_tracked_objectives": "SIN OBJETIVOS SEGUIDOS",
       "surface": "SUPERFICIE",
       "story_prelude": "ACTO I // PRELUDIO HUMANO",
-      "build_mismatch": "EL ANFITRIÓN USA {host} Y TÚ USAS {client} — ACTUALIZA O CAMBIA TU RAMA BETA DE STEAM PARA COINCIDIR"
+      "build_mismatch": "EL ANFITRIÓN USA {host} Y TÚ USAS {client} — ACTUALIZA O CAMBIA TU RAMA BETA DE STEAM PARA COINCIDIR",
+      "lobby_build_tag": "v{build}",
+      "lobby_build_mismatch": "VERSIÓN DISTINTA — ANFITRIÓN v{host}, TÚ v{client}",
+      "squad_build_mismatch": "UN COMPAÑERO USA OTRA VERSIÓN DEL JUEGO — TODOS DEBEN COINCIDIR PARA DESPLEGAR"
     },
     "dossier": {
       "title": "EXPEDIENTE TÁCTICO",
@@ -1579,12 +1683,6 @@
       "self_class": "{class} // OPERATIVO",
       "peer_class": "{class} // REMOTO"
     },
-    "bond": {
-      "enamored": "ENAMORADA / DEVOTA",
-      "warm": "CÁLIDA / ATRACCIÓN",
-      "attentive": "ATENTA",
-      "badge": "{label} ({score} PTS)"
-    },
     "fab": {
       "scatter_repeater": "REPETIDOR DE DISPERSIÓN",
       "equipped_next_run": "EQUIPADO PARA LA PRÓXIMA PARTIDA ✓",
@@ -1610,7 +1708,23 @@
       "stat_rate": "CADENCIA ×{value}",
       "stat_range": "ALCANCE ×{value}",
       "stat_shots": "{count} DISPAROS",
-      "odds": "PROBABILIDADES"
+      "odds": "PROBABILIDADES",
+      "welder_kicker": "RESPUESTA A BRECHA DEL CAMPAMENTO",
+      "welder_title": "SOLDADOR DE MAMPARAS DE CAMPO",
+      "welder_desc": "Reconstruye muros rotos por jefes y repara módulos dañados del campamento en el campo.",
+      "welder_installed": "SOLDADOR DE CAMPO CONSTRUIDO",
+      "welder_build": "CONSTRUIR SOLDADOR DE CAMPO",
+      "welder_ready": "SOLDADOR DE MAMPARAS DE CAMPO LISTO",
+      "close_automart": "Cerrar Auto-Mart",
+      "ledger_balance": "LIBRO DE CHATARRA / SALDO DE MONEDAS:",
+      "aisles_aria": "Pasillos del Auto-Mart",
+      "aisle_hardware": "CONSTRUCCIÓN Y ACCESORIOS",
+      "aisle_weapons": "ARMAS Y MUNICIONES",
+      "aisle_lotto": "LOTO-IMPRESIÓN",
+      "aisle_all": "TODOS LOS PASILLOS",
+      "slot_marquee": "LOTO-IMPRESIÓN ESPECULATIVA HORIZON // TIRA DE LA PALANCA",
+      "lotto_window_title": "VENTANA DE IMPRESIÓN ESPECULATIVA ACTIVA",
+      "lotto_window_hint": "Revisa las probabilidades, introduce chatarra y luego tira de la palanca de fabricación de arriba."
     },
     "camp": {
       "sleep_warning": "Dormir en {camp} avanza al día {day}. Estas señales sin resolver se cerrarán.",
@@ -1629,7 +1743,6 @@
       "field_conversation": "CONVERSACIÓN DE CAMPO",
       "callsign": "DISTINTIVO {callsign}",
       "listen_hint": "Escucha y luego decide cómo quieres ayudar.",
-      "quote": "«{text}»",
       "next_action": "Tu próxima acción cambia el manifiesto de lanzamiento y el vector del final.",
       "scar_gained": "LA NOCHE DEJÓ SU MARCA: {scar}",
       "services": "SERVICIOS DEL CAMPAMENTO ({count})",
@@ -1919,6 +2032,7 @@
         "sporesnail": "Caracol de esporas",
         "sentinel": "Centinela",
         "crawler": "Reptador de brecha",
+        "chitin_scuttler": "Escurridizo de quitina",
         "alien_proto_crawler": "Proto-reptador",
         "alien_proto_spitter": "Proto-escupidor",
         "mycelium_stalker": "Acechador de micelio",
@@ -1936,7 +2050,9 @@
       "build": {
         "cryo_shatter": "Build: Crio-fragmentación se activó {count}× con {damage} de daño",
         "bio_predator": "Build: Biodepredador se activó {count}×, restaurando {o2}% de O₂ y {hearts} corazones",
+        "subzero_necrosis": "Build: Necrosis Subcero se activó {count}× e infligió {damage} de daño",
         "equipped": "Build: {drops} (ninguna sinergia se activó)",
+        "loadout": "Build: {list} instalado (ninguna sinergia activada)",
         "none": "Build: sin mejoras de campo en este despliegue"
       },
       "field": {
@@ -2143,6 +2259,7 @@
       "slay_the_queen": "SE OBTIENE AL MATAR A LA REINA",
       "archivist": "SE OBTIENE CON EL LOGRO ARCHIVISTA",
       "reach_depth": "SE OBTIENE AL LLEGAR A PROFUNDIDAD {depth}",
+      "arcade_score": "SE OBTIENE AL LOGRAR {score} PUNTOS EN EL ARCADE",
       "class_runs": "SE OBTIENE TRAS {runs} PARTIDAS DE {cls}",
       "achievement": "SE OBTIENE CON UN LOGRO",
       "confirm_buy": "HAZ CLIC DE NUEVO PARA COMPRAR",
@@ -2204,7 +2321,6 @@
         "map_zoom": "[LB / RB] ZOOM",
         "map_operator": "[A] OPERADOR",
         "map_close": "[B] / [VIEW] CERRAR",
-        "dialogue_choose": "CRUCETA PARA ELEGIR • [A] SELECCIONAR • [B] RETIRARSE",
         "compass_map": "[VIEW]",
         "radar_scan": "Escaneo de radar [LB]",
         "armory_cycle": "[LB / RB CAMBIAR]",
@@ -2216,6 +2332,7 @@
       "night_body": "El operador duerme. Algo allá afuera no.",
       "morning_title": "DÍA {day} · 06:00",
       "morning_status": "{site} // COMIENZA UN NUEVO DÍA",
+      "morning_objective": "OBJETIVO: {objective}",
       "skip": "Presiona cualquier tecla para despertar"
     },
     "mystery": {
@@ -2278,6 +2395,15 @@
       "area_bio": "en el sector bio",
       "area_unknown": "en el terreno",
       "notice": "Pantalla: {setting} bajó a {to} para mantener el juego fluido. Ver Ajustes › Gráficos."
+    },
+    "kiosk": {
+      "exit": "SALIR",
+      "deal": "REPARTIR",
+      "hit": "PEDIR",
+      "stand": "PLANTARSE",
+      "double": "DOBLAR",
+      "pull_lever": "Tira de la palanca para girar",
+      "scroll_more": "▼ HAY MÁS ABAJO · DESPLAZAR · W / S · ↑ / ↓ · CRUCETA"
     }
   },
   "narrative": {
@@ -3776,6 +3902,10 @@
       "4167": {
         "desc": "Ancla de descenso que ha bajado más de lo que debía.",
         "name": "Ancla profunda"
+      },
+      "4168": {
+        "desc": "Se obtiene al lograr 65,000 puntos en SUB-CRUST PROTOCOL: 1984.",
+        "name": "Calcomanía Caracol Píxel Retro"
       },
       "4200": {
         "desc": "Acabado completo del chasis del operador con la identidad Escarcha Profunda.",

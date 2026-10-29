@@ -1,12 +1,12 @@
 # Hunker Bunker Versioning Strategy & Release Roadmap
 
-**Current Active Sprint:** [Sprint 52](planning/sprint-52-playthrough-2026-10-07.md)
+**Current Active Sprint:** [Sprint 53](planning/sprint-53-master-verification-and-execution-plan-2026-10-17.md)
 
-**Active Development Branch:** `dev/sprint-52`
+**Active Development Branch:** `dev/sprint-53`
 
-**Current Working Version:** `v2.4.17-beta` (`2.4.17-beta` in `package.json`, branch `dev/sprint-52`)
+**Current Working Version:** `v2.4.18-beta` (`2.4.18-beta` in `package.json`, branch `dev/sprint-53`)
 
-**Latest Tagged Baseline:** `v2.4.16-beta` on `mothership` (`920f2406`)
+**Latest Tagged Baseline:** `v2.4.17-beta` on `mothership` (`d3d8d391`)
 
 **Main Branch:** `mothership`
 
@@ -56,6 +56,7 @@ Bump `package.json` and `package-lock.json` together (`npm version <v>
 | **v2.4.1-beta** | Sprint 35 (`dev/sprint-35`) | 2026-09-11 | PR to `mothership` | Initial localization sweep and enemy dismemberment pass. 2,989 tests across 330 files. |
 | **v2.4.2-beta** | `dev/destructibles` | 2026-09-11 | PR to `mothership` | Destruction pass, prop physics chunks, story linchpins, and Mayor Tina killable. 3,048 tests across 334 files. |
 | **v2.4.4-beta** | Sprint 40 (`dev/sprint-40`) | 2026-09-16 | [PR #72](https://github.com/grounded-play/hunker-bunker/pull/72) (`e017b06`) | **Deep localization (7 locales)** with 0 unlocalized DOM sinks and runtime catalogs; **Alternate Radio Voice Banks** (Soviet Sub-Commander & AURA with 104 slots / 208 takes, persona cards, and crash sequences); **10 motion ending cinematics** with audio beds; **Phase A AgX tone mapping & IBL reflections**; 52 playtest stability tickets (DP-01 through DP-52). 3,548 tests across 392 files, 9/9 Playwright E2E browser tests. |
+| **v2.4.18-beta** | Sprint 53 (`dev/sprint-53`) | 2026-10-26 | PR to `mothership` | **The Definitive First Expedition** (five-phase Sector 0 into Ring 1, rebuilt crash site, first night and O₂-boss breach loop); **camp and cinematic grammar** (earned non-repeating dialogue, all 32 song cards on triggers behind one door system); **enemy triangle** (Chitin Scuttlers, Spore Mortars, Mycelium Stalkers) and Field Recalibration; physical vignettes, emitters and multiplayer prop/item/enemy replication; 30–40 s shader freezes fixed and mobile Lighthouse gate cleared (#106); resume restores the field weapon at the base spawn with audio held until deployed; 276 code-only speech lines voiced plus eight new voices; Steam review build 25965936 remediation; Electron 45; steam-build CI green again. [Release notes](releases/v2.4.18-beta.md). |
 | **v2.4.17-beta** | Sprint 52 (`dev/sprint-52`) | 2026-10-15 | PR to `mothership` | **Base rebuild by carrying it** (two-handed carry, install sockets, first-night sealed berth, ship modules from recovered cargo); **field weapons and the M-70 flamethrower** (burning, meltable ice gates, thermal route); 40 pass-2 and 60 expansion models, 12 PBR suites, 48 decals; room-tone acoustics and casing Foley; lower-console HUD naming the gun in hand; guns held muzzle-out and Armory picks kept at launch; every room door drops into the floor; N-way floor blending without sparkle; one spatial menu navigation model; CodeQL alerts on the branch cleared. 6,152 tests across 718 files; no new CodeQL alerts. [Release notes](releases/v2.4.17-beta.md). |
 | **v2.4.16-beta** | Sprint 50 (`dev/sprint-50`) | 2026-10-06 | [PR #105](https://github.com/grounded-play/hunker-bunker/pull/105) | **O2 generator cutscene** plays the new voiced film (WebM re-encoded from the MP4 with its audio); **installable web build** (service worker, apple-touch and maskable icons); boot payload 13.6 MB -> 5.4 MB (unused key art no longer preloaded, hidden-screen images lazy, SVG favicon); `sprintf-js` removed via a `global-agent` 4 override (`npm audit` 0); camp barter floors at zero. |
 | **v2.4.15-beta** | `deps/2026-10-06-security-and-minor` | 2026-10-06 | PR to `mothership` | **Dependency maintenance**: Dependabot alerts #72 (`compression` 1.8.2), #73 (`source-map-js` 1.2.2) and #75 (`shell-quote` 1.12.0 via an override, since `concurrently` 10.0.5 pins 1.9.0) fixed; minor/patch group (vitest and coverage 5.0.3, eslint 10.12.0, globals 17.13.0, wait-on 9.5.1). Supersedes #102 and #103, whose lockfiles failed `npm ci`. #74 (`sprintf-js`, build-time only via `electron-builder`) has no patched release. 5,234 tests across 596 files. |

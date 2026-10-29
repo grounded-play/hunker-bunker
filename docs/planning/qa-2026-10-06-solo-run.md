@@ -1,5 +1,8 @@
 # QA — 27-minute solo run, 2026-10-06
 
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** Findings and fixes from this solo QA session have been integrated. Hardware verification gates for camp interactions and Foundry progression are consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](sprint-53-master-verification-and-execution-plan-2026-10-17.md).
+
 **Capture:** `hunker-bunker-session-2026-10-06T22-52-30-009Z-mux9xn5p-uzr.json` in the session-log drop box.
 - Build `2.4.16-beta` (`b8b3f3bc`), Steam Deck, controller plus touch.
 - Engineer; died at 27 min (cryo hazard).
@@ -60,7 +63,7 @@ What the owner said:
   - Done in Sprint 51 (`44f00b5f`): C / right-stick click cycles a camp's actions (`cycleCampAction`). TALK always works, with ambient lines once the beats are used. Each camp's two workers are named residents you can talk to (`src/data/campResidents.js`).
 - [x] **Companion stuck.** From 8 min on, the companion logged `companion-repath`/`companion-relocated` every 5–10 s (with `id: null`) for the rest of the run: it couldn't path and kept teleporting. Investigate the follow pathing in maze chunks, and why the id is null in the log.
   - Done in Sprint 51 (`44f00b5f`): the companion relocated onto wall tiles and then could never path. It now steps out to open ground (`nearestWalkableCell`), and a settled companion stays at the camp as a resident.
-- [ ] **Verify on hardware:**
+- [x] **Verify on hardware:** consolidated into [Sprint 53 Master Verification Plan](sprint-53-master-verification-and-execution-plan-2026-10-17.md#3-gameplay-journey--hardware-verification):
   - settle a survivor at a camp with a lore terminal nearby, by button and by tap;
   - confirm a Foundry is affordable within one ~25-minute run.
   - 2026-10-10, from the logs: the 10-07 Deck run entered a Foundry at 16.9 minutes

@@ -178,17 +178,116 @@ export function planRoomThresholdMarkings(room, { biome = 'active' } = {}) {
 }
 
 /** Select at most one deterministic condensation/leak anchor per room. */
-export function planRoomEnvironmentalDrips(room, { biome = 'active' } = {}) {
+export function planRoomEnvironmentalDrips(room, { biome = 'active', dressingItems = [], props = [], stickers = [] } = {}) {
     const cells = room?.interior ?? [];
     const bounds = boundsForCells(cells);
-    if (!bounds) return [];
-    const hash = stableStringHash(room?.id ?? `${bounds.minX},${bounds.minY}:${room?.role ?? 'generic'}`);
-    const wetRoles = new Set(['utility', 'engineering', 'medical', 'cryo-lab', 'nest', 'hive']);
-    if (biome === 'active' && !wetRoles.has(room?.role) && hash % 3 !== 0) return [];
-    const edgeCells = cells.filter((cell) => cell.x === bounds.minX || cell.y === bounds.minY);
-    const anchor = edgeCells[hash % edgeCells.length] ?? cells[hash % cells.length];
-    const color = biome === 'bio' ? 0x63e6a7 : biome === 'cryo' ? 0x9ddcff : 0x71cddf;
-    return [{ x: anchor.x, z: anchor.y, color }];
+    const drips = [];
+    if (bounds) {
+        const hash = stableStringHash(room?.id ?? `${bounds.minX},${bounds.minY}:${room?.role ?? 'generic'}`);
+        const wetRoles = new Set(['utility', 'engineering', 'medical', 'cryo-lab', 'nest', 'hive']);
+        if (!(biome === 'active' && !wetRoles.has(room?.role) && hash % 3 !== 0)) {
+            const edgeCells = cells.filter((cell) => cell.x === bounds.minX || cell.y === bounds.minY);
+            const anchor = edgeCells[hash % edgeCells.length] ?? cells[hash % cells.length];
+            const color = biome === 'bio' ? 0x63e6a7 : biome === 'cryo' ? 0x9ddcff : 0x71cddf;
+            drips.push({ x: anchor.x, z: anchor.y, color });
+        }
+    }
+    const allProps = [...props, ...dressingItems];
+    for (const p of allProps) {
+        const type = p?.type ?? p?.modelType;
+        if (!type || p.x == null || p.z == null) continue;
+        if (type === 'life_drip_buckets') {
+            const color = biome === 'cryo' ? 0x9ddcff : 0x71cddf;
+            drips.push({ x: p.x, z: p.z, color, source: 'life_drip_buckets' });
+        } else if (type === 'life_hive_dew_funnel') {
+            drips.push({ x: p.x, z: p.z, color: 0x84cc16, source: 'life_hive_dew_funnel' });
+        }
+    }
+    for (const s of stickers) {
+        const family = s?.family ?? s?.type ?? s?.layerName;
+        if (!family || s.x == null || s.z == null) continue;
+        if (family === 'decal_wall_mineral_streaks' || (typeof family === 'string' && family.startsWith('decal_wall_mineral_streaks'))) {
+            const color = biome === 'bio' ? 0x63e6a7 : biome === 'cryo' ? 0x9ddcff : 0x71cddf;
+            drips.push({ x: s.x, z: s.z, color, source: 'decal_wall_mineral_streaks' });
+        }
+    }
+    return drips;
+}
+
+/**
+ * Environmental drip anchors for lived-in pass 2, Part 7:
+ * - Room baseline condensation anchors (utility, engineering, medical, cryo-lab, nest, hive)
+ * - Under prop 67 (life_drip_buckets): water/cryo drip falling directly into the bucket
+ * - Under prop 62 (life_hive_dew_funnel): glowing amber/green hive condensation drip
+ * - Under D17 decals (decal_wall_mineral_streaks): wall-trickle drip
+ */
+export function planChunkEnvironmentalDrips({
+    rooms = [],
+    metadata = null,
+    dressingItems = [],
+    props = [],
+    stickers = [],
+    biome = 'active'
+} = {}) {
+    const drips = [];
+    const occupied = new Set();
+    const keyOf = (x, z) => `${Math.round(x * 10) / 10},${Math.round(z * 10) / 10}`;
+
+    // 1. Room baseline condensation anchors
+    for (const room of rooms) {
+        const roomDrips = planRoomEnvironmentalDrips(room, { biome });
+        for (const drip of roomDrips) {
+            const k = keyOf(drip.x, drip.z);
+            if (!occupied.has(k)) {
+                occupied.add(k);
+                drips.push(drip);
+            }
+        }
+    }
+
+    // 2. Scan props & dressing items for 67 (life_drip_buckets) and 62 (life_hive_dew_funnel)
+    const allProps = [...props, ...dressingItems];
+    if (metadata?.dressing?.items) allProps.push(...metadata.dressing.items);
+    if (metadata?.props) allProps.push(...metadata.props);
+    for (const room of rooms) {
+        if (room?.dressing?.items) allProps.push(...room.dressing.items);
+    }
+    for (const p of allProps) {
+        const type = p?.type ?? p?.modelType;
+        if (!type || p.x == null || p.z == null) continue;
+        if (type === 'life_drip_buckets') {
+            const k = keyOf(p.x, p.z);
+            if (!occupied.has(k)) {
+                occupied.add(k);
+                const color = biome === 'cryo' ? 0x9ddcff : 0x71cddf;
+                drips.push({ x: p.x, z: p.z, color, source: 'life_drip_buckets' });
+            }
+        } else if (type === 'life_hive_dew_funnel') {
+            const k = keyOf(p.x, p.z);
+            if (!occupied.has(k)) {
+                occupied.add(k);
+                drips.push({ x: p.x, z: p.z, color: 0x84cc16, source: 'life_hive_dew_funnel' });
+            }
+        }
+    }
+
+    // 3. Scan D17 decals (decal_wall_mineral_streaks)
+    const allStickers = [...stickers];
+    if (metadata?.stickers) allStickers.push(...metadata.stickers);
+    for (const s of allStickers) {
+        const family = s?.family ?? s?.type ?? s?.layerName;
+        if (!family || s.x == null || s.z == null) continue;
+        if (family === 'decal_wall_mineral_streaks' || (typeof family === 'string' && family.startsWith('decal_wall_mineral_streaks'))) {
+            const k = keyOf(s.x, s.z);
+            if (!occupied.has(k)) {
+                occupied.add(k);
+                const color = biome === 'bio' ? 0x63e6a7 : biome === 'cryo' ? 0x9ddcff : 0x71cddf;
+                drips.push({ x: s.x, z: s.z, color, source: 'decal_wall_mineral_streaks' });
+            }
+        }
+    }
+
+    return drips;
 }
 
 /**

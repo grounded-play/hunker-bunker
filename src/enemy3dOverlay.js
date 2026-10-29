@@ -27,6 +27,9 @@ const MODEL_CONFIG = {
     // parasite.glb is already authored facing the locomotion pack's +Z.
     // Applying another half turn was why the crawler ran backwards.
     crawler: { url: '/3d/runtime/parasite.glb', height: 1.15, yaw: 0 },
+    // Chitin scuttler (src/chitinScuttler.js): the crawler's parasite, a pack
+    // size smaller, in amber chitin.
+    chitin_scuttler: { url: '/3d/runtime/parasite.glb', height: 0.8, yaw: 0, tint: 0xffb347 },
     alien_proto_crawler: { url: '/3d/runtime/new3ds/alien_proto_crawler.glb', height: 0.95, yaw: 0 },
     // Variant tinting rides here rather than in the mesh: the GLB carries a
     // photoscan texture set, and `tint` multiplies the material colour at load
@@ -67,7 +70,7 @@ export const ENEMY_3D_MODELS = MODEL_CONFIG;
 const templates = new Map();
 const LOCOMOTION_URL = '/3d/scouting-scout/Scout.game.glb';
 const RIGGED_LOCOMOTION_TYPES = new Set([
-    'crawler',
+    'crawler', 'chitin_scuttler',
     'boss_corrupted_scout', 'boss_corrupted_tank', 'boss_corrupted_engineer'
 ]);
 
@@ -91,11 +94,9 @@ export function getEnemyAssetYaw(type) {
     return MODEL_CONFIG[type]?.yaw ?? 0;
 }
 
-// Boss/queen encounters are rare, once-per-run, and already a big cinematic
-// moment -- a lazy-load pause there is far less disruptive than the same
-// pause mid-firefight against a common enemy. Preload only the regular
-// roster; bosses keep the original lazy path.
-const PRELOAD_TYPES = ['cybersnail', 'cryosnail', 'sporesnail', 'fungal_spore_vent', 'spore_mortar', 'crawler', 'mycelium_stalker'];
+// Preload the regular roster plus the first milestone boss (Cyber Snail)
+// so the initial retaliation breach doesn't hitch the game loop.
+const PRELOAD_TYPES = ['cybersnail', 'cryosnail', 'sporesnail', 'fungal_spore_vent', 'spore_mortar', 'crawler', 'chitin_scuttler', 'mycelium_stalker', 'boss_cybersnail'];
 
 // Enemy GLBs used to load lazily on each type's first spawn -- fine on paper
 // since it's async, but GLTFLoader's parse step (meshopt decompress, skeleton

@@ -24,6 +24,13 @@ function stringArray(value) {
     return [...new Set((Array.isArray(value) ? value : []).filter((entry) => typeof entry === 'string'))];
 }
 
+function nonNegativeIntRecord(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+    return Object.fromEntries(Object.entries(value)
+        .filter(([key]) => typeof key === 'string' && key)
+        .map(([key, count]) => [key, nonNegativeInt(count)]));
+}
+
 function normalizeInventory(value = {}) {
     return {
         health: nonNegativeInt(value.health),
@@ -51,6 +58,39 @@ function normalizeEnemy(value) {
         targetType: typeof value.targetType === 'string' ? value.targetType : 'player',
         dynamic: Boolean(value.dynamic),
         statusEffects: jsonClone(value.statusEffects, null)
+    };
+}
+
+function normalizeFieldWeaponEntry(value, { worldDrop = false } = {}) {
+    if (!value || typeof value !== 'object') return null;
+    if (typeof value.instanceId !== 'string' || !value.instanceId
+        || typeof value.profileId !== 'string' || !value.profileId) return null;
+    const entry = {
+        instanceId: value.instanceId,
+        profileId: value.profileId,
+        ammoInWeapon: nonNegativeInt(value.ammoInWeapon),
+        reserveAmmo: nonNegativeInt(value.reserveAmmo),
+        sourceEncounterId: typeof value.sourceEncounterId === 'string' ? value.sourceEncounterId : null,
+        runId: typeof value.runId === 'string' ? value.runId : null,
+        rarity: typeof value.rarity === 'string' ? value.rarity : null
+    };
+    if (worldDrop) {
+        entry.worldPosition = {
+            x: finite(value.worldPosition?.x),
+            z: finite(value.worldPosition?.z)
+        };
+    }
+    return entry;
+}
+
+function normalizeFieldWeaponState(value) {
+    if (!value || typeof value !== 'object') return null;
+    return {
+        runId: typeof value.runId === 'string' ? value.runId : null,
+        equipped: normalizeFieldWeaponEntry(value.equipped),
+        worldDrops: (Array.isArray(value.worldDrops) ? value.worldDrops : [])
+            .map((entry) => normalizeFieldWeaponEntry(entry, { worldDrop: true }))
+            .filter(Boolean)
     };
 }
 
@@ -91,7 +131,8 @@ export function normalizeExpeditionSuspendSnapshot(raw) {
             weapon: {
                 clipAmmo: nonNegativeInt(raw.player?.weapon?.clipAmmo),
                 clipSize: Math.max(1, nonNegativeInt(raw.player?.weapon?.clipSize, 1))
-            }
+            },
+            fieldWeapon: normalizeFieldWeaponState(raw.player?.fieldWeapon)
         },
         run: {
             startedAt: nonNegativeInt(raw.run?.startedAt),
@@ -100,6 +141,8 @@ export function normalizeExpeditionSuspendSnapshot(raw) {
             modifier: jsonClone(raw.run?.modifier, null),
             overclockIds: stringArray(raw.run?.overclockIds),
             relicIds: stringArray(raw.run?.relicIds),
+            recalibratedCampIds: stringArray(raw.run?.recalibratedCampIds),
+            recalibrationRerolls: nonNegativeIntRecord(raw.run?.recalibrationRerolls),
             shardCount: nonNegativeInt(raw.run?.shardCount),
             depositedResources: normalizeInventory(raw.run?.depositedResources),
             kills: nonNegativeInt(raw.run?.kills),

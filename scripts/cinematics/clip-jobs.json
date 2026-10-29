@@ -1,0 +1,1979 @@
+{
+  "source": "scripts/cinematics/cut-prompts.json",
+  "style": {
+    "prefix": "Hunker Bunker graphic-novel horror: a hand-inked, painted illustration in the style of the game's cutscene art (heavy black ink linework, charcoal and gouache shading, hard chiaroscuro, grindhouse print grain) of biomechanical corporate hardware: chrome and gunmetal machinery, white enamel and bone-ivory panels, ribs and vertebrae fused into the mechanisms, glossy black latex, wet maroon tissue swelling through every seam. Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic hatches and sphincter valves, breast-like pressure domes, pulsing ribbed tubes, glistening fluids and mucous strands. Near-black deep-space corporate interiors lit by amber lamps, small teal screens and acid-green fluids. Explicit adults-only grindhouse cut:",
+    "suffix": "graphic gore aimed at the monsters, explicit consensual sex between adults, every person depicted is a consenting adult over twenty-five; no readable text, logos or watermarks. The lovers stay clean of gore and unhurt: every drop of blood and ichor is on the monsters, never on a lover's body. Both lovers are awake, eager and moving on their own throughout; when they rest afterwards they hold each other, eyes open.",
+    "characterLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+    "continuityLock": "CONTINUITY LOCK: keep subject count, screen direction, set geometry, prop placement, palette and key-light direction from the first frame; only the described actions change state.",
+    "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, bodies moving with real rhythm. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+    "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion, blood on the lovers, wounded lover, injured partner, unconscious partner, limp body, sleeping partner, corpse",
+    "plateLock": "PLATE LOCK: reference image 1 is the background plate from the game: keep its composition, geography and lighting as the backdrop of the shot, re-drawn in the inked graphic-novel production style."
+  },
+  "jobs": [
+    {
+      "id": "kaelen_diagnostic_cradle",
+      "kind": "side-story",
+      "title": "Diagnostic Cradle",
+      "firstFrame": {
+        "prompt": "The diagnostic bay from the reference image: Overseer Kaelen, a weathered adult man in his sixties, lying naked in the ribbed bone diagnostic cradle with cables jacked into the port in his neck, a nude adult woman operator in a sealed helmet straddling his hips, cyan monitor light on their skin, a parasite crawler squeezing out of the wall vent behind them.",
+        "plate": "public/interstitials/int_kaelen_diagnostic_cradle_key_v2.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "The operator rides Kaelen in cowgirl position, the cradle's ribs ticking in rhythm and cyan light racing down the cables with every thrust. The crawler lunges and the ribs snap shut on it, crushing it in a burst of green blood that splatters the monitors. The lovers climax and slump together.",
+      "lastFrame": "the same bay: the two lovers slumped spent and naked in the cradle, cyan light dimming, the crawler crushed between the snapped-shut cradle ribs, its green blood dripping down the bone.",
+      "camera": "Slow sensual push-in tilting down toward the lovers in the cradle",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/Kaelen's Sleeping Machine.mp3",
+      "durationSec": 7,
+      "targets": {
+        "webm": "/interstitials/motion/int_kaelen_diagnostic_cradle_motion_v1.webm"
+      }
+    },
+    {
+      "id": "kaelen_frequency_overclock",
+      "kind": "side-story",
+      "title": "Frequency Overclock",
+      "firstFrame": {
+        "prompt": "The switch gallery from the reference image: Overseer Kaelen, a weathered adult man in his sixties, naked from the waist down behind a nude adult woman operator in a sealed helmet bent over the switchboard, his hands on her hips, corona discharge crawling over the bus bars, an alien spitter clinging to the bars above them.",
+        "plate": "public/interstitials/int_kaelen_frequency_overclock_key_v2.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "Kaelen takes the operator from behind in doggy position against the switchboard, each thrust snapping another pilot lamp on down the gallery. The spitter touches the live bus bar and the arc fries it, blowing it apart in smoking gobbets. The lovers finish as the last lamp snaps on.",
+      "lastFrame": "the same gallery: the operator slumped over the switchboard, Kaelen leaning on her back, both naked and sweat-slick, the electrocuted spitter blown into smoking chunks across the bus bars, every pilot lamp lit.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/Meridian Remembers You.mp3",
+      "durationSec": 7,
+      "targets": {
+        "webm": "/interstitials/motion/int_kaelen_frequency_overclock_motion_v1.webm"
+      }
+    },
+    {
+      "id": "kaelen_supercharged_matrix",
+      "kind": "side-story",
+      "title": "Supercharged Matrix",
+      "firstFrame": {
+        "prompt": "The glass-floored matrix chamber from the reference image: two naked adult lovers in their thirties lying on the glowing glass floor beside the great lever, the man on top of the woman, rings of gold-teal light under them, hive drones clawing up the conduits below the glass.",
+        "plate": "public/interstitials/int_kaelen_supercharged_matrix_key_v1.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "Missionary sex on the glass floor, the man thrusting slowly while she pulls the lever down with one hand; the actuator locks and rings of light race out under them, frying the drones in the conduits so they burst against the glass in sprays of ichor. The lovers climax in the pulsing gold light.",
+      "lastFrame": "the same chamber: the lovers entwined and still on the glass, the floor smeared with fried drone remains and ichor from below, the matrix humming gold.",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/Kaelen Is the Grid.mp3",
+      "durationSec": 8,
+      "targets": {
+        "webm": "/interstitials/motion/int_kaelen_supercharged_matrix_motion_v1.webm"
+      }
+    },
+    {
+      "id": "val_hearth_warmth",
+      "kind": "side-story",
+      "title": "Warmth of the Suture",
+      "firstFrame": {
+        "prompt": "The geothermal pipe hearth from the reference image: Sister Martha, a strong adult woman in her sixties with grey braided hair, naked and straddling a nude adult man operator in a sealed helmet on the warm pipe saddle, a steaming ladle of balm in her hand, a frozen mutant dragging itself up the pipes toward them.",
+        "plate": "public/interstitials/int_val_hearth_warmth_key_v2.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "Martha rides the operator in cowgirl position on the warm pipe, balm glistening on their skin. The frozen mutant grabs her ankle and she empties the boiling ladle over its head; its face sloughs off in a gush of steam and it drops away. She keeps riding him until they both finish, laughing.",
+      "lastFrame": "the same hearth: Martha and the operator wrapped naked together in her quilted coat on the pipe, the mutant's flesh boiled off its skull in a steaming puddle below, steam rising.",
+      "camera": "Gentle intimate push-in settling on the shared embrace by the steaming pipe",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/Warmth Beneath the Ice.mp3",
+      "durationSec": 7,
+      "targets": {
+        "webm": "/interstitials/motion/int_val_hearth_warmth_motion_v1.webm"
+      }
+    },
+    {
+      "id": "val_spore_communion",
+      "kind": "side-story",
+      "title": "Botanical Spore Oil",
+      "firstFrame": {
+        "prompt": "The lantern-lit tent from the reference image: Sister Martha, a strong adult woman in her sixties, naked and kneeling over a nude adult man operator in a sealed helmet lying on the cot, glowing spore oil on her hands and his body, a mould-zombie's silhouette pressing against the tent wall.",
+        "plate": "public/interstitials/int_val_spore_communion_key_v1.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "Martha strokes spore oil over the operator and takes him in her mouth, slow and eager. The mould-zombie rips through the canvas and the spore sac on the loom bursts against it, swelling it until it pops in a shower of black pulp and gold spores. Martha climbs up onto the operator's chest, both glowing.",
+      "lastFrame": "the same tent: Martha lying naked on the operator's chest on the cot, both glistening with gold spore oil, the mould-zombie burst open against the tent wall, its spores and black pulp dripping down the canvas.",
+      "trigger": "bl0wj0b",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/Tallow Keeps the Steam.mp3",
+      "durationSec": 7,
+      "targets": {
+        "webm": "/interstitials/motion/int_val_spore_communion_motion_v1.webm"
+      }
+    },
+    {
+      "id": "val_eternal_hearth",
+      "kind": "side-story",
+      "title": "The Eternal Hearth",
+      "firstFrame": {
+        "prompt": "The ice-cave forge vault from the reference image: two naked adult lovers in their thirties against the catwalk railing before the roaring forge, the woman bent forward gripping the rail, the man behind her, steam vents along the vault, a pack of ice crawlers swarming up the cavern wall.",
+        "plate": "public/interstitials/int_val_eternal_hearth_key_v1.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "Doggy-position sex against the railing as Martha hauls the valve wheel off-frame; the vents blast open one after another up the vault and boiling steam scalds the crawlers, their flesh peeling and bursting as they fall. The lovers finish wrapped in steam and firelight.",
+      "lastFrame": "the same vault: the lovers naked in the rolling steam, arms around each other at the rail, the ice crawlers boiled alive and peeling off the cavern wall in red strips, amber firelight.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/Warmth Beneath the Ice.mp3",
+      "durationSec": 8,
+      "targets": {
+        "webm": "/interstitials/motion/int_val_eternal_hearth_motion_v1.webm"
+      }
+    },
+    {
+      "id": "briggs_scorched_rig",
+      "kind": "side-story",
+      "title": "The Scorched Rig",
+      "firstFrame": {
+        "prompt": "The trench gun-rig from the reference image: Commander Briggs, a broad adult Black man in his fifties, naked on top of a nude adult woman operator in a sealed helmet on the sandbags beside the big cannon, brass casings everywhere, a horde of mutants charging down the canyon behind them under a red lamp.",
+        "plate": "public/interstitials/int_briggs_scorched_rig_key_v2.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "Missionary sex on the sandbags; Briggs slams the cannon's firing lever without stopping, and the shell turns the charging horde into red mist and flying limbs that rain down around them. They finish in the hail of brass and gore.",
+      "lastFrame": "the same rig: Briggs and the operator lying naked in the brass casings, smoking, a crater of mutant gore and scattered limbs steaming in the canyon, the red lamp sweeping.",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/Briggs Keeps the Ledger.mp3",
+      "durationSec": 7,
+      "targets": {
+        "webm": "/interstitials/motion/int_briggs_scorched_rig_motion_v1.webm"
+      }
+    },
+    {
+      "id": "briggs_scar_tissue",
+      "kind": "side-story",
+      "title": "Scar Tissue",
+      "firstFrame": {
+        "prompt": "The armoury from the reference image: Commander Briggs, a broad adult Black man in his fifties, naked and sitting on the bench, the medic, an adult woman in her thirties with short dark hair, naked and straddling him, her palm on his scarred shoulder, a parasite crawler creeping along the rifle racks behind.",
+        "plate": "public/interstitials/int_briggs_scar_tissue_key_v1.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "The medic rides Briggs in cowgirl position on the bench, his hands on her hips. The crawler drops from the rack and Briggs snatches the shotgun off the table and blasts it into yellow pulp across the lockers mid-thrust. They keep going until she sags against him.",
+      "lastFrame": "the same armoury: the medic asleep naked on Briggs's lap on the bench, his arm around her, the crawler shotgunned into a splatter of yellow pulp across the lockers.",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/Vesper Sleeps in Shifts.mp3",
+      "durationSec": 7,
+      "targets": {
+        "webm": "/interstitials/motion/int_briggs_scar_tissue_motion_v1.webm"
+      }
+    },
+    {
+      "id": "briggs_vanguard_fire",
+      "kind": "side-story",
+      "title": "Vanguard Unyielding",
+      "firstFrame": {
+        "prompt": "The canyon catwalk from the reference image: Commander Briggs, a broad adult Black man in his fifties, naked behind a nude adult woman soldier with short dark hair bent over the catwalk railing, the burning canyon below crawling with alien beasts.",
+        "plate": "public/interstitials/int_briggs_vanguard_fire_key_v1.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "Doggy-position sex at the railing as Briggs swings the gun yoke with one hand; the guns fire, the canyon flashes white and the alien beasts burst apart, chunks raining through the smoke. The deck shudders and they climax in the shockwave.",
+      "lastFrame": "the same catwalk: both lovers naked at the railing, her back against his chest, the canyon below a burning field of blasted alien carcasses, gore raining in the smoke.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/Briggs Became the Barricade.mp3",
+      "durationSec": 6,
+      "targets": {
+        "webm": "/interstitials/motion/int_briggs_vanguard_fire_motion_v1.webm"
+      }
+    },
+    {
+      "id": "nahl_mind_link",
+      "kind": "side-story",
+      "title": "Synaptic Inoculation",
+      "firstFrame": {
+        "prompt": "The bone dissection lab from the reference image: Dr. Nahl, a pale adult alien with luminous amber eyes and glowing nerve filaments trailing from the body, naked and straddling a nude adult operator in a sealed helmet on the dissection slab, filaments wrapped around them both, a half-dissected specimen twitching on the next table.",
+        "plate": "public/interstitials/int_nahl_mind_link_key_v2.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "Nahl rides the operator in cowgirl position, nerve filaments pulsing amber with every movement. The specimen lurches up and Nahl's filaments lash out and rip its ribcage open in a spray of ichor without missing a beat. They climax together as the filaments glow steady.",
+      "lastFrame": "the same lab: Nahl lying naked on the operator's chest, the amber filaments glowing calm, the specimen's ribcage burst open and torn apart on the next table, ichor dripping onto the floor.",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/Dr. Nahl Remembers the Tissue.mp3",
+      "durationSec": 7,
+      "targets": {
+        "webm": "/interstitials/motion/int_nahl_mind_link_motion_v1.webm"
+      }
+    },
+    {
+      "id": "nahl_co_evolution",
+      "kind": "side-story",
+      "title": "Cellular Empathy",
+      "firstFrame": {
+        "prompt": "The fungal walkway from the reference image: Dr. Nahl, a pale adult alien with branching luminous antlers and amber eyes, naked on the mossy walkway beneath a nude adult operator in a sealed helmet, glowing mushrooms, a spore-zombie lurching out of the vines.",
+        "plate": "public/interstitials/int_nahl_co_evolution_key_v1.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "Missionary sex on the moss, the operator thrusting into Nahl as golden light flows between them. The spore-zombie lunges and Nahl's filaments spear it and tear it in half in a burst of black pulp. They finish wrapped together in the glow.",
+      "lastFrame": "the same walkway: Nahl and the operator entwined naked on the moss, the spore-zombie impaled and torn in half on Nahl's antlers' filaments, black pulp across the mushrooms.",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/Dr. Nahl Remembers the Tissue.mp3",
+      "durationSec": 6,
+      "targets": {
+        "webm": "/interstitials/motion/int_nahl_co_evolution_motion_v1.webm"
+      }
+    },
+    {
+      "id": "nahl_transcendence",
+      "kind": "side-story",
+      "title": "Neural Sovereignty",
+      "firstFrame": {
+        "prompt": "The amber dome from the reference image: Dr. Nahl, a pale adult alien with luminous antlers, naked on hands and knees on the dome floor with a nude adult operator in a sealed helmet behind, violet-veined husks bulging from the dome walls around them.",
+        "plate": "public/interstitials/int_nahl_transcendence_key_v1.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "The operator takes Nahl from behind in doggy position; amber light spreads from Nahl's antlers across the dome with every thrust and the violet husks swell and burst like boils, spraying ichor. They climax as the light fills the dome.",
+      "lastFrame": "the same dome flooded with amber light: Nahl and the operator kneeling naked, embracing, the husks in the walls burst open like boils and dripping violet ichor.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/We Escaped Together, Technically.mp3",
+      "durationSec": 8,
+      "targets": {
+        "webm": "/interstitials/motion/int_nahl_transcendence_motion_v1.webm"
+      }
+    },
+    {
+      "id": "aria_whispers_abyss",
+      "kind": "side-story",
+      "title": "Whispers in the Abyss",
+      "firstFrame": {
+        "prompt": "The violet hive cavern from the reference image: Aria, an adult insectoid alien queen with a glossy black chitin body, a woman's figure and violet glowing eyes, naked and straddling a nude adult operator in a sealed helmet on the mushroom-lit cavern floor, hive drones creeping out of the dark.",
+        "plate": "public/interstitials/int_aria_whispers_abyss_key_v1.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "Aria rides the operator in cowgirl position, her wings beating slowly. The drones rush in and her clawed arms shred them mid-motion, sending limbs and violet ichor flying. She keeps riding until they both finish.",
+      "lastFrame": "the same cavern: Aria lying on the operator, both spent, her wings folded over them, the hive drones torn to pieces by her claws and scattered in violet ichor around them.",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/Her Voice Inside Your Helmet.mp3",
+      "durationSec": 7,
+      "targets": {
+        "webm": "/interstitials/motion/int_aria_whispers_abyss_motion_v1.webm"
+      }
+    },
+    {
+      "id": "aria_silk_trance",
+      "kind": "side-story",
+      "title": "The Silk Trance",
+      "firstFrame": {
+        "prompt": "The silk-web chamber from the reference image: Aria, an adult insectoid alien queen with a glossy black chitin body and a woman's figure, lying back naked in a hammock of glowing silk with a nude adult operator in a sealed helmet on top of her, a brood-beast creeping along the webs above.",
+        "plate": "public/interstitials/int_aria_silk_trance_key_v1.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "Missionary sex in the silk hammock, the operator thrusting, threads tightening around them with every movement. The brood-beast drops toward them and the threads snap taut, slicing it into chunks that rain violet ichor. They finish wrapped in silk.",
+      "lastFrame": "the same chamber: Aria and the operator asleep entwined in the silk hammock, the brood-beast sliced into hanging chunks by the taut silk threads, violet ichor dripping.",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/The Queen Makes a Reasonable Offer.mp3",
+      "durationSec": 7,
+      "targets": {
+        "webm": "/interstitials/motion/int_aria_silk_trance_motion_v1.webm"
+      }
+    },
+    {
+      "id": "aria_queens_mark",
+      "kind": "side-story",
+      "title": "The Queen's Mark",
+      "firstFrame": {
+        "prompt": "The hive altar from the reference image: Aria, an adult insectoid alien queen with a glossy black chitin body and a woman's figure, naked and bent over the egg-shell altar with a nude adult operator in a sealed helmet behind her, violet tendrils across the floor, cultist husks rising from the dark.",
+        "plate": "public/interstitials/int_aria_queens_mark_key_v1.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "The operator takes Aria from behind in doggy position on the altar; teal light seeps into the operator's skin and curls into a spiral, and the cultist husks around them swell and explode into wet shreds. They climax as the egg-shell ring goes dark.",
+      "lastFrame": "the same altar: Aria and the operator naked in each other's arms on the altar, a teal spiral mark glowing on the operator's skin, the cultist husks exploded into wet violet shreds around the altar.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/Mother of the Last World.mp3",
+      "durationSec": 6,
+      "targets": {
+        "webm": "/interstitials/motion/int_aria_queens_mark_motion_v1.webm"
+      }
+    },
+    {
+      "id": "card_33",
+      "kind": "song-card",
+      "title": "The Cave Was Breathing",
+      "firstFrame": {
+        "prompt": "The breathing cave from the reference image: two naked adult survivors in their thirties having sex on the slimy floor among the glowing yellow egg clusters, the man on top of the woman, a shotgun beside them, one egg splitting open.",
+        "plate": "public/interstitials/int_33_the_cave_was_breathing_key_v1.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "Missionary sex on the cave floor as the walls breathe in and out around them. An egg bursts and a crawler leaps; the woman grabs the shotgun and blasts it apart mid-air without stopping, showering them in slime and gore. They finish as the cave exhales.",
+      "lastFrame": "the same cave mouth seen from inside: the lovers sitting up naked and slime-covered, the woman holding the smoking shotgun, a hatched crawler blown apart across the egg clusters, the ribbed walls swollen mid-breath.",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/The Cave Was Breathing.mp3",
+      "durationSec": 7,
+      "targets": {
+        "webm": "/interstitials/motion/int_33_the_cave_was_breathing_motion_v1.webm",
+        "mp4": "/interstitials/int_33_the_cave_was_breathing_key_v1.mp4"
+      }
+    },
+    {
+      "id": "card_34",
+      "kind": "song-card",
+      "title": "Four Seats, One Survivor",
+      "firstFrame": {
+        "prompt": "The shuttle cockpit from the reference image: an adult woman co-pilot in her thirties naked and straddling the adult male pilot in his forties in the pilot's seat, his flight suit open, the burning ice planet through the canopy, a stowaway alien clawing through the hatch behind them.",
+        "plate": "public/interstitials/int_34_four_seats_one_survivor_key_v1.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "The co-pilot rides the pilot in cowgirl position in his seat as the shuttle climbs. The stowaway lunges and the pilot slaps the airlock control; the alien is sucked out and shredded on the hatch in a spray of blood. They finish as the planet falls away.",
+      "lastFrame": "the same cockpit: the co-pilot asleep naked on the pilot's lap, the canopy full of stars, the stowaway alien's shredded remains smeared across the open airlock door.",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/Four Seats, One Survivor.mp3",
+      "durationSec": 6,
+      "targets": {
+        "webm": "/interstitials/motion/int_34_four_seats_one_survivor_motion_v1.webm",
+        "mp4": "/interstitials/int_34_four_seats_one_survivor_key_v1.mp4"
+      }
+    },
+    {
+      "id": "card_35",
+      "kind": "song-card",
+      "title": "Contraband Sunrise",
+      "firstFrame": {
+        "prompt": "The smuggler hold from the reference image: two naked adult smugglers in their thirties, the woman bent over a crate of glowing amber contraband eggs, the man behind her, pipes and cables everywhere, one egg cracking open.",
+        "plate": "public/interstitials/int_35_contraband_sunrise_key_v1.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "Doggy-position sex over the egg crate. An egg cracks and a hatchling slithers out toward them; the man stomps it into amber paste without breaking rhythm. Sunrise light floods the hold as they finish.",
+      "lastFrame": "the same hold at sunrise light through a hatch: the smugglers naked on the crates, the hatchling stomped into amber paste on the deck plating beside them.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/Contraband Sunrise.mp3",
+      "durationSec": 7,
+      "targets": {
+        "webm": "/interstitials/motion/int_35_contraband_sunrise_motion_v1.webm",
+        "mp4": "/interstitials/int_35_contraband_sunrise_key_v1.mp4"
+      }
+    },
+    {
+      "id": "card_36",
+      "kind": "song-card",
+      "title": "We Escaped Together, Technically",
+      "firstFrame": {
+        "prompt": "The escape pod from the reference image: two naked adult survivors in their thirties having sex on the pod bench, the man on top, the other adult survivors around them in open orange suits, black aliens clawing at the crackling teal energy barrier.",
+        "plate": "public/interstitials/int_36_we_escaped_together_technically_key_v1.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "Missionary sex on the pod bench as the pod launches. An alien forces its arm through the barrier and the energy field disintegrates it, blowing it apart in smoking chunks and black blood. The survivors cheer as the lovers finish.",
+      "lastFrame": "the same pod: the survivors laughing and naked, the lovers wrapped together on the bench, an alien disintegrated half-through the energy barrier in smoking chunks.",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/We Escaped Together, Technically.mp3",
+      "durationSec": 7,
+      "targets": {
+        "webm": "/interstitials/motion/int_36_we_escaped_together_technically_motion_v1.webm",
+        "mp4": "/interstitials/int_36_we_escaped_together_technically_key_v1.mp4"
+      }
+    },
+    {
+      "id": "card_37",
+      "kind": "song-card",
+      "title": "The Ice Gets Smaller",
+      "firstFrame": {
+        "prompt": "The observation window from the reference image: an adult woman in her fifties naked and straddling an adult man in his forties on the window ledge, their orange suits open, the ice planet shrinking outside, a frozen corpse drifting toward the glass.",
+        "plate": "public/interstitials/int_37_the_ice_gets_smaller_key_v1.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "She rides him in cowgirl position against the window as the planet shrinks. The frozen corpse strikes the glass and shatters into a burst of red ice. They finish watching the planet become a dot.",
+      "lastFrame": "the same window: the lovers naked in each other's arms, the planet a small white disc, the frozen corpse shattered into red ice fragments against the glass.",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/The Ice Gets Smaller.mp3",
+      "durationSec": 6,
+      "targets": {
+        "webm": "/interstitials/motion/int_37_the_ice_gets_smaller_motion_v1.webm",
+        "mp4": "/interstitials/int_37_the_ice_gets_smaller_key_v1.mp4"
+      }
+    },
+    {
+      "id": "card_38",
+      "kind": "song-card",
+      "title": "Destination: Core Worlds",
+      "firstFrame": {
+        "prompt": "Inside the biomechanical ship from the reference image, a cabin of ribbed latex walls with a porthole: two naked adult lovers in their thirties, the woman on hands and knees on the bunk, the man behind her, green engine light, a pursuing fighter visible through the porthole as the ship's tentacles reach for it.",
+        "plate": "public/interstitials/int_38_destination_core_worlds_key_v1.webp",
+        "references": [],
+        "model": "flux"
+      },
+      "action": "Doggy-position sex on the bunk while through the porthole the ship's tentacles seize the pursuing fighter and crush it, splattering its pilot across the canopy. The ship accelerates into green light as the lovers finish and sink onto the bunk.",
+      "lastFrame": "the same cabin: the lovers asleep naked on the bunk, through the porthole the pursuing fighter crushed in the ship's tentacles, its pilot splattered across the cracked canopy, the core worlds glittering ahead.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "audio": "/audio/ost/Destination Core Worlds.mp3",
+      "durationSec": 8,
+      "targets": {
+        "webm": "/interstitials/motion/int_38_destination_core_worlds_motion_v1.webm",
+        "mp4": "/interstitials/int_38_destination_core_worlds_key_v1.mp4"
+      }
+    },
+    {
+      "id": "sleep-camp-scout",
+      "kind": "sleep",
+      "title": "sleep-camp-scout",
+      "soundDesign": "sleep-camp",
+      "firstFrame": {
+        "prompt": "Low wide shot of a survivors' camp in a vast bunker hall around an oil-drum fire, the Scout from reference image 2, a slim adult woman in a sealed rounded white helmet with a black visor, her glossy bone-white armour plates unlatched and hanging open over her bare body, straddling a nude adult male survivor in his thirties on a bedroll, both naked in the firelight, a severed mutant arm still twitching on the sandbags behind them, sparks rising into monumental biomechanical arches of ivory vertebrae and black latex sinew.",
+        "plate": "public/interstitials/int_val_spore_communion_key_v1.webp",
+        "references": [
+          "art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "The operator rides the survivor in cowgirl position by the fire, their bodies rocking in rhythm, sweat shining. At the barricade a mutant lunges over the sandbags and the sentry blasts its head clean off in a geyser of green blood that spatters the laundry lines. The lovers finish, collapse together and pull the blanket over themselves as the fire sinks to embers.",
+      "lastFrame": "the same camp at embers: the operator and the survivor asleep naked and entwined under one blanket, the sentry at the barricade holding a smoking shotgun over a headless mutant sprawled across the sandbags in a pool of green blood, fog creeping in.",
+      "camera": "Slow drifting low pan across the fire to the lovers and the standing sentry",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "durationSec": 8,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-camp-scout.webm",
+        "mp4": "/cutscenes/sleep-camp-scout.mp4",
+        "poster": "/cutscenes/sleep-camp-scout-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-camp-tank",
+      "kind": "sleep",
+      "title": "sleep-camp-tank",
+      "soundDesign": "sleep-camp",
+      "firstFrame": {
+        "prompt": "Low wide shot of a survivors' camp in a vast bunker hall around an oil-drum fire, the Tank from reference image 2, a huge muscular adult man in a sealed helmet with a narrow amber visor slit, his heavy olive-brown power armour stripped to the massive pauldrons, his bare chest and thighs scarred, straddling a nude adult male survivor in his thirties on a bedroll, both naked in the firelight, a severed mutant arm still twitching on the sandbags behind them, sparks rising into monumental biomechanical arches of ivory vertebrae and black latex sinew.",
+        "plate": "public/interstitials/int_val_spore_communion_key_v1.webp",
+        "references": [
+          "art/source/art-remaster/sprite-v4/tank/identity/Tank.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "The operator rides the survivor in cowgirl position by the fire, their bodies rocking in rhythm, sweat shining. At the barricade a mutant lunges over the sandbags and the sentry blasts its head clean off in a geyser of green blood that spatters the laundry lines. The lovers finish, collapse together and pull the blanket over themselves as the fire sinks to embers.",
+      "lastFrame": "the same camp at embers: the operator and the survivor asleep naked and entwined under one blanket, the sentry at the barricade holding a smoking shotgun over a headless mutant sprawled across the sandbags in a pool of green blood, fog creeping in.",
+      "camera": "Slow drifting low pan across the fire to the lovers and the standing sentry",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "durationSec": 8,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-camp-tank.webm",
+        "mp4": "/cutscenes/sleep-camp-tank.mp4",
+        "poster": "/cutscenes/sleep-camp-tank-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-camp-engineer",
+      "kind": "sleep",
+      "title": "sleep-camp-engineer",
+      "soundDesign": "sleep-camp",
+      "firstFrame": {
+        "prompt": "Low wide shot of a survivors' camp in a vast bunker hall around an oil-drum fire, the Engineer from reference image 2, a lean athletic adult woman in a sealed tan helmet with a glowing cyan visor, her tan and gunmetal utility armour stripped to the forearm tool braces and boots, otherwise nude, straddling a nude adult male survivor in his thirties on a bedroll, both naked in the firelight, a severed mutant arm still twitching on the sandbags behind them, sparks rising into monumental biomechanical arches of ivory vertebrae and black latex sinew.",
+        "plate": "public/interstitials/int_val_spore_communion_key_v1.webp",
+        "references": [
+          "art/source/art-remaster/sprite-v4/engineer/identity/Engineer.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "The operator rides the survivor in cowgirl position by the fire, their bodies rocking in rhythm, sweat shining. At the barricade a mutant lunges over the sandbags and the sentry blasts its head clean off in a geyser of green blood that spatters the laundry lines. The lovers finish, collapse together and pull the blanket over themselves as the fire sinks to embers.",
+      "lastFrame": "the same camp at embers: the operator and the survivor asleep naked and entwined under one blanket, the sentry at the barricade holding a smoking shotgun over a headless mutant sprawled across the sandbags in a pool of green blood, fog creeping in.",
+      "camera": "Slow drifting low pan across the fire to the lovers and the standing sentry",
+      "trigger": "c0wg1rl",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "durationSec": 8,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-camp-engineer.webm",
+        "mp4": "/cutscenes/sleep-camp-engineer.mp4",
+        "poster": "/cutscenes/sleep-camp-engineer-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-cryo-scout",
+      "kind": "sleep",
+      "title": "sleep-cryo-scout",
+      "soundDesign": "sleep-cryo",
+      "firstFrame": {
+        "prompt": "An upright emergency cryo pod in a frozen chamber, lid open and furred with frost, its lining of moist tufted plum-pink cushions folded like labial petals, the Scout from reference image 2, a slim adult woman in a sealed rounded white helmet with a black visor, her glossy bone-white armour plates unlatched and hanging open over her bare body, lying back inside it with a nude adult partner in their thirties on top of them, bodies pressed together, breath fogging, cyan light, a frost-ghoul clawing at the glass from outside, icicles on bone-braced conduits.",
+        "plate": "public/cutscenes/scout-class-intro-poster.jpg",
+        "references": [
+          "art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "Missionary sex inside the cryo pod, the partner thrusting slowly as frost blooms around them. Outside the frost-ghoul slams the glass and the pod's cold-jet fires, freezing it solid; it topples and shatters into bloody ice chunks. The lid swings shut with a hiss and frost seals the lovers in, falling asleep in each other's arms.",
+      "lastFrame": "the cryo pod sealed shut, frost ferns covering the glass so the two entwined lovers are a dark silhouette sleeping inside, the shattered frozen ghoul in red-pink ice chunks scattered across the black ice floor.",
+      "camera": "Slow vertical pedestal descent along the frosted pod",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "durationSec": 7,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-cryo-scout.webm",
+        "mp4": "/cutscenes/sleep-cryo-scout.mp4",
+        "poster": "/cutscenes/sleep-cryo-scout-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-cryo-tank",
+      "kind": "sleep",
+      "title": "sleep-cryo-tank",
+      "soundDesign": "sleep-cryo",
+      "firstFrame": {
+        "prompt": "An upright emergency cryo pod in a frozen chamber, lid open and furred with frost, its lining of moist tufted plum-pink cushions folded like labial petals, the Tank from reference image 2, a huge muscular adult man in a sealed helmet with a narrow amber visor slit, his heavy olive-brown power armour stripped to the massive pauldrons, his bare chest and thighs scarred, lying back inside it with a nude adult partner in their thirties on top of them, bodies pressed together, breath fogging, cyan light, a frost-ghoul clawing at the glass from outside, icicles on bone-braced conduits.",
+        "plate": "public/cutscenes/scout-class-intro-poster.jpg",
+        "references": [
+          "art/source/art-remaster/sprite-v4/tank/identity/Tank.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "Missionary sex inside the cryo pod, the partner thrusting slowly as frost blooms around them. Outside the frost-ghoul slams the glass and the pod's cold-jet fires, freezing it solid; it topples and shatters into bloody ice chunks. The lid swings shut with a hiss and frost seals the lovers in, falling asleep in each other's arms.",
+      "lastFrame": "the cryo pod sealed shut, frost ferns covering the glass so the two entwined lovers are a dark silhouette sleeping inside, the shattered frozen ghoul in red-pink ice chunks scattered across the black ice floor.",
+      "camera": "Slow vertical pedestal descent along the frosted pod",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "durationSec": 7,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-cryo-tank.webm",
+        "mp4": "/cutscenes/sleep-cryo-tank.mp4",
+        "poster": "/cutscenes/sleep-cryo-tank-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-cryo-engineer",
+      "kind": "sleep",
+      "title": "sleep-cryo-engineer",
+      "soundDesign": "sleep-cryo",
+      "firstFrame": {
+        "prompt": "An upright emergency cryo pod in a frozen chamber, lid open and furred with frost, its lining of moist tufted plum-pink cushions folded like labial petals, the Engineer from reference image 2, a lean athletic adult woman in a sealed tan helmet with a glowing cyan visor, her tan and gunmetal utility armour stripped to the forearm tool braces and boots, otherwise nude, lying back inside it with a nude adult partner in their thirties on top of them, bodies pressed together, breath fogging, cyan light, a frost-ghoul clawing at the glass from outside, icicles on bone-braced conduits.",
+        "plate": "public/cutscenes/scout-class-intro-poster.jpg",
+        "references": [
+          "art/source/art-remaster/sprite-v4/engineer/identity/Engineer.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "Missionary sex inside the cryo pod, the partner thrusting slowly as frost blooms around them. Outside the frost-ghoul slams the glass and the pod's cold-jet fires, freezing it solid; it topples and shatters into bloody ice chunks. The lid swings shut with a hiss and frost seals the lovers in, falling asleep in each other's arms.",
+      "lastFrame": "the cryo pod sealed shut, frost ferns covering the glass so the two entwined lovers are a dark silhouette sleeping inside, the shattered frozen ghoul in red-pink ice chunks scattered across the black ice floor.",
+      "camera": "Slow vertical pedestal descent along the frosted pod",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "durationSec": 7,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-cryo-engineer.webm",
+        "mp4": "/cutscenes/sleep-cryo-engineer.mp4",
+        "poster": "/cutscenes/sleep-cryo-engineer-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-hive-scout",
+      "kind": "sleep",
+      "title": "sleep-hive-scout",
+      "soundDesign": "sleep-hive",
+      "firstFrame": {
+        "prompt": "Deep inside a biomechanical hive chamber, the Scout from reference image 2, a slim adult woman in a sealed rounded white helmet with a black visor, her glossy bone-white armour plates unlatched and hanging open over her bare body, on hands and knees in a womb-like cradle of glistening black latex flaps and ivory vertebrae, a nude adult hive-hybrid consort with glossy black chitin plating and emerald veins kneeling behind them, both naked and willing, emerald bioluminescence, warm wet mist, a drone's torn carcass dripping from the ribbed wall.",
+        "plate": "public/cutscenes/event-queen-encounter-poster.jpg",
+        "references": [
+          "art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "The consort takes the operator from behind in doggy position, both moving hard and eager. An intruder drone skitters into the chamber and the cradle's ivory ribs snap shut on it, tearing it apart in sprays of green ichor. The lovers sink down together, a translucent membrane seals over them and they sleep as the camera pulls back to rows of breathing cocoons.",
+      "lastFrame": "the hive chamber wall lined with breathing translucent cocoons, one holding the operator and the consort asleep entwined, an intruder drone's shredded remains hanging from the cradle ribs in strings of green ichor, wet mist.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "durationSec": 8,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-hive-scout.webm",
+        "mp4": "/cutscenes/sleep-hive-scout.mp4",
+        "poster": "/cutscenes/sleep-hive-scout-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-hive-tank",
+      "kind": "sleep",
+      "title": "sleep-hive-tank",
+      "soundDesign": "sleep-hive",
+      "firstFrame": {
+        "prompt": "Deep inside a biomechanical hive chamber, the Tank from reference image 2, a huge muscular adult man in a sealed helmet with a narrow amber visor slit, his heavy olive-brown power armour stripped to the massive pauldrons, his bare chest and thighs scarred, on hands and knees in a womb-like cradle of glistening black latex flaps and ivory vertebrae, a nude adult hive-hybrid consort with glossy black chitin plating and emerald veins kneeling behind them, both naked and willing, emerald bioluminescence, warm wet mist, a drone's torn carcass dripping from the ribbed wall.",
+        "plate": "public/cutscenes/event-queen-encounter-poster.jpg",
+        "references": [
+          "art/source/art-remaster/sprite-v4/tank/identity/Tank.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "The consort takes the operator from behind in doggy position, both moving hard and eager. An intruder drone skitters into the chamber and the cradle's ivory ribs snap shut on it, tearing it apart in sprays of green ichor. The lovers sink down together, a translucent membrane seals over them and they sleep as the camera pulls back to rows of breathing cocoons.",
+      "lastFrame": "the hive chamber wall lined with breathing translucent cocoons, one holding the operator and the consort asleep entwined, an intruder drone's shredded remains hanging from the cradle ribs in strings of green ichor, wet mist.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "durationSec": 8,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-hive-tank.webm",
+        "mp4": "/cutscenes/sleep-hive-tank.mp4",
+        "poster": "/cutscenes/sleep-hive-tank-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-hive-engineer",
+      "kind": "sleep",
+      "title": "sleep-hive-engineer",
+      "soundDesign": "sleep-hive",
+      "firstFrame": {
+        "prompt": "Deep inside a biomechanical hive chamber, the Engineer from reference image 2, a lean athletic adult woman in a sealed tan helmet with a glowing cyan visor, her tan and gunmetal utility armour stripped to the forearm tool braces and boots, otherwise nude, on hands and knees in a womb-like cradle of glistening black latex flaps and ivory vertebrae, a nude adult hive-hybrid consort with glossy black chitin plating and emerald veins kneeling behind them, both naked and willing, emerald bioluminescence, warm wet mist, a drone's torn carcass dripping from the ribbed wall.",
+        "plate": "public/cutscenes/event-queen-encounter-poster.jpg",
+        "references": [
+          "art/source/art-remaster/sprite-v4/engineer/identity/Engineer.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "The consort takes the operator from behind in doggy position, both moving hard and eager. An intruder drone skitters into the chamber and the cradle's ivory ribs snap shut on it, tearing it apart in sprays of green ichor. The lovers sink down together, a translucent membrane seals over them and they sleep as the camera pulls back to rows of breathing cocoons.",
+      "lastFrame": "the hive chamber wall lined with breathing translucent cocoons, one holding the operator and the consort asleep entwined, an intruder drone's shredded remains hanging from the cradle ribs in strings of green ichor, wet mist.",
+      "trigger": "d0gg1e",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "durationSec": 8,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-hive-engineer.webm",
+        "mp4": "/cutscenes/sleep-hive-engineer.mp4",
+        "poster": "/cutscenes/sleep-hive-engineer-poster.jpg"
+      }
+    },
+    {
+      "id": "sleep-squad",
+      "kind": "sleep",
+      "title": "sleep-squad",
+      "soundDesign": "sleep-squad",
+      "firstFrame": {
+        "prompt": "The crash-site bunker at night: the Engineer from reference image 2, a lean athletic adult woman in a sealed tan helmet with a glowing cyan visor, her tan and gunmetal utility armour stripped to the forearm tool braces and boots, otherwise nude, lying back on a steel cot with the Scout from reference image 3, a slim adult woman in a sealed rounded white helmet with a black visor, her glossy bone-white armour plates unlatched and hanging open over her bare body, on top of her, both naked and kissing under a foil blanket, and the Tank from reference image 4, a huge muscular adult man in a sealed helmet with a narrow amber visor slit, his heavy olive-brown power armour stripped to the massive pauldrons, his bare chest and thighs scarred, sitting by the open door with a smoking rifle across his knees keeping watch, a dead alien sprawled in the doorway in a spreading pool of black blood, one caged amber lamp, the crashed ship's hull ribs fused with biomechanical sinew behind.",
+        "plate": "public/cutscenes/sleep-bunker-poster.jpg",
+        "references": [
+          "art/source/art-remaster/sprite-v4/engineer/identity/Engineer.front-idle-master.png",
+          "art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png",
+          "art/source/art-remaster/sprite-v4/tank/identity/Tank.front-idle-master.png"
+        ],
+        "model": "flux"
+      },
+      "identityLock": "IDENTITY LOCK: keep the operator's helmet silhouette, visor shape and colour, armour colours and body scale from the reference; the helmet stays sealed and the face is never shown; armour plates may be unlatched or stripped from the body.",
+      "action": "The Scout and the Engineer make love on the cot in missionary position, slow and tender. A second alien lunges through the doorway and the Tank fires point-blank, blowing it in half in a spray of black blood across the fog. The lovers fall asleep tangled together; the Tank's head nods forward; grey dawn rises in the doorway.",
+      "lastFrame": "the same bunker in deep dusk: the Scout and the Engineer asleep naked in each other's arms under the foil blanket, the Tank asleep against the door frame with the rifle on his knees, a second alien carcass blown in half across the threshold, grey dawn in the fog.",
+      "trigger": "m15510n4ry",
+      "loras": {
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.7
+          ]
+        ],
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.7
+          ],
+          [
+            "zit_betternudes_v3.safetensors",
+            0.6
+          ]
+        ],
+        "wan": [
+          [
+            "wan22_5b_dr34ml4y_nsfw_v1.safetensors",
+            0.8
+          ]
+        ]
+      },
+      "durationSec": 8,
+      "audio": "/cutscenes/sleep-bunker.webm",
+      "targets": {
+        "webm": "/cutscenes/sleep-squad.webm",
+        "mp4": "/cutscenes/sleep-squad.mp4",
+        "poster": "/cutscenes/sleep-squad-poster.jpg"
+      }
+    },
+    {
+      "id": "opening-launch-scout",
+      "kind": "opening",
+      "title": "Scout: Run to the ship and take off",
+      "style": {
+        "prefix": "Hunker Bunker graphic-novel horror: a hand-inked, painted illustration in the style of the game's cutscene art (heavy black ink linework, charcoal and gouache shading, hard chiaroscuro, grindhouse print grain) of biomechanical corporate hardware: chrome and gunmetal machinery, white enamel and bone-ivory panels, ribs and vertebrae fused into the mechanisms, glossy black latex, wet maroon tissue swelling through every seam. Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic hatches and sphincter valves, breast-like pressure domes, pulsing ribbed tubes, glistening fluids and mucous strands. Near-black deep-space corporate interiors lit by amber lamps, small teal screens and acid-green fluids.",
+        "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
+        "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
+        "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
+      },
+      "soundDesign": "opening-launch",
+      "firstFrame": {
+        "prompt": "Reference images: image 1 is the game's props, for style and materials; image 2 is the exact operator in nine views (identity sheet); image 3 is the ship. The Mothership's launch bay, a living biomechanical hangar of chrome ribs and wet maroon tissue, its walls studded with phallic pistons and vulvic docking hatches; in glistening tissue alcoves along the walls nude adult crew in their thirties writhe together, lit by amber lamps. the Scout (a slim woman with short dark hair, no helmet, in a fitted white armoured bodysuit with black panels and black boots, a compact rifle at her side) sprints across the deck toward the Scout's ship (a sleek dark-iron delta interceptor with swept wings, a narrow canopy and twin engines, its seams lit with thin green running lights) on its cradle at the mouth of a ribbed, pulsing launch tube.",
+        "references": [
+          "art/source/style-refs/game_cutscene_style.png",
+          "art/source/cinematics/operator-identities/factory/scout/identity_sheet_3x3.png",
+          "public/cutscenes/scout-class-intro.webm@7.6"
+        ],
+        "model": "flux"
+      },
+      "camera": "Fast forward tracking shot rising into high-angle crane as the ship blasts out of the launch tube",
+      "loras": {
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.75
+          ]
+        ],
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.6
+          ]
+        ]
+      },
+      "identityLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
+      "action": "The Scout sprints, vaults onto the wing and drops into the cockpit; the canopy seals; the catapult fires and the interceptor shoots down the ribbed launch tube and out through the arched portal. Camera tracks low alongside, then holds as the ship streaks away.",
+      "lastFrame": "the interceptor blasting out through a dilating sphincter launch portal on twin green-white plumes, fluids spraying from the tube's ribs, the cradle empty and smoking.",
+      "durationSec": 8,
+      "audio": null,
+      "targets": {
+        "webm": "/cutscenes/scout-class-intro.webm",
+        "mp4": "/cutscenes/scout-class-intro.mp4",
+        "poster": "/cutscenes/scout-class-intro-poster.jpg"
+      }
+    },
+    {
+      "id": "opening-launch-tank",
+      "kind": "opening",
+      "title": "Tank: Run to the ship and take off",
+      "style": {
+        "prefix": "Hunker Bunker graphic-novel horror: a hand-inked, painted illustration in the style of the game's cutscene art (heavy black ink linework, charcoal and gouache shading, hard chiaroscuro, grindhouse print grain) of biomechanical corporate hardware: chrome and gunmetal machinery, white enamel and bone-ivory panels, ribs and vertebrae fused into the mechanisms, glossy black latex, wet maroon tissue swelling through every seam. Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic hatches and sphincter valves, breast-like pressure domes, pulsing ribbed tubes, glistening fluids and mucous strands. Near-black deep-space corporate interiors lit by amber lamps, small teal screens and acid-green fluids.",
+        "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
+        "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
+        "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
+      },
+      "soundDesign": "opening-launch",
+      "firstFrame": {
+        "prompt": "Reference images: image 1 is the game's props, for style and materials; image 2 is the exact operator in nine views (identity sheet); image 3 is the ship. The Mothership's heavy bay, a living biomechanical hangar of chrome girders and swollen maroon tissue venting steam from sphincter grates; nude adult crew in their thirties couple in the glistening alcoves of the walls. the Tank (a huge hulking operator in heavy weathered olive and dark-grey power armour with massive rounded pauldrons, a sealed helmet with an amber visor and small cyan status lights, a heavy autocannon) strides with heavy steps toward the lowered rear ramp of the Tank's ship (a massive armoured drop-hauler of stacked iron plating, a heavy rear ramp and banks of round amber-glowing thruster cans), its thruster cans glowing.",
+        "references": [
+          "art/source/style-refs/game_cutscene_style.png",
+          "art/source/cinematics/operator-identities/factory/tank/identity_sheet_3x3.png",
+          "public/cutscenes/tank-class-intro.webm@5.5"
+        ],
+        "model": "flux"
+      },
+      "camera": "Low-angle slow pedestal push-in, tilting up as the drop-hauler elevates into the air",
+      "loras": {
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.75
+          ]
+        ],
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.6
+          ]
+        ]
+      },
+      "identityLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
+      "action": "The Tank strides up the ramp with heavy steps; the ramp hauls shut; thruster cans flare amber one bank at a time and the drop-hauler lifts off the deck through billowing steam toward the opening iris. Camera cranes up with the lift.",
+      "lastFrame": "the drop-hauler lifting off on its amber thruster banks through billowing steam as the vault's vulvic iris dilates above it, fluid streaming from the parting tissue.",
+      "durationSec": 8,
+      "audio": null,
+      "targets": {
+        "webm": "/cutscenes/tank-class-intro.webm",
+        "mp4": "/cutscenes/tank-class-intro.mp4",
+        "poster": "/cutscenes/tank-class-intro-poster.jpg"
+      }
+    },
+    {
+      "id": "opening-launch-engineer",
+      "kind": "opening",
+      "title": "Engineer: Run to the ship and take off",
+      "style": {
+        "prefix": "Hunker Bunker graphic-novel horror: a hand-inked, painted illustration in the style of the game's cutscene art (heavy black ink linework, charcoal and gouache shading, hard chiaroscuro, grindhouse print grain) of biomechanical corporate hardware: chrome and gunmetal machinery, white enamel and bone-ivory panels, ribs and vertebrae fused into the mechanisms, glossy black latex, wet maroon tissue swelling through every seam. Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic hatches and sphincter valves, breast-like pressure domes, pulsing ribbed tubes, glistening fluids and mucous strands. Near-black deep-space corporate interiors lit by amber lamps, small teal screens and acid-green fluids.",
+        "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
+        "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
+        "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
+      },
+      "soundDesign": "opening-launch",
+      "firstFrame": {
+        "prompt": "Reference images: image 1 is the game's props, for style and materials; image 2 is the exact operator in nine views (identity sheet); image 3 is the ship. The Mothership's service bay, chrome gantries fused with bone vertebrae and pulsing tubes, breast-like pressure domes on the walls leaking fluid; nude adult crew in their thirties tangled together in a tissue alcove behind. the Engineer (a lean operator in a white helmet with a cyan visor, navy and white armour with cyan lights, a boxy backpack and a tesla rifle) kneels at the flank of the Engineer's ship (a long low survey shuttle with a teal-glass canopy bubble, sensor dishes and antennae, cyan diagnostic lines along its iron hull), unclamping a ribbed, dripping fuel line from its hull.",
+        "references": [
+          "art/source/style-refs/game_cutscene_style.png",
+          "art/source/cinematics/operator-identities/factory/engineer/identity_sheet_3x3.png",
+          "public/cutscenes/engineer-class-intro.webm@6.6"
+        ],
+        "model": "flux"
+      },
+      "camera": "Smooth lateral tracking shot following the survey shuttle gliding along the rail",
+      "loras": {
+        "zimage": [
+          [
+            "zit_giger_v1.safetensors",
+            0.6
+          ],
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.75
+          ]
+        ],
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.6
+          ]
+        ]
+      },
+      "identityLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
+      "action": "The Engineer pulls the fuel line free and coils it, taps a teal diagnostic panel, climbs into the canopy; the shuttle hums, rises off its clamps and glides out along the rail through the arched gate. Camera pans with the shuttle.",
+      "lastFrame": "the shuttle gliding out along its rail through a quivering membrane gate, the dripping fuel line coiled on the deck, the operator lit teal at the controls.",
+      "durationSec": 8,
+      "audio": null,
+      "targets": {
+        "webm": "/cutscenes/engineer-class-intro.webm",
+        "mp4": "/cutscenes/engineer-class-intro.mp4",
+        "poster": "/cutscenes/engineer-class-intro-poster.jpg"
+      }
+    },
+    {
+      "id": "opening-flight-scout",
+      "kind": "opening",
+      "title": "Scout: Fly through space",
+      "style": {
+        "prefix": "Hunker Bunker graphic-novel horror: a hand-inked, painted illustration in the style of the game's cutscene art (heavy black ink linework, charcoal and gouache shading, hard chiaroscuro, grindhouse print grain) of biomechanical corporate hardware: chrome and gunmetal machinery, white enamel and bone-ivory panels, ribs and vertebrae fused into the mechanisms, glossy black latex, wet maroon tissue swelling through every seam. Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic hatches and sphincter valves, breast-like pressure domes, pulsing ribbed tubes, glistening fluids and mucous strands. Near-black deep-space corporate interiors lit by amber lamps, small teal screens and acid-green fluids.",
+        "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
+        "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
+        "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
+      },
+      "soundDesign": "opening-flight",
+      "firstFrame": {
+        "prompt": "Reference images: image 1 is the ship; image 2 is the Mothership. Wide cinematic establishing shot floating in open space: no ground, no terrain, no horizon, no people, no figures and no faces; the ship is the only subject and stays fully in frame, dwarfed by the black void and the colossal Mothership behind it; every organic form belongs to hulls and spires, never a body. Black starfield of deep space; in the background the colossal derelict Mothership, a ship-sized hulk miles long built of chrome plating, bone buttresses and swollen maroon tissue lined with phallic antenna spires and glowing sphincter ports. the Scout's ship (a sleek dark-iron delta interceptor with swept wings, a narrow canopy and twin engines, its seams lit with thin green running lights) streaks away from it toward a field of tumbling hull debris and frozen corpses.",
+        "references": [
+          "public/cutscenes/scout-class-intro.webm@7.6",
+          "public/sky/body_mothership_derelict.png"
+        ],
+        "model": "flux"
+      },
+      "camera": "Dynamic orbital pan and chase tracking the interceptor barrel-rolling across the planet horizon",
+      "loras": {
+        "zimage": [
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.75
+          ]
+        ],
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.6
+          ]
+        ]
+      },
+      "action": "The interceptor barrel-rolls through the tumbling debris at speed, slipping between spinning hull plates; the camera chases it out of the field as the frozen planet swings into view.",
+      "lastFrame": "Wide cinematic establishing shot floating in open space: no ground, no terrain, no horizon, no people, no figures and no faces; the ship is the only subject and stays fully in frame, dwarfed by the black void and the colossal Mothership behind it; every organic form belongs to hulls and spires, never a body. the interceptor small and fast against the frozen planet that now fills the frame, cold light on its curve, debris trailing behind.",
+      "durationSec": 5,
+      "audio": null,
+      "targets": {
+        "webm": "/cutscenes/scout-intro.webm",
+        "mp4": "/cutscenes/scout-intro.mp4",
+        "poster": "/cutscenes/scout-intro-poster.jpg"
+      }
+    },
+    {
+      "id": "opening-flight-tank",
+      "kind": "opening",
+      "title": "Tank: Fly through space",
+      "style": {
+        "prefix": "Hunker Bunker graphic-novel horror: a hand-inked, painted illustration in the style of the game's cutscene art (heavy black ink linework, charcoal and gouache shading, hard chiaroscuro, grindhouse print grain) of biomechanical corporate hardware: chrome and gunmetal machinery, white enamel and bone-ivory panels, ribs and vertebrae fused into the mechanisms, glossy black latex, wet maroon tissue swelling through every seam. Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic hatches and sphincter valves, breast-like pressure domes, pulsing ribbed tubes, glistening fluids and mucous strands. Near-black deep-space corporate interiors lit by amber lamps, small teal screens and acid-green fluids.",
+        "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
+        "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
+        "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
+      },
+      "soundDesign": "opening-flight",
+      "firstFrame": {
+        "prompt": "Reference images: image 1 is the ship; image 2 is the Mothership. Wide cinematic establishing shot floating in open space: no ground, no terrain, no horizon, no people, no figures and no faces; the ship is the only subject and stays fully in frame, dwarfed by the black void and the colossal Mothership behind it; every organic form belongs to hulls and spires, never a body. Black starfield of deep space; in the background the colossal derelict Mothership, a ship-sized hulk miles long built of chrome plating, bone buttresses and swollen maroon tissue. the Tank's ship (a massive armoured drop-hauler of stacked iron plating, a heavy rear ramp and banks of round amber-glowing thruster cans) pulls away on its amber thruster banks toward a drifting belt of ice shards studded with frozen hive bodies.",
+        "references": [
+          "public/cutscenes/tank-class-intro.webm@5.5",
+          "public/sky/body_mothership_derelict.png"
+        ],
+        "model": "flux"
+      },
+      "camera": "Slow forward push through ice debris holding behind the drop-hauler toward the rising planet",
+      "loras": {
+        "zimage": [
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.75
+          ]
+        ],
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.6
+          ]
+        ]
+      },
+      "action": "The drop-hauler surges fast across the frame from left to right on blazing amber thrusters, ramming through the ice belt so shards and frozen hive bodies burst apart against its armour; the camera races after it as the frozen planet rushes up to fill the frame.",
+      "lastFrame": "Wide cinematic establishing shot floating in open space: no ground, no terrain, no horizon, no people, no figures and no faces; the ship is the only subject and stays fully in frame, dwarfed by the black void and the colossal Mothership behind it; every organic form belongs to hulls and spires, never a body. the drop-hauler, plating scarred and glinting with frost, lumbering toward the frozen planet that fills the frame ahead.",
+      "durationSec": 5,
+      "audio": null,
+      "targets": {
+        "webm": "/cutscenes/tank-intro.webm",
+        "mp4": "/cutscenes/tank-intro.mp4",
+        "poster": "/cutscenes/tank-intro-poster.jpg"
+      }
+    },
+    {
+      "id": "opening-flight-engineer",
+      "kind": "opening",
+      "title": "Engineer: Fly through space",
+      "style": {
+        "prefix": "Hunker Bunker graphic-novel horror: a hand-inked, painted illustration in the style of the game's cutscene art (heavy black ink linework, charcoal and gouache shading, hard chiaroscuro, grindhouse print grain) of biomechanical corporate hardware: chrome and gunmetal machinery, white enamel and bone-ivory panels, ribs and vertebrae fused into the mechanisms, glossy black latex, wet maroon tissue swelling through every seam. Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic hatches and sphincter valves, breast-like pressure domes, pulsing ribbed tubes, glistening fluids and mucous strands. Near-black deep-space corporate interiors lit by amber lamps, small teal screens and acid-green fluids.",
+        "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
+        "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
+        "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
+      },
+      "soundDesign": "opening-flight",
+      "firstFrame": {
+        "prompt": "Reference images: image 1 is the ship; image 2 is the Mothership. Wide cinematic establishing shot floating in open space: no ground, no terrain, no horizon, no people, no figures and no faces; the ship is the only subject and stays fully in frame, dwarfed by the black void and the colossal Mothership behind it; every organic form belongs to hulls and spires, never a body. Black starfield of deep space; in the background the colossal derelict Mothership, a ship-sized hulk miles long built of chrome plating, bone buttresses and swollen maroon tissue, its pores leaking glowing fluid. the Engineer's ship (a long low survey shuttle with a teal-glass canopy bubble, sensor dishes and antennae, cyan diagnostic lines along its iron hull) drifts clear, sensor dishes unfolding, teal scan lines sweeping ahead into the dark.",
+        "references": [
+          "public/cutscenes/engineer-class-intro.webm@6.6",
+          "public/sky/body_mothership_derelict.png"
+        ],
+        "model": "flux"
+      },
+      "camera": "High-angle orbital arc sweep drifting alongside the shuttle as the scan grid paints the planet",
+      "loras": {
+        "zimage": [
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.75
+          ]
+        ],
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.6
+          ]
+        ]
+      },
+      "action": "The shuttle banks hard and accelerates across the frame, weaving between tumbling debris while teal scan beams sweep out and lock onto the planet; the camera whips alongside as the frozen planet rushes up to fill the frame.",
+      "lastFrame": "Wide cinematic establishing shot floating in open space: no ground, no terrain, no horizon, no people, no figures and no faces; the ship is the only subject and stays fully in frame, dwarfed by the black void and the colossal Mothership behind it; every organic form belongs to hulls and spires, never a body. the shuttle a small teal spark before the frozen planet that fills the frame, a scan grid traced across the planet's surface.",
+      "durationSec": 5,
+      "audio": null,
+      "targets": {
+        "webm": "/cutscenes/engineer-intro.webm",
+        "mp4": "/cutscenes/engineer-intro.mp4",
+        "poster": "/cutscenes/engineer-intro-poster.jpg"
+      }
+    },
+    {
+      "id": "opening-crash-scout",
+      "kind": "opening",
+      "title": "Scout: The crash",
+      "style": {
+        "prefix": "Hunker Bunker graphic-novel horror: a hand-inked, painted illustration in the style of the game's cutscene art (heavy black ink linework, charcoal and gouache shading, hard chiaroscuro, grindhouse print grain) of biomechanical corporate hardware: chrome and gunmetal machinery, white enamel and bone-ivory panels, ribs and vertebrae fused into the mechanisms, glossy black latex, wet maroon tissue swelling through every seam. Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic hatches and sphincter valves, breast-like pressure domes, pulsing ribbed tubes, glistening fluids and mucous strands. Near-black deep-space corporate interiors lit by amber lamps, small teal screens and acid-green fluids.",
+        "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
+        "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
+        "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
+      },
+      "soundDesign": "opening-crash",
+      "firstFrame": {
+        "prompt": "Reference images: image 1 is the ship; image 2 is the ship after the crash. Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. High above the frozen sector, the Scout's ship (a sleek dark-iron delta interceptor with swept wings, a narrow canopy and twin engines, its seams lit with thin green running lights) diving through the upper atmosphere wreathed in re-entry fire, the ice-bound surface far below veined with biomechanical tissue and glowing vents.",
+        "references": [
+          "public/cutscenes/scout-class-intro.webm@7.6",
+          "public/scout_ship.png"
+        ],
+        "model": "flux"
+      },
+      "camera": "Violent plunging dive and camera shake following the flaming interceptor breaking through the ice",
+      "loras": {
+        "zimage": [
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.75
+          ]
+        ],
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.6
+          ]
+        ]
+      },
+      "action": "A hypersonic streak lances up from the surface and clips the interceptor; a wing shears away and it cartwheels down trailing fire, punches through the ice into the cavern and skids through a hive brood, crushing them in bursts of green ichor.",
+      "lastFrame": "Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. the wrecked interceptor, one wing torn away, nose buried in an ice cavern overgrown with biomechanical tissue and phallic stalactites, hive creatures crushed under the wreck in sprays of green ichor and torn flesh, smoke and one amber emergency lamp.",
+      "durationSec": 6,
+      "audio": null,
+      "targets": {
+        "webm": "/cutscenes/scout-crash.webm",
+        "mp4": "/cutscenes/scout-crash.mp4",
+        "poster": "/cutscenes/scout-crash-poster.jpg"
+      }
+    },
+    {
+      "id": "opening-crash-tank",
+      "kind": "opening",
+      "title": "Tank: The crash",
+      "style": {
+        "prefix": "Hunker Bunker graphic-novel horror: a hand-inked, painted illustration in the style of the game's cutscene art (heavy black ink linework, charcoal and gouache shading, hard chiaroscuro, grindhouse print grain) of biomechanical corporate hardware: chrome and gunmetal machinery, white enamel and bone-ivory panels, ribs and vertebrae fused into the mechanisms, glossy black latex, wet maroon tissue swelling through every seam. Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic hatches and sphincter valves, breast-like pressure domes, pulsing ribbed tubes, glistening fluids and mucous strands. Near-black deep-space corporate interiors lit by amber lamps, small teal screens and acid-green fluids.",
+        "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
+        "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
+        "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
+      },
+      "soundDesign": "opening-crash",
+      "firstFrame": {
+        "prompt": "Reference images: image 1 is the ship; image 2 is the ship after the crash. Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. Inside a vast ice cavern overgrown with biomechanical tissue: the Tank's ship (a massive armoured drop-hauler of stacked iron plating, a heavy rear ramp and banks of round amber-glowing thruster cans) smashing down through the shattered cavern ceiling in fire and falling ice, thrusters dying, a moment before impact; the cavern floor directly below swarms with a hive brood of glistening chitinous alien creatures that look up as it falls on them.",
+        "references": [
+          "public/cutscenes/tank-class-intro.webm@5.5",
+          "public/tank_ship.png"
+        ],
+        "model": "flux"
+      },
+      "camera": "Heavy shuddering low-angle shot with violent camera shake as the drop-hauler lands on the brood and ploughs toward the camera",
+      "loras": {
+        "zimage": [
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.75
+          ]
+        ],
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.6
+          ]
+        ]
+      },
+      "action": "The drop-hauler slams belly-first onto the hive brood, crushing them in bursts of green ichor and torn chitin, then ploughs forward across the cavern floor gouging a gory trench, ice and viscera spraying, until it grinds to a smoking halt.",
+      "lastFrame": "Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. the wrecked drop-hauler belly-down at the end of a long gouged trench in an ice cavern overgrown with biomechanical tissue, a hive brood smashed into gore beneath it, green ichor and viscera across the ice, thruster cans smoking.",
+      "durationSec": 6,
+      "audio": null,
+      "targets": {
+        "webm": "/cutscenes/tank-crash.webm",
+        "mp4": "/cutscenes/tank-crash.mp4",
+        "poster": "/cutscenes/tank-crash-poster.jpg"
+      }
+    },
+    {
+      "id": "opening-crash-engineer",
+      "kind": "opening",
+      "title": "Engineer: The crash",
+      "style": {
+        "prefix": "Hunker Bunker graphic-novel horror: a hand-inked, painted illustration in the style of the game's cutscene art (heavy black ink linework, charcoal and gouache shading, hard chiaroscuro, grindhouse print grain) of biomechanical corporate hardware: chrome and gunmetal machinery, white enamel and bone-ivory panels, ribs and vertebrae fused into the mechanisms, glossy black latex, wet maroon tissue swelling through every seam. Overtly sexual biomechanical forms in the hardware itself: phallic pistons and pumps, vulvic hatches and sphincter valves, breast-like pressure domes, pulsing ribbed tubes, glistening fluids and mucous strands. Near-black deep-space corporate interiors lit by amber lamps, small teal screens and acid-green fluids.",
+        "suffix": "Graphic and explicit, adults only: every person depicted is a consenting adult over twenty-five; no readable text.",
+        "characterLock": "IDENTITY LOCK: reference image 2 is the exact operator in nine views; preserve their silhouette, body proportions, helmet or head exactly as shown, armour plate layout, material colours, lights, held weapon and body scale; one operator only.",
+        "continuityLock": "CONTINUITY LOCK: keep the ship's silhouette and colours, the operator, screen direction, set geometry and key-light direction from the first frame; only the described action changes state.",
+        "motionSuffix": "Single continuous shot in constant motion from the first frame to the last: the camera keeps moving and the action never pauses, natural weight and inertia. No cuts, no fades, no dissolves, no freeze frame, no new subjects, no text.",
+        "negative": "photograph, photoreal, 3D render, glossy TV drama look, soap opera lighting, plastic skin, soft focus, readable text, logos, watermarks, stone masonry, Nordic carving, runes, stained glass, extra limbs, deformed anatomy, duplicated subject, identity drift, morphing face, flicker, child, minor, teenager, youthful face, school uniform, static image, still frame, slideshow, slow fade, dissolve, freeze frame, frozen motion"
+      },
+      "soundDesign": "opening-crash",
+      "firstFrame": {
+        "prompt": "Reference images: image 1 is the ship; image 2 is the ship after the crash. Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. Inside a vast ice cavern overgrown with biomechanical tissue: the Engineer's ship (a long low survey shuttle with a teal-glass canopy bubble, sensor dishes and antennae, cyan diagnostic lines along its iron hull) tumbling down through the shattered cavern ceiling in sparks and falling ice, panels tearing loose, a moment before impact; below it a hive creature rears up on the cavern floor among glistening egg sacs, directly in its path.",
+        "references": [
+          "public/cutscenes/engineer-class-intro.webm@6.6",
+          "public/engineer_ship.png"
+        ],
+        "model": "flux"
+      },
+      "camera": "Fast tracking shot with impact shake following the shuttle as it hits, skewers the creature and rolls across the cavern floor",
+      "loras": {
+        "zimage": [
+          [
+            "zit_horror_noir_graphic_novel.safetensors",
+            0.75
+          ]
+        ],
+        "flux": [
+          [
+            "klein4b_nsfw_fix.safetensors",
+            0.6
+          ]
+        ]
+      },
+      "action": "The shuttle hits the cavern floor hard, its snapped sensor dish spearing the rearing hive creature in a spray of ichor, then rolls across the ice scattering panels and bursting egg sacs before it stops on its side, sparks and teal screens flickering.",
+      "lastFrame": "Wide cinematic establishing shot with no people, no figures and no faces anywhere: the ship is the only subject and stays fully in frame, dwarfed by the vastness around it; every organic form belongs to hulls, spires, ice and terrain, never a body. the wrecked shuttle on its side in an ice cavern overgrown with biomechanical tissue, panels scattered, a hive creature impaled on a snapped dish spraying ichor, sparks and flickering teal screens through the cracked canopy.",
+      "durationSec": 6,
+      "audio": null,
+      "targets": {
+        "webm": "/cutscenes/engineer-crash.webm",
+        "mp4": "/cutscenes/engineer-crash.mp4",
+        "poster": "/cutscenes/engineer-crash-poster.jpg"
+      }
+    }
+  ]
+}

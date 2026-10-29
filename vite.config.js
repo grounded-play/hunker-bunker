@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { Buffer } from 'node:buffer';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { transform as transformCss } from 'lightningcss';
 
 const readGit = (args, fallback) => {
   try {
@@ -47,6 +48,7 @@ export default defineConfig({
     // The remaining index chunk is the single-page game's boot graph, which is
     // required up front and is loaded locally by the Steam file:// build.
     chunkSizeWarningLimit: 1600,
+    modulePreload: false,
     // No manualChunks: under Vite 8 (Rolldown) a manual group drags in its
     // members' dependencies, so the old `debug-tools` group (which holds the
     // boot-time logger) carried Three.js, all seven locales and several menus
@@ -116,6 +118,24 @@ export default defineConfig({
         fileName: 'build-info.json',
         source: `${JSON.stringify(buildInfo, null, 2)}\n`
       });
+    }
+  }, {
+    // Stylesheets linked from index.html with media="print" bypass Vite's CSS
+    // minifier. Minify those emitted assets alongside imported stylesheets.
+    name: 'hunker-bunker-minify-linked-css',
+    enforce: 'post',
+    generateBundle(_options, bundle) {
+      for (const asset of Object.values(bundle)) {
+        if (asset.type !== 'asset' || !asset.fileName.endsWith('.css')) continue;
+        const code = typeof asset.source === 'string'
+          ? Buffer.from(asset.source)
+          : Buffer.from(asset.source);
+        asset.source = transformCss({
+          filename: asset.fileName,
+          code,
+          minify: true
+        }).code;
+      }
     }
   }],
   server: {

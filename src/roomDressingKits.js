@@ -14,19 +14,36 @@
  *
  * `mountY` lifts a wall prop off the floor (sconces, clocks, light cages).
  */
+import { WALL_FIXTURE_ELEVATIONS } from './modelPresentationRegistry.js';
+import { WORLD_EXPANSION_80_SPECS } from './data/worldExpansion80.js';
+import { MISSING_WORLD_STORY_50_SPECS, missingWorldStory50DecalScale } from './data/missingWorldStory50.js';
+
+const WORLD80_BY_THEME = WORLD_EXPANSION_80_SPECS.reduce((groups, spec) => {
+    (groups[spec.theme] ??= []).push(spec);
+    return groups;
+}, {});
+
+// The 2026-10-27 cohort (src/data/missingWorldStory50.js): every decal goes to
+// its theme; models dress the theme only when no other system places them.
+const STORY50_BY_THEME = MISSING_WORLD_STORY_50_SPECS.reduce((groups, spec) => {
+    (groups[spec.theme] ??= []).push(spec);
+    return groups;
+}, {});
+const STORY50_DECAL_SCALES = Object.fromEntries(MISSING_WORLD_STORY_50_SPECS.flatMap((spec) => (
+    spec.decals.map((decal) => [decal, missingWorldStory50DecalScale(spec.decalSize)])
+)));
+
+const WORLD80_DECAL_SCALES = Object.fromEntries(WORLD_EXPANSION_80_SPECS.map((spec) => [
+    spec.decal,
+    Object.freeze(spec.decal.includes('drag') || spec.decal.includes('skid') || spec.decal.includes('route')
+        ? { min: 2.2, max: 3.2 }
+        : spec.decal.includes('muster') || spec.decal.includes('sweep') || spec.decal.includes('fallout')
+            ? { min: 1.6, max: 2.4 }
+            : { min: 0.9, max: 1.6 })
+]));
+
 export const WALL_MOUNT_HEIGHT = Object.freeze({
-    fixture_sconce_vine: 1.45,
-    fixture_clock_dead: 1.65,
-    prop_overhead_cage_fluorescent: 1.95,
-    prop_wall_cable_tray_swag: 1.25,
-    prop_exhaust_blower_fan_hood: 1.85,
-    prop_ceiling_crane_hoist: 2.15,
-    arch_window_stained: 0.45,
-    prop_light_cluster_dripping: 1.35,
-    corp_biometric_wall_safe: 1.30,
-    vesper_trench_warning_klaxon: 1.70,
-    geo_pressure_relief_siren: 1.75,
-    tina_secret_distress_beacon: 1.40
+    ...WALL_FIXTURE_ELEVATIONS
 });
 
 const COMMON = Object.freeze({
@@ -101,7 +118,7 @@ export const DRESSING_KITS = Object.freeze({
             'vass_hybrid_embryo_incubator', 'carapace_sentry_chrysalis',
             'tina_cosmetic_skin_loom', 'suture_larval_nursery_urn', 'vass_bio_centrifuge_rack'],
         wallDecals: ['decal_spore_stain_01', 'decal_spore_stain_02', 'decal_spore_stain_03', 'decal_vine_iron_shadow_1',
-            'decal_vine_iron_shadow_2', 'decal_claw_scratches', 'decal_bite_marks_02', 'decal_hand_smears_2',
+            'decal_vine_iron_shadow_2', 'decal_claw_scratches', 'decal_bite_marks_02', 'decal_bite_marks_03', 'decal_hand_smears_2',
             'decal_wall_grime_drip', 'decal_hive_growth', 'decal_vass_acoustic_diagram'],
         clutter: ['prop_hive_resin_sac', 'state_growth_overrun_2', 'scatter_bolts', 'scatter_cable_coil',
             'prop_biomech_respirator', 'prop_cave_bones', 'bunker_junk_rare', 'prop_body_empty_exosuit',
@@ -247,6 +264,7 @@ export const DECAL_WORLD_SCALES = Object.freeze({
     decal_strip_cart_ruts: Object.freeze({ min: 2.6, max: 3.2 }),
     decal_walkway_borders: Object.freeze({ min: 2.4, max: 3.0 }),
     decal_strip_drag_marks: Object.freeze({ min: 2.2, max: 2.8 }),
+    decal_strip_drain_gutter: Object.freeze({ min: 2.6, max: 3.4 }),
     decal_strip_hive_veins: Object.freeze({ min: 2.2, max: 2.8 }),
     decal_sled_tracks: Object.freeze({ min: 2.4, max: 3.0 }),
     decal_door_wear_apron: Object.freeze({ min: 2.0, max: 2.5 }),
@@ -378,7 +396,12 @@ export const DECAL_WORLD_SCALES = Object.freeze({
     decal_meridian_binary_litany: Object.freeze({ min: 1.0, max: 1.5 }),
     decal_tina_dermis_shed_residue: Object.freeze({ min: 1.3, max: 1.8 }),
     decal_vass_neural_diagram: Object.freeze({ min: 1.2, max: 1.7 }),
-    decal_vesper_kill_tally: Object.freeze({ min: 0.50, max: 0.80 })
+    decal_vesper_kill_tally: Object.freeze({ min: 0.50, max: 0.80 }),
+
+    // World Expansion 80 story traces (2026-10-16)
+    ...WORLD80_DECAL_SCALES,
+    // World-story 50 companions (2026-10-27), at their authored sizes
+    ...STORY50_DECAL_SCALES
 });
 
 export function decalWorldScale(type, random) {
@@ -407,12 +430,28 @@ export function dressingProfileFor(themeId) {
 
 /** The full kit for a theme and role (family kit plus role additions, de-duplicated). */
 export function dressingKitFor(themeId, role) {
-    const family = DRESSING_KITS[dressingFamilyForTheme(themeId)];
+    const familyId = dressingFamilyForTheme(themeId);
+    const family = DRESSING_KITS[familyId];
     const extra = ROLE_DRESSING[role] ?? {};
     const merged = {};
     for (const layer of ['wallProps', 'wallDecals', 'clutter', 'corners', 'floorDecals']) {
         merged[layer] = [...new Set([...(extra[layer] ?? []), ...(family[layer] ?? [])])];
     }
+    for (const spec of WORLD80_BY_THEME[String(themeId ?? '')] ?? []) {
+        if (spec.placement === 'wall' || spec.placement === 'ceiling') merged.wallProps.push(spec.id);
+        else if (spec.placement === 'tabletop') merged.clutter.push(spec.id);
+        else merged.corners.push(spec.id);
+        const decalLayer = spec.placement === 'wall' || spec.placement === 'ceiling' ? 'wallDecals' : 'floorDecals';
+        merged[decalLayer].push(spec.decal);
+    }
+    for (const spec of STORY50_BY_THEME[String(themeId ?? '')] ?? []) {
+        if (spec.placedBy === 'dressing') {
+            if (spec.placement === 'wall' || spec.placement === 'ceiling') merged.wallProps.push(spec.id);
+            else merged.corners.push(spec.id);
+        }
+        merged[spec.decalPlane === 'wall' ? 'wallDecals' : 'floorDecals'].push(...spec.decals);
+    }
+    for (const layer of Object.keys(merged)) merged[layer] = [...new Set(merged[layer])];
     return merged;
 }
 
@@ -614,5 +653,18 @@ export const ROLE_VIGNETTES = Object.freeze({
 
 /** Vignettes for a theme and role: role groups first, then the family's. */
 export function vignettesFor(themeId, role) {
-    return [...(ROLE_VIGNETTES[role] ?? []), ...(VIGNETTES[dressingFamilyForTheme(themeId)] ?? [])];
+    const familyId = dressingFamilyForTheme(themeId);
+    const eligible = (WORLD80_BY_THEME[String(themeId ?? '')] ?? [])
+        .filter((spec) => !['wall', 'ceiling', 'threshold', 'recess'].includes(spec.placement));
+    const world80Vignettes = [];
+    for (let index = 0; index < eligible.length; index += 2) {
+        world80Vignettes.push(eligible.slice(index, index + 2).map((spec) => spec.id));
+    }
+    if (world80Vignettes.length > 1 && world80Vignettes.at(-1).length === 1) {
+        world80Vignettes.at(-2).push(world80Vignettes.pop()[0]);
+    }
+    if (world80Vignettes.length === 1 && world80Vignettes[0].length === 1) {
+        world80Vignettes.length = 0;
+    }
+    return [...(ROLE_VIGNETTES[role] ?? []), ...world80Vignettes, ...(VIGNETTES[familyId] ?? [])];
 }

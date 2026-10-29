@@ -523,7 +523,9 @@ export class AudioManager {
 
         // Subtle pitch variation for SFX if not explicitly disabled
         if (bus === 'sfx' && options.varyPitch !== false) {
-             pbRate *= (0.95 + Math.random() * 0.1); // +/- 5%
+            // One spread for every SFX (src/audioJuice.js), unclamped here:
+            // some calls deliberately run above the module's 2.5x clamp.
+            pbRate *= getModulatedPlaybackRate(1, AUDIO_JUICE_CONFIG.SFX_PITCH_VARIANCE);
         }
         source.playbackRate.value = pbRate;
         
@@ -723,6 +725,10 @@ export class AudioManager {
 
     static playVoiceCallout(cueType, options = {}) {
         if (this.globalMuted || !this.voiceEnabled) return null;
+        // Field callouts belong to live play; world restore behind the title or
+        // deployment doors must not speak. Auditions and the run-end card opt in.
+        if (!options.audition && !options.allowOutsideGameplay && typeof window !== 'undefined'
+            && typeof window.isGameplayPhase === 'function' && !window.isGameplayPhase()) return null;
         if (!this.isUnlocked && audioCtx?.state === 'running') {
             this.isUnlocked = true;
         }
@@ -827,6 +833,14 @@ export class AudioManager {
         return null;
     }
 
+    static reportUnvoicedLine(speakerName, text) {
+        this._unvoicedLines ??= new Set();
+        const id = `${speakerName}|${text}`;
+        if (this._unvoicedLines.has(id) || this._unvoicedLines.size >= 200) return;
+        this._unvoicedLines.add(id);
+        if (typeof window !== 'undefined') window.hbLog?.('VOICE', 'info', 'unvoiced-line', { speaker: speakerName || null, text });
+    }
+
     static playVoiceForMessage(speakerInfo = {}, messageText = '', options = {}) {
         if (this.globalMuted || !this.voiceEnabled) return null;
         if (!this.isUnlocked) {
@@ -861,7 +875,7 @@ export class AudioManager {
 
         // 0. The exact recorded line, when generated audio exists for it.
         const recorded = options.isChirp ? null : this.voiceLines?.resolve?.(text);
-        if (recorded) {
+        const playRecorded = () => {
             const semanticId = options.semanticId ?? `line:${recorded.key}`;
             if (!options.audition && this._playedVoiceSemantics.has(semanticId)) return null;
             const playback = this._playVoiceLineUrl(recorded.key, recorded.url, { priority, speakerName, volume: options.volume ?? 1.0, varyPitch: false, ...options });
@@ -870,7 +884,10 @@ export class AudioManager {
                 this.emitVoiceLine({ cue: 'dialogue', semanticId, subtitle: text, take: recorded.key, speakerName, audition: Boolean(options.audition) });
             }
             return playback;
-        }
+        };
+        // Catalog lines are the authored script. A code line's generated read
+        // yields to an authored keyword clip for the same moment (step 1).
+        if (recorded && recorded.source !== 'code') return playRecorded();
 
         // 1. Check direct key match or character script mapping
         let targetKey = null;
@@ -985,6 +1002,12 @@ export class AudioManager {
             });
             return playback;
         }
+
+        if (recorded) return playRecorded();
+
+        // Nothing recorded says this line. Note it once per session, so a
+        // playtest export lists exactly which on-screen speech is unvoiced.
+        if (!options.isChirp && text) this.reportUnvoicedLine(speakerName, text);
 
         // If voice is currently speaking, do not override with procedural fallback
         if (this.isVoiceSpeaking()) {
@@ -1352,6 +1375,48 @@ export class AudioManager {
             osc.start(now + offset);
             osc.stop(now + offset + 0.18);
         }
+        return true;
+    }
+
+    // Predatory biological hiss and mandible chitter for the Mycelium Stalker telegraph
+    static playStalkerHiss(options = {}) {
+        if (this.globalMuted || !this.isUnlocked || !audioCtx || !this.sfxGain) return false;
+        const now = audioCtx.currentTime;
+        const volume = Math.max(0.01, Math.min(0.4, Number(options.volume ?? 0.16)));
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const filter = typeof audioCtx.createBiquadFilter === 'function' ? audioCtx.createBiquadFilter() : null;
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(2600, now);
+        osc.frequency.exponentialRampToValueAtTime(950, now + 0.3);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(volume, now + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+
+        if (filter) {
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(2200, now);
+            filter.Q.setValueAtTime(3.5, now);
+            osc.connect(filter);
+            filter.connect(gain);
+        } else {
+            osc.connect(gain);
+        }
+
+        gain.connect(this.worldGain || this.sfxGain);
+        osc.onended = () => {
+            try {
+                osc.disconnect();
+                filter?.disconnect();
+                gain.disconnect();
+            } catch {
+                // Audio nodes may already be disconnected during teardown.
+            }
+        };
+        osc.start(now);
+        osc.stop(now + 0.34);
         return true;
     }
 
@@ -1801,6 +1866,50 @@ export class AudioManager {
     /**
      * Procedural creature alert sound (chitter / insectoid screech / bio groan / boss roar).
      */
+    // Low-O2 heartbeat (survivalTension.js -> audioJuice tempo). There is no
+    // heartbeat asset, so each beat is a synthesized lub-dub. The loop reads
+    // the current tempo every beat; 0 stops it.
+    static setHeartbeat(bpm = 0) {
+        this._heartbeatBpm = Math.max(0, Number(bpm) || 0);
+        if (!this._heartbeatBpm) {
+            if (this._heartbeatTimer) clearTimeout(this._heartbeatTimer);
+            this._heartbeatTimer = null;
+            return;
+        }
+        if (!this._heartbeatTimer) this._heartbeatTick();
+    }
+
+    static _heartbeatTick() {
+        if (!this._heartbeatBpm) {
+            this._heartbeatTimer = null;
+            return;
+        }
+        this.playHeartbeatThump();
+        this._heartbeatTimer = setTimeout(() => this._heartbeatTick(), 60000 / this._heartbeatBpm);
+    }
+
+    static playHeartbeatThump({ volume = 0.32 } = {}) {
+        if (this.globalMuted || !this.isUnlocked || !this.sfxGain) return false;
+        const now = audioCtx.currentTime || 0;
+        const beat = (at, fromHz, toHz, length, level) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(fromHz, at);
+            osc.frequency.exponentialRampToValueAtTime(toHz, at + length);
+            gain.gain.setValueAtTime(0.0001, at);
+            gain.gain.linearRampToValueAtTime(level, at + 0.012);
+            gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            osc.start(at);
+            osc.stop(at + length + 0.02);
+        };
+        beat(now, 62, 40, 0.12, volume);          // lub
+        beat(now + 0.17, 54, 36, 0.1, volume * 0.7); // dub
+        return true;
+    }
+
     static playProceduralCreatureAlert(creatureType = 'crawler', options = {}) {
         if (this.globalMuted || !this.isUnlocked) return null;
         const spatial = this.resolveSpatial(options);
@@ -1955,6 +2064,7 @@ export class AudioManager {
     // Map a gameplay context to a track key; supports biome exploration, combat,
     // and dedicated boss soundtracks (Tracks 25-31).
     static MUSIC_CONTEXT_TRACKS = {
+        menu:            'mainbg_music',
         safe_ship:       'music_safe_ship',
         cryo_explore:    'music_cryo_explore',
         bio_explore:     'music_bio_explore',
@@ -2114,6 +2224,9 @@ export class AudioManager {
     });
 
     static MUSIC_CONTEXT_PLAYLISTS = Object.freeze({
+        menu: Object.freeze([
+            'mainbg_music'
+        ]),
         safe_ship: Object.freeze([
             'music_safe_ship',
             'music_interstitial_01', // Someone Is Still Alive
@@ -2328,6 +2441,7 @@ export class AudioManager {
         }
 
         const isCombatOrBoss = context === 'combat' || context.startsWith('boss_');
+        const shouldLoop = isCombatOrBoss || context === 'menu';
 
         // Already playing the correct context and music is actively audible
         if (this.activeMusic && this.activeMusic.context === context && !options.forceNext) {
@@ -2340,7 +2454,7 @@ export class AudioManager {
         if (!this.buffers[bufferKey]) {
             // Trigger asynchronous on-demand decode and start once loaded
             this.playOST(bufferKey, {
-                loop: isCombatOrBoss,
+                loop: shouldLoop,
                 context,
                 volume: 0.62,
                 fadeSeconds: this._musicFadeSeconds
@@ -2366,7 +2480,7 @@ export class AudioManager {
         const targetVolume = Number.isFinite(options.volume) ? options.volume : 0.62;
         const started = this.play(bufferKey, {
             volume: 0.0001,
-            loop: isCombatOrBoss, // Bosses & combat loop until encounter finishes
+            loop: shouldLoop, // Bosses, combat & main menu loop continuously
             bus: 'music',
             varyPitch: false
         });
@@ -2390,7 +2504,7 @@ export class AudioManager {
         this.musicSource = started.source;
 
         // For non-looping exploration, schedule cycle fade and room tone breathing room
-        if (!isCombatOrBoss) {
+        if (!shouldLoop) {
             const buffer = this.buffers[bufferKey];
             const trackDuration = (buffer && Number.isFinite(buffer.duration) && buffer.duration > 20)
                 ? buffer.duration
@@ -2458,12 +2572,12 @@ export class AudioManager {
 
     static startMenuMusic() {
         if (!this.isUnlocked) {
-            this._pendingMusicContext = 'safe_ship';
+            this._pendingMusicContext = 'menu';
             return;
         }
         this.stopAmbience({ stopMusic: false });
         this.setMusicTension('safe');
-        this.setMusicContext('safe_ship');
+        this.setMusicContext('menu');
     }
 
     static stopMusic({ fadeSeconds = this._musicFadeSeconds } = {}) {
@@ -2511,6 +2625,7 @@ export class AudioManager {
 }
 
 AudioManager.init();
+import { AUDIO_JUICE_CONFIG, getModulatedPlaybackRate } from './audioJuice.js';
 import { assetUrl } from './assetUrl.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
 import { GAME_SOUNDSETS, selectSoundsetVariant } from './data/gameSoundsets.js';

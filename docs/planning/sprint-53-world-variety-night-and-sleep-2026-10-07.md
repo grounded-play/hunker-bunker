@@ -1,6 +1,9 @@
 # Sprint 53 — A world that varies, names itself, goes dark, and sleeps
 
-Status: **approved 2026-10-07** ("all correct proceed"), in progress. Branch: `dev/sprint-51` (local only).
+> [!NOTE]
+> **Consolidation Notice (2026-10-17):** Biome wall reskinning, sleep/morning cinematic cards, and world variety systems from this design brief have been implemented and verified. Release qualification is consolidated into the canonical [Sprint 53 Master Verification & Execution Plan (2026-10-17)](sprint-53-master-verification-and-execution-plan-2026-10-17.md).
+
+Status: **historical / consolidated into Sprint 53 Master Plan**. Branch: `dev/sprint-51` (local only).
 
 Implementation audit and remaining work: [`sprint-53-continuation-plan-2026-10-07.md`](sprint-53-continuation-plan-2026-10-07.md).
 
@@ -215,9 +218,8 @@ Every prompt below and every lighting change is checked against this list.
   | Infected, or out in the cryo ring | Cryo pod drift |
   | Bonded with a hive | Hive cocoon |
   | Co-op, both resting | Squad watch |
-- [ ] **S3. Morning card.** After the video: "DAY 4 · 06:00", the crash-site name and the day's objective.
-  Day/time and crash-site name shipped in `24e7c062`; adding the current objective
-  remains open.
+- [x] **S3. Morning card.** After the video: "DAY 4 · 06:00", the crash-site name and the day's objective.
+  Day/time, crash-site name, and current tracked objective shipped across all 7 languages in tactical morning card and biome prompt log.
 
 Prompts are in section C.
 

@@ -5,13 +5,13 @@
 // Ten archetypes cover the ship -> camp -> medical -> O2 -> trap/reward ->
 // return-shortcut loop plus biome and hive transition approaches.
 
-export const HALLWAY_BUILD_VERSION = 2;
+export const HALLWAY_BUILD_VERSION = 3;
 
 export const HALLWAY_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'short_connector',
         lengthRange: [8, 16],
-        widthRange: [1, 2],
+        widthRange: [2, 3],
         maxTurns: 1,
         elevationPolicy: 'flat',
         junctionEligible: false,
@@ -26,7 +26,7 @@ export const HALLWAY_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'pressure_corridor',
         lengthRange: [14, 24],
-        widthRange: [2, 2],
+        widthRange: [2, 3],
         maxTurns: 2,
         elevationPolicy: 'flat',
         junctionEligible: false,
@@ -41,7 +41,7 @@ export const HALLWAY_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'service_passage',
         lengthRange: [10, 20],
-        widthRange: [1, 2],
+        widthRange: [2, 3],
         maxTurns: 2,
         elevationPolicy: 'flat',
         junctionEligible: true,
@@ -56,7 +56,7 @@ export const HALLWAY_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'canyon_causeway',
         lengthRange: [16, 28],
-        widthRange: [2, 2],
+        widthRange: [2, 3],
         maxTurns: 1,
         elevationPolicy: 'exposed',
         junctionEligible: false,
@@ -71,7 +71,7 @@ export const HALLWAY_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'defensive_approach',
         lengthRange: [12, 22],
-        widthRange: [2, 3],
+        widthRange: [3, 4],
         maxTurns: 2,
         elevationPolicy: 'flat',
         junctionEligible: true,
@@ -86,7 +86,7 @@ export const HALLWAY_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'camp_approach',
         lengthRange: [10, 20],
-        widthRange: [2, 3],
+        widthRange: [3, 4],
         maxTurns: 2,
         elevationPolicy: 'flat',
         junctionEligible: true,
@@ -101,7 +101,7 @@ export const HALLWAY_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'secret_bypass',
         lengthRange: [8, 18],
-        widthRange: [1, 1],
+        widthRange: [2, 2],
         maxTurns: 3,
         elevationPolicy: 'flat',
         junctionEligible: false,
@@ -116,7 +116,7 @@ export const HALLWAY_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'boss_staging_approach',
         lengthRange: [14, 24],
-        widthRange: [2, 3],
+        widthRange: [3, 4],
         maxTurns: 1,
         elevationPolicy: 'flat',
         junctionEligible: false,
@@ -131,7 +131,7 @@ export const HALLWAY_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'biome_transition_hall',
         lengthRange: [12, 24],
-        widthRange: [2, 3],
+        widthRange: [3, 4],
         maxTurns: 2,
         elevationPolicy: 'flat',
         junctionEligible: true,
@@ -146,7 +146,7 @@ export const HALLWAY_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'hive_warning_approach',
         lengthRange: [12, 22],
-        widthRange: [1, 2],
+        widthRange: [2, 3],
         maxTurns: 3,
         elevationPolicy: 'flat',
         junctionEligible: true,

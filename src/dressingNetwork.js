@@ -4,7 +4,7 @@ export function registerDressingNetwork(game, items = []) {
     game._dressingManifest ??= new Map();
     for (const item of items) if (item.destructible) game._dressingManifest.set(item.stableId,
         { stableId: item.stableId, id: item.id, x: item.x, y: item.y });
-    if (!game._dressingProtocolEnabled || !game.isMultiplayer || game.multiplayerMode === 'pvp') return;
+    if (!game._dressingProtocolEnabled || !game.isMultiplayer) return;
     const candidates = items.length ? items.filter(item => item.destructible) : [...game._dressingManifest.values()];
     const entries = candidates.map(item => ({
         id: item.stableId, x: item.x, z: item.y,
@@ -32,9 +32,19 @@ export function applyDressingNetworkEvent(game, data) {
     game._dressingHp ??= new Map();
     if (detail.revision <= (game._dressingHp.get(detail.id)?.revision ?? -1)) return false;
     game._dressingHp.set(detail.id, { hp: detail.hp, revision: detail.revision });
+    if (detail.x != null && detail.z != null) {
+        (game.propTransformStates ??= new Map()).set(detail.id, {
+            x: detail.x,
+            z: detail.z,
+            rotY: detail.rotY
+        });
+    }
     const target = game.scatterSprites?.find(s => s.userData?.dressingStableId === detail.id);
     if (target) {
         target.userData.propHp = detail.hp;
+        if (detail.x != null && detail.z != null) {
+            game.moveProp?.(target, { x: detail.x, z: detail.z, rotY: detail.rotY, emit: false });
+        }
         if (detail.hp === 0) game.breakScatterProp(target, { plannedDrops: [], fromRemote: true });
     }
     if (detail.hp === 0) {

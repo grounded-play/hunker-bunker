@@ -142,6 +142,9 @@ describe('O2 Milestone Cinematic Doors and Video Choreography (SEQ-01)', () => {
             triggerCameraShake: (intensity, duration) => {
                 events.push(`triggerCameraShake:${intensity}:${duration}`);
             },
+            prewarmBossEncounter: (bossType) => {
+                events.push(`prewarmBossEncounter:${bossType}`);
+            },
             spawnMilestoneBoss: (bossType, meta) => {
                 events.push(`spawnMilestoneBoss:${bossType}:${meta.sourceGoalKey}`);
             }
@@ -197,6 +200,7 @@ describe('O2 Milestone Cinematic Doors and Video Choreography (SEQ-01)', () => {
         expect(events[0]).toBe('closeConsoleModal');
         expect(events[1]).toBe('setInputEnabled:false');
         expect(events[2]).toBe('setCinematicLock:true');
+        expect(events[3]).toBe('prewarmBossEncounter:boss_cybersnail');
 
         // 2 & 3. Door closes and opens to upgrade video
         expect(events).toContain('playCutsceneVideo:event-o2-generator-upgraded');

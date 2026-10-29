@@ -1,21 +1,21 @@
 {
   "version": 1,
   "budgets": {
-    "publicBytes": 5557452800,
-    "appAsarBytes": 996147200,
-    "unknownAssets": 160,
+    "publicBytes": 6291456000,
+    "appAsarBytes": 1258291200,
+    "unknownAssets": 185,
     "codecMismatches": 140,
-    "duplicateGroups": 140
+    "duplicateGroups": 195
   },
   "measured": {
-    "publicBytes": 5172345479,
-    "publicFileCount": 6331
+    "publicBytes": 6103760442,
+    "publicFileCount": 7415
   },
   "classifications": {
-    "runtime-required": 5923,
+    "runtime-required": 6954,
     "source-reference": 23,
     "generated-intermediate": 269,
-    "unknown": 116
+    "unknown": 169
   },
   "missingReferences": [],
   "invalidMedia": [],
@@ -613,6 +613,386 @@
   ],
   "duplicateChecksums": [
     {
+      "sha256": "7cefde818907a3a5ca65c050312f5bce6966b783381e9ac4cd0528a88b2dc2c2",
+      "files": [
+        "3d/runtime/decals/decal_amber_resin_fracture_leak.png",
+        "decal_amber_resin_fracture_leak.png"
+      ]
+    },
+    {
+      "sha256": "c08a22348676b08dc5e1c9121edd435b527dc71b24eda079907e5154573665e7",
+      "files": [
+        "3d/runtime/decals/decal_armory_spent_brass_scatter.png",
+        "3d/runtime/decals/decal_armory_spent_brass_scatter1.png",
+        "decal_armory_spent_brass_scatter.png",
+        "decal_armory_spent_brass_scatter1.png"
+      ]
+    },
+    {
+      "sha256": "9fa2d1366a63bee26bafb2f5c9bba3e8c558379d7827b889cb8673acd6617e15",
+      "files": [
+        "3d/runtime/decals/decal_armory_spent_brass_scatter2.png",
+        "decal_armory_spent_brass_scatter2.png"
+      ]
+    },
+    {
+      "sha256": "16b079624eb83e5e100c360381b231f277981664fe21f2aee619897b08b50369",
+      "files": [
+        "3d/runtime/decals/decal_armory_spent_brass_scatter3.png",
+        "decal_armory_spent_brass_scatter3.png"
+      ]
+    },
+    {
+      "sha256": "9911aff8a62281245b010d77c840d9e26be1e1b7cc3321dba8d74579c449802c",
+      "files": [
+        "3d/runtime/decals/decal_battery_acid_sulfur_boil.png",
+        "decal_battery_acid_sulfur_boil.png"
+      ]
+    },
+    {
+      "sha256": "5d8cd423b7709a1c8f3b24013fc80c6c9a9393b64209e58cfb9ddc65876dd403",
+      "files": [
+        "3d/runtime/decals/decal_bore_mandible_puncture_drag.png",
+        "decal_bore_mandible_puncture_drag.png"
+      ]
+    },
+    {
+      "sha256": "f02a8eb08c06bf4c71cc45d51231de1df82f6aa720794e9e674989020f34ad83",
+      "files": [
+        "3d/runtime/decals/decal_carbon_dust_document_ash.png",
+        "decal_carbon_dust_document_ash.png"
+      ]
+    },
+    {
+      "sha256": "fec9e2e0fdaa488670f43d14445fa439177e032d94f4a41caaec70eb64fd20fb",
+      "files": [
+        "3d/runtime/decals/decal_cauterizer_plasma_splatter_scab.png",
+        "decal_cauterizer_plasma_splatter_scab.png"
+      ]
+    },
+    {
+      "sha256": "f8e305018a4b9481a1ec64bfb9062fa4aa91c713330cd1fb4f0ff26323e10c15",
+      "files": [
+        "3d/runtime/decals/decal_chitin_moult_calcium_bloom.png",
+        "decal_chitin_moult_calcium_bloom.png"
+      ]
+    },
+    {
+      "sha256": "982d8825ecca30ee4e393cc0afd92825a5b54fae562d7e8d45b53f302e7defe6",
+      "files": [
+        "3d/runtime/decals/decal_covenant_copper_arcing_burn.png",
+        "decal_covenant_copper_arcing_burn.png"
+      ]
+    },
+    {
+      "sha256": "77ce6fad15961067ef83074325781d40ec92d05d54d198024142402f17ea5fff",
+      "files": [
+        "3d/runtime/decals/decal_crayon_wax_floor_graffiti.png",
+        "decal_crayon_wax_floor_graffiti.png"
+      ]
+    },
+    {
+      "sha256": "4b48dde34e7d083aa15b97ac54f1bd218005c5f8fa00e1bd99068156427ace2c",
+      "files": [
+        "3d/runtime/decals/decal_cryo_glass_frost_powder_fan.png",
+        "decal_cryo_glass_frost_powder_fan.png"
+      ]
+    },
+    {
+      "sha256": "517dc3c6ec74faabf223b7ac431cd054ba1bc36d5219ca211b5393149fd39248",
+      "files": [
+        "3d/runtime/decals/decal_cultist_wax_runoff_pool.png",
+        "decal_cultist_wax_runoff_pool.png"
+      ]
+    },
+    {
+      "sha256": "f919d620c4dfc5e4c2676c8cfad4b8ca47c9379a494389dcf29469f9252502a4",
+      "files": [
+        "3d/runtime/decals/decal_datapad_glass_shatter_spray.png",
+        "decal_datapad_glass_shatter_spray.png"
+      ]
+    },
+    {
+      "sha256": "449a70fc9e47daf0452d05342f753303a5dd015990550b12754836946397a28c",
+      "files": [
+        "3d/runtime/decals/decal_deserted_cockpit_boot_scuff_panic.png",
+        "decal_deserted_cockpit_boot_scuff_panic.png"
+      ]
+    },
+    {
+      "sha256": "c0cc8a7b45eac0d450a9cdd36b431302c1f4382e916221373ceba73bb39b99ee",
+      "files": [
+        "3d/runtime/decals/decal_distiller_mineral_scale_runoff.png",
+        "decal_distiller_mineral_scale_runoff.png"
+      ]
+    },
+    {
+      "sha256": "c9cad8e5210aab56a7ec80ee7bdc746abe0fd19558263a0430a438567df6eb2f",
+      "files": [
+        "3d/runtime/decals/decal_dogtag_scraped_rub_halo.png",
+        "decal_dogtag_scraped_rub_halo.png"
+      ]
+    },
+    {
+      "sha256": "60c5981026a8b67b90f30227d270f466f70dd9c701632b6316077d95bb1bfff7",
+      "files": [
+        "3d/runtime/decals/decal_drone_crash_skid_shrapnel.png",
+        "decal_drone_crash_skid_shrapnel.png"
+      ]
+    },
+    {
+      "sha256": "de2b70682c22fd2264cf4dba0c80e8bb42a3be6eda5a1a7a436ce7b3f2d0e214",
+      "files": [
+        "3d/runtime/decals/decal_falling_icicle_impact_patter.png",
+        "decal_falling_icicle_impact_patter.png"
+      ]
+    },
+    {
+      "sha256": "d46eb0b1dc0d2f614ba9183eb71a6f330d5779004a1884cdb46a22fd1a6a6331",
+      "files": [
+        "3d/runtime/decals/decal_feeding_slurry_regurgitation_splash.png",
+        "decal_feeding_slurry_regurgitation_splash.png"
+      ]
+    },
+    {
+      "sha256": "af8d35a4ac9d0be941062e747013704631fb801a0b7dcae70742c391f0d94234",
+      "files": [
+        "3d/runtime/decals/decal_glycol_coolant_slick_flooding.png",
+        "decal_glycol_coolant_slick_flooding.png"
+      ]
+    },
+    {
+      "sha256": "a4d3005d022c828a2406700f39fc27284a67a19a275cc65e65b0a7fb0c7542a8",
+      "files": [
+        "3d/runtime/decals/decal_grave_spade_excavation_dirt.png",
+        "decal_grave_spade_excavation_dirt.png"
+      ]
+    },
+    {
+      "sha256": "8862524c1612a496c6bce133ae7ee1c21169aedce386fa48cbb3eb89d106fafd",
+      "files": [
+        "3d/runtime/decals/decal_gunpowder_spill_carbon_smear.png",
+        "decal_gunpowder_spill_carbon_smear.png"
+      ]
+    },
+    {
+      "sha256": "a88872cd4563d5d5a57f2c88e9ebb9af7d6f32112a17de0e9765c4f47a817cde",
+      "files": [
+        "3d/runtime/decals/decal_hatchery_mucus_wallowing_pool.png",
+        "decal_hatchery_mucus_wallowing_pool.png"
+      ]
+    },
+    {
+      "sha256": "5f7ba97666f91ad45e71492eceef4a8a5120694ff2b5bb38ffebc50df5addcfe",
+      "files": [
+        "3d/runtime/decals/decal_hidden_egg_frost_bleed_seam.png",
+        "decal_hidden_egg_frost_bleed_seam.png"
+      ]
+    },
+    {
+      "sha256": "0548ccdff47d58a5d5a2eb5d9f4b58a46180f036609331ed079f9db6d237e61e",
+      "files": [
+        "3d/runtime/decals/decal_hive_optic_nerve_puddle.png",
+        "decal_hive_optic_nerve_puddle.png"
+      ]
+    },
+    {
+      "sha256": "f3ee25af361078a67f54c608381361579df2c967711e544df1009f8ecdfeff8b",
+      "files": [
+        "3d/runtime/decals/decal_holdout_defensive_recoil_scuff.png",
+        "decal_holdout_defensive_recoil_scuff.png"
+      ]
+    },
+    {
+      "sha256": "0d01d9b28c0d1dc0b7fb23fc4d54c3f481c1f0824bf9d879dce38d90ddff36b1",
+      "files": [
+        "3d/runtime/decals/decal_hybrid_claw_scratch_containment.png",
+        "decal_hybrid_claw_scratch_containment.png"
+      ]
+    },
+    {
+      "sha256": "d9f6bc5c04884cbc951e80f6e7b820cab9995e865800faa4b184507d37fa0019",
+      "files": [
+        "3d/runtime/decals/decal_hydro_nutrient_lime_tide.png",
+        "decal_hydro_nutrient_lime_tide.png"
+      ]
+    },
+    {
+      "sha256": "5afc4169e69e53bc245c72731abe9eab9e11cc4219a60528994a1c865c9bc5ec",
+      "files": [
+        "3d/runtime/decals/decal_impact_radiation_halo.png",
+        "decal_impact_radiation_halo.png"
+      ]
+    },
+    {
+      "sha256": "c4c849d46a293f1739887e6f3e1f42fa6d23bdaad856a321fedabc91e5f28142",
+      "files": [
+        "3d/runtime/decals/decal_iris_sphincter_rub_apron.png",
+        "decal_iris_sphincter_rub_apron.png"
+      ]
+    },
+    {
+      "sha256": "8807c8b9cbc2bb950fe0fb114a6cd732b4ef61e95abdebb39e8cd59a93413891",
+      "files": [
+        "3d/runtime/decals/decal_liquor_spill_evaporation_stain.png",
+        "decal_liquor_spill_evaporation_stain.png"
+      ]
+    },
+    {
+      "sha256": "70f435df72ba03f02cb4870a108130fc30e5443c7155f84a67219714981de0d8",
+      "files": [
+        "3d/runtime/decals/decal_melted_lanyard_char_mark.png",
+        "decal_melted_lanyard_char_mark.png"
+      ]
+    },
+    {
+      "sha256": "5a8d96dab4b99f1a16b62e2a976010f12230f2be76e01a24f6cf4e64d2f6f92f",
+      "files": [
+        "3d/runtime/decals/decal_memorial_gun_oil_footprint_tally.png",
+        "decal_memorial_gun_oil_footprint_tally.png"
+      ]
+    },
+    {
+      "sha256": "84d04335964f75fc122f6790b43cd3e2de24028d2792d99d7022f658aa87c936",
+      "files": [
+        "3d/runtime/decals/decal_prayer_kneeling_wear_crescent.png",
+        "decal_prayer_kneeling_wear_crescent.png"
+      ]
+    },
+    {
+      "sha256": "59e2485903a4209a0af09b4c2da9288bb0b4dd6a5acade77b5dac9453bd4d6e2",
+      "files": [
+        "3d/runtime/decals/decal_probe_crater_scuff_impact.png",
+        "decal_probe_crater_scuff_impact.png"
+      ]
+    },
+    {
+      "sha256": "e494e10fa7d4dfddc5e3ca72119b5d9faaecd72d9f90ef5b8d41e5375dcc654f",
+      "files": [
+        "3d/runtime/decals/decal_rations_fingerprint_grime.png",
+        "decal_rations_fingerprint_grime.png"
+      ]
+    },
+    {
+      "sha256": "5ae305f995abfa02ff41527d4e7e82fbf9ae2afd0724423d1a688f20441e023f",
+      "files": [
+        "3d/runtime/decals/decal_reactor_scorch_flange_leak.png",
+        "decal_reactor_scorch_flange_leak.png"
+      ]
+    },
+    {
+      "sha256": "285b85a970589d22f9c91c21fac1d74556de707e40f0ee9953c644dbb288c057",
+      "files": [
+        "3d/runtime/decals/decal_red_mould_spore_crust_ring.png",
+        "decal_red_mould_spore_crust_ring.png"
+      ]
+    },
+    {
+      "sha256": "9b5e39620bae8f5c3ea8af5bf882b0cf6cf7de9d8a94c241ca3e5772323666ca",
+      "files": [
+        "3d/runtime/decals/decal_relay_neural_static_lichen_ring.png",
+        "decal_relay_neural_static_lichen_ring.png"
+      ]
+    },
+    {
+      "sha256": "81c08f7d8698d74d2bac033210eb9aeb1d1bbae057da7da72570d016520f99a1",
+      "files": [
+        "3d/runtime/decals/decal_resin_urn_ring_overflow.png",
+        "decal_resin_urn_ring_overflow.png"
+      ]
+    },
+    {
+      "sha256": "abea22abd50785a15fd96a0d44d2e8724a047e663e5eea996928f52bbb4ea919",
+      "files": [
+        "3d/runtime/decals/decal_respiratory_exhale_spore_cone.png",
+        "decal_respiratory_exhale_spore_cone.png"
+      ]
+    },
+    {
+      "sha256": "7d13f8a7df39cad2c1080e1f51728e89e74437ffaa43dd7673d1079136f91518",
+      "files": [
+        "3d/runtime/decals/decal_shield_impact_gouges_apron.png",
+        "decal_shield_impact_gouges_apron.png"
+      ]
+    },
+    {
+      "sha256": "8450e8373dff9ffce372e82b379503bf2d6b020eb2dec9dd1c5c920308b99964",
+      "files": [
+        "3d/runtime/decals/decal_soldering_flux_droplet_spray.png",
+        "decal_soldering_flux_droplet_spray.png"
+      ]
+    },
+    {
+      "sha256": "c045e6b09e45d17be351f4f7bb883f0d493f8d1f6829fb053ef58f2757623a66",
+      "files": [
+        "3d/runtime/decals/decal_stalagmite_thaw_puddle_rings.png",
+        "decal_stalagmite_thaw_puddle_rings.png"
+      ]
+    },
+    {
+      "sha256": "0e93e3a8bdb0345b1ed254ba2967c1a42356cae89380c3ebf7396ffb9d71aa13",
+      "files": [
+        "3d/runtime/decals/decal_sublimated_frost_paper_outline.png",
+        "decal_sublimated_frost_paper_outline.png"
+      ]
+    },
+    {
+      "sha256": "912ce5d974d9810ee79bf663bed88e4b11b8b4a1779c334e2819e4d71bb0bb71",
+      "files": [
+        "3d/runtime/decals/decal_sunken_permafrost_grave_heave.png",
+        "decal_sunken_permafrost_grave_heave.png"
+      ]
+    },
+    {
+      "sha256": "2a2b3453902e32abaa25c0dff66f6a1409f5c4245e83ce5d072a75c292d550ac",
+      "files": [
+        "3d/runtime/decals/decal_suture_silk_thread_drool.png",
+        "decal_suture_silk_thread_drool.png"
+      ]
+    },
+    {
+      "sha256": "498e443cdca9e86d0ac3cb17b338c10199cb119f10a4afa53391923fb3999598",
+      "files": [
+        "3d/runtime/decals/decal_synaptic_discharge_scorched_membrane.png",
+        "decal_synaptic_discharge_scorched_membrane.png"
+      ]
+    },
+    {
+      "sha256": "2648f5d8a4df96b93f33ac2ad833a79c06f1c87402041f5d7816832bbe28eca8",
+      "files": [
+        "3d/runtime/decals/decal_turret_traverse_ring_swarf.png",
+        "decal_turret_traverse_ring_swarf.png"
+      ]
+    },
+    {
+      "sha256": "dd45475604ccb44492183a1aec322d1339a6105e15917f3db499977cd8685105",
+      "files": [
+        "3d/runtime/decals/decal_vitrified_crater_ring.png",
+        "decal_vitrified_crater_ring.png"
+      ]
+    },
+    {
+      "sha256": "79ff0edc7144b1e77ec8d69a692839cf77c29f7c6e884c2d72df90e57c02c435",
+      "files": [
+        "3d/runtime/decals/decal_warm_pipe_condensate_drip_fan.png",
+        "decal_warm_pipe_condensate_drip_fan.png"
+      ]
+    },
+    {
+      "sha256": "44f74a6745b96f0b365b74092a5869234f0a67b6c502345b295be8cc751c0138",
+      "files": [
+        "3d/runtime/decals/legacy/decal_armory_spent_brass_scatter1_albedo.ktx2",
+        "3d/runtime/decals/legacy/decal_armory_spent_brass_scatter_albedo.ktx2"
+      ]
+    },
+    {
+      "sha256": "dd00cb4d7c60459bcad3c9215e7039d4bc382d5df25cd751e2579446044dc5af",
+      "files": [
+        "3d/runtime/decals/legacy/decal_armory_spent_brass_scatter1_detail.ktx2",
+        "3d/runtime/decals/legacy/decal_armory_spent_brass_scatter_detail.ktx2"
+      ]
+    },
+    {
       "sha256": "eb4cca8e9501b5bc41f39845a761cfbba815417285dec85fdc3d1b8147ae1b97",
       "files": [
         "3d/runtime/decals/legacy/decal_execution_wall_splatter_a_albedo.ktx2",
@@ -620,7 +1000,7 @@
       ]
     },
     {
-      "sha256": "14f8e97b4b503d24ce058dde73ec67a0e44f21ebbd1caa86d75176166e23fd49",
+      "sha256": "679f0eacf0aefd1c917fc1dc11abcf9b6e15940857dc59fe1da9e1b49334c02e",
       "files": [
         "3d/runtime/decals/legacy/decal_execution_wall_splatter_a_detail.ktx2",
         "3d/runtime/decals/legacy/decal_execution_wall_splatter_detail.ktx2"
@@ -648,7 +1028,7 @@
       ]
     },
     {
-      "sha256": "f1d3827541d181bb29a47481435d96e9a53b123dd3babb55ea070cf0097e065a",
+      "sha256": "ee1a503831be24e95f16758408b53ff9b110f5c7684ee69a1c74571dceb5acd6",
       "files": [
         "3d/runtime/decals/legacy/decal_queen_oviposition_pool_a_detail.ktx2",
         "3d/runtime/decals/legacy/decal_queen_oviposition_pool_detail.ktx2"
@@ -662,7 +1042,7 @@
       ]
     },
     {
-      "sha256": "b619e12de5fc08e9343811055a639372fbeeb52a39a6be48b9324234ca5dd8b5",
+      "sha256": "559d74006446c8381dd604a3ba9661505f467b315e4ddaebc74094700190ebf7",
       "files": [
         "3d/runtime/decals/legacy/decal_strip_acid_trench_a_detail.ktx2",
         "3d/runtime/decals/legacy/decal_strip_acid_trench_detail.ktx2"

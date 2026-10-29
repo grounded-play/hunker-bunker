@@ -6,7 +6,8 @@ First off, thank you for considering contributing to Hunker Bunker! It's people 
 
 1. **Fork the repository** to your own GitHub account.
 2. **Clone the project** to your local machine.
-3. Install Node.js 22 or newer, then install dependencies with `npm ci`.
+3. Install Node.js 22 and Python 3.13 or newer, then install dependencies with
+   `npm ci && python3 -m pip install -r requirements-dev.txt`.
 4. Start the development server using `npm run dev`.
 5. Open your browser and navigate to the local URL provided by Vite (usually `http://localhost:5173`).
 
@@ -20,7 +21,7 @@ First off, thank you for considering contributing to Hunker Bunker! It's people 
 
 ## Code Style
 
-- We use ESLint for code formatting and quality. Please run `npm run lint` before submitting a PR.
+- We use ESLint for JavaScript and Ruff for Python code quality. Please run `npm run lint` before submitting a PR.
 - Try to match the existing coding style for consistency.
 
 ## Documentation and Verification

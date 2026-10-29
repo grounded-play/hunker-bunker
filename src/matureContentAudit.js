@@ -12,6 +12,7 @@ import { ACT2_ENDINGS, ACT2_ENDING_CUTSCENES, getAct2EndingLines } from './act2.
 import { NPC_DIALOGUE_TREES } from './npcDialogueTrees.js';
 import { assetUrl } from './assetUrl.js';
 import { getSideStoryInterstitial } from './songInterstitials.js';
+import { SHIPPED_MOTION_CLIPS } from './cinematics/shippedMotionClips.js';
 
 // Static copies of the two audio-log letters Valve's suicide/self-sacrifice
 // category maps to. Duplicated here (rather than imported from threeGame.js)
@@ -27,6 +28,28 @@ export const REVIEWER_LOG_LETTERS = Object.freeze({
     }
 });
 
+// The class openings ship apart from the grindhouse cut (side stories, cards,
+// sleep films) and show less, so the guide counts them separately.
+const OPENING_CLIPS = [...SHIPPED_MOTION_CLIPS].filter((id) => id.startsWith('opening-'));
+const GRINDHOUSE_CLIPS = [...SHIPPED_MOTION_CLIPS].filter((id) => !id.startsWith('opening-'));
+
+// Where the shipped grindhouse cuts are met, named from what actually shipped.
+const SIDE_STORY_SPEAKERS = Object.freeze({
+    val: 'Sister Martha at Camp Tallow',
+    briggs: 'Briggs at Camp Vesper',
+    kaelen: 'Kaelen at Camp Meridian',
+    nahl: 'Dr. Nahl at the bio-lab',
+    aria: 'Aria at the hive relays'
+});
+function grindhouseWhereText() {
+    const speakers = [...new Set(GRINDHOUSE_CLIPS.map((id) => SIDE_STORY_SPEAKERS[id.split('_')[0]]).filter(Boolean))];
+    return [
+        speakers.length ? `the camp side stories with ${speakers.join(', ')}` : null,
+        GRINDHOUSE_CLIPS.some((id) => id.startsWith('card_')) ? 'the ending cards' : null,
+        GRINDHOUSE_CLIPS.some((id) => id.startsWith('sleep-')) ? 'the sleep films after resting' : null
+    ].filter(Boolean).join(', ');
+}
+
 export const MATURE_CONTENT_MANIFEST = Object.freeze([
     {
         id: 'sensual_storylines_romance',
@@ -34,7 +57,7 @@ export const MATURE_CONTENT_MANIFEST = Object.freeze([
         rating: 'Adult / Mature (18+) Romance',
         description: 'Interactive branching dialogue trees with camp leaders and entities featuring intense physical and emotional intimacy, thermal shelter body heat, seductive touch, erotic bio-link synchronization, and sensual spore massages.',
         tags: ['Erotic Sci-Fi', 'Sensual Choices', 'Camp Romance', 'Intimate Touch', 'Adult Themes'],
-        inPlay: 'Text dialogue with still artwork; non-explicit, no nudity is depicted. In play: talk to Sister Martha at Camp Tallow (also Briggs at Camp Vesper, Kaelen at Camp Meridian, Aria at hive relays, Dr. Nahl at the bio-lab).',
+        inPlay: `${GRINDHOUSE_CLIPS.some((id) => SIDE_STORY_SPEAKERS[id.split('_')[0]]) ? 'Text dialogue with still artwork; the side-story cutscenes marked as shipped are explicit (see Explicit Sex & Nudity in Cutscenes).' : 'Text dialogue with still artwork; non-explicit, no nudity is depicted.'} In play: talk to Sister Martha at Camp Tallow (also Briggs at Camp Vesper, Kaelen at Camp Meridian, Aria at hive relays, Dr. Nahl at the bio-lab).`,
         dialogueTrees: [
             { id: 'sister_val', label: '🩸 SISTER MARTHA (TALLOW FLESH COMMUNION)' },
             { id: 'commander_briggs', label: '🛡️ BRIGGS (VESPER COMBAT ADRENALINE)' },
@@ -83,7 +106,27 @@ export const MATURE_CONTENT_MANIFEST = Object.freeze([
         description: 'Close-quarters ballistic combat against biomechanical abominations, acid burns, splatter, and corpse disintegration.',
         tags: ['Blood & Splatter', 'Acid Burns', 'Dismemberment', 'Ballistic Trauma'],
         inPlay: 'In play: every fight. Gore effects can be turned off in Settings.'
-    }
+    },
+    // Listed only once a grindhouse cut has shipped, so the guide never
+    // describes content the build doesn't contain (Valve review 2026-09).
+    // The cuts shipped so far (reviewed 2026-10-28) show sex and nudity but no
+    // cutscene gore; restore the gore wording when a cut that shows it ships.
+    ...(GRINDHOUSE_CLIPS.length ? [{
+        id: 'explicit_cutscenes',
+        title: 'Explicit Sex & Nudity in Cutscenes (The Grindhouse Cut)',
+        rating: 'Adults Only Sexual Content',
+        description: 'Full-motion cutscenes show nudity and sexual activity between consenting adults, staged in the bunker\'s biomechanical machinery.',
+        tags: ['Explicit Sex', 'Full Nudity', 'Consenting Adults', 'Grindhouse Horror'],
+        inPlay: `In play: ${grindhouseWhereText()} (${GRINDHOUSE_CLIPS.length} cutscenes in this build).`
+    }] : []),
+    ...(OPENING_CLIPS.length ? [{
+        id: 'opening_nudity',
+        title: 'Nudity & Sexual Biomechanical Imagery in the Class Openings',
+        rating: 'Adult / Mature (18+) Nudity',
+        description: 'The class opening films show fully nude adult crew in the launch hangar and sexualised biomechanical hardware: phallic and vulvic machine forms and wet organic tissue on the ships. No sex acts are shown.',
+        tags: ['Full Nudity', 'Consenting Adults', 'Sexual Imagery', 'Biomechanical Horror'],
+        inPlay: `In play: the class opening after EMBARK in the Armory (${OPENING_CLIPS.length} clips in this build).`
+    }] : [])
 ]);
 
 // Ending cutscene video + poster, resolved for the packaged file:// build

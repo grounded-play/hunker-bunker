@@ -8,7 +8,6 @@ async function finishActiveIntro(page) {
 
     while (Date.now() < deadline) {
         const ready = await page.evaluate(() => {
-            window.skipAllIntro = true;
             return window.game?.inputEnabled === true
                 && !document.body.classList.contains('mission-intro-active');
         }).catch(() => false);
@@ -33,14 +32,9 @@ test('new-run intro keeps gameplay black, paused, and invulnerable until the fin
     await expect(page.locator('body')).not.toHaveClass(/show-debug/);
 
     await page.locator('#start-game').click();
-
-    await page.locator('#transition-overlay.opening-h.active').waitFor({
-        state: 'visible',
-        timeout: 30_000
-    });
-    expect(await page.locator('#transition-overlay').evaluate((overlay) => (
-        getComputedStyle(overlay, '::before').opacity
-    ))).toBe('1');
+    await page.locator('#armory-btn-embark').click({ timeout: 30_000 });
+    await expect(page.locator('#multiplayer-modal')).toBeVisible({ timeout: 30_000 });
+    await page.locator('#net-deploy-btn').click({ timeout: 30_000 });
 
     await page.waitForFunction(() => (
         window.__hbAppPhase === 'gameplay'
@@ -48,7 +42,6 @@ test('new-run intro keeps gameplay black, paused, and invulnerable until the fin
         && window.game?.cinematicLock === true
         && document.body.classList.contains('mission-intro-active')
     ), { timeout: 30_000 });
-
     const before = await page.evaluate(() => ({
         health: window.game.playerHealth,
         oxygen: window.game.playerOxygen,
@@ -84,7 +77,7 @@ test('new-run intro keeps gameplay black, paused, and invulnerable until the fin
     await finishActiveIntro(page);
 
     await expect(page.locator('body')).not.toHaveClass(/mission-intro-active/);
-    await expect(page.locator('#hud-run-seed')).toBeVisible();
+    await expect(page.locator('#ui')).toBeVisible();
     const ready = await page.evaluate(() => ({
         dead: window.game.isPlayerDead,
         paused: window.game.loadingPaused,
@@ -110,10 +103,10 @@ test('new-run intro keeps gameplay black, paused, and invulnerable until the fin
             tile: game.getTileType(Math.round(game.player.position.x), Math.round(game.player.position.z)),
             shipType: ship?.type ?? null,
             shipVisible: ship?.isVisible ?? false,
-            shipSpriteVisible: ship?.threeObjects?.[1]?.visible ?? false,
-            consoleSpriteVisible: ship?.threeObjects?.[3]?.visible ?? false,
-            shipTextureLoaded: Boolean(ship?.material?.map),
-            consoleTextureLoaded: Boolean(ship?.threeObjects?.[3]?.material?.map)
+            shipSpriteVisible: Boolean(ship?.threeObjects?.[1]?.visible || ship?.threeObjects?.[1]?.userData?.world3dRoot?.visible || ship?.ship3d?.visible),
+            consoleSpriteVisible: Boolean(ship?.threeObjects?.[3]?.visible || ship?.threeObjects?.[3]?.userData?.world3dRoot?.visible || ship?.console3d?.visible),
+            shipTextureLoaded: Boolean(ship?.material?.map || ship?.ship3d),
+            consoleTextureLoaded: Boolean(ship?.threeObjects?.[3]?.material?.map || ship?.console3d)
         };
     });
     expect(crashRoom).toMatchObject({

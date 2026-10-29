@@ -46,6 +46,26 @@ describe('achievements definitions', () => {
         expect(ACHIEVEMENT_DEFS.find((def) => def.key === 'scouts_honor')?.icon).toBe('victory_scout');
         expect(ACHIEVEMENT_DEFS.find((def) => def.key === 'tank_commander')?.icon).toBe('victory_tank');
         expect(ACHIEVEMENT_DEFS.find((def) => def.key === 'chief_engineer')?.icon).toBe('victory_engineer');
+
+        // All published achievements are live
+        for (const key of ['arcade_wizard', 'tinas_challenger', 'slay_the_queen']) {
+            expect(ACHIEVEMENT_DEFS.find((def) => def.key === key)?.comingSoon).toBeFalsy();
+        }
+        expect(keys).not.toContain('medic_field_oath');
+    });
+
+    it('tracks the best arcade score and unlocks arcade achievements when published', () => {
+        let res = applyAchievementEvent(null, 'arcade-score-recorded', { score: 70_000 });
+        expect(res.state.stats.arcadeBestScore).toBe(70_000);
+        expect(res.newUnlocks.map((def) => def.key)).toContain('arcade_wizard');
+        expect(res.newUnlocks.map((def) => def.key)).not.toContain('tinas_challenger');
+
+        res = applyAchievementEvent(res.state, 'arcade-score-recorded', { score: 30_000 });
+        expect(res.state.stats.arcadeBestScore).toBe(70_000);
+
+        res = applyAchievementEvent(res.state, 'arcade-score-recorded', { score: 104_201 });
+        expect(res.state.stats.arcadeBestScore).toBe(104_201);
+        expect(res.newUnlocks.map((def) => def.key)).toContain('tinas_challenger');
     });
 });
 
@@ -136,7 +156,7 @@ describe('achievement checks', () => {
         expect(result.newUnlocks.map((def) => def.key)).toContain('hardened');
     });
 
-    it('tracks queenDefeated only from a combat kill, not a narrative boarding choice — slay_the_queen stays comingSoon pending gameplay acceptance', () => {
+    it('tracks queenDefeated only from a combat kill and unlocks slay_the_queen', () => {
         const narrative = applyAchievementEvent(
             createDefaultAchievementState(),
             'act2-milestone',
@@ -150,15 +170,8 @@ describe('achievement checks', () => {
             'act2-milestone',
             { key: 'queenKilled', source: 'queen-fight', combat: true }
         );
-        // The underlying stat is real and combat-gated correctly — the def
-        // itself is intentionally still comingSoon (see src/achievements.js)
-        // until the Queen fight clears gameplay acceptance, per
-        // docs/steam-launch-readiness-master-plan.md's outstanding decision
-        // on the minimum acceptance bar. definitionUnlocked short-circuits
-        // comingSoon defs regardless of a passing check, so no visible
-        // unlock fires yet even though the stat is now correctly set.
         expect(combat.state.stats.queenDefeated).toBe(true);
-        expect(combat.newUnlocks.map((def) => def.key)).not.toContain('slay_the_queen');
+        expect(combat.newUnlocks.map((def) => def.key)).toContain('slay_the_queen');
     });
 
     it('unlocks class and ending achievements on victory', () => {

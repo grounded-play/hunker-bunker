@@ -1,3 +1,4 @@
+import { FootContactTracker, StepClock } from './footContactTracker.js';
 import { loadGltfTemplate } from './gltfTemplateCache.js';
 import { createOperatorPatch } from './operatorPatch.js';
 import * as THREE from 'three';
@@ -66,6 +67,13 @@ export const SIGNATURE_GESTURES = Object.freeze([
 ]);
 
 const ONE_SHOTS = new Set(['fire', 'reload', 'hit', 'land', 'melee', ...ENGINEER_GESTURES, ...SIGNATURE_GESTURES]);
+export const GESTURE_FALLBACKS = Object.freeze({
+    rummaging: Object.freeze(['reload', 'heroIdle', 'idle']),
+    exosuit_dock: Object.freeze(['floatingTrance', 'heroIdle', 'idle']),
+    terminal_hack: Object.freeze(['pointingForward', 'idleCartographer', 'engineerThoughtful', 'reload', 'heroIdle', 'idle']),
+    case_unlatch: Object.freeze(['pickFruit', 'rummaging', 'reload', 'heroIdle', 'idle']),
+    rest_recovery: Object.freeze(['floatingTrance', 'defeat', 'heroIdle', 'idle'])
+});
 const BLENDABLE_ACTIONS = ['idle', 'walk', 'run', 'backward', 'strafeLeft', 'strafeRight', 'fall'];
 // Below INJURED_HP_RATIO, idle/walk/run cross-fade to their limping
 // counterparts (see computeLocomotionWeights callers). Only these three carry
@@ -727,6 +735,24 @@ export async function createPlayer3dOverlay({
         });
         return match;
     }).filter(Boolean);
+    // Footfalls come from the posed feet (src/footContactTracker.js), so
+    // footsteps land when a boot does, at any clip speed.
+    const footPatterns = [/left_?foot$|foot[._]l$|^l_?foot$/i, /right_?foot$|foot[._]r$|^r_?foot$/i];
+    const footBones = footPatterns.map((pattern) => {
+        let match = null;
+        root.traverse((object) => {
+            if (!match && object.isBone && pattern.test(object.name.replace(/^mixamorig:?/i, ''))) match = object;
+        });
+        return match;
+    });
+    const footTracker = footBones.every(Boolean) ? new FootContactTracker() : null;
+    const stepClock = new StepClock();
+    const STEPPING_ACTIONS = ['walk', 'run', 'backward', 'strafeLeft', 'strafeRight',
+        ...Object.values(INJURED_LOCOMOTION_VARIANTS)].filter((name) => actions.has(name));
+    const pendingFootContacts = [];
+    let lastFootHeights = null;
+    const footWorld = new THREE.Vector3();
+    const rootWorld = new THREE.Vector3();
     const smoothedWeights = Object.fromEntries([...actions.keys()].map((name) => [name, 0]));
     const downedActionName = ['defeat', 'rejected', 'fall'].find((name) => actions.has(name)) ?? null;
     const injuredVariantActions = Object.values(INJURED_LOCOMOTION_VARIANTS).filter((name) => actions.has(name));
@@ -762,6 +788,9 @@ export async function createPlayer3dOverlay({
         actions,
         syncFollowerBones,
         hasAnimation(name) { return actions.has(name); },
+        hasFootTracking() { return Boolean(footTracker); },
+        consumeFootContacts() { return pendingFootContacts.splice(0); },
+        getFootHeights() { return lastFootHeights ? [...lastFootHeights] : null; },
         getAnimationNames() { return [...actions.keys()]; },
         weapon,
         patch: chestPatch.root,
@@ -788,17 +817,22 @@ export async function createPlayer3dOverlay({
             triggerCharmSpringImpulse(intensity);
         },
         trigger(name, duration = null) {
-            if (!actions.has(name)) return;
-            forcedName = name;
-            forcedTimer = duration ?? actions.get(name).getClip().duration;
-            actions.get(name).reset().setEffectiveWeight(0).play();
-            if (name === 'fire') triggerCharmSpringImpulse(1.6);
-            else if (name === 'melee') triggerCharmSpringImpulse(2.4);
-            else if (name === 'hit') triggerCharmSpringImpulse(2.0);
-            else if (name === 'land') triggerCharmSpringImpulse(1.5);
+            let actionName = name;
+            if (!actions.has(actionName)) {
+                actionName = GESTURE_FALLBACKS[name]?.find((candidate) => actions.has(candidate)) ?? null;
+            }
+            if (!actionName || !actions.has(actionName)) return;
+            forcedName = actionName;
+            forcedTimer = duration ?? actions.get(actionName).getClip().duration;
+            actions.get(actionName).reset().setEffectiveWeight(0).play();
+            if (actionName === 'fire') triggerCharmSpringImpulse(1.6);
+            else if (actionName === 'melee') triggerCharmSpringImpulse(2.4);
+            else if (actionName === 'hit') triggerCharmSpringImpulse(2.0);
+            else if (actionName === 'land') triggerCharmSpringImpulse(1.5);
         },
         clearTrigger(name = null) {
-            if (!forcedName || (name && forcedName !== name)) return;
+            if (!forcedName) return;
+            if (name && forcedName !== name && !GESTURE_FALLBACKS[name]?.includes(forcedName)) return;
             actions.get(forcedName)?.fadeOut(0.12);
             forcedName = null;
             forcedTimer = 0;
@@ -899,6 +933,26 @@ export async function createPlayer3dOverlay({
             }
             mixer.update(delta);
             syncFollowerBones();
+            if (footTracker) {
+                root.getWorldPosition(rootWorld);
+                const heights = footBones.map((bone) => bone.getWorldPosition(footWorld).y - rootWorld.y);
+                lastFootHeights = heights;
+                const moving = Boolean(state?.isMoving);
+                const contacts = footTracker.update(delta, heights, moving);
+                // Cadence from the clip carrying the most weight: one step
+                // per half cycle at the mixer's current playback rate.
+                let dominant = null;
+                for (const name of STEPPING_ACTIONS) {
+                    const action = actions.get(name);
+                    if (action && (!dominant || action.getEffectiveWeight() > dominant.getEffectiveWeight())) dominant = action;
+                }
+                const stepInterval = dominant && dominant.getEffectiveWeight() > 0.25
+                    ? dominant.getClip().duration / 2 / Math.max(0.1, mixer.timeScale)
+                    : 0;
+                for (const foot of stepClock.update(delta, { moving, stepInterval, contacts })) {
+                    if (pendingFootContacts.length < 8) pendingFootContacts.push(foot);
+                }
+            }
             const targetUpperBodyTurn = computeUpperBodyTurnTarget(root.rotation.y, state);
             upperBodyTurn = THREE.MathUtils.damp(upperBodyTurn, targetUpperBodyTurn, 12, delta);
             const turnPerBone = upperBodyTurn / Math.max(upperBodyBones.length, 1);

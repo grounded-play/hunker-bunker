@@ -1,4 +1,19 @@
 {
+  "recalibration_feedback": {
+    "action_label": "NÄCHSTER KAMPF:",
+    "tradeoff_label": "NACHTEIL:",
+    "installed": "{name} installiert. Kalibrierung bestätigt.",
+    "next_fight": "{name} BEREIT — {action}",
+    "mods": {
+      "cryo_rime": { "action": "Triff denselben Gegner mehrfach, um ihn einzufrieren. Wechsle dann die Position.", "tradeoff": "5% weniger direkter Schaden; Einfrieren braucht mehrere Treffer." },
+      "caustic_payload": { "action": "Infiziere einen Gegner und suche Deckung, während die Korrosion wirkt.", "tradeoff": "10% weniger direkter Schaden; Korrosion braucht Zeit." },
+      "subzero_necrosis": { "action": "Friere ein korrodiertes Ziel ein und töte es neben anderen für eine Nova.", "tradeoff": "Die Nova erfordert den Tod eines eingefrorenen, korrodierten Ziels." },
+      "kinetic_hollow_point": { "action": "Schieße aus der Deckung für 25% mehr direkten Schaden.", "tradeoff": "Du erleidest 15% mehr Schaden." },
+      "hyper_split_core": { "action": "Triff Gruppen mit deinem Drei-Projektil-Fächer.", "tradeoff": "Jedes Projektil verursacht 25% weniger Schaden; Streuung kostet Präzision." },
+      "corrupted_overcharge": { "action": "Nutze Deckung zwischen Salven für 80% mehr direkten Schaden.", "tradeoff": "Du erleidest 35% mehr Schaden." },
+      "o2_siphon_chamber": { "action": "Unter 50% Sauerstoff steigt der Schaden bei sinkendem Vorrat. Halte einen Fluchtweg frei.", "tradeoff": "Kein Bonus über 50% Sauerstoff. Ersticken bleibt tödlich." }
+    }
+  },
   "common": {
     "ok": "OK",
     "cancel": "Abbrechen",
@@ -53,6 +68,26 @@
       "copy": "Stelle Feldnachschub aus gebankten Materialien her. Effekte wirken sofort auf deine aktuelle Expedition.",
       "craft": "HERSTELLEN",
       "close": "WERKBANK VERLASSEN",
+      "tab_supplies": "NACHSCHUBFERTIGUNG",
+      "tab_recalibration": "FELDREKALIBRIERUNG (1/LAGER)",
+      "recalibration_consumed": "REKALIBRIERUNG VERBRAUCHT (1/1)",
+      "recalibration_ready": "REKALIBRIERUNG BEREIT (1 PRO LAGER)",
+      "reroll_matrix": "MATRIX NEU WÜRFELN ({cost} TECH)",
+      "fusion_tag": "KRYO- + BIO-FUSION",
+      "element_overclock": "{element}-OVERCLOCK",
+      "weapon_overclock": "WAFFEN-OVERCLOCK",
+      "calibration_used": "LAGERKALIBRIERUNG VERBRAUCHT",
+      "synthesize_fusion": "FUSION SYNTHETISIEREN",
+      "install_recalibration": "REKALIBRIERUNG INSTALLIEREN",
+      "stat_tech": "TECH / SCHROTT",
+      "stat_med": "MED-VORRÄTE",
+      "stat_coin": "MÜNZEN",
+      "stat_shells": "HÜLSEN",
+      "stat_health": "GESUNDHEIT",
+      "stat_shield": "SCHILD",
+      "stat_ammo": "MUNITION",
+      "need_resource": "BENÖTIGT {need} {resource}",
+      "deficit": "DEFIZIT",
       "ammo_pack_name": "Standard-Munitionspaket",
       "ammo_pack_desc": "Füllt 30 Schuss kinetische Munition auf und lädt das aktive Magazin nach.",
       "med_patch_name": "Notfall-Bionaht",
@@ -247,8 +282,11 @@
       "accessibility": "BARRIEREFREIHEIT",
       "profile_saves": "PROFIL & SPEICHERN",
       "session_display": "SITZUNG & ANZEIGE",
+      "steam_overlay": "STEAM-OVERLAY (UMSCHALT+TAB)",
       "return_to_game": "ZURÜCK INS SPIEL",
       "resume": "FORTSETZEN",
+      "skip_onboarding": "EINWEISUNG ÜBERSPRINGEN",
+      "skip_onboarding_desc": "SEKTOR 1 MIT STANDARD-FELDAUSRÜSTUNG ÖFFNEN",
       "abort_current_mission": "AKTUELLE MISSION ABBRECHEN",
       "abort_mission": "MISSION ABBRECHEN",
       "title_active_crosshair_color": "Aktive Fadenkreuzfarbe",
@@ -434,9 +472,12 @@
     },
     "loading": {
       "aria_label_build_and_developer": "Build- und Entwicklerinformationen",
+      "aria_label_deployment_progress": "Bereitstellungsfortschritt",
       "system_build": "SYSTEM-BUILD",
       "dev_console": "DEV-KONSOLE",
       "initializing_systems": "SYSTEME WERDEN INITIALISIERT",
+      "squad_waiting": "TRUPP-SYNC — {loaded} / {total} OPERATOREN BEREIT",
+      "squad_ready": "TRUPP BEREIT — DRUCKTÜREN ÖFFNEN SICH",
       "msg_biometric_airlock": "BIOMETRISCHES LUFTSCHLEUSENTOR WIRD KALIBRIERT",
       "msg_reactor_bulkhead": "REAKTOR-KÜHLMITTELSCHOTT WIRD ABGESCHIRMT",
       "msg_thermal_shield": "THERMISCHER SUPRALEITERSCHILD WIRD STABILISIERT",
@@ -681,13 +722,6 @@
     "close_player_trade": {
       "aria_label_close_trade_link": "Handels-Link schließen"
     },
-    "npc_dialogue": {
-      "affection_bond": "ZUNEIGUNG // BINDUNG",
-      "press_1_4_or_click": "[1-4] DRÜCKEN ODER KARTE ANKLICKEN • [ESC] ZURÜCKZIEHEN"
-    },
-    "close_npc_dialogue": {
-      "title_exit_dialogue": "Dialog verlassen"
-    },
     "demo_end": {
       "transmission_terminated": "◈ ÜBERTRAGUNG BEENDET",
       "you_belong_to_the_deep": "„Du gehörst jetzt der Tiefe, kleine Maschine. Der Schwarm erinnert sich an deinen Ruf.“",
@@ -832,9 +866,34 @@
       "press_e": "E DRÜCKEN",
       "defense_turret_controls": "STEUERUNG DES VERTEIDIGUNGSGESCHÜTZES"
     },
+    "coop": {
+      "revive_prompt": "{callsign} WIEDERBELEBEN",
+      "reviving_toast": "{callsign} WIRD WIEDERBELEBT...",
+      "downed_toast": "DU BIST AUSGESCHALTET — EIN TRUPPMITGLIED KANN DICH WIEDERBELEBEN",
+      "squadmate_down_toast": "TRUPPMITGLIED AUSGESCHALTET: {callsign} — STELL DICH DARÜBER UND DRÜCKE INTERAGIEREN"
+    },
     "foundry_hud_prompt": {
       "press_e": "E DRÜCKEN",
-      "open_fab_bay": "FERTIGUNGSBUCHT ÖFFNEN"
+      "open_fab_bay": "FERTIGUNGSBUCHT ÖFFNEN",
+      "grow_signal_dish": "SIGNALSCHÜSSEL AUSBAUEN",
+      "install_power_core": "ENERGIEKERN INSTALLIEREN",
+      "offline_missing_power_core": "OFFLINE · ENERGIEKERN FEHLT",
+      "recover_power_core": "FERTIGUNGS-ENERGIEKERN BERGEN",
+      "locked_line": "FERTIGUNG OHNE STROM — FINDE DEN ENERGIEKERN AUF DER KARTE.",
+      "offline_title": "FERTIGUNG OFFLINE // KEIN STROM",
+      "offline_status": "> STROMKUPPLUNG DER FERTIGUNGSBUCHT TOT<br>> ENERGIEKERN BEI {location}{distance} BERGEN (AUF DER KARTE MARKIERT)",
+      "offline_toast_title": "FERTIGUNG OFFLINE",
+      "offline_toast_status": "Kein Strom. Berge den Energiekern bei {location}{distance}, auf der Karte markiert.",
+      "core_title": "FERTIGUNGSKERN GESICHERT",
+      "core_status": "> ENERGIEKERN GEBORGEN<br>> ZURÜCK ZUR FERTIGUNG, UM DEN STROM WIEDERHERZUSTELLEN",
+      "core_toast_title": "ENERGIEKERN ERHALTEN",
+      "core_toast_status": "Kehre zur Fertigung zurück, um den Strom wiederherzustellen.",
+      "online_title": "FERTIGUNG ONLINE",
+      "online_status": "> ENERGIEKERN EINGESETZT // FERTIGUNGSBUCHT ONLINE",
+      "map_offline": "FERTIGUNG (OFFLINE)",
+      "map_core": "FERTIGUNGSKERN",
+      "unknown_location": "SEKTORANOMALIE",
+      "speaker": "INGENIEUR-OPERATOR"
     },
     "scientist_hud_prompt": {
       "press_e": "E DRÜCKEN",
@@ -968,7 +1027,9 @@
       "abort_mission": "MISSION ABBRECHEN",
       "cancel": "ABBRECHEN",
       "terminate_question": "DIESEN VERTRAG AUF DER STELLE BEENDEN?",
-      "terminate_detail": "Die Anlagen bergen den Anzug und rüsten eine Blackbox für den nächsten Abstieg."
+      "terminate_detail": "Die Anlagen bergen den Anzug und rüsten eine Blackbox für den nächsten Abstieg.",
+      "scope_coop": "Nur du steigst aus. Dein Trupp setzt die Expedition fort.",
+      "scope_pvp": "Du gibst die Runde auf. Dein Rivale gewinnt."
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "DIE NACHT WIRD TÜREN SCHLIESSEN",
@@ -1157,8 +1218,48 @@
       "no_ranks": "KEINE RÄNGE VERFÜGBAR",
       "anonymous_agent": "Agent"
     },
+    "arcade": {
+      "thrust": "[W/A/D · STICK] SCHUB/DREHEN",
+      "fire": "[LEERTASTE · A] FEUER",
+      "exit": "[ESC · B] AUTOMAT VERLASSEN",
+      "reflexes": "ARKADE-REFLEXE: Nachladen für den Rest dieser Expedition 10 % schneller.",
+      "sheen_unlocked": "WAFFENSCHIMMER FREIGESCHALTET: {name}",
+      "decal_unlocked": "DECAL FREIGESCHALTET: {name}",
+      "tina_radio": "BÜRGERMEISTERIN TINA: Sieh an, Großmaul... endlich hat jemand meinen Rekord geknackt. Komm beim Drift-Außenposten vorbei, die Drinks gehen auf mich.",
+      "blackjack_title": "BLACK-ICE 21",
+      "blackjack_prompt": "[E] BLACK-ICE 21 SPIELEN (BLACKJACK)",
+      "blackjack_built": "FREIZEITBEREICH ONLINE // BLACK-ICE-21-AUTOMAT GEBAUT",
+      "blackjack_wager": "AKTUELLER EINSATZ: {amount} MÜNZEN",
+      "blackjack_win": "OPERATOR GEWINNT: +{amount} MÜNZEN",
+      "blackjack_tier_clear": "STUFE {tier} GESCHAFFT: +{bonus} BONUSMÜNZEN",
+      "blackjack_module": "BASIS-FREIZEITMODUL",
+      "blackjack_module_desc": "ROGUELIKE-BLACKJACK-TERMINAL · FESTE INSTALLATION AN DER ABSTURZSTELLE",
+      "blackjack_installed": "AN DER ABSTURZSTELLE INSTALLIERT",
+      "blackjack_build": "BLACK-ICE-21-AUTOMAT BAUEN",
+      "blackjack_controls_wager": "[↑/↓] EINSATZ",
+      "blackjack_controls_deal": "[LEERTASTE] GEBEN/HALTEN",
+      "blackjack_controls_hit": "[1] KARTE",
+      "blackjack_controls_stand": "[2] HALTEN",
+      "blackjack_controls_double": "[3] VERDOPPELN",
+      "blackjack_controls_chips": "[4/5/6] KRYO / THERMAL / EMP",
+      "blackjack_controls_exit": "[ESC] VERLASSEN"
+    },
     "interstitial": {
       "track": "TITEL {id}"
+    },
+    "current_manifest": {
+      "title": "STARTMANIFEST",
+      "known_title": "BEKANNTE PLATZANSPRÜCHE",
+      "claimed": "{used}/{max} BEANSPRUCHT",
+      "operator": "DU 1",
+      "survivors": "ÜBERLEBENDE {count}",
+      "allies": "VERBÜNDETE {count}",
+      "queen": "KÖNIGIN 2",
+      "egg": "EI 1",
+      "free": "FREI {count}",
+      "over_capacity": "{count} PLÄTZE ZU VIEL — ANSPRÜCHE VOR DEM EINSTIEG ÄNDERN.",
+      "egg_requires_nahl": "DAS EI BRAUCHT NAHL AN BORD.",
+      "egg_unstable": "DAS EI BRAUCHT DIE KÖNIGIN ODER NAHL AN BORD."
     },
     "manifest": {
       "title": "RÜCKKEHR-MANIFEST",
@@ -1307,7 +1408,10 @@
       "no_tracked_objectives": "KEINE VERFOLGTEN ZIELE",
       "surface": "OBERFLÄCHE",
       "story_prelude": "AKT I // MENSCHLICHES VORSPIEL",
-      "build_mismatch": "HOST NUTZT {host}, DU NUTZT {client} — AKTUALISIERE ODER WECHSLE DEINEN STEAM-BETA-ZWEIG"
+      "build_mismatch": "HOST NUTZT {host}, DU NUTZT {client} — AKTUALISIERE ODER WECHSLE DEINEN STEAM-BETA-ZWEIG",
+      "lobby_build_tag": "v{build}",
+      "lobby_build_mismatch": "VERSION PASST NICHT — HOST v{host}, DU v{client}",
+      "squad_build_mismatch": "EIN TRUPPMITGLIED NUTZT EINE ANDERE SPIELVERSION — ALLE MÜSSEN ÜBEREINSTIMMEN, UM ZU STARTEN"
     },
     "dossier": {
       "title": "TAKTISCHES DOSSIER",
@@ -1579,12 +1683,6 @@
       "self_class": "{class} // OPERATIVER",
       "peer_class": "{class} // ENTFERNT"
     },
-    "bond": {
-      "enamored": "VERLIEBT / ERGEBEN",
-      "warm": "WARM / ANZIEHUNG",
-      "attentive": "AUFMERKSAM",
-      "badge": "{label} ({score} PKT)"
-    },
     "fab": {
       "scatter_repeater": "STREU-REPETIERER",
       "equipped_next_run": "FÜR NÄCHSTEN RUN AUSGERÜSTET ✓",
@@ -1610,7 +1708,23 @@
       "stat_rate": "KADENZ ×{value}",
       "stat_range": "REICHW ×{value}",
       "stat_shots": "{count} SCHÜSSE",
-      "odds": "CHANCEN"
+      "odds": "CHANCEN",
+      "welder_kicker": "LAGERBRUCH-REAKTION",
+      "welder_title": "FELD-SCHOTTSCHWEISSGERÄT",
+      "welder_desc": "Baue vom Boss durchbrochene Wände wieder auf und repariere beschädigte Lagermodule im Feld.",
+      "welder_installed": "FELDSCHWEISSGERÄT GEBAUT",
+      "welder_build": "FELDSCHWEISSGERÄT BAUEN",
+      "welder_ready": "FELD-SCHOTTSCHWEISSGERÄT BEREIT",
+      "close_automart": "Auto-Mart schließen",
+      "ledger_balance": "BERGUNGSKONTO / MÜNZGUTHABEN:",
+      "aisles_aria": "Auto-Mart-Abteilungen",
+      "aisle_hardware": "BASISBAU & AUSSTATTUNG",
+      "aisle_weapons": "WAFFEN & MUNITION",
+      "aisle_lotto": "LOTTO-DRUCK",
+      "aisle_all": "ALLE GÄNGE",
+      "slot_marquee": "HORIZON SPEKULATIVER LOTTO-DRUCK // HEBEL ZIEHEN",
+      "lotto_window_title": "SPEKULATIVES DRUCKFENSTER AKTIV",
+      "lotto_window_hint": "Prüfe die offengelegten Chancen, wirf Bergungsgut ein und zieh dann oben den Fertigungshebel."
     },
     "camp": {
       "sleep_warning": "Schlaf in {camp} bringt dich zu Tag {day}. Diese offenen Signale werden geschlossen.",
@@ -1629,7 +1743,6 @@
       "field_conversation": "FELDGESPRÄCH",
       "callsign": "RUFZEICHEN {callsign}",
       "listen_hint": "Hör zu und entscheide dann, wie du helfen willst.",
-      "quote": "„{text}“",
       "next_action": "Deine nächste Handlung ändert die Startliste und den Endverlauf.",
       "scar_gained": "DIE NACHT HAT SPUREN HINTERLASSEN: {scar}",
       "services": "LAGERDIENSTE ({count})",
@@ -1919,6 +2032,7 @@
         "sporesnail": "Sporenschnecke",
         "sentinel": "Wächter",
         "crawler": "Bruchkriecher",
+        "chitin_scuttler": "Chitinhuscher",
         "alien_proto_crawler": "Proto-Kriecher",
         "alien_proto_spitter": "Proto-Spucker",
         "mycelium_stalker": "Myzel-Pirscher",
@@ -1936,7 +2050,9 @@
       "build": {
         "cryo_shatter": "Build: Kryo-Splitter {count}× ausgelöst, {damage} Schaden",
         "bio_predator": "Build: Bio-Räuber {count}× ausgelöst, {o2}% O₂ und {hearts} Herzen wiederhergestellt",
+        "subzero_necrosis": "Build: Sub-Zero-Nekrose {count}× ausgelöst, {damage} Schaden",
         "equipped": "Build: {drops} (keine Synergie ausgelöst)",
+        "loadout": "Build: {list} installiert (keine Synergie ausgelöst)",
         "none": "Build: keine Feld-Upgrades in diesem Einsatz"
       },
       "field": {
@@ -2143,6 +2259,7 @@
       "slay_the_queen": "FREIGESCHALTET DURCH DEN SIEG ÜBER DIE KÖNIGIN",
       "archivist": "FREIGESCHALTET DURCH DEN ERFOLG „ARCHIVAR“",
       "reach_depth": "FREIGESCHALTET AB TIEFE {depth}",
+      "arcade_score": "FREIGESCHALTET MIT {score} PUNKTEN AM ARCADE-AUTOMATEN",
       "class_runs": "FREIGESCHALTET NACH {runs} {cls}-EINSÄTZEN",
       "achievement": "FREIGESCHALTET DURCH EINEN ERFOLG",
       "confirm_buy": "ZUM KAUFEN ERNEUT KLICKEN",
@@ -2204,7 +2321,6 @@
         "map_zoom": "[LB / RB] ZOOM",
         "map_operator": "[A] OPERATOR",
         "map_close": "[B] / [VIEW] SCHLIESSEN",
-        "dialogue_choose": "STEUERKREUZ ZUM WÄHLEN • [A] AUSWÄHLEN • [B] ZURÜCKZIEHEN",
         "compass_map": "[VIEW]",
         "radar_scan": "Radarscan [LB]",
         "armory_cycle": "[LB / RB WECHSELN]",
@@ -2216,6 +2332,7 @@
       "night_body": "Der Operator schläft. Etwas da draußen nicht.",
       "morning_title": "TAG {day} · 06:00",
       "morning_status": "{site} // EIN NEUER TAG BEGINNT",
+      "morning_objective": "MISSIONSZIEL: {objective}",
       "skip": "Beliebige Taste zum Aufwachen"
     },
     "mystery": {
@@ -2278,6 +2395,15 @@
       "area_bio": "im Bio-Sektor",
       "area_unknown": "im Gelände",
       "notice": "Anzeige: {setting} auf {to} gesenkt, damit das Spiel flüssig bleibt. Siehe Einstellungen › Grafik."
+    },
+    "kiosk": {
+      "exit": "BEENDEN",
+      "deal": "AUSTEILEN",
+      "hit": "KARTE",
+      "stand": "HALTEN",
+      "double": "VERDOPPELN",
+      "pull_lever": "Hebel ziehen, um zu drehen",
+      "scroll_more": "▼ MEHR UNTEN · SCROLLEN · W / S · ↑ / ↓ · STEUERKREUZ"
     }
   },
   "narrative": {
@@ -3776,6 +3902,10 @@
       "4167": {
         "desc": "Abstiegsanker, der tiefer war, als er sollte.",
         "name": "Tiefenanker"
+      },
+      "4168": {
+        "desc": "Freigeschaltet mit 65.000 Punkten in SUB-CRUST PROTOCOL: 1984.",
+        "name": "Retro-Pixelschnecken-Decal"
       },
       "4200": {
         "desc": "Vollständige Operator-Chassis-Lackierung im Tieffrost-Stil.",

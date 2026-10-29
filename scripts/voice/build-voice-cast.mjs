@@ -17,6 +17,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const CASTING_DOC = path.join(ROOT, 'docs/elevenlabs-voice-design-prompts-11-core-roles-2026-08-25.md');
+// Roles the narrative catalogs never covered (camp trees, wanderers, Tina).
+export const SUPPORTING_CASTING_DOC = path.join(ROOT, 'docs/voice-design-prompts-supporting-cast-2026-10-26.md');
 const OUT = path.join(ROOT, 'scripts/voice/voice-cast.json');
 
 // Heading text in the casting bible -> stable speaker id used for files.
@@ -34,6 +36,17 @@ export const ROLE_IDS = Object.freeze({
     'Rhun, the Shield': 'rhun'
 });
 
+export const SUPPORTING_ROLE_IDS = Object.freeze({
+    'Aria, Queen Mimic': 'aria',
+    'Mayor Tina': 'tina',
+    'Manic Hacker': 'wanderer_hacker',
+    'Corpo Shadow Runner': 'wanderer_corpo',
+    'Foxhole Shadow': 'wanderer_foxhole',
+    'Crash Survivor Queen': 'wanderer_survivor',
+    'Space ABG Tripper': 'wanderer_abg',
+    'Species Chrysalis': 'wanderer_chrysalis'
+});
+
 const HUMAN_CAST = new Set(['martha', 'briggs', 'kaelen', 'okonkwo']);
 const HIVE_ALLIES = new Set(['nahl', 'vey', 'rhun']);
 
@@ -45,18 +58,24 @@ const HIVE_ALLIES = new Set(['nahl', 'vey', 'rhun']);
 export function cleanPerformanceText(text, { stripLocalizedPrefix = false } = {}) {
     let out = String(text ?? '')
         .replace(/\[[^\]]*\]/g, ' ')
-        .replace(/^\s*>\s*/, '')
-        .replace(/^\s*[A-Z][A-Z .'-]{1,40}:\s+/, '');
-    // Translated speaker prefixes ("БРИГГС:", "布里格斯：") are only removed
-    // when the English line is known to carry one, so a sentence that merely
-    // contains a colon early on keeps its words.
-    if (stripLocalizedPrefix) out = out.replace(/^\s*[^:：]{1,30}[:：]\s*/u, '');
-    out = out.replace(/O₂|O2(?=\b)/g, 'oxygen').replace(/\s+/g, ' ').trim();
+        .replace(/^\s*>\s*/, '');
+    // One speaker prefix at most: a German "KAELEN: DAS FLÜSTERN SAGT: ..."
+    // lost its first words when both strips ran. Translated or sentence-case
+    // prefixes ("Kaelen:", "БРИГГС:", "布里格斯：") are only removed when the
+    // line is known to carry one, so a sentence that merely contains a colon
+    // early on keeps its words.
+    const shoutedPrefix = /^\s*[A-Z][A-Z .'-]{1,40}:\s+/;
+    if (shoutedPrefix.test(out)) out = out.replace(shoutedPrefix, '');
+    else if (stripLocalizedPrefix) out = out.replace(/^\s*[^:：]{1,30}[:：]\s*/u, '');
+    out = out.replace(/\s+/g, ' ').trim();
+    // Case first, then O₂: replacing it first left "oxygen" lowercase inside
+    // a shouted line, so the line no longer read as shouted.
     const letters = (out.match(/\p{L}/gu) ?? []).join('');
     const shouted = letters.length > 3 && letters === letters.toUpperCase() && letters !== letters.toLowerCase();
     if (shouted) {
         out = out.toLowerCase().replace(/(^|[.!?]\s+)(\p{Ll})/gu, (m, lead, ch) => lead + ch.toUpperCase());
     }
+    out = out.replace(/(^|[.!?]\s+)[Oo]₂/g, '$1Oxygen').replace(/[Oo]₂|\b[Oo]2\b/g, 'oxygen');
     return out.replace(/^(\p{Ll})/u, (ch) => ch.toUpperCase());
 }
 
@@ -81,17 +100,26 @@ function bullets(section, heading) {
 }
 
 function postChainTable(doc) {
-    const at = doc.indexOf('## 17. Post-processing boundaries');
+    const at = doc.search(/^## \d+\. Post-processing boundaries/m);
     const rows = {};
-    for (const line of doc.slice(at).split('\n')) {
+    if (at < 0) return rows;
+    for (const [index, line] of doc.slice(at).split('\n').entries()) {
+        if (index > 0 && line.startsWith('## ')) break;
         const cells = line.split('|').map((c) => c.trim());
         if (cells.length >= 4 && cells[1] && !/^[-:]+$/.test(cells[1]) && cells[1] !== 'Role') rows[cells[1]] = cells[2];
-        if (line.startsWith('## 18.')) break;
     }
     return rows;
 }
 
-export function buildVoiceCast(doc) {
+function chainKeyFor(id, name) {
+    if (HUMAN_CAST.has(id)) return 'Human cast';
+    if (HIVE_ALLIES.has(id)) return 'Hive allies';
+    if (id.startsWith('wanderer_')) return 'Wanderers';
+    if (id === 'tina') return 'Tina';
+    return name.split(/[ /,]/)[0] === 'The' ? 'Queen' : name.split(/[ /,]/)[0];
+}
+
+export function buildVoiceCast(doc, roleIds = ROLE_IDS, source = CASTING_DOC) {
     const chains = postChainTable(doc);
     const roles = [];
     const sections = doc.split(/\n(?=## \d+\. Prompt \d+ — )/);
@@ -99,7 +127,7 @@ export function buildVoiceCast(doc) {
         const head = /^## \d+\. Prompt \d+ — (.+)$/m.exec(section);
         if (!head) continue;
         const name = head[1].trim();
-        const id = ROLE_IDS[name];
+        const id = roleIds[name];
         if (!id) throw new Error(`casting bible role not mapped: ${name}`);
         const preview = fenced(section, 'PREVIEW TEXT');
         // Opening preview paragraphs, at least ~25 words: a 10-20 s
@@ -109,7 +137,7 @@ export function buildVoiceCast(doc) {
             referenceText = `${referenceText} ${cleanPerformanceText(paragraph)}`.trim();
             if (referenceText.split(/\s+/).length >= 25) break;
         }
-        const chainKey = HUMAN_CAST.has(id) ? 'Human cast' : HIVE_ALLIES.has(id) ? 'Hive allies' : name.split(/[ /,]/)[0] === 'The' ? 'Queen' : name.split(/[ /,]/)[0];
+        const chainKey = chainKeyFor(id, name);
         roles.push({
             id,
             name,
@@ -122,11 +150,18 @@ export function buildVoiceCast(doc) {
             postChain: chains[chainKey] ?? ''
         });
     }
-    return { source: path.relative(ROOT, CASTING_DOC), roles };
+    return { source: path.relative(ROOT, source), roles };
+}
+
+/** The core bible's eleven roles, then the supporting cast. */
+export function buildFullVoiceCast(readFile = (file) => fs.readFileSync(file, 'utf8')) {
+    const core = buildVoiceCast(readFile(CASTING_DOC));
+    const supporting = buildVoiceCast(readFile(SUPPORTING_CASTING_DOC), SUPPORTING_ROLE_IDS, SUPPORTING_CASTING_DOC);
+    return { sources: [core.source, supporting.source], roles: [...core.roles, ...supporting.roles] };
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-    const cast = buildVoiceCast(fs.readFileSync(CASTING_DOC, 'utf8'));
+    const cast = buildFullVoiceCast();
     fs.writeFileSync(OUT, `${JSON.stringify(cast, null, 2)}\n`);
     console.log(`[voice-cast] ${cast.roles.length} roles -> ${path.relative(ROOT, OUT)}`);
 }

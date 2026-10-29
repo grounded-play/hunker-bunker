@@ -24,9 +24,10 @@ const SLOT_CONTENT = Object.freeze({
         '#boss-status-panel',
         '#hazard-status-panel',
         '#queens-ledger-hud',
-        '#tutorial-prompt',
-        '#expedition-briefing-card',
-        '#compound-location-title'
+        '#tutorial-prompt'
+        // #expedition-briefing-card and #compound-location-title stay top-center
+        // cards in #game-viewport: the console's bottom-left overlay slot
+        // truncated them.
     ]
 });
 

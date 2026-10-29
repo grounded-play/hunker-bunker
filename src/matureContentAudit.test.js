@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { SHIPPED_MOTION_CLIPS } from './cinematics/shippedMotionClips.js';
 import { MatureContentAudit, MATURE_CONTENT_MANIFEST, REVIEWER_LOG_LETTERS, buildDialogueTranscript, buildDialogueReaderBlocks, endingCutsceneSources } from './matureContentAudit.js';
 import { NPC_DIALOGUE_TREES } from './npcDialogueTrees.js';
 
@@ -12,7 +13,13 @@ describe('MatureContentAudit', () => {
 
     it('lists only categories the game contains', () => {
         const ids = MATURE_CONTENT_MANIFEST.map((m) => m.id);
-        expect(ids).toEqual(['sensual_storylines_romance', 'parasite_symbiosis', 'queen_subjugation', 'self_annihilation', 'combat_violence']);
+        const base = ['sensual_storylines_romance', 'parasite_symbiosis', 'queen_subjugation', 'self_annihilation', 'combat_violence'];
+        // The grindhouse cut and the class openings are listed exactly when
+        // one of their clips has shipped.
+        const shipped = [...SHIPPED_MOTION_CLIPS];
+        const grindhouse = shipped.some((id) => !id.startsWith('opening-')) ? ['explicit_cutscenes'] : [];
+        const openings = shipped.some((id) => id.startsWith('opening-')) ? ['opening_nudity'] : [];
+        expect(ids).toEqual([...base, ...grindhouse, ...openings]);
         // Valve review 2026-09: these two existed only in this gallery.
         expect(ids).not.toContain('veiled_nudity');
         expect(ids).not.toContain('survival_economy_eroticism');
@@ -98,10 +105,14 @@ describe('MatureContentAudit', () => {
         // in play each node with an interstitial plays its artwork first.
         const base = 'file:///C:/Steam/Hunker%20Bunker/resources/app.asar/dist/index.html';
         const blocks = buildDialogueReaderBlocks(NPC_DIALOGUE_TREES.sister_val, base);
+        // Greetings carry no card (first contact already played the camp's);
+        // the hearth card plays on the trusted node (audit 2026-10-16 §13.6).
         const greeting = blocks.find((b) => b.nodeId === 'val_greeting');
-        expect(greeting.image).toBe('file:///C:/Steam/Hunker%20Bunker/resources/app.asar/dist/interstitials/int_val_hearth_warmth_key_v1.webp');
-        expect(greeting.alt).toMatch(/Sister Martha/);
+        expect(greeting.image ?? null).toBeNull();
         expect(greeting.text).toContain(NPC_DIALOGUE_TREES.sister_val.nodes.val_greeting.dialogue);
+        const trusted = blocks.find((b) => b.nodeId === 'val_trusted');
+        expect(trusted.image).toBe('file:///C:/Steam/Hunker%20Bunker/resources/app.asar/dist/interstitials/int_val_hearth_warmth_key_v2.webp');
+        expect(trusted.alt).toMatch(/Sister Martha/);
         const climax = blocks.find((b) => b.nodeId === 'val_intimate_climax');
         expect(climax.image).toContain('/interstitials/');
         // Same reachable nodes, same text, as the plain transcript.

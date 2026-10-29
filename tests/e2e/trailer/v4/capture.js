@@ -42,7 +42,30 @@ export async function setHudMode(page, mode) {
     }, [CLEAN_HUD, mode === 'clean']);
 }
 
-export async function bootForCapture(page, { playerClass = null } = {}) {
+// Cosmetics for a take, equipped through the game's own loadout API at the
+// operator menu (before the run spawns the operator): chassisSkin is a
+// Season 1 itemdefid (e.g. 4117), archetype a class gun ('talon',
+// 'siege_breaker', 'tesla_lock'), weaponSkin a finish itemdefid.
+async function equipCosmetics(page, { playerClass, chassisSkin, archetype, weaponSkin }) {
+    if (!chassisSkin && !archetype && !weaponSkin) return null;
+    return page.evaluate(([cls, skin, arch, finish]) => {
+        const loadout = window.loadout;
+        if (!loadout) return { error: 'no window.loadout' };
+        const classId = String(cls ?? 'scout').toLowerCase();
+        loadout.setActiveClass?.(classId);
+        if (skin) loadout.equipChassisSkin(String(skin));
+        if (arch) loadout.setArchetype(classId, arch);
+        if (finish) loadout.equipWeaponSkin(classId, String(finish));
+        return {
+            chassis: loadout.getEquippedChassisSkinId?.(),
+            supported: loadout.isChassisSupportedForClass?.(classId),
+            archetype: loadout.getActiveArchetype?.(classId),
+            weaponSkin: loadout.getEquippedSkinId?.(classId)
+        };
+    }, [playerClass, chassisSkin ?? null, archetype ?? null, weaponSkin ?? null]);
+}
+
+export async function bootForCapture(page, { playerClass = null, chassisSkin = null, archetype = null, weaponSkin = null } = {}) {
     await page.addInitScript(installVirtualClockShim);
     await page.addInitScript((cls) => {
         if (cls) localStorage.setItem('hb_active_class_v1', cls);
@@ -53,12 +76,25 @@ export async function bootForCapture(page, { playerClass = null } = {}) {
         }));
     }, playerClass);
     await stubOfflineElectronAPI(page);
+    if (chassisSkin || archetype || weaponSkin) {
+        // Offline the Steam build owns nothing, so reconcileOwnership strips
+        // any equipped cosmetic. A named QA build with UNLOCK ALL keeps them
+        // (main.js setLocalInventoryAllowed / itemOwnership canEquip).
+        await page.addInitScript(() => {
+            localStorage.setItem('hb_dev_unlock_all_cosmetics_v1', 'true');
+            const base = window.electronAPI;
+            window.electronAPI = new Proxy({}, { get: (_t, prop) => (prop === 'getQaToolsEnabled' ? () => Promise.resolve(true) : base[prop]) });
+        });
+    }
     await bootToOperatorMenu(page);
+    const equipped = await equipCosmetics(page, { playerClass, chassisSkin, archetype, weaponSkin });
+    if (equipped?.error) throw new Error(`cosmetics: ${equipped.error}`);
     await startRunAndSkipIntro(page);
     await page.waitForFunction(() => window.game?.performanceProfile === 'gameplay', null, { timeout: 60_000 });
     await page.addStyleTag({ content: HIDE_TRANSIENT_HUD });
     // No visible tell: setGodMode only skips damage and refills vitals.
     await page.evaluate(() => window.game.setGodMode?.(true));
+    return { equipped };
 }
 
 // The 16:9 capture rectangle (CSS px): the 16:10 game stage minus its top

@@ -24,14 +24,18 @@ describe('corpse 3D shader preparation', () => {
         expect(root.children[0].material.transparent).toBe(true);
     });
 
-    it('maps only regular enemies with retained corpse warmups', () => {
+    it('maps regular and boss enemies with retained corpse warmups', () => {
         expect(COMMON_CORPSE_3D_TYPES).toEqual([
             'cybersnail_dead',
             'cryosnail_dead',
-            'sporesnail_dead'
+            'sporesnail_dead',
+            'boss_cybersnail_dead',
+            'boss_cryosnail_dead'
         ]);
         expect(corpse3dTypeForEnemy('cybersnail')).toBe('cybersnail_dead');
-        expect(corpse3dTypeForEnemy('boss_cybersnail')).toBeNull();
+        expect(corpse3dTypeForEnemy('boss_cybersnail')).toBe('boss_cybersnail_dead');
+        expect(corpse3dTypeForEnemy('boss_cryosnail')).toBe('boss_cryosnail_dead');
+        expect(corpse3dTypeForEnemy('boss_sporesnail')).toBeNull();
         expect(corpse3dTypeForEnemy('crawler')).toBeNull();
     });
 
@@ -76,10 +80,29 @@ describe('corpse 3D shader preparation', () => {
 
         const roots = await prewarmCommonCorpse3dTemplates(game, loadModel);
 
-        expect(roots).toHaveLength(3);
+        expect(roots).toHaveLength(5);
         expect(order).toEqual(COMMON_CORPSE_3D_TYPES.flatMap((type) => [
             `load:${type}`,
             `compile:${type}`
         ]));
+    });
+
+    it('does not wait for frame-drained textures while deployment is paused', async () => {
+        const root = new THREE.Group();
+        root.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+        const game = {
+            camera: {},
+            scene: {},
+            renderer: { compileAsync: vi.fn(async () => {}) },
+            prewarmLateModel: vi.fn(async () => {})
+        };
+
+        await prewarmCorpse3dTemplate(game, 'boss_cryosnail_dead', async () => root);
+
+        expect(game.prewarmLateModel).toHaveBeenCalledWith(
+            root,
+            30000,
+            { waitForTextures: false }
+        );
     });
 });

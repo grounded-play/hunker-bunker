@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { GAME_SOUNDSETS, selectSoundsetVariant, validateSoundset } from './gameSoundsets.js';
+import { FOOTSTEP_SOUNDSET_KEYS, GAME_SOUNDSETS, selectSoundsetVariant, validateSoundset } from './gameSoundsets.js';
 
 const DOOR_SET = Object.freeze({
     variants: Object.freeze(['door_close1', 'door_close2', 'door_close3']),
@@ -20,18 +20,18 @@ describe('game soundset selection', () => {
         // and saying where the audio came from.
         //
         //   door_slide_horiz, hive_webs_sticky  - CC0 intake (opengameart)
-        //   footstep_concrete, footstep_snow, prop_impact_*, enemy_crawl_* - Kenney Impact Sounds, CC0,
+        //   footstep_* (FOOTSTEP_SOUNDSET_KEYS) - AudioCraft AudioGen walking takes, sliced and
+        //     mastered by scripts/audio/build_footstep_banks.py (2026-10-17; replaced the
+        //     Kenney concrete/snow and the single-step AudioGen sets)
+        //   prop_impact_*, enemy_crawl_* - Kenney Impact Sounds, CC0,
         //   enemy_idle_snail, enemy_idle_crawler - Kenney RPG Audio, CC0,
         //     licence retained at art/source/audio/cinematic-source/kenney/
         //   AudioCraft AudioGen Neural Foley & SFX - Generated via scripts/audio/generate_audiocraft_sfx.py
         expect(Object.keys(GAME_SOUNDSETS)).toEqual([
             'door_slide_horiz', 'hive_webs_sticky',
-            'footstep_concrete', 'footstep_snow',
+            ...FOOTSTEP_SOUNDSET_KEYS,
             'prop_impact_metal', 'prop_impact_glass',
             'enemy_crawl_snail', 'enemy_crawl_boss',
-            'footstep_metal_grate', 'footstep_ice_crunch', 'footstep_hive_slime',
-            'footstep_wood_plank', 'footstep_deep_snow', 'footstep_shell_casings',
-            'footstep_bone_terrazzo', 'footstep_wet_puddle',
             'terminal_beep', 'terminal_deny', 'vault_open',
             'crane_motor', 'power_hum', 'steam_burst', 'chem_siphon',
             'flesh_seal', 'flesh_squish', 'neural_tap', 'toolbox_open',
